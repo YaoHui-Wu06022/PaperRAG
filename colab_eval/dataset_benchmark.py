@@ -23,7 +23,10 @@ from generation.llm import build_llm_client
 from generation.prompt import build_qa_prompt
 from ingestion.chunking import split_documents_with_parents
 from ingestion.embedding import build_embedding_model
-from retrieval.vector_store import build_milvus_connection_args
+from retrieval.vector_store import (
+    build_milvus_connection_args,
+    _get_langchain_milvus_class,
+)
 from services.retrieval_service import run_retrieval_flow
 
 
@@ -368,7 +371,7 @@ def _build_temp_vector_store(
         return store, lambda: None, "faiss", ""
 
     if backend == "milvus":
-        from langchain_community.vectorstores import Milvus
+        Milvus = _get_langchain_milvus_class()
 
         collection = f"rag_bench_{dataset_key}_{uuid.uuid4().hex[:8]}"
         connection_args = build_milvus_connection_args(

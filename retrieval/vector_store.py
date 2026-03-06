@@ -16,6 +16,23 @@ warnings.filterwarnings(
 FAISS_INDEX_DIRNAME = "faiss_index"
 
 
+def _get_langchain_milvus_class():
+    try:
+        from langchain_milvus import Milvus
+
+        return Milvus
+    except ImportError:
+        try:
+            from langchain_community.vectorstores import Milvus
+
+            return Milvus
+        except ImportError as exc:
+            raise ImportError(
+                "Milvus backend requires langchain-milvus. "
+                "Please `pip install langchain-milvus pymilvus milvus-lite`."
+            ) from exc
+
+
 def build_vector_index(
     backend: str,
     documents: list[Document],
@@ -300,12 +317,7 @@ def _build_milvus_index(
     milvus_collection: str,
     milvus_drop_old: bool,
 ):
-    try:
-        from langchain_community.vectorstores import Milvus
-    except ImportError as exc:
-        raise ImportError(
-            "Milvus backend requires pymilvus. Please `pip install pymilvus milvus-lite`."
-        ) from exc
+    Milvus = _get_langchain_milvus_class()
 
     connection_args = build_milvus_connection_args(
         milvus_uri,
@@ -349,12 +361,7 @@ def _append_milvus_documents(
             milvus_collection=milvus_collection,
         )
 
-    try:
-        from langchain_community.vectorstores import Milvus
-    except ImportError as exc:
-        raise ImportError(
-            "Milvus backend requires pymilvus. Please `pip install pymilvus milvus-lite`."
-        ) from exc
+    Milvus = _get_langchain_milvus_class()
 
     connection_args = build_milvus_connection_args(
         milvus_uri,
@@ -388,12 +395,7 @@ def _load_milvus_index(
     milvus_db_name: str,
     milvus_collection: str,
 ):
-    try:
-        from langchain_community.vectorstores import Milvus
-    except ImportError as exc:
-        raise ImportError(
-            "Milvus backend requires pymilvus. Please `pip install pymilvus milvus-lite`."
-        ) from exc
+    Milvus = _get_langchain_milvus_class()
 
     connection_args = build_milvus_connection_args(
         milvus_uri,
