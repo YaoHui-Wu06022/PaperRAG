@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+
+# Virtual env
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Runtime
+.env
+*.log
+data/cache/
+!data/cache/.gitkeep
+data/hf_cache/
+data/mineru_output/
+data/临时/
+evaluation/results/

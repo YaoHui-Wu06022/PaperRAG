@@ -1,0 +1,31 @@
+python-dotenv>=1.0.1
+
+# 向量库
+faiss-cpu>=1.8.0.post1; platform_system != "Windows"
+pymilvus>=2.5.0
+milvus-lite>=2.4.11; platform_system != "Windows"
+
+# LangChain
+langchain>=0.3.7
+langchain-core>=0.3.15
+langchain-community>=0.3.7
+langchain-text-splitters>=0.3.2
+langchain-huggingface>=0.1.0
+langchain-openai>=0.2.5
+
+# Embedding / Reranker
+sentence-transformers>=3.2.1
+transformers>=4.41,<5
+
+# LLM / API
+openai>=1.54.0
+requests>=2.32.3
+
+# App / Eval
+streamlit>=1.40.0
+pymupdf>=1.24.10
+pillow>=10.4.0
+pandas>=2.2.3
+datasets>=3.1.0
+ragas>=0.2.3
+rank-bm25>=0.2.2
