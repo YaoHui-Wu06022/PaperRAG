@@ -12,6 +12,10 @@ import uuid
 import pandas as pd
 from datasets import load_dataset
 from langchain_core.documents import Document
+try:
+    from tqdm.auto import tqdm
+except Exception:
+    tqdm = None
 
 from config import AppConfig
 from colab_eval.ragas_eval import run_ragas_eval_rows
@@ -434,7 +438,12 @@ def run_dataset_benchmark(
     unique_contexts: dict[str, int] = {}
     context_doc_id_by_text: dict[str, str] = {}
     raw_documents: list[Document] = []
-    for row in qa_rows:
+    corpus_rows = (
+        tqdm(qa_rows, desc="Preparing corpus", unit="qa")
+        if tqdm is not None
+        else qa_rows
+    )
+    for row in corpus_rows:
         context = row["context"]
         if context in unique_contexts:
             existing_context_doc_id = context_doc_id_by_text.get(context)
@@ -495,7 +504,12 @@ def run_dataset_benchmark(
     answer_hit_count = 0
 
     try:
-        for row in qa_rows:
+        eval_rows = (
+            tqdm(qa_rows, desc="Evaluating", unit="qa")
+            if tqdm is not None
+            else qa_rows
+        )
+        for row_idx, row in enumerate(eval_rows, start=1):
             question = row["question"]
             answers = row["answers"]
             relevant_doc_ids = {
@@ -591,6 +605,13 @@ def run_dataset_benchmark(
                     "answer_preview": answer_text[:200] if answer_text else "",
                 }
             )
+            if tqdm is not None:
+                avg_ms = sum(retrieval_latencies_ms) / len(retrieval_latencies_ms)
+                eval_rows.set_postfix(
+                    hit=hit_count,
+                    hit_rate=f"{hit_count / row_idx:.2%}",
+                    avg_ms=f"{avg_ms:.0f}",
+                )
     finally:
         cleanup_fn()
 
