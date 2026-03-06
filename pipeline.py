@@ -348,11 +348,9 @@ def _paper_year(doc: Document) -> str:
     return "n.d."
 
 
-def _author_or_title_brief(doc: Document) -> str:
+def _author_brief(doc: Document) -> str:
     metadata = dict(doc.metadata or {})
     authors = str(metadata.get("authors", metadata.get("paper_authors", ""))).strip()
-    title = str(metadata.get("title", metadata.get("paper_title", ""))).strip()
-
     if authors:
         parts = [
             part.strip()
@@ -365,14 +363,29 @@ def _author_or_title_brief(doc: Document) -> str:
             brief = f"{first}等" if has_multi else first
             return " ".join(re.sub(r"[\[\],]+", " ", brief).split())
 
+    return ""
+
+
+def _title_or_source_brief(doc: Document) -> str:
+    metadata = dict(doc.metadata or {})
+    title = str(metadata.get("title", metadata.get("paper_title", ""))).strip()
+
     if title:
         clean_title = " ".join(re.sub(r"[\[\],]+", " ", title).split())
-        if len(clean_title) > 36:
-            return f"{clean_title[:33]}..."
+        if len(clean_title) > 72:
+            return f"{clean_title[:69]}..."
         return clean_title
 
     source = str(metadata.get("source", "unknown")).strip() or "unknown"
-    return Path(source).stem
+    source_stem = Path(source).stem
+    if source_stem:
+        return source_stem
+
+    author_brief = _author_brief(doc)
+    if author_brief:
+        return author_brief
+
+    return "unknown"
 
 
 def _citation_tag(doc: Document) -> str:
@@ -389,7 +402,7 @@ def _citation_tag(doc: Document) -> str:
 
 
 def _citation_text(doc: Document) -> str:
-    brief = _author_or_title_brief(doc)
+    brief = _title_or_source_brief(doc)
     year = _paper_year(doc)
     page = _page_label(doc)
     section = _section_label(doc)

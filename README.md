@@ -1,65 +1,73 @@
 # PaperRAG
 
-PaperRAG is a paper-oriented Retrieval-Augmented Generation system for PDF literature QA. The project is built as an end-to-end engineering system rather than a single “call an LLM API” demo: it includes PDF parsing, structured chunking, incremental indexing, hybrid retrieval, reranking, evidence grounding, evaluation, and a Streamlit UI.
+PaperRAG 是一个面向论文 PDF 知识库的 RAG 系统。项目重点不是“接一个大模型接口做问答”，而是围绕论文检索场景，把文档解析、切块、增量入库、混合检索、重排、证据追踪和评测流程做成一套可调参与可复现的工程系统。
 
-This repository is intended to serve as a resume project, so the README focuses on the technical decisions, retrieval pipeline, and benchmark findings.
+这个仓库按“可写进简历的工程项目”来组织，因此 README 会重点说明：
 
-## 1. Project Goals
+- 系统目标与应用场景
+- 关键技术设计
+- 检索链路细节
+- Benchmark 方法与实验结论
+- 如何将公开数据集上的参数实验迁移到私有论文知识库
 
-The system is designed for scenarios such as:
+## 1. 项目定位
 
-- building a searchable paper knowledge base from local PDFs
-- asking questions against a private literature collection
-- returning grounded answers with evidence snippets and page references
-- comparing retrieval strategies on public datasets before applying the same parameters to a private corpus
+这个项目要解决的问题是：给定一批本地论文 PDF，构建一个可检索、可追溯、可评测的论文知识库问答系统。
 
-The core design target is not “chat with PDFs” in the abstract. It is:
+目标能力包括：
 
-- structured paper ingestion
-- controllable retrieval quality
-- reproducible parameter tuning
-- traceable evidence output
+- 从本地 PDF 批量构建论文知识库
+- 对私有论文集合进行问答和多轮对话
+- 返回带证据片段、页码、章节信息的答案
+- 用公开数据集做检索参数实验，再把结论迁移到私有知识库
 
-## 2. Tech Stack
+相比通用的“Chat with PDF”项目，这个系统更强调：
+
+- 结构化论文解析
+- 检索质量可控
+- 参数调优可复现
+- 证据结果可追踪
+
+## 2. 技术栈
 
 - Python 3.12
 - LangChain
-- MinerU Cloud for PDF structural parsing
-- HuggingFace embeddings, default `BAAI/bge-m3`
-- Milvus / Zilliz Cloud as the main vector backend
-- Milvus Lite support for Colab benchmarking
-- BM25 lexical retrieval
-- Dense + BM25 hybrid retrieval with Reciprocal Rank Fusion (RRF)
-- `BAAI/bge-reranker-base` reranking
-- Streamlit frontend
-- Colab benchmark notebook for Qasper evaluation
+- MinerU Cloud：PDF 结构化解析
+- HuggingFace Embedding：默认 `BAAI/bge-m3`
+- Milvus / Zilliz Cloud：主向量库
+- Milvus Lite：Colab 上的轻量 Benchmark 向量库
+- BM25：词法检索
+- Dense + BM25 Hybrid Retrieval + RRF 融合
+- `BAAI/bge-reranker-base`：重排序
+- Streamlit：前端展示
+- Colab Notebook：Qasper 评测与参数实验
 
-## 3. System Architecture
+## 3. 系统结构
 
-### 3.1 Ingestion Pipeline
+### 3.1 入库链路
 
-The ingestion path is:
+系统的入库流程如下：
 
 ```text
 PDF
--> MinerU Cloud parsing
--> structured blocks / layout metadata
--> parent documents + chunk documents
--> embeddings
--> Milvus vector index
--> local corpus cache / reference cache
+-> MinerU Cloud 解析
+-> 结构化 block / layout metadata
+-> parent document + chunk document
+-> embedding
+-> Milvus 向量索引
+-> 本地 chunk / parent / reference cache
 ```
 
-Key modules:
+核心代码：
 
-- [`ingestion/chunking.py`](E:/Pythonproject/RAG_project/ingestion/chunking.py)
-- [`ingestion/embedding.py`](E:/Pythonproject/RAG_project/ingestion/embedding.py)
-- [`retrieval/vector_store.py`](E:/Pythonproject/RAG_project/retrieval/vector_store.py)
-- [`pipeline.py`](E:/Pythonproject/RAG_project/pipeline.py)
+- `ingestion/chunking.py`
+- `ingestion/embedding.py`
+- `retrieval/vector_store.py`
+- `pipeline.py`
 
-### 3.2 Retrieval Pipeline
+### 3.2 问答检索链路
 
-The QA retrieval path is:
+问答时的检索流程如下：
 
 ```text
 question
@@ -74,38 +82,40 @@ question
 -> LLM generation
 ```
 
-Core modules:
+核心代码：
 
-- [`services/retrieval_service.py`](E:/Pythonproject/RAG_project/services/retrieval_service.py)
-- [`retrieval/retriever.py`](E:/Pythonproject/RAG_project/retrieval/retriever.py)
-- [`retrieval/metadata_filter.py`](E:/Pythonproject/RAG_project/retrieval/metadata_filter.py)
-- [`retrieval/query_rewrite.py`](E:/Pythonproject/RAG_project/retrieval/query_rewrite.py)
+- `services/retrieval_service.py`
+- `retrieval/retriever.py`
+- `retrieval/metadata_filter.py`
+- `retrieval/query_rewrite.py`
 
-### 3.3 UI Layer
+### 3.3 前端展示
 
-The frontend uses Streamlit and is focused on evidence visibility rather than only answer text. It supports:
+前端使用 Streamlit，重点不是做一个聊天气泡，而是把证据显示出来。当前支持：
 
-- asking questions against the main corpus
-- reference-only retrieval
-- evidence snippet display
-- source / section / page display
-- original page highlighting via bbox coordinates when available
+- 主知识库问答
+- 参考文献专用检索
+- 证据片段展示
+- 来源、章节、页码展示
+- 在有 bbox 时高亮原始 PDF 页面区域
 
-UI entry:
+入口文件：
 
-- [`app/streamlit_app.py`](E:/Pythonproject/RAG_project/app/streamlit_app.py)
+- `app/streamlit_app.py`
 
-## 4. Key Technical Design
+## 4. 关键技术设计
 
-### 4.1 Semantic Paper Chunking
+### 4.1 语义块优先的论文切块
 
-Chunking is not plain fixed-window splitting. The project uses `semantic_paper` as the main strategy:
+项目默认不是简单的固定窗口切块，而是使用 `semantic_paper` 策略：
 
-- keep semantically coherent parent blocks first
-- only fall back to token-based splitting for oversized blocks
-- preserve `parent_id`, `structure_block_id`, page, and source metadata
+- 优先保留语义完整的 parent block
+- 只有当 block 过长时才回退到 token 级切分
+- 保留 `parent_id`、`structure_block_id`、页码、来源等元数据
 
-Relevant config:
+这比单纯 `chunk_size=xxx` 的方案更适合论文类文档，因为论文往往天然存在章节、段落、公式区和参考文献区的结构边界。
+
+相关配置：
 
 - `CHUNK_SIZE`
 - `CHUNK_OVERLAP`
@@ -113,49 +123,51 @@ Relevant config:
 - `CHUNK_SEMANTIC_HARD_MAX_CHARS`
 - `CHUNK_MIN_BLOCK_CHARS`
 
-Implementation:
+实现位置：
 
-- [`ingestion/chunking.py`](E:/Pythonproject/RAG_project/ingestion/chunking.py)
+- `ingestion/chunking.py`
 
-### 4.2 Hybrid Retrieval
+### 4.2 Dense / BM25 / Hybrid 三种检索模式
 
-The system supports three retrieval modes:
+系统支持三种检索模式：
 
 - `dense`
 - `bm25`
 - `hybrid`
 
-`hybrid` combines dense retrieval and BM25 using RRF. This is useful for paper QA because:
+其中 `hybrid` 通过 RRF 融合 dense 与 BM25 结果。这个设计对论文问答尤其重要：
 
-- dense retrieval helps on semantic paraphrase
-- BM25 helps on exact terminology, dataset names, model names, metrics, and ablation keywords
-- RRF gives a stable fusion without requiring score normalization across retrievers
+- Dense 检索更适合语义改写和抽象表述
+- BM25 更擅长命中精确术语、模型名、数据集名、指标名
+- RRF 不需要对不同检索器的分数做强归一化，工程上更稳
 
-Implementation:
+实现位置：
 
-- [`retrieval/retriever.py`](E:/Pythonproject/RAG_project/retrieval/retriever.py)
+- `retrieval/retriever.py`
 
-### 4.3 Query Rewrite
+### 4.3 规则式 Query Rewrite
 
-The project uses a lightweight rule-based query rewrite rather than an LLM rewrite layer. The current implementation generates multiple query variants from:
+项目没有使用 LLM 做 query rewrite，而是实现了一套轻量规则式改写，用于控制成本并避免额外幻觉。
 
-- the original query
-- a stripped version without conversational boilerplate
-- a keyword-compressed variant
-- cross-lingual term expansion
-- academic intent expansion
-- acronym expansion such as `RAG`, `LLM`, `QA`, `VQA`, `GNN`
+当前改写会生成多个 query variant，来源包括：
 
-This keeps inference cost low while improving retrieval coverage for academic search queries.
+- 原始问题
+- 去掉套话后的问题
+- 关键词压缩版本
+- 中英术语扩展
+- 学术意图扩展
+- 常见缩写扩展，例如 `RAG`、`LLM`、`QA`、`VQA`、`GNN`
 
-Implementation:
+这套设计的目标不是“智能改写得像人”，而是让检索器拿到更适合召回的查询表达。
 
-- [`retrieval/query_rewrite.py`](E:/Pythonproject/RAG_project/retrieval/query_rewrite.py)
-- [`tests/test_query_rewrite.py`](E:/Pythonproject/RAG_project/tests/test_query_rewrite.py)
+实现位置：
 
-### 4.4 Metadata Filtering
+- `retrieval/query_rewrite.py`
+- `tests/test_query_rewrite.py`
 
-The retrieval layer supports explicit metadata constraints in the query, including:
+### 4.4 Metadata Filter
+
+项目支持在 query 中显式带元数据约束，例如：
 
 - author
 - title
@@ -164,171 +176,176 @@ The retrieval layer supports explicit metadata constraints in the query, includi
 - source
 - keyword
 
-The filter supports exact year, year ranges, relative time forms, and generates both:
+过滤器支持：
 
-- a local post-filter
-- a Milvus-side document pre-filter when possible
+- 精确年份
+- 年份范围
+- 相对时间表达
+- 本地后过滤
+- Milvus 端可下推的预过滤
 
-This makes structured academic search possible without forcing users into a separate advanced search UI.
+这样用户可以用接近学术检索的方式提问，而不是只能输入纯自然语言描述。
 
-Implementation:
+实现位置：
 
-- [`retrieval/metadata_filter.py`](E:/Pythonproject/RAG_project/retrieval/metadata_filter.py)
+- `retrieval/metadata_filter.py`
 
-### 4.5 Reranking and Evidence Diversity
+### 4.5 Reranker + 证据多样性控制
 
-After retrieval, the system optionally applies a reranker and then performs:
+召回后系统支持 reranker，并在此基础上做：
 
-- evidence deduplication
-- source diversification
-- per-source evidence caps
-- comparison-query entity coverage supplementation
+- 证据去重
+- 来源多样性控制
+- 每篇文档最多保留若干条 chunk
+- 比较类问题的实体覆盖补召回
 
-This is intended to reduce repeated evidence and improve answer coverage across multiple papers.
+这部分是为了避免回答被单篇文档占满，或者返回多条高度重复的证据。
 
-Implementation:
+实现位置：
 
-- [`retrieval/retriever.py`](E:/Pythonproject/RAG_project/retrieval/retriever.py)
-- [`services/retrieval_service.py`](E:/Pythonproject/RAG_project/services/retrieval_service.py)
+- `retrieval/retriever.py`
+- `services/retrieval_service.py`
 
-### 4.6 Incremental Index Maintenance
+### 4.6 按 `doc_id` 的增量入库
 
-The project supports incremental updates by `doc_id` instead of rebuilding the whole vector store each time.
+项目支持按 `doc_id` 做增量更新，而不是每次重建全量向量索引。
 
-Supported flows:
+支持的操作包括：
 
-- ingest new paper
-- replace an existing `doc_id`
-- delete one or more `doc_id`
-- keep local corpora and vector store in sync
+- 新论文入库
+- 已存在 `doc_id` 的覆盖更新
+- 按 `doc_id` 删除论文
+- 本地 cache 与向量库同步维护
 
-Key commands:
+关键命令：
 
 - `python main.py ingest`
 - `python main.py ingest --force`
 - `python main.py delete-doc <doc_id_1> <doc_id_2> ...`
 
-Implementation:
+实现位置：
 
-- [`retrieval/vector_store.py`](E:/Pythonproject/RAG_project/retrieval/vector_store.py)
-- [`services/sync_transaction.py`](E:/Pythonproject/RAG_project/services/sync_transaction.py)
+- `retrieval/vector_store.py`
+- `services/sync_transaction.py`
 
-## 5. CLI and Runtime Flow
+## 5. 本地运行方式
 
-Main CLI commands:
+主程序当前保留的命令包括：
 
-- `ingest`: build or update the vector index from local PDFs
-- `delete-doc`: remove one or more papers by `doc_id`
-- `ask`: single-turn QA
-- `chat`: multi-turn interactive QA
-- `models`: list available AIHubMix models
-- `health`: startup validation and dependency checks
+- `ingest`：构建或更新论文向量索引
+- `delete-doc`：按 `doc_id` 删除论文
+- `ask`：单轮问答
+- `chat`：多轮对话
+- `models`：列出 AIHubMix 可用模型
+- `health`：检查启动依赖与配置状态
 
-Argument definitions are in:
+参数定义在：
 
-- [`main.py`](E:/Pythonproject/RAG_project/main.py)
+- `main.py`
 
-Typical local usage:
+典型本地使用方式：
 
 ```bash
 python main.py ingest
-python main.py ask "What datasets are used for evaluation?"
+python main.py ask "这篇论文用了哪些数据集做实验？"
 streamlit run app/streamlit_app.py
 ```
 
-## 6. Benchmark Workflow
+## 6. Benchmark 工作流
 
-Local CLI is focused on private-corpus ingestion and QA. Public-dataset benchmarking is intentionally moved to Colab:
+本地主程序主要用于私有论文知识库的入库和问答。公开数据集 Benchmark 被拆到了 Colab：
 
-- benchmark logic: [`colab_eval/dataset_benchmark.py`](E:/Pythonproject/RAG_project/colab_eval/dataset_benchmark.py)
-- benchmark notebook: [`notebooks/PaperRAG_Qasper_Eval_Colab.ipynb`](E:/Pythonproject/RAG_project/notebooks/PaperRAG_Qasper_Eval_Colab.ipynb)
+- Benchmark 主逻辑：`colab_eval/dataset_benchmark.py`
+- Colab Notebook：`notebooks/PaperRAG_Qasper_Eval_Colab.ipynb`
 
-The notebook supports:
+Notebook 支持：
 
-- cloud Milvus / Zilliz
-- Milvus Lite in Colab
-- parameter overrides without uploading `.env`
-- progress display for corpus preparation and evaluation
-- summary JSON + detail CSV export
+- 云端 Milvus / Zilliz
+- Colab 上的 Milvus Lite
+- 不上传 `.env`，直接在 notebook 内覆盖参数
+- 评测进度显示
+- 输出 summary JSON 和 detail CSV
 
-### 6.1 Benchmark Caveat
+### 6.1 Benchmark 的解释边界
 
-The benchmark is a sampled closed-set retrieval benchmark, not a full open-web or full-production benchmark.
+这里的 Benchmark 是“抽样闭集检索评测”，不是完整生产环境评测。
 
-For Qasper:
+以 Qasper 为例：
 
-- sampled QA rows are converted into a temporary benchmark corpus
-- the system retrieves against that temporary corpus
-- metrics are useful for parameter comparison across runs
-- metrics should be treated as relative engineering indicators, not final production truth
+- 先从数据集里采样若干 QA
+- 将样本上下文构成临时评测语料库
+- 再在这个临时语料库上做检索
 
-## 7. Experimental Results
+因此这些指标非常适合做参数对比，但不应直接当成线上最终效果。
 
-The repository includes benchmark summaries in:
+## 7. 实验结果与分析
 
-- [`notebooks/evalute/dataset_benchmark_summary_all.json`](E:/Pythonproject/RAG_project/notebooks/evalute/dataset_benchmark_summary_all.json)
-- [`notebooks/evalute/dataset_benchmark_summary_dense.json`](E:/Pythonproject/RAG_project/notebooks/evalute/dataset_benchmark_summary_dense.json)
-- [`notebooks/evalute/dataset_benchmark_summary_bm25.json`](E:/Pythonproject/RAG_project/notebooks/evalute/dataset_benchmark_summary_bm25.json)
-- [`notebooks/evalute/dataset_benchmark_summary_false_reranker.json`](E:/Pythonproject/RAG_project/notebooks/evalute/dataset_benchmark_summary_false_reranker.json)
-- [`notebooks/evalute/dataset_benchmark_summary_false_rewrite.json`](E:/Pythonproject/RAG_project/notebooks/evalute/dataset_benchmark_summary_false_rewrite.json)
+仓库中保存了多组 Benchmark 结果：
 
-All experiments below use:
+- `notebooks/evalute/dataset_benchmark_summary_all.json`
+- `notebooks/evalute/dataset_benchmark_summary_dense.json`
+- `notebooks/evalute/dataset_benchmark_summary_bm25.json`
+- `notebooks/evalute/dataset_benchmark_summary_false_reranker.json`
+- `notebooks/evalute/dataset_benchmark_summary_false_rewrite.json`
 
-- dataset: `qasper`
-- samples: `50`
-- vector backend: `milvus`
-- chunk size: `512`
-- overlap: `128`
-- final top-k: `5`
+以下实验统一条件：
 
-### 7.1 Retrieval Mode A/B
+- 数据集：`qasper`
+- 样本数：`50`
+- 向量后端：`milvus`
+- `chunk_size=512`
+- `chunk_overlap=128`
+- `final_top_k=5`
 
-| Setting | Hit@5 | MRR@5 | Avg Latency (ms) | P95 Latency (ms) |
+### 7.1 检索模式 A/B：Dense / BM25 / Hybrid
+
+| 配置 | Hit@5 | MRR@5 | 平均延迟(ms) | P95(ms) |
 | --- | ---: | ---: | ---: | ---: |
 | Hybrid | 0.66 | 0.5667 | 101.93 | 274.67 |
-| Dense only | 0.64 | 0.5253 | 94.01 | 221.26 |
-| BM25 only | 0.60 | 0.5333 | 12.85 | 28.81 |
+| Dense Only | 0.64 | 0.5253 | 94.01 | 221.26 |
+| BM25 Only | 0.60 | 0.5333 | 12.85 | 28.81 |
 
-Analysis:
+结果分析：
 
-- Hybrid gives the best overall retrieval quality on this Qasper slice.
-- Dense-only is stronger than BM25 on Hit@5, which suggests semantic similarity helps paper QA.
-- BM25 is much faster and still reasonably competitive on MRR, which indicates exact-term matching is still valuable for paper datasets.
-- Hybrid is the best quality/robustness choice for the main system, while BM25 can be useful as a low-latency fallback or analysis baseline.
+- `Hybrid` 取得了三者中最好的综合检索质量。
+- `Dense Only` 的 Hit@5 高于 BM25，说明语义召回在论文问答场景中仍然有效。
+- `BM25 Only` 的速度明显最快，说明精确术语匹配在论文检索中仍然有价值。
+- 当前主系统选择 `Hybrid` 是一个偏质量优先的工程决策，而不是速度优先。
 
-### 7.2 Effect of Reranker
+### 7.2 Reranker 的影响
 
-| Setting | Hit@5 | MRR@5 | Avg Latency (ms) |
+| 配置 | Hit@5 | MRR@5 | 平均延迟(ms) |
 | --- | ---: | ---: | ---: |
-| Hybrid + rewrite + reranker | 0.66 | 0.5667 | 101.93 |
-| Hybrid + rewrite + no reranker | 0.66 | 0.5667 | 124.35 |
+| Hybrid + Rewrite + Reranker | 0.66 | 0.5667 | 101.93 |
+| Hybrid + Rewrite + No Reranker | 0.66 | 0.5667 | 124.35 |
 
-Analysis:
+结果分析：
 
-- On this 50-sample Qasper slice, enabling reranking did not improve Hit@5 or MRR@5.
-- The latency difference here is not reliable evidence that reranking is cheaper; the two runs are close enough that runtime variance, Milvus collection variance, and Colab noise are plausible explanations.
-- The practical conclusion is that reranking is not yet clearly buying measurable gains on this benchmark configuration.
+- 在这组 50 样本 Qasper 实验中，打开 reranker 没有进一步提升 Hit@5 或 MRR@5。
+- 当前结果不能说明“reranker 一定更快”，因为 Colab 运行时延迟波动和临时 Milvus 集合差异会带来噪声。
+- 更稳妥的结论是：在当前配置下，reranker 的收益尚未被这组实验显著验证出来。
 
-### 7.3 Effect of Query Rewrite
+### 7.3 Query Rewrite 的影响
 
-| Setting | Hit@5 | MRR@5 | Avg Latency (ms) |
+| 配置 | Hit@5 | MRR@5 | 平均延迟(ms) |
 | --- | ---: | ---: | ---: |
-| Hybrid + rewrite | 0.66 | 0.5667 | 101.93 |
-| Hybrid + no rewrite | 0.68 | 0.5380 | 39.47 |
+| Hybrid + Rewrite | 0.66 | 0.5667 | 101.93 |
+| Hybrid + No Rewrite | 0.68 | 0.5380 | 39.47 |
 
-Analysis:
+结果分析：
 
-- Query rewrite improved ranking quality as measured by MRR (`0.5380 -> 0.5667`), meaning relevant evidence is ranked earlier on average.
-- Disabling rewrite slightly improved Hit@5 on this slice (`0.66 -> 0.68`), so rewrite is not a pure win.
-- Rewrite adds noticeable latency because each question is expanded into multiple retrieval variants and fused with RRF.
-- The engineering interpretation is that query rewrite is a tradeoff:
-  - better early-rank quality
-  - higher latency
-  - not guaranteed to improve coarse recall on every sample
+- 开启 Query Rewrite 后，MRR 从 `0.5380` 提升到 `0.5667`，说明相关证据平均排位更靠前。
+- 关闭 Rewrite 时，Hit@5 略高于开启 Rewrite 的结果，因此 Rewrite 不是对所有问题都绝对增益。
+- Rewrite 会带来额外延迟，因为系统需要对多个 query variant 分别检索再做融合。
+- 当前工程上的理解是：Query Rewrite 提升了排序质量，但存在速度成本，而且不保证粗粒度召回一定上升。
 
-### 7.4 Current Best Configuration in This Repository
+### 7.4 当前主线配置
 
-The current “mainline” benchmark configuration stored in [`notebooks/evalute/dataset_benchmark_summary_all.json`](E:/Pythonproject/RAG_project/notebooks/evalute/dataset_benchmark_summary_all.json) is:
+当前仓库中主线配置对应的结果位于：
+
+- `notebooks/evalute/dataset_benchmark_summary_all.json`
+
+配置为：
 
 - `retrieval_mode=hybrid`
 - `retriever_top_k=30`
@@ -340,48 +357,33 @@ The current “mainline” benchmark configuration stored in [`notebooks/evalute
 - `diversify_by_source=true`
 - `max_chunks_per_source=5`
 
-Observed benchmark summary:
+观测结果：
 
 - `Hit@5 = 0.66`
 - `MRR@5 = 0.5667`
-- `Avg retrieval latency = 101.93 ms`
-- `P95 retrieval latency = 274.67 ms`
+- `平均检索延迟 = 101.93 ms`
+- `P95 检索延迟 = 274.67 ms`
 
-## 8. Why This Is More Than “Calling APIs”
-
-This project contains several engineering concerns that go beyond wiring an LLM endpoint:
-
-- document parsing and structured cache design
-- semantic chunking and parent-context reconstruction
-- incremental vector index maintenance
-- hybrid lexical/semantic retrieval
-- query rewriting and metadata-aware retrieval
-- reranking and evidence diversity control
-- benchmark-driven parameter selection
-- evidence-grounded UI and answer traceability
-
-The value of the project is in the retrieval system design, tuning loop, and end-to-end reproducibility.
-
-## 9. Repository Structure
+## 8. 仓库结构
 
 ```text
-app/            Streamlit UI
-colab_eval/     Benchmark implementation for Colab
-generation/     LLM client and prompt logic
-ingestion/      PDF parsing, chunking, embeddings
-retrieval/      vector store, retriever, metadata filter, query rewrite
-services/       orchestration, retrieval flow, health checks
-tests/          focused tests for retrieval and reference logic
-notebooks/      Colab benchmark notebook and result summaries
+app/            Streamlit 前端
+colab_eval/     Colab Benchmark 逻辑
+generation/     LLM 客户端与 Prompt 逻辑
+ingestion/      PDF 解析、切块、Embedding
+retrieval/      向量库、检索器、过滤器、Query Rewrite
+services/       检索编排、健康检查、同步事务
+tests/          检索与参考文献相关测试
+notebooks/      Colab Notebook 与实验结果
 ```
 
-## 10. Environment Configuration
+## 9. 环境变量
 
-The repository includes a credential-free example file:
+仓库中提供了去密钥版本的示例配置：
 
-- [`.env.example`](E:/Pythonproject/RAG_project/.env.example)
+- `.env.example`
 
-Typical fields:
+典型配置项包括：
 
 ```env
 EMBEDDING_PROVIDER=huggingface
@@ -403,17 +405,13 @@ FINAL_TOP_K=5
 QUERY_REWRITE_ENABLED=true
 QUERY_REWRITE_MAX_VARIANTS=3
 USE_RERANKER=true
-
-LLM_PROVIDER=aihubmix
-LLM_MODEL=gpt-4.1-free
-AIHUBMIX_API_KEY=your_key
 ```
 
-## 11. Resume-Oriented Summary
+## 11. 适合写在简历里的项目描述
 
-If you need to summarize this project on a resume, the technically honest framing is:
+如果把这个项目写进简历，比较准确的技术表述可以是：
 
-- Built an end-to-end paper RAG system with MinerU-based PDF parsing, semantic chunking, incremental Milvus indexing, and evidence-grounded QA.
-- Implemented dense, BM25, and hybrid retrieval with query rewrite, metadata-aware filtering, reranking, and source diversification.
-- Built a Colab-based benchmark workflow on Qasper to compare retrieval configurations and tune parameters with reproducible JSON/CSV outputs.
-- Developed a Streamlit interface for grounded literature QA with evidence snippets, page metadata, and traceable source display.
+- 设计并实现面向论文 PDF 的 RAG 系统，支持结构化解析、语义切块、增量 Milvus 入库和证据追踪式问答。
+- 实现 Dense、BM25 与 Hybrid 检索链路，并加入 Query Rewrite、Metadata Filter、Reranker 与来源多样性控制。
+- 基于 Qasper 构建 Colab Benchmark 工作流，对检索模式和关键参数进行 A/B 实验，并输出可复现的 JSON/CSV 结果。
+- 开发 Streamlit 前端，支持论文问答、引用证据展示、页码定位和原文高亮。
