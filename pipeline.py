@@ -124,7 +124,6 @@ def _build_ingest_signature(config: AppConfig, pdf_paths: list[Path]) -> dict[st
         "milvus_db_name": config.milvus_db_name,
         "milvus_collection": config.milvus_collection,
         "milvus_references_collection": config.milvus_references_collection,
-        "milvus_drop_old": config.milvus_drop_old,
         "references_strategy": config.references_strategy,
         "references_keyword_index_file": str(config.references_keyword_index_file),
         "files": files,

@@ -70,7 +70,6 @@ class AppConfig:
     milvus_db_name: str
     milvus_collection: str
     milvus_references_collection: str
-    milvus_drop_old: bool
     references_strategy: str
     references_keyword_index_file: Path
     chunk_size: int
@@ -124,7 +123,6 @@ def load_config() -> AppConfig:
     data_pdf_dir = BASE_DIR / "data" / "pdf"
     local_cache_dir = BASE_DIR / "data" / "cache"
     mineru_output_dir = BASE_DIR / "data" / "mineru_output"
-    default_milvus_uri = "http://localhost:19530"
     data_pdf_dir.mkdir(parents=True, exist_ok=True)
     local_cache_dir.mkdir(parents=True, exist_ok=True)
     mineru_output_dir.mkdir(parents=True, exist_ok=True)
@@ -157,7 +155,7 @@ def load_config() -> AppConfig:
         embedding_provider=os.getenv("EMBEDDING_PROVIDER", "huggingface"),
         embedding_model=os.getenv("EMBEDDING_MODEL", "BAAI/bge-m3"),
         vector_backend=os.getenv("VECTOR_BACKEND", "milvus"),
-        milvus_uri=os.getenv("MILVUS_URI", default_milvus_uri),
+        milvus_uri=os.getenv("MILVUS_URI", "").strip(),
         milvus_token=os.getenv("MILVUS_TOKEN", "").strip(),
         milvus_db_name=os.getenv("MILVUS_DB_NAME", "").strip(),
         milvus_collection=os.getenv("MILVUS_COLLECTION", "rag_pdf_chunks"),
@@ -165,7 +163,6 @@ def load_config() -> AppConfig:
             "MILVUS_REFERENCES_COLLECTION",
             "rag_pdf_references",
         ),
-        milvus_drop_old=_env_bool("MILVUS_DROP_OLD", True),
         references_strategy=os.getenv(
             "REFERENCES_STRATEGY",
             "keyword_only",

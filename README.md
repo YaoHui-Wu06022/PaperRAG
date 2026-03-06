@@ -104,7 +104,10 @@ python main.py delete-doc <doc_id_1> <doc_id_2> ...
 pip install -r requirements.txt
 ```
 
-### 6.2 关键 `.env` 示例
+### 6.2 环境变量
+
+仓库内提供了不含密钥的 `.env.example` 示例文件，用于上传到 GitHub。
+本地运行时只需要保留你自己的 `.env`，不要提交真实密钥。
 
 ```env
 # MinerU Cloud
@@ -122,7 +125,6 @@ EMBEDDING_MODEL=BAAI/bge-m3
 VECTOR_BACKEND=milvus
 MILVUS_URI=https://your-zilliz-endpoint
 MILVUS_TOKEN=your_token
-MILVUS_DB_NAME=
 MILVUS_COLLECTION=rag_pdf_chunks
 MILVUS_REFERENCES_COLLECTION=rag_pdf_references
 REFERENCES_STRATEGY=keyword_only
@@ -148,7 +150,8 @@ AIHUBMIX_API_KEY=your_key
 AIHUBMIX_BASE_URL=https://aihubmix.com/v1
 ```
 
-使用 Zilliz Cloud 时，不需要本地 Docker Milvus。
+当前主流程面向 Zilliz Cloud / Milvus 云端部署，不再依赖 `MILVUS_DROP_OLD` 做全量覆盖。
+增量更新按 `doc_id` 走 upsert / delete，同步维护本地 cache 文件。
 
 ### 6.3 入库与问答
 
