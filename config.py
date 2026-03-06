@@ -52,6 +52,19 @@ def _env_bool(name: str, default: bool) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
+def _resolve_milvus_settings() -> tuple[str, str, str]:
+    mode = os.getenv("MILVUS_MODE", "").strip().lower()
+    if mode == "lite":
+        lite_uri = os.getenv("MILVUS_LITE_URI", "").strip()
+        if lite_uri:
+            return lite_uri, "", ""
+    return (
+        os.getenv("MILVUS_URI", "").strip(),
+        os.getenv("MILVUS_TOKEN", "").strip(),
+        os.getenv("MILVUS_DB_NAME", "").strip(),
+    )
+
+
 @dataclass(frozen=True)
 class AppConfig:
     data_pdf_dir: Path
@@ -120,6 +133,7 @@ class AppConfig:
 
 def load_config() -> AppConfig:
     load_dotenv()
+    milvus_uri, milvus_token, milvus_db_name = _resolve_milvus_settings()
     data_pdf_dir = BASE_DIR / "data" / "pdf"
     local_cache_dir = BASE_DIR / "data" / "cache"
     mineru_output_dir = BASE_DIR / "data" / "mineru_output"
@@ -155,9 +169,9 @@ def load_config() -> AppConfig:
         embedding_provider=os.getenv("EMBEDDING_PROVIDER", "huggingface"),
         embedding_model=os.getenv("EMBEDDING_MODEL", "BAAI/bge-m3"),
         vector_backend=os.getenv("VECTOR_BACKEND", "milvus"),
-        milvus_uri=os.getenv("MILVUS_URI", "").strip(),
-        milvus_token=os.getenv("MILVUS_TOKEN", "").strip(),
-        milvus_db_name=os.getenv("MILVUS_DB_NAME", "").strip(),
+        milvus_uri=milvus_uri,
+        milvus_token=milvus_token,
+        milvus_db_name=milvus_db_name,
         milvus_collection=os.getenv("MILVUS_COLLECTION", "rag_pdf_chunks"),
         milvus_references_collection=os.getenv(
             "MILVUS_REFERENCES_COLLECTION",
