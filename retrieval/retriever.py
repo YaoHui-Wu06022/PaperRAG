@@ -3,6 +3,7 @@ from __future__ import annotations
 from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass
 import hashlib
+import inspect
 import json
 import os
 import re
@@ -142,19 +143,19 @@ def _filter_docs_by_score(
     ]
 
 
-def _filter_docs_by_sources(
+def _filter_docs_by_doc_ids(
     docs: list[Document],
-    allowed_sources: set[str] | None,
+    allowed_doc_ids: set[str] | None,
 ) -> list[Document]:
-    if not allowed_sources:
+    if not allowed_doc_ids:
         return docs
-    allowed = {item for item in allowed_sources if item}
+    allowed = {str(item).strip() for item in allowed_doc_ids if str(item).strip()}
     if not allowed:
         return docs
     return [
         doc
         for doc in docs
-        if str((doc.metadata or {}).get("source", "")) in allowed
+        if str((doc.metadata or {}).get("doc_id", "")).strip() in allowed
     ]
 
 
@@ -322,9 +323,21 @@ def _retrieve_with_relevance_scores(
     query: str,
     vector_store,
     top_k: int,
+    *,
+    metadata_expr: str | None = None,
 ) -> list[Document] | None:
+    method = getattr(vector_store, "similarity_search_with_relevance_scores", None)
+    if not callable(method):
+        return None
+    kwargs: dict[str, Any] = {"k": top_k}
+    if metadata_expr:
+        try:
+            if "expr" in inspect.signature(method).parameters:
+                kwargs["expr"] = metadata_expr
+        except (TypeError, ValueError):
+            pass
     try:
-        pairs = vector_store.similarity_search_with_relevance_scores(query, k=top_k)
+        pairs = method(query, **kwargs)
     except Exception:
         return None
 
@@ -338,9 +351,21 @@ def _retrieve_with_raw_scores(
     query: str,
     vector_store,
     top_k: int,
+    *,
+    metadata_expr: str | None = None,
 ) -> list[Document] | None:
+    method = getattr(vector_store, "similarity_search_with_score", None)
+    if not callable(method):
+        return None
+    kwargs: dict[str, Any] = {"k": top_k}
+    if metadata_expr:
+        try:
+            if "expr" in inspect.signature(method).parameters:
+                kwargs["expr"] = metadata_expr
+        except (TypeError, ValueError):
+            pass
     try:
-        pairs = vector_store.similarity_search_with_score(query, k=top_k)
+        pairs = method(query, **kwargs)
     except Exception:
         return None
 
@@ -364,12 +389,24 @@ def _retrieve_dense(
     query: str,
     vector_store,
     top_k: int,
+    *,
+    metadata_expr: str | None = None,
 ) -> list[Document]:
-    docs = _retrieve_with_relevance_scores(query, vector_store, top_k)
+    docs = _retrieve_with_relevance_scores(
+        query,
+        vector_store,
+        top_k,
+        metadata_expr=metadata_expr,
+    )
     if docs is not None:
         return docs
 
-    docs = _retrieve_with_raw_scores(query, vector_store, top_k)
+    docs = _retrieve_with_raw_scores(
+        query,
+        vector_store,
+        top_k,
+        metadata_expr=metadata_expr,
+    )
     if docs is not None:
         return docs
 
@@ -377,22 +414,35 @@ def _retrieve_dense(
     return list(retriever.invoke(query))
 
 
-def _retrieve_dense_with_source_allowlist(
+def _retrieve_dense_with_doc_id_allowlist(
     query: str,
     vector_store,
     *,
     top_k: int,
-    allowed_sources: set[str] | None,
+    allowed_doc_ids: set[str] | None,
+    metadata_expr: str | None,
 ) -> list[Document]:
-    if not allowed_sources:
+    if not allowed_doc_ids and not metadata_expr:
         return _retrieve_dense(query, vector_store, top_k)
+    if not allowed_doc_ids:
+        return _retrieve_dense(
+            query,
+            vector_store,
+            top_k,
+            metadata_expr=metadata_expr,
+        )
 
     search_k = max(top_k, 32)
     max_search_k = max(128, top_k * 8)
     best: list[Document] = []
     while True:
-        docs = _retrieve_dense(query, vector_store, search_k)
-        filtered = _filter_docs_by_sources(docs, allowed_sources)
+        docs = _retrieve_dense(
+            query,
+            vector_store,
+            search_k,
+            metadata_expr=metadata_expr,
+        )
+        filtered = _filter_docs_by_doc_ids(docs, allowed_doc_ids)
         if filtered:
             best = filtered
         if len(filtered) >= top_k or search_k >= max_search_k:
@@ -434,7 +484,8 @@ def retrieve(
     hybrid_bm25_top_k: int | None = None,
     hybrid_rrf_k: int = 60,
     query_variants: list[str] | None = None,
-    metadata_allow_sources: set[str] | None = None,
+    metadata_allow_doc_ids: set[str] | None = None,
+    metadata_milvus_expr: str | None = None,
 ) -> list[Document]:
     mode = retrieval_mode.strip().lower()
     if mode not in {"dense", "hybrid", "bm25"}:
@@ -451,7 +502,7 @@ def retrieve(
                 top_k=max(top_k, int(hybrid_bm25_top_k or top_k)),
                 corpus_key=hybrid_corpus_key,
             )
-            bm25_docs = _filter_docs_by_sources(bm25_docs, metadata_allow_sources)
+            bm25_docs = _filter_docs_by_doc_ids(bm25_docs, metadata_allow_doc_ids)
             variant_lists.append(bm25_docs[:top_k])
 
         if len(variant_lists) == 1:
@@ -468,11 +519,12 @@ def retrieve(
             return []
         dense_lists: list[list[Document]] = []
         for variant in variants:
-            docs = _retrieve_dense_with_source_allowlist(
+            docs = _retrieve_dense_with_doc_id_allowlist(
                 variant,
                 vector_store,
                 top_k=max(top_k, int(hybrid_dense_top_k or top_k)),
-                allowed_sources=metadata_allow_sources,
+                allowed_doc_ids=metadata_allow_doc_ids,
+                metadata_expr=metadata_milvus_expr,
             )
             docs = _filter_docs_by_score(
                 docs,
@@ -500,11 +552,12 @@ def retrieve(
     for variant in variants:
         dense_docs = []
         if vector_store is not None:
-            dense_docs = _retrieve_dense_with_source_allowlist(
+            dense_docs = _retrieve_dense_with_doc_id_allowlist(
                 variant,
                 vector_store,
                 top_k=dense_k,
-                allowed_sources=metadata_allow_sources,
+                allowed_doc_ids=metadata_allow_doc_ids,
+                metadata_expr=metadata_milvus_expr,
             )
         dense_docs = _filter_docs_by_score(
             dense_docs,
@@ -520,7 +573,7 @@ def retrieve(
             top_k=bm25_k,
             corpus_key=hybrid_corpus_key,
         )
-        bm25_docs = _filter_docs_by_sources(bm25_docs, metadata_allow_sources)
+        bm25_docs = _filter_docs_by_doc_ids(bm25_docs, metadata_allow_doc_ids)
         if bm25_docs:
             if dense_docs:
                 fused_docs = _fuse_with_rrf(

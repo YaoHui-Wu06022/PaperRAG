@@ -42,6 +42,13 @@ def _build_hf_embeddings(model_name: str):
     hf_home = os.getenv("HF_HOME", "./data/hf_cache")
     cache_folder = str(Path(hf_home).resolve())
     Path(cache_folder).mkdir(parents=True, exist_ok=True)
+    device = _resolve_hf_device()
+    batch_size = _resolve_hf_batch_size(device)
+    model_kwargs = {"device": device}
+    encode_kwargs = {
+        "normalize_embeddings": True,
+        "batch_size": batch_size,
+    }
 
     # 优先走本地缓存，避免每次启动都触发远程 HEAD/下载请求。
     try:
@@ -49,19 +56,54 @@ def _build_hf_embeddings(model_name: str):
             model_name=model_name,
             cache_folder=cache_folder,
             model_kwargs={
-                "device": "cpu",
+                **model_kwargs,
                 "local_files_only": True,
             },
-            encode_kwargs={"normalize_embeddings": True},
+            encode_kwargs=encode_kwargs,
         )
     except Exception:
         # 本地缺模型时，再回退到联网下载。
         return HuggingFaceEmbeddings(
             model_name=model_name,
             cache_folder=cache_folder,
-            model_kwargs={"device": "cpu"},
-            encode_kwargs={"normalize_embeddings": True},
+            model_kwargs=model_kwargs,
+            encode_kwargs=encode_kwargs,
         )
+
+
+def _resolve_hf_device() -> str:
+    requested = os.getenv("HF_EMBED_DEVICE", "auto").strip().lower()
+    if requested and requested != "auto":
+        return requested
+
+    try:
+        import torch
+    except Exception:
+        return "cpu"
+
+    if torch.cuda.is_available():
+        return "cuda"
+
+    mps = getattr(torch.backends, "mps", None)
+    if mps is not None:
+        try:
+            if mps.is_available():
+                return "mps"
+        except Exception:
+            pass
+    return "cpu"
+
+
+def _resolve_hf_batch_size(device: str) -> int:
+    requested = os.getenv("HF_EMBED_BATCH_SIZE", "").strip()
+    if requested:
+        try:
+            value = int(requested)
+            if value > 0:
+                return value
+        except ValueError:
+            pass
+    return 64 if device == "cuda" else 16
 
 
 def build_embedding_model(

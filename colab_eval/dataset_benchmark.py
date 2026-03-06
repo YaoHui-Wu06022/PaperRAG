@@ -14,7 +14,7 @@ from datasets import load_dataset
 from langchain_core.documents import Document
 
 from config import AppConfig
-from evaluation.ragas_eval import run_ragas_eval_rows
+from colab_eval.ragas_eval import run_ragas_eval_rows
 from generation.llm import build_llm_client
 from generation.prompt import build_qa_prompt
 from ingestion.chunking import split_documents_with_parents

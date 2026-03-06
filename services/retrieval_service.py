@@ -46,13 +46,19 @@ def run_retrieval_flow(
 ) -> RetrievalFlowResult:
     retrieval_mode = retrieval_mode_override or config.retrieval_mode
     filtered_corpus = chunk_corpus
-    allowed_sources = None
+    filtered_corpus_key = chunk_corpus_key
+    allowed_doc_ids = None
+    metadata_milvus_expr = None
     if apply_metadata_filters:
-        filtered_corpus, allowed_sources = apply_query_metadata_filter(
+        metadata_filter_result = apply_query_metadata_filter(
             question,
             chunk_corpus,
             enabled=config.metadata_filter_enabled,
         )
+        filtered_corpus = metadata_filter_result.docs
+        filtered_corpus_key = chunk_corpus_key if not metadata_filter_result.applied else None
+        allowed_doc_ids = metadata_filter_result.allowed_doc_ids
+        metadata_milvus_expr = metadata_filter_result.milvus_expr
 
     query_variants = build_query_variants(
         question,
@@ -71,12 +77,13 @@ def run_retrieval_flow(
         score_quantile=config.retrieval_score_quantile,
         retrieval_mode=retrieval_mode,
         hybrid_corpus_docs=filtered_corpus,
-        hybrid_corpus_key=chunk_corpus_key,
+        hybrid_corpus_key=filtered_corpus_key,
         hybrid_dense_top_k=config.hybrid_dense_top_k,
         hybrid_bm25_top_k=config.hybrid_bm25_top_k,
         hybrid_rrf_k=config.hybrid_rrf_k,
         query_variants=query_variants,
-        metadata_allow_sources=allowed_sources,
+        metadata_allow_doc_ids=allowed_doc_ids,
+        metadata_milvus_expr=metadata_milvus_expr,
     )
     if comparison_entities:
         docs = _supplement_docs_for_comparison_entities(
@@ -87,7 +94,9 @@ def run_retrieval_flow(
             entities=comparison_entities,
             retrieval_mode=retrieval_mode,
             hybrid_corpus_docs=filtered_corpus,
-            hybrid_corpus_key=chunk_corpus_key,
+            hybrid_corpus_key=filtered_corpus_key,
+            metadata_allow_doc_ids=allowed_doc_ids,
+            metadata_milvus_expr=metadata_milvus_expr,
         )
 
     candidate_k = max(config.final_top_k * 3, config.final_top_k + 4)
@@ -154,7 +163,7 @@ def run_retrieval_flow(
         evidence_docs=docs,
         generation_docs=generation_docs,
         filtered_corpus_docs=filtered_corpus,
-        filtered_corpus_key=chunk_corpus_key,
+        filtered_corpus_key=filtered_corpus_key,
         query_variants=query_variants,
         comparison_entities=comparison_entities,
     )
@@ -301,6 +310,8 @@ def _supplement_docs_for_comparison_entities(
     retrieval_mode: str,
     hybrid_corpus_docs: list[Document],
     hybrid_corpus_key: str | None,
+    metadata_allow_doc_ids: set[str] | None,
+    metadata_milvus_expr: str | None,
 ) -> list[Document]:
     if not entities:
         return base_docs
@@ -344,7 +355,8 @@ def _supplement_docs_for_comparison_entities(
             hybrid_bm25_top_k=config.hybrid_bm25_top_k,
             hybrid_rrf_k=config.hybrid_rrf_k,
             query_variants=entity_variants,
-            metadata_allow_sources=None,
+            metadata_allow_doc_ids=metadata_allow_doc_ids,
+            metadata_milvus_expr=metadata_milvus_expr,
         )
         if not candidates and config.retrieval_score_threshold is not None:
             candidates = retrieve(
@@ -362,7 +374,8 @@ def _supplement_docs_for_comparison_entities(
                 hybrid_bm25_top_k=config.hybrid_bm25_top_k,
                 hybrid_rrf_k=config.hybrid_rrf_k,
                 query_variants=entity_variants,
-                metadata_allow_sources=None,
+                metadata_allow_doc_ids=metadata_allow_doc_ids,
+                metadata_milvus_expr=metadata_milvus_expr,
             )
 
         picked = None

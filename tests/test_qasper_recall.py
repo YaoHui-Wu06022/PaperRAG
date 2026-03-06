@@ -4,10 +4,18 @@ import os
 import unittest
 
 from config import load_config
-from evaluation.dataset_benchmark import run_dataset_benchmark
+from colab_eval.dataset_benchmark import run_dataset_benchmark
 from services.health import ensure_startup_ready
 
 
+RUN_DATASET_BENCHMARK_TESTS = os.getenv("RUN_DATASET_BENCHMARK_TESTS", "").strip() == "1"
+
+
+@unittest.skipUnless(
+    RUN_DATASET_BENCHMARK_TESTS,
+    "Qasper dataset benchmark is intended to run on Colab GPU. "
+    "Set RUN_DATASET_BENCHMARK_TESTS=1 to enable it explicitly.",
+)
 class QasperRecallBenchmarkTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:

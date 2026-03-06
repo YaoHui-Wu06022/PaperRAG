@@ -171,3 +171,19 @@ python main.py ask "ResNet和Transformer的创新共通点有哪些?"
 ```bash
 streamlit run app/streamlit_app.py
 ```
+
+### 6.5 Colab 跑 Benchmark
+
+本地主程序不再提供任何 `eval` / `eval-dataset` 命令。
+
+如果你想测试当前参数在 Qasper 数据集上的效果，直接导入 [notebooks/PaperRAG_Qasper_Eval_Colab.ipynb](notebooks/PaperRAG_Qasper_Eval_Colab.ipynb) 到 Colab，从上到下运行即可。这个 notebook 会：
+
+- 克隆仓库
+- 安装 benchmark 依赖
+- 在 notebook 里直接覆盖环境参数，不要求上传 `.env`
+- 输出 `evalout/`，包含和当前项目一致格式的 summary/detail 文件
+
+当前推荐分工：
+
+- 本地：调参数后，对你自己的论文知识库做 `ingest / ask / chat`
+- Colab GPU：用 notebook 快速测试这些参数在 Qasper 上的效果，再回本地修改 `.env`

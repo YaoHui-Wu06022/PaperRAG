@@ -1,13 +1,8 @@
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
 import sys
-import math
-import time
-
-import pandas as pd
 import requests
 
 from config import load_config
@@ -17,65 +12,6 @@ from services.sync_transaction import (
     has_pending_sync_operation,
     recover_pending_sync_operation,
 )
-
-
-def _load_eval_samples(sample_path: Path) -> list[dict[str, str]]:
-    if not sample_path.exists():
-        raise FileNotFoundError(f"Eval samples not found: {sample_path}")
-
-    suffix = sample_path.suffix.lower()
-    if suffix == ".jsonl":
-        rows: list[dict[str, str]] = []
-        for idx, line in enumerate(sample_path.read_text(encoding="utf-8").splitlines(), 1):
-            if not line.strip():
-                continue
-            try:
-                item = json.loads(line)
-            except json.JSONDecodeError as exc:
-                raise ValueError(f"Invalid JSONL at line {idx}: {exc}") from exc
-            if not isinstance(item, dict):
-                raise ValueError(f"Invalid JSONL row at line {idx}: expected object")
-            question = str(item.get("question", "")).strip()
-            ground_truth = str(item.get("ground_truth", "")).strip()
-            if not question or not ground_truth:
-                raise ValueError(
-                    f"Invalid JSONL row at line {idx}: question/ground_truth required"
-                )
-            rows.append({"question": question, "ground_truth": ground_truth})
-        return rows
-
-    if suffix == ".csv":
-        df = pd.read_csv(sample_path)
-        required = {"question", "ground_truth"}
-        missing = required - set(df.columns)
-        if missing:
-            raise ValueError(
-                f"CSV missing required columns: {', '.join(sorted(missing))}"
-            )
-        rows = []
-        for _, row in df.iterrows():
-            question = str(row["question"]).strip()
-            ground_truth = str(row["ground_truth"]).strip()
-            if question and ground_truth:
-                rows.append({"question": question, "ground_truth": ground_truth})
-        return rows
-
-    raise ValueError("Unsupported sample file type. Use .jsonl or .csv")
-
-
-def _safe_console_text(text: str) -> str:
-    encoding = sys.stdout.encoding or "utf-8"
-    return text.encode(encoding, errors="replace").decode(encoding, errors="replace")
-
-
-def _is_insufficient_answer(answer: str, canonical: str) -> bool:
-    text = (answer or "").strip()
-    if not text:
-        return True
-    if text == canonical:
-        return True
-    return "证据不足" in text
-
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -146,73 +82,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="Run startup validation and dependency health checks",
     )
 
-    eval_parser = subparsers.add_parser(
-        "eval",
-        help="Run RAGAS evaluation and output metrics",
-    )
-    eval_parser.add_argument(
-        "--samples",
-        type=Path,
-        default=None,
-        help="Eval sample file path (.jsonl or .csv), requires columns question/ground_truth",
-    )
-    eval_parser.add_argument(
-        "--output",
-        type=Path,
-        default=None,
-        help="Optional output CSV path for RAGAS summary",
-    )
-    eval_parser.add_argument(
-        "--skip-ragas",
-        action="store_true",
-        help="Only output system metrics, skip RAGAS scoring",
-    )
-
-    dataset_eval_parser = subparsers.add_parser(
-        "eval-dataset",
-        help="Benchmark retrieval QA on public datasets (SQuAD/CMRC/XQuAD/SciFact/Qasper)",
-    )
-    dataset_eval_parser.add_argument(
-        "--dataset",
-        type=str,
-        default="squad",
-        choices=["squad", "cmrc2018", "xquad_zh", "scifact", "qasper"],
-        help="Dataset key",
-    )
-    dataset_eval_parser.add_argument(
-        "--limit",
-        type=int,
-        default=100,
-        help="Number of samples to evaluate",
-    )
-    dataset_eval_parser.add_argument(
-        "--seed",
-        type=int,
-        default=42,
-        help="Random seed for shuffle",
-    )
-    dataset_eval_parser.add_argument(
-        "--no-shuffle",
-        action="store_true",
-        help="Disable shuffle before sampling",
-    )
-    dataset_eval_parser.add_argument(
-        "--with-llm",
-        action="store_true",
-        help="Run generation evaluation (consumes LLM quota)",
-    )
-    dataset_eval_parser.add_argument(
-        "--with-ragas",
-        action="store_true",
-        help="Run RAGAS on generated answers (requires --with-llm)",
-    )
-    dataset_eval_parser.add_argument(
-        "--output-dir",
-        type=Path,
-        default=None,
-        help="Optional output directory for detail CSV and summary JSON",
-    )
-
     return parser
 
 
@@ -227,17 +96,13 @@ def _startup_requirements(args: argparse.Namespace) -> dict[str, bool]:
         }
     return {
         "require_mineru": command == "ingest",
-        "require_llm": command in {"ask", "chat", "eval"} or bool(
-            command == "eval-dataset" and (args.with_llm or args.with_ragas)
-        ),
-        "require_local_cache": command in {"ask", "chat", "delete-doc", "eval"},
+        "require_llm": command in {"ask", "chat"},
+        "require_local_cache": command in {"ask", "chat", "delete-doc"},
         "require_milvus": command in {
             "ingest",
             "delete-doc",
             "ask",
             "chat",
-            "eval",
-            "eval-dataset",
         },
     }
 
@@ -395,104 +260,6 @@ def main() -> None:
                     )
             return
 
-        if args.command == "eval":
-            from evaluation.ragas_eval import run_ragas_eval_rows
-            from pipeline import INSUFFICIENT_EVIDENCE_ANSWER, answer_question
-
-            if args.samples is None:
-                raise ValueError(
-                    "Please provide --samples for eval, e.g. "
-                    "`python main.py eval --samples path/to/eval.jsonl --skip-ragas`"
-                )
-            rows = _load_eval_samples(args.samples)
-            if not rows:
-                raise ValueError("No valid eval samples found.")
-
-            latencies_ms: list[float] = []
-            reject_count = 0
-            eval_rows: list[dict] = []
-
-            for row in rows:
-                question = row["question"]
-                start = time.perf_counter()
-                result = answer_question(config, question)
-                latencies_ms.append((time.perf_counter() - start) * 1000.0)
-                if _is_insufficient_answer(result.answer, INSUFFICIENT_EVIDENCE_ANSWER):
-                    reject_count += 1
-                eval_rows.append(
-                    {
-                        "question": question,
-                        "answer": result.answer,
-                        "contexts": result.contexts,
-                        "ground_truth": row["ground_truth"],
-                    }
-                )
-
-            ragas_df: pd.DataFrame | None = None
-            if args.skip_ragas:
-                print("RAGAS skipped by --skip-ragas")
-            else:
-                try:
-                    ragas_df = run_ragas_eval_rows(eval_rows)
-                    print("RAGAS summary:")
-                    print(_safe_console_text(ragas_df.to_string(index=False)))
-                except Exception as ragas_exc:
-                    print(f"RAGAS failed: {ragas_exc}")
-
-            avg_latency = sum(latencies_ms) / len(latencies_ms)
-            p95_idx = max(math.ceil(len(latencies_ms) * 0.95) - 1, 0)
-            sorted_lat = sorted(latencies_ms)
-            p95_latency = sorted_lat[p95_idx]
-            reject_rate = reject_count / len(rows)
-
-            print("\nSystem metrics:")
-            print(f"- samples: {len(rows)}")
-            print(f"- avg_latency_ms: {avg_latency:.2f}")
-            print(f"- p95_latency_ms: {p95_latency:.2f}")
-            print(f"- insufficient_evidence_count: {reject_count}")
-            print(f"- insufficient_evidence_rate: {reject_rate:.2%}")
-
-            if args.output and ragas_df is not None:
-                args.output.parent.mkdir(parents=True, exist_ok=True)
-                ragas_df.to_csv(args.output, index=False, encoding="utf-8-sig")
-                print(f"\nSaved RAGAS summary CSV: {args.output}")
-            elif args.output and ragas_df is None:
-                print("\nRAGAS summary unavailable, skip CSV export.")
-            return
-
-        if args.command == "eval-dataset":
-            from evaluation.dataset_benchmark import (
-                run_dataset_benchmark,
-                save_dataset_benchmark_result,
-            )
-
-            result = run_dataset_benchmark(
-                config,
-                dataset_key=args.dataset,
-                limit=args.limit,
-                seed=args.seed,
-                shuffle=not args.no_shuffle,
-                with_llm=args.with_llm,
-                with_ragas=args.with_ragas,
-            )
-
-            print("Dataset benchmark summary:")
-            for key, value in result.summary.items():
-                if isinstance(value, float):
-                    print(f"- {key}: {value:.6f}")
-                else:
-                    print(f"- {key}: {value}")
-
-            if result.ragas_df is not None:
-                print("\nRAGAS summary:")
-                print(_safe_console_text(result.ragas_df.to_string(index=False)))
-            elif args.with_ragas and result.ragas_error:
-                print(f"\nRAGAS failed: {result.ragas_error}")
-
-            if args.output_dir:
-                save_dataset_benchmark_result(result, args.output_dir)
-                print(f"\nSaved benchmark outputs to: {args.output_dir}")
-            return
     except Exception as exc:
         print(f"Error: {exc}")
         sys.exit(1)
