@@ -6,8 +6,9 @@ import re
 from langchain_core.documents import Document
 
 from config import AppConfig
-from retrieval.metadata_filter import apply_query_metadata_filter
-from retrieval.query_rewrite import build_query_variants
+from retrieval.metadata_filter import apply_query_metadata_filter, build_doc_id_expr
+from retrieval.query_router import QueryRoute
+from retrieval.query_rewrite import build_query_variants, extract_canonical_title_hints
 from retrieval.retriever import (
     attach_rerank_decision,
     decide_rerank,
@@ -26,10 +27,12 @@ COMPARISON_ENTITY_MIN_EVIDENCE = 1
 class RetrievalFlowResult:
     evidence_docs: list[Document]
     generation_docs: list[Document]
+    paper_docs: list[Document]
     filtered_corpus_docs: list[Document]
     filtered_corpus_key: str | None
     query_variants: list[str]
     comparison_entities: list[str]
+    route_type: str
 
 
 def run_retrieval_flow(
@@ -39,24 +42,58 @@ def run_retrieval_flow(
     *,
     chunk_corpus: list[Document],
     chunk_corpus_key: str | None,
+    paper_vector_store=None,
+    paper_corpus: list[Document] | None = None,
+    paper_corpus_key: str | None = None,
+    section_corpus: list[Document] | None = None,
     parent_map: dict[str, Document] | None = None,
     apply_metadata_filters: bool = True,
     retrieval_mode_override: str | None = None,
     use_parent_context: bool = True,
+    route: QueryRoute | None = None,
 ) -> RetrievalFlowResult:
-    retrieval_mode = retrieval_mode_override or config.retrieval_mode
+    """执行单个问题的路由化检索流程。
+
+    顺序是刻意设计的：
+    metadata 约束 -> query rewrite -> paper recall -> chunk recall ->
+    rerank / diversify -> 构造生成上下文。
+    """
+    route = route or QueryRoute(
+        route_type="factual",
+        retrieval_scope="main",
+        retrieval_mode=retrieval_mode_override or config.retrieval_mode,
+        use_parent_context=use_parent_context,
+        prefer_paper_context=False,
+        paper_top_k=max(6, config.final_top_k + 2),
+        chunk_top_k=config.retriever_top_k,
+        final_top_k=config.final_top_k,
+        prompt_mode="factual",
+        reason="default",
+    )
+    retrieval_mode = retrieval_mode_override or route.retrieval_mode or config.retrieval_mode
     filtered_corpus = chunk_corpus
     filtered_corpus_key = chunk_corpus_key
+    filtered_paper_corpus = paper_corpus or []
+    filtered_paper_corpus_key = paper_corpus_key
     allowed_doc_ids = None
     metadata_milvus_expr = None
     if apply_metadata_filters:
+        # Metadata filter 既会裁剪内存中的语料，
+        # 也会生成可以下推到 Milvus 的 doc_id 表达式。
+        metadata_seed_docs = paper_corpus or chunk_corpus
         metadata_filter_result = apply_query_metadata_filter(
             question,
-            chunk_corpus,
+            metadata_seed_docs,
             enabled=config.metadata_filter_enabled,
         )
-        filtered_corpus = metadata_filter_result.docs
-        filtered_corpus_key = chunk_corpus_key if not metadata_filter_result.applied else None
+        filtered_paper_corpus = metadata_filter_result.docs if paper_corpus else filtered_paper_corpus
+        if metadata_filter_result.applied:
+            filtered_corpus = _filter_docs_by_ids(
+                chunk_corpus,
+                metadata_filter_result.allowed_doc_ids,
+            )
+            filtered_corpus_key = None
+            filtered_paper_corpus_key = None
         allowed_doc_ids = metadata_filter_result.allowed_doc_ids
         metadata_milvus_expr = metadata_filter_result.milvus_expr
 
@@ -65,12 +102,78 @@ def run_retrieval_flow(
         enabled=config.query_rewrite_enabled,
         max_variants=config.query_rewrite_max_variants,
     )
-    comparison_entities = _extract_comparison_entities(question)
+    title_hints = extract_canonical_title_hints(question)
+    comparison_entities = (
+        _extract_comparison_entities(question)
+        if route.route_type == "comparison"
+        else []
+    )
 
+    paper_docs: list[Document] = []
+    top_paper_doc_ids: set[str] | None = None
+    if filtered_paper_corpus:
+        hinted_paper_corpus: list[Document] = []
+        if route.route_type == "metadata" and title_hints:
+            hinted_paper_corpus = _filter_docs_by_title_hints(
+                filtered_paper_corpus,
+                title_hints,
+            )
+            if hinted_paper_corpus:
+                filtered_paper_corpus = hinted_paper_corpus
+                filtered_paper_corpus_key = None
+                # 如果 metadata 查询已经命中了某个 canonical paper alias
+                #（例如 "ResNet" -> "Deep Residual Learning ..."），
+                # 就直接使用命中的 paper docs，而不是再对单文档语料跑 BM25。
+                # 否则单文档 BM25 的分数很容易退化到 0。
+                paper_docs = _select_paper_docs_from_title_hints(
+                    hinted_paper_corpus,
+                    title_hints,
+                    top_k=route.paper_top_k,
+                )
+
+        if not paper_docs:
+            # Paper-level 检索是粗召回阶段。
+            # 它先缩小搜索空间，再让 chunk 检索去找更精确的证据。
+            paper_docs = retrieve(
+                query=question,
+                vector_store=paper_vector_store,
+                top_k=route.paper_top_k,
+                score_threshold=config.retrieval_score_threshold,
+                score_threshold_mode=config.retrieval_score_threshold_mode,
+                score_relative_ratio=config.retrieval_score_relative_ratio,
+                score_quantile=config.retrieval_score_quantile,
+                retrieval_mode=retrieval_mode,
+                hybrid_corpus_docs=filtered_paper_corpus,
+                hybrid_corpus_key=filtered_paper_corpus_key,
+                hybrid_dense_top_k=max(route.paper_top_k, config.hybrid_dense_top_k),
+                hybrid_bm25_top_k=max(route.paper_top_k, config.hybrid_bm25_top_k),
+                hybrid_rrf_k=config.hybrid_rrf_k,
+                query_variants=query_variants,
+                metadata_allow_doc_ids=allowed_doc_ids,
+                metadata_milvus_expr=metadata_milvus_expr,
+            )
+        paper_docs = _dedupe_docs_by_doc_id(paper_docs)
+        top_paper_doc_ids = {
+            str((doc.metadata or {}).get("doc_id", "")).strip()
+            for doc in paper_docs
+            if str((doc.metadata or {}).get("doc_id", "")).strip()
+        }
+        if top_paper_doc_ids:
+            allowed_doc_ids = (
+                allowed_doc_ids & top_paper_doc_ids
+                if allowed_doc_ids is not None
+                else top_paper_doc_ids
+            )
+            metadata_milvus_expr = build_doc_id_expr(allowed_doc_ids)
+            filtered_corpus = _filter_docs_by_ids(filtered_corpus, allowed_doc_ids)
+            filtered_corpus_key = None
+
+    # Chunk 检索仍然是主要证据来源，
+    # 但现在它只在上一步选中的 paper 集合里继续搜索，而不是全库扫一遍。
     docs = retrieve(
         query=question,
         vector_store=vector_store,
-        top_k=config.retriever_top_k,
+        top_k=route.chunk_top_k,
         score_threshold=config.retrieval_score_threshold,
         score_threshold_mode=config.retrieval_score_threshold_mode,
         score_relative_ratio=config.retrieval_score_relative_ratio,
@@ -99,8 +202,13 @@ def run_retrieval_flow(
             metadata_milvus_expr=metadata_milvus_expr,
         )
 
-    candidate_k = max(config.final_top_k * 3, config.final_top_k + 4)
+    if not docs and route.prefer_paper_context and paper_docs:
+        docs = paper_docs[: route.final_top_k]
+
+    candidate_k = max(route.final_top_k * 3, route.final_top_k + 4)
     if config.use_reranker:
+        # 先对更宽的候选池做 rerank，
+        # 再应用多样性或实体覆盖约束，最后截断到 final_top_k。
         decision = decide_rerank(
             docs,
             enabled=config.rerank_conditional_enabled,
@@ -138,7 +246,7 @@ def run_retrieval_flow(
         docs = _select_docs_with_entity_coverage(
             docs,
             entities=comparison_entities,
-            top_k=config.final_top_k,
+            top_k=route.final_top_k,
             diversify_by_source=config.diversify_by_source,
             max_per_source=config.max_chunks_per_source,
         )
@@ -146,27 +254,165 @@ def run_retrieval_flow(
         docs = diversify_documents_by_source(
             docs,
             max_per_source=config.max_chunks_per_source,
-            top_k=config.final_top_k,
+            top_k=route.final_top_k,
         )
     else:
-        docs = docs[: config.final_top_k]
-    docs = _dedupe_and_diversify_evidence_docs(docs, top_k=config.final_top_k)
+        docs = docs[: route.final_top_k]
+    docs = _dedupe_and_diversify_evidence_docs(docs, top_k=route.final_top_k)
 
     generation_docs = []
-    if docs:
-        if use_parent_context and parent_map is not None:
+    if route.prefer_paper_context and paper_docs:
+        generation_docs = _build_paper_generation_docs(
+            question=question,
+            route=route,
+            paper_docs=paper_docs,
+            section_corpus=section_corpus or [],
+            allowed_doc_ids=allowed_doc_ids,
+            query_variants=query_variants,
+        )
+    elif docs:
+        if route.use_parent_context and use_parent_context and parent_map is not None:
             generation_docs = expand_to_parent_contexts(config, docs, parent_map)
         else:
-            generation_docs = docs[: config.final_top_k]
+            generation_docs = docs[: route.final_top_k]
 
     return RetrievalFlowResult(
         evidence_docs=docs,
         generation_docs=generation_docs,
+        paper_docs=paper_docs,
         filtered_corpus_docs=filtered_corpus,
         filtered_corpus_key=filtered_corpus_key,
         query_variants=query_variants,
         comparison_entities=comparison_entities,
+        route_type=route.route_type,
     )
+
+
+def _filter_docs_by_ids(
+    docs: list[Document],
+    doc_ids: set[str] | None,
+) -> list[Document]:
+    if not doc_ids:
+        return docs
+    allowed = {str(item).strip() for item in doc_ids if str(item).strip()}
+    if not allowed:
+        return docs
+    return [
+        doc
+        for doc in docs
+        if str((doc.metadata or {}).get("doc_id", "")).strip() in allowed
+    ]
+
+
+def _dedupe_docs_by_doc_id(docs: list[Document]) -> list[Document]:
+    deduped: list[Document] = []
+    seen: set[str] = set()
+    for doc in docs:
+        metadata = dict(doc.metadata or {})
+        doc_id = str(metadata.get("doc_id", "")).strip()
+        key = doc_id or str(metadata.get("source", "")).strip() or str(id(doc))
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(doc)
+    return deduped
+
+
+def _filter_docs_by_title_hints(
+    docs: list[Document],
+    title_hints: list[str],
+) -> list[Document]:
+    normalized_hints = [str(item).strip().lower() for item in title_hints if str(item).strip()]
+    if not normalized_hints:
+        return docs
+
+    matched: list[Document] = []
+    for doc in docs:
+        metadata = dict(doc.metadata or {})
+        title = str(metadata.get("title", metadata.get("paper_title", ""))).strip().lower()
+        if not title:
+            continue
+        if any(hint in title for hint in normalized_hints):
+            matched.append(doc)
+    return matched
+
+
+def _select_paper_docs_from_title_hints(
+    docs: list[Document],
+    title_hints: list[str],
+    *,
+    top_k: int,
+) -> list[Document]:
+    normalized_hints = [str(item).strip().lower() for item in title_hints if str(item).strip()]
+    if not normalized_hints:
+        return docs[:top_k]
+
+    def _score(doc: Document) -> tuple[int, int]:
+        metadata = dict(doc.metadata or {})
+        title = str(metadata.get("title", metadata.get("paper_title", ""))).strip().lower()
+        exact_hits = sum(1 for hint in normalized_hints if hint == title)
+        partial_hits = sum(1 for hint in normalized_hints if hint in title)
+        return (exact_hits, partial_hits)
+
+    ranked = sorted(
+        docs,
+        key=lambda doc: _score(doc),
+        reverse=True,
+    )
+    return ranked[:top_k]
+
+
+def _build_paper_generation_docs(
+    *,
+    question: str,
+    route: QueryRoute,
+    paper_docs: list[Document],
+    section_corpus: list[Document],
+    allowed_doc_ids: set[str] | None,
+    query_variants: list[str],
+) -> list[Document]:
+    """为 paper-centric 路由构造 LLM 上下文。
+
+    这里先放 paper summary，再补少量 section summary，
+    让模型看到带结构的信息，而不是一口气塞进大量原始 chunk。
+    """
+    selected = list(paper_docs[: route.final_top_k])
+    if not section_corpus:
+        return selected
+    scoped_sections = _filter_docs_by_ids(section_corpus, allowed_doc_ids)
+    if not scoped_sections:
+        return selected
+    section_docs = retrieve(
+        query=question,
+        vector_store=None,
+        top_k=max(2, route.final_top_k),
+        retrieval_mode="bm25",
+        hybrid_corpus_docs=scoped_sections,
+        hybrid_corpus_key=None,
+        query_variants=query_variants,
+        metadata_allow_doc_ids=allowed_doc_ids,
+    )
+    seen = {
+        (
+            str((doc.metadata or {}).get("doc_id", "")).strip(),
+            str((doc.metadata or {}).get("representation", "")).strip(),
+            str((doc.metadata or {}).get("section_name", "")).strip(),
+        )
+        for doc in selected
+    }
+    for doc in section_docs:
+        identity = (
+            str((doc.metadata or {}).get("doc_id", "")).strip(),
+            str((doc.metadata or {}).get("representation", "")).strip(),
+            str((doc.metadata or {}).get("section_name", "")).strip(),
+        )
+        if identity in seen:
+            continue
+        selected.append(doc)
+        seen.add(identity)
+        if len(selected) >= max(route.final_top_k + 2, route.final_top_k):
+            break
+    return selected
 
 
 def _is_comparison_query(query: str) -> bool:

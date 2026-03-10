@@ -7,8 +7,9 @@ import json
 from pathlib import Path
 import re
 import time
-from typing import Any
+from typing import Any, Callable
 import zipfile
+import unicodedata
 
 from langchain_core.documents import Document
 import requests
@@ -23,6 +24,8 @@ from ingestion.reference_detection import (
 )
 
 
+# This module is the PDF parsing bridge:
+# MinerU content_list -> normalized blocks -> chunk input documents.
 VENUE_PATTERNS = [
     "arxiv",
     "ieee",
@@ -30,6 +33,7 @@ VENUE_PATTERNS = [
     "springer",
     "nature",
     "science",
+    "talanta",
     "cvpr",
     "iccv",
     "eccv",
@@ -41,11 +45,66 @@ VENUE_PATTERNS = [
     "aaai",
     "ijcai",
     "kdd",
-    "www",
     "miccai",
     "tpami",
     "jmlr",
 ]
+
+_GENERIC_FRONT_MATTER_PATTERNS = (
+    r"^article in press$",
+    r"^pdf download\b",
+    r"^download\b",
+    r"^open access support provided by",
+    r"^citation in bibtex",
+    r"^handling editor:\s*",
+    r"^a\s*r\s*t\s*i\s*c\s*l\s*e\s*i\s*n\s*f\s*o$",
+    r"^a\s*b\s*s\s*t\s*r\s*a\s*c\s*t$",
+    r"^published:\s*",
+    r"^received:\s*",
+    r"^accepted:\s*",
+    r"^available online\b",
+    r"^supplementary material\b",
+    r"^total citations?\b",
+)
+_PUBLICATION_HINTS = (
+    "conference",
+    "proceedings",
+    "journal",
+    "communications",
+    "transaction",
+    "transactions",
+    "published",
+    "doi",
+    "arxiv",
+    "vol.",
+    "volume",
+    "issue",
+)
+_AFFILIATION_HINTS = (
+    "university",
+    "college",
+    "school",
+    "department",
+    "institute",
+    "laboratory",
+    "hospital",
+    "faculty",
+    "momenta",
+    "microsoft research",
+)
+_TEXT_REPLACEMENTS = {
+    "\ufb00": "ff",
+    "\ufb01": "fi",
+    "\ufb02": "fl",
+    "\ufb03": "ffi",
+    "\ufb04": "ffl",
+    "\u001b": "fi",
+    "\u001c": "ffi",
+    "\u001d": "ff",
+    "\u001e": "fl",
+    "\u0080": "fl",
+    "\u00a0": " ",
+}
 
 
 @dataclass
@@ -55,60 +114,296 @@ class PdfLoadResult:
 
 
 def _normalize_space(text: str) -> str:
-    return " ".join(text.replace("\t", " ").split())
+    normalized = unicodedata.normalize("NFKC", str(text or ""))
+    for src, dst in _TEXT_REPLACEMENTS.items():
+        normalized = normalized.replace(src, dst)
+    normalized = normalized.replace("\r", " ").replace("\n", " ").replace("\t", " ")
+    normalized = "".join(
+        ch
+        for ch in normalized
+        if ch >= " " or ch in {"\n", "\t"}
+    )
+    return " ".join(normalized.split())
+
+
+def _is_generic_front_matter(line: str) -> bool:
+    low = _normalize_space(line).lower()
+    if not low:
+        return False
+    if any(re.search(pattern, low) for pattern in _GENERIC_FRONT_MATTER_PATTERNS):
+        return True
+    if "total downloads" in low or "total citations" in low:
+        return True
+    if low.startswith(("http://", "https://", "www.")):
+        return True
+    return False
+
+
+def _clean_filename_title(pdf_path: Path) -> str:
+    stem = pdf_path.stem
+    parts = [part.strip() for part in stem.split(" - ") if part.strip()]
+    if len(parts) >= 3 and re.fullmatch(r"(19\d{2}|20\d{2})", parts[1]):
+        return parts[-1]
+    if len(parts) >= 2:
+        return parts[-1]
+    return stem
 
 
 def _looks_like_title(line: str) -> bool:
+    line = _normalize_space(line)
     low = line.lower()
     if len(line) < 8 or len(line) > 220:
         return False
+    if _is_generic_front_matter(line):
+        return False
     if low.startswith(("abstract", "keywords", "introduction")):
         return False
-    if re.search(r"\bdoi\b|http[s]?://", low):
+    if re.search(r"\bdoi\b|http[s]?://|www\.", low):
+        return False
+    if "@" in line:
+        return False
+    if re.search(r"\b(total citations|total downloads)\b", low):
         return False
     return True
 
 
-def _extract_title(lines: list[str], pdf_path: Path) -> str:
-    for line in lines[:12]:
-        if _looks_like_title(line):
-            return line
-    return pdf_path.stem
+def _looks_like_author_line(line: str) -> bool:
+    line = _normalize_space(line)
+    low = line.lower()
+    if not line or len(line) > 420 or _is_generic_front_matter(line):
+        return False
+    if low.startswith(("abstract", "keywords", "introduction")):
+        return False
+    if re.search(r"\bdoi\b|http[s]?://|www\.", low):
+        return False
+    if re.search(r"\b(received|accepted|published)\b", low):
+        return False
+    if (
+        (any(pattern in low for pattern in VENUE_PATTERNS) or any(hint in low for hint in _PUBLICATION_HINTS))
+        and "," not in line
+        and " and " not in low
+        and "&" not in line
+        and not re.search(r"\d", line)
+    ):
+        return False
+    if line.count("@") >= 2:
+        return False
+    tokens = line.split()
+    nameish_tokens = [
+        tok
+        for tok in tokens
+        if re.match(r"^[A-Z][A-Za-z.'-]+$", tok.strip(",;:"))
+    ]
+    if "," in line or " and " in low or "&" in line:
+        return len(nameish_tokens) >= 2 and (
+            len(nameish_tokens) / max(len(tokens), 1)
+        ) >= 0.25
+    upper_tokens = [tok for tok in tokens if tok[:1].isupper()]
+    return len(upper_tokens) >= 2 and len(tokens) <= 18
 
 
-def _extract_year(text: str, pdf_path: Path) -> str:
-    candidates = re.findall(r"\b(19\d{2}|20\d{2})\b", text)
+def _looks_like_publication_line(line: str) -> bool:
+    normalized = _normalize_space(line)
+    low = normalized.lower()
+    if not normalized:
+        return False
+    if _is_generic_front_matter(normalized):
+        return True
+    if re.search(r"\bdoi\b|http[s]?://|www\.", low):
+        return True
+    if any(hint in low for hint in _PUBLICATION_HINTS):
+        return True
+    if re.search(r"\b(received|accepted|published|copyright)\b", low):
+        return True
+    return False
+
+
+def _title_candidate_score(lines: list[str], idx: int) -> int:
+    line = _normalize_space(lines[idx])
+    low = line.lower()
+    if not _looks_like_title(line):
+        return -10_000
+
+    score = 10
+    if idx <= 2:
+        score += 4
+    elif idx <= 5:
+        score += 2
+    elif idx <= 8:
+        score += 1
+
+    words = line.split()
+    if 4 <= len(words) <= 18:
+        score += 3
+    if len(re.findall(r"\b[A-Z][A-Za-z0-9-]{2,}\b", line)) >= 3:
+        score += 2
+    if line.count(",") >= 2:
+        score -= 6
+    if len(re.findall(r"\d", line)) >= 3:
+        score -= 6
+    if re.search(r"\b(and|&)\b", low):
+        score -= 2
+    if line.endswith((".", ";", ":")):
+        score -= 3
+    if re.search(r"\b(article|download|citations?|downloads?)\b", line, flags=re.IGNORECASE):
+        score -= 8
+    if re.search(r"\b(19\d{2}|20\d{2})\b", line):
+        score -= 2
+    if any(_looks_like_author_line(next_line) for next_line in lines[idx + 1 : idx + 3]):
+        score += 4
+    if any(
+        _normalize_space(next_line).lower().startswith(("abstract", "摘要"))
+        for next_line in lines[idx + 1 : idx + 4]
+    ):
+        score += 5
+    if any(
+        token in line.lower()
+        for token in ("university", "department", "institute", "school", "college")
+    ):
+        score -= 4
+    return score
+
+
+def _extract_title(lines: list[str], pdf_path: Path) -> tuple[str, int]:
+    """Pick the best title candidate from the first-page text lines.
+
+    We score several nearby lines instead of taking the first non-empty line,
+    because publisher headers like "Article in Press" or "PDF Download" often
+    appear above the real title.
+    """
+    candidates: list[tuple[int, int, str]] = []
+    for idx, line in enumerate(lines[:18]):
+        score = _title_candidate_score(lines, idx)
+        if score > 0:
+            candidates.append((score, -idx, _normalize_space(line)))
     if candidates:
-        for year in sorted(set(candidates), reverse=True):
+        best = max(candidates)
+        title = best[2]
+        for idx, line in enumerate(lines[:18]):
+            if _normalize_space(line) == title:
+                return title, idx
+    fallback = _clean_filename_title(pdf_path)
+    return fallback, -1
+
+
+def _extract_year(lines: list[str], pdf_path: Path, title_index: int) -> str:
+    """Estimate publication year from the first page, biased around title."""
+    year_scores: dict[str, int] = {}
+    start = max(0, title_index - 3) if title_index >= 0 else 0
+    end = min(len(lines), max((title_index + 18) if title_index >= 0 else 18, 18))
+    for line in lines[start:end]:
+        normalized = _normalize_space(line)
+        low = normalized.lower()
+        if _is_generic_front_matter(normalized):
+            continue
+        years = re.findall(r"\b(19\d{2}|20\d{2})\b", normalized)
+        if not years:
+            continue
+        score = 1
+        if any(hint in low for hint in _PUBLICATION_HINTS):
+            score += 3
+        if any(pattern in low for pattern in VENUE_PATTERNS):
+            score += 2
+        if len(normalized) <= 80 and len(years) == 1:
+            score += 2
+        if "received" in low:
+            score -= 1
+        if "accepted" in low:
+            score -= 1
+        if "introduction" in low:
+            score -= 3
+        for year in years:
             if 1950 <= int(year) <= 2100:
-                return year
+                year_scores[year] = year_scores.get(year, 0) + score
+    if year_scores:
+        return sorted(year_scores.items(), key=lambda item: (item[1], item[0]), reverse=True)[0][0]
     from_name = re.findall(r"(19\d{2}|20\d{2})", pdf_path.stem)
     if from_name:
         return from_name[0]
     return ""
 
 
-def _extract_authors(lines: list[str], title: str) -> str:
-    title_index = -1
-    for idx, line in enumerate(lines[:15]):
-        if line == title:
-            title_index = idx
+def _strip_author_affiliation(line: str) -> str:
+    text = _normalize_space(line)
+    text = re.sub(r"\\[A-Za-z]+", " ", text)
+    text = re.sub(r"[{}$^_~|]", " ", text)
+    text = re.sub(r"(?<=[A-Za-z])\d+(?:,\d+)*", "", text)
+    text = re.sub(r"\b\d+(?:,\d+)*\*?\b", " ", text)
+    text = re.sub(r"[*†‡]+", " ", text)
+    text = text.replace("\\", " ")
+    text = re.sub(r"\b([A-Za-z])\s+([A-Za-z])\b", r"\1\2", text)
+    text = re.sub(r"\s*&\s*", " & ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    lowered = text.lower()
+    cut_positions = []
+    had_affiliation_hint = False
+    if "@" in text:
+        cut_positions.append(text.index("@"))
+    for hint in _AFFILIATION_HINTS:
+        pos = lowered.find(hint)
+        if pos > 0:
+            had_affiliation_hint = True
+            cut_positions.append(pos)
+    if cut_positions:
+        text = text[: min(cut_positions)].strip(" ,;:-")
+    if had_affiliation_hint and "," in text:
+        text = text.split(",", 1)[0].strip()
+    if "," in text:
+        parts = [part.strip() for part in text.split(",") if part.strip()]
+        if parts:
+            text = ", ".join(parts[:24])
+    return _normalize_space(text)
+
+
+def _extract_authors(lines: list[str], title_index: int) -> str:
+    """Extract author lines near the detected title.
+
+    The heuristics deliberately strip affiliations, email fragments, and
+    publisher metadata so catalog fields stay usable for filtering.
+    """
+    candidate_lines: list[str] = []
+    search_ranges: list[tuple[int, int]] = []
+    if title_index >= 0:
+        search_ranges.append((max(0, title_index - 8), title_index))
+        search_ranges.append((title_index + 1, min(len(lines), title_index + 7)))
+    else:
+        search_ranges.append((1, min(len(lines), 8)))
+
+    for start, end in search_ranges:
+        for line in lines[start:end]:
+            normalized = _normalize_space(line)
+            low = normalized.lower()
+            if _is_generic_front_matter(normalized):
+                if candidate_lines:
+                    break
+                continue
+            if low.startswith(("abstract", "keywords", "introduction")):
+                break
+            if re.search(r"\bdoi\b|http[s]?://|www\.", low):
+                if candidate_lines:
+                    break
+                continue
+            if not _looks_like_author_line(normalized):
+                if candidate_lines and _looks_like_publication_line(normalized):
+                    break
+                continue
+            cleaned = _strip_author_affiliation(normalized)
+            if cleaned and len(cleaned.split()) >= 2:
+                candidate_lines.append(cleaned)
+            elif candidate_lines:
+                break
+        if candidate_lines:
             break
 
-    start = title_index + 1 if title_index >= 0 else 1
-    for line in lines[start : start + 6]:
-        low = line.lower()
-        if any(token in low for token in ("abstract", "@", "university", "college")):
+    deduped: list[str] = []
+    seen = set()
+    for item in candidate_lines:
+        key = item.lower()
+        if key in seen:
             continue
-        if len(line) > 140:
-            continue
-        if "," in line or " and " in low:
-            return line
-        tokens = line.split()
-        upper_tokens = [tok for tok in tokens if tok[:1].isupper()]
-        if len(upper_tokens) >= 2 and len(tokens) <= 12:
-            return line
-    return ""
+        seen.add(key)
+        deduped.append(item)
+    return " ; ".join(deduped[:6])
 
 
 def _extract_keywords(text: str) -> str:
@@ -120,10 +415,35 @@ def _extract_keywords(text: str) -> str:
     return raw[:220]
 
 
-def _extract_venue(text: str) -> str:
-    low = text.lower()
+def _extract_venue(lines: list[str], pdf_path: Path, title_index: int) -> str:
+    search_lines = lines[: max(12, title_index + 10 if title_index >= 0 else 14)]
+    best: tuple[int, str] | None = None
+    for line in search_lines:
+        normalized = _normalize_space(line)
+        low = normalized.lower()
+        if not normalized or _is_generic_front_matter(normalized):
+            continue
+        if any(hint in low for hint in _AFFILIATION_HINTS) and not any(
+            marker in low for marker in _PUBLICATION_HINTS
+        ):
+            continue
+        for pattern in VENUE_PATTERNS:
+            if not re.search(rf"\b{re.escape(pattern)}\b", low):
+                continue
+            score = 1
+            if any(hint in low for hint in _PUBLICATION_HINTS):
+                score += 3
+            if normalized.lower().startswith(pattern):
+                score += 2
+            if "|" in normalized or ":" in normalized:
+                score += 1
+            if best is None or score > best[0]:
+                best = (score, pattern.upper())
+    if best is not None:
+        return best[1]
+    stem_low = pdf_path.stem.lower()
     for pattern in VENUE_PATTERNS:
-        if pattern in low:
+        if re.search(rf"\b{re.escape(pattern)}\b", stem_low):
             return pattern.upper()
     return ""
 
@@ -143,11 +463,11 @@ def _extract_paper_metadata(pdf_path: Path, first_page_text: str) -> dict[str, s
     lines = [_normalize_space(line) for line in normalized.split("\n")]
     lines = [line for line in lines if line]
 
-    title = _extract_title(lines, pdf_path)
-    year = _extract_year(normalized, pdf_path)
-    authors = _extract_authors(lines, title)
+    title, title_index = _extract_title(lines, pdf_path)
+    year = _extract_year(lines, pdf_path, title_index)
+    authors = _extract_authors(lines, title_index)
     keywords = _extract_keywords(normalized)
-    venue = _extract_venue(normalized)
+    venue = _extract_venue(lines, pdf_path, title_index)
     language = _guess_language(normalized)
 
     return {
@@ -506,6 +826,11 @@ def _parse_mineru_content_list(
     pdf_path: Path,
     paper_meta: dict[str, str],
 ) -> tuple[list[dict[str, Any]], int]:
+    """Parse MinerU `content_list` into normalized block rows.
+
+    This is where layout output becomes RAG-ready metadata: doc_id, page/bbox,
+    section stack, reference flags, figure/table ids, and paper metadata.
+    """
     payload = json.loads(content_list_path.read_text(encoding="utf-8"))
     if not isinstance(payload, list):
         raise RuntimeError(f"Invalid MinerU content list format: {content_list_path}")
@@ -626,6 +951,11 @@ def _build_chunk_input_documents(
     max_chars: int = 1800,
     min_chars: int = 450,
 ) -> list[Document]:
+    """Pack normalized blocks into chunk input docs for later semantic splitting.
+
+    At this stage we keep layout-aware boundaries such as section changes,
+    page jumps, and reference/body transitions. Finer chunking happens later.
+    """
     docs: list[Document] = []
     current: list[dict[str, Any]] = []
     current_chars = 0
@@ -754,6 +1084,7 @@ def load_pdf_pages(
     mineru_cloud_poll_interval_sec: int = 5,
     mineru_cloud_timeout_sec: int = 900,
 ) -> PdfLoadResult:
+    """Parse one PDF into chunk-input documents and structured block rows."""
     if not pdf_path.exists():
         raise FileNotFoundError(f"PDF not found: {pdf_path}")
 
@@ -771,6 +1102,8 @@ def load_pdf_pages(
             timeout_sec=mineru_cloud_timeout_sec,
         )
 
+    # Paper metadata is extracted only from page 1 so later pages do not
+    # pollute title/authors/year with references or footer text.
     raw_payload = json.loads(content_list_path.read_text(encoding="utf-8"))
     first_page_text_parts: list[str] = []
     if isinstance(raw_payload, list):
@@ -819,13 +1152,19 @@ def load_documents_from_dir(
     mineru_cloud_model_version: str = "pipeline",
     mineru_cloud_poll_interval_sec: int = 5,
     mineru_cloud_timeout_sec: int = 900,
+    progress_callback: Callable[[str], None] | None = None,
 ) -> PdfLoadResult:
+    """Parse every PDF in one directory and merge the results."""
     if not pdf_dir.exists():
         return PdfLoadResult(documents=[], blocks=[])
 
     all_docs: list[Document] = []
     all_blocks: list[dict[str, Any]] = []
-    for pdf_path in sorted(pdf_dir.glob("*.pdf")):
+    pdf_paths = sorted(pdf_dir.glob("*.pdf"))
+    total = len(pdf_paths)
+    for idx, pdf_path in enumerate(pdf_paths, start=1):
+        if progress_callback is not None:
+            progress_callback(f"[{idx}/{total}] parsing {pdf_path.name}")
         result = load_pdf_pages(
             pdf_path,
             mineru_output_dir=mineru_output_dir,
@@ -837,4 +1176,16 @@ def load_documents_from_dir(
         )
         all_docs.extend(result.documents)
         all_blocks.extend(result.blocks)
+        if progress_callback is not None:
+            page_count = len(
+                {
+                    int(row.get("page", 0))
+                    for row in result.blocks
+                    if str(row.get("doc_id", "")).strip()
+                }
+            )
+            progress_callback(
+                f"[{idx}/{total}] parsed {pdf_path.name} -> {page_count} pages, "
+                f"{len(result.documents)} raw docs"
+            )
     return PdfLoadResult(documents=all_docs, blocks=all_blocks)

@@ -36,6 +36,11 @@ _ALL_FIELD_LABELS = tuple(
     for label in labels
 )
 
+# 这个模块负责解析半结构化检索约束，例如：
+# `author: He venue: CVPR 2016` 或 `2020-2023`。
+# 这里故意采用 fail-open 策略：如果过滤后为空，
+# 检索会退回原始语料，而不是直接返回空结果。
+
 
 def _norm(text: str) -> str:
     return " ".join(str(text or "").lower().split())
@@ -307,7 +312,8 @@ def _quote_milvus_string(value: str) -> str:
     return f'"{escaped}"'
 
 
-def _build_doc_id_expr(doc_ids: set[str] | None) -> str | None:
+def build_doc_id_expr(doc_ids: set[str] | None) -> str | None:
+    """构造一个只允许命中指定论文 doc_id 的 Milvus 过滤表达式。"""
     if not doc_ids:
         return None
     normalized = sorted({str(item).strip() for item in doc_ids if str(item).strip()})
@@ -323,6 +329,11 @@ def apply_query_metadata_filter(
     *,
     enabled: bool = True,
 ) -> QueryMetadataFilterResult:
+    """把 query 中解析出的元数据约束应用到内存语料上。
+
+    如果没有识别到约束，或者过滤后会把所有文档都删光，
+    就直接返回原始语料，避免把检索链路做得过于脆弱。
+    """
     if not enabled or not docs:
         return QueryMetadataFilterResult(
             docs=docs,
@@ -362,5 +373,5 @@ def apply_query_metadata_filter(
         allowed_doc_ids=allowed_doc_ids or None,
         filters=filters,
         applied=True,
-        milvus_expr=_build_doc_id_expr(allowed_doc_ids or None),
+        milvus_expr=build_doc_id_expr(allowed_doc_ids or None),
     )

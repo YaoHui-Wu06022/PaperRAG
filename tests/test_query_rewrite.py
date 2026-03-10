@@ -28,6 +28,16 @@ class QueryRewriteTest(unittest.TestCase):
             any("multimodal" in item.lower() and "retrieval" in item.lower() for item in variants)
         )
 
+    def test_model_alias_query_expands_to_canonical_paper_terms(self) -> None:
+        query = "谁提出的ResNet?"
+        variants = build_query_variants(query, max_variants=5)
+
+        self.assertEqual(variants[0], query)
+        self.assertTrue(
+            any("deep residual learning for image recognition" in item.lower() for item in variants)
+        )
+        self.assertTrue(any("kaiming" in item.lower() for item in variants))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -16,33 +16,53 @@ from ingestion.reference_detection import (
     looks_like_reference_chunk,
 )
 
+# 这个模块负责管理 `data/cache` 下的本地知识库状态。
+# 它既保存检索直接使用的语料，也保存目录查询、诊断分析、
+# 崩溃恢复所需的结构化行数据。
+
 
 INGEST_CACHE_FILE = "ingest_cache.json"
 CHUNK_CORPUS_FILE = "chunk_corpus.jsonl"
 PARENT_CORPUS_FILE = "parent_corpus.jsonl"
+PAPER_CORPUS_FILE = "paper_corpus.jsonl"
+SECTION_SUMMARY_CORPUS_FILE = "section_summary_corpus.jsonl"
 BLOCK_STRUCTURED_FILE = "block_structured.jsonl"
 CHUNK_STRUCTURED_FILE = "chunk_structured.jsonl"
+PAPER_CATALOG_FILE = "paper_catalog.jsonl"
+PAPER_CATALOG_DB_FILE = "paper_catalog.sqlite3"
+REFERENCE_CITATION_GRAPH_FILE = "citation_edges.jsonl"
 REFERENCE_CHUNK_CORPUS_FILE = "reference_chunk_corpus.jsonl"
 CHUNK_QUALITY_REPORT_FILE = "chunk_quality_report.json"
 SYNC_JOURNAL_FILE = "sync_operation.json"
 
 _CHUNK_CORPUS_CACHE: dict[tuple, list[Document]] = {}
 _PARENT_CORPUS_CACHE: dict[tuple, dict[str, Document]] = {}
+_PAPER_CORPUS_CACHE: dict[tuple, list[Document]] = {}
+_SECTION_CORPUS_CACHE: dict[tuple, list[Document]] = {}
 
 
 @dataclass
 class LocalCacheState:
+    # `main_chunks` / `parent_docs` / `paper_docs` 是检索主链路的几层语料。
+    # 基于 row 的字段则是配套的结构化侧车数据，用于目录查询、诊断、
+    # 引用网络和精确重建。
     main_chunks: list[Document]
     parent_docs: list[Document]
+    paper_docs: list[Document]
+    section_docs: list[Document]
     reference_chunks: list[Document]
     block_rows: list[dict[str, Any]]
     chunk_rows: list[dict[str, Any]]
+    paper_rows: list[dict[str, Any]]
+    citation_rows: list[dict[str, Any]]
     reference_keyword_rows: list[dict[str, Any]]
 
 
 def clear_local_cache_caches() -> None:
     _CHUNK_CORPUS_CACHE.clear()
     _PARENT_CORPUS_CACHE.clear()
+    _PAPER_CORPUS_CACHE.clear()
+    _SECTION_CORPUS_CACHE.clear()
 
 
 def ingest_cache_path(config: AppConfig) -> Path:
@@ -57,12 +77,32 @@ def parent_corpus_path(config: AppConfig) -> Path:
     return config.local_cache_dir / PARENT_CORPUS_FILE
 
 
+def paper_corpus_path(config: AppConfig) -> Path:
+    return config.local_cache_dir / PAPER_CORPUS_FILE
+
+
+def section_summary_corpus_path(config: AppConfig) -> Path:
+    return config.local_cache_dir / SECTION_SUMMARY_CORPUS_FILE
+
+
 def block_structured_path(config: AppConfig) -> Path:
     return config.local_cache_dir / BLOCK_STRUCTURED_FILE
 
 
 def chunk_structured_path(config: AppConfig) -> Path:
     return config.local_cache_dir / CHUNK_STRUCTURED_FILE
+
+
+def paper_catalog_path(config: AppConfig) -> Path:
+    return config.local_cache_dir / PAPER_CATALOG_FILE
+
+
+def paper_catalog_db_path(config: AppConfig) -> Path:
+    return config.local_cache_dir / PAPER_CATALOG_DB_FILE
+
+
+def citation_graph_path(config: AppConfig) -> Path:
+    return config.local_cache_dir / REFERENCE_CITATION_GRAPH_FILE
 
 
 def reference_chunk_corpus_path(config: AppConfig) -> Path:
@@ -244,6 +284,7 @@ def is_reference_doc(doc: Document) -> bool:
 
 
 def split_reference_docs(docs: list[Document]) -> tuple[list[Document], list[Document]]:
+    """把一份语料拆成正文 chunk 和参考文献 chunk。"""
     main_docs: list[Document] = []
     reference_docs: list[Document] = []
     for doc in docs:
@@ -340,6 +381,11 @@ def build_reference_keyword_rows(chunks: list[Document]) -> list[dict[str, Any]]
 
 
 def build_reference_purity_summary(chunks: list[Document]) -> dict[str, Any]:
+    """统计参考文献语料里可能存在的识别或切分异常。
+
+    这是启发式质量信号，不是硬错误。它主要用来发现那些虽然被标成
+    参考文献，但内容看起来仍像正文的 chunk。
+    """
     suspicious_examples: list[dict[str, Any]] = []
     suspicious_count = 0
 
@@ -409,6 +455,11 @@ def run_chunk_quality_checks(
     enabled: bool,
     header_footer_min_freq: int,
 ) -> tuple[list[Document], dict[str, Any]]:
+    """为 chunk 打上轻量质量标记，但不直接丢弃它们。
+
+    这些结果仍然会保留给检索使用；标记的作用是暴露重复页眉、
+    跨 section 合并、纯媒体块等解析风险。
+    """
     if not chunks:
         return [], {
             "enabled": enabled,
@@ -547,6 +598,22 @@ def load_reference_chunk_corpus(
     return _load_doc_corpus(reference_chunk_corpus_path(config), {})
 
 
+def load_paper_corpus(config: AppConfig) -> tuple[list[Document], str | None]:
+    return _load_doc_corpus(paper_corpus_path(config), _PAPER_CORPUS_CACHE)
+
+
+def load_section_summary_corpus(config: AppConfig) -> tuple[list[Document], str | None]:
+    return _load_doc_corpus(section_summary_corpus_path(config), _SECTION_CORPUS_CACHE)
+
+
+def load_paper_catalog_rows(config: AppConfig) -> list[dict[str, Any]]:
+    return load_rows_jsonl(paper_catalog_path(config))
+
+
+def load_citation_graph_rows(config: AppConfig) -> list[dict[str, Any]]:
+    return load_rows_jsonl(citation_graph_path(config))
+
+
 def load_parent_corpus_map(config: AppConfig) -> dict[str, Document]:
     path = parent_corpus_path(config)
     cache_key = _doc_corpus_cache_key(path)
@@ -569,6 +636,11 @@ def expand_to_parent_contexts(
     chunk_docs: list[Document],
     parent_map: dict[str, Document],
 ) -> list[Document]:
+    """把证据 chunk 扩展成更大的生成上下文。
+
+    检索阶段偏好更细粒度的 chunk，而生成阶段通常更适合看到这些
+    chunk 周围稍大的 parent 段落。
+    """
     if not chunk_docs:
         return []
     if not config.generation_use_parent_context:
@@ -609,26 +681,46 @@ def expand_to_parent_contexts(
 
 
 def load_local_cache_state(config: AppConfig) -> LocalCacheState:
+    """从 `data/cache` 加载完整的本地知识库状态。"""
     main_chunks, _ = _load_doc_corpus(chunk_corpus_path(config), {})
     parent_docs, _ = _load_doc_corpus(parent_corpus_path(config), {})
+    paper_docs, _ = _load_doc_corpus(paper_corpus_path(config), {})
+    section_docs, _ = _load_doc_corpus(section_summary_corpus_path(config), {})
     reference_chunks, _ = _load_doc_corpus(reference_chunk_corpus_path(config), {})
     return LocalCacheState(
         main_chunks=main_chunks,
         parent_docs=parent_docs,
+        paper_docs=paper_docs,
+        section_docs=section_docs,
         reference_chunks=reference_chunks,
         block_rows=load_rows_jsonl(block_structured_path(config)),
         chunk_rows=load_rows_jsonl(chunk_structured_path(config)),
+        paper_rows=load_rows_jsonl(paper_catalog_path(config)),
+        citation_rows=load_rows_jsonl(citation_graph_path(config)),
         reference_keyword_rows=load_rows_jsonl(reference_keyword_index_path(config)),
     )
 
 
 def save_local_cache_state(config: AppConfig, state: LocalCacheState) -> None:
+    """持久化完整本地知识库状态，并重建 SQLite catalog。"""
     _save_doc_corpus(chunk_corpus_path(config), state.main_chunks)
     _save_doc_corpus(parent_corpus_path(config), state.parent_docs)
+    _save_doc_corpus(paper_corpus_path(config), state.paper_docs)
+    _save_doc_corpus(section_summary_corpus_path(config), state.section_docs)
     _save_doc_corpus(reference_chunk_corpus_path(config), state.reference_chunks)
     save_rows_jsonl(block_structured_path(config), state.block_rows)
     save_rows_jsonl(chunk_structured_path(config), state.chunk_rows)
+    save_rows_jsonl(paper_catalog_path(config), state.paper_rows)
+    save_rows_jsonl(citation_graph_path(config), state.citation_rows)
     save_rows_jsonl(reference_keyword_index_path(config), state.reference_keyword_rows)
+    from services.paper_catalog_store import rebuild_catalog_db
+
+    rebuild_catalog_db(
+        paper_catalog_db_path(config),
+        paper_rows=state.paper_rows,
+        citation_rows=state.citation_rows,
+        section_docs=state.section_docs,
+    )
     clear_local_cache_caches()
 
 
@@ -636,9 +728,13 @@ def local_cache_state_to_payload(state: LocalCacheState) -> dict[str, Any]:
     return {
         "main_chunks": serialize_documents(state.main_chunks),
         "parent_docs": serialize_documents(state.parent_docs),
+        "paper_docs": serialize_documents(state.paper_docs),
+        "section_docs": serialize_documents(state.section_docs),
         "reference_chunks": serialize_documents(state.reference_chunks),
         "block_rows": state.block_rows,
         "chunk_rows": state.chunk_rows,
+        "paper_rows": state.paper_rows,
+        "citation_rows": state.citation_rows,
         "reference_keyword_rows": state.reference_keyword_rows,
     }
 
@@ -647,9 +743,13 @@ def local_cache_state_from_payload(payload: dict[str, Any]) -> LocalCacheState:
     return LocalCacheState(
         main_chunks=deserialize_documents(payload.get("main_chunks", [])),
         parent_docs=deserialize_documents(payload.get("parent_docs", [])),
+        paper_docs=deserialize_documents(payload.get("paper_docs", [])),
+        section_docs=deserialize_documents(payload.get("section_docs", [])),
         reference_chunks=deserialize_documents(payload.get("reference_chunks", [])),
         block_rows=list(payload.get("block_rows", [])),
         chunk_rows=list(payload.get("chunk_rows", [])),
+        paper_rows=list(payload.get("paper_rows", [])),
+        citation_rows=list(payload.get("citation_rows", [])),
         reference_keyword_rows=list(payload.get("reference_keyword_rows", [])),
     )
 
@@ -659,11 +759,18 @@ def build_ingest_cache_payload(
     signature: dict[str, Any],
     raw_documents: int,
     chunks: int,
+    *,
+    main_chunk_count: int = 0,
+    paper_doc_count: int = 0,
+    reference_chunk_count: int = 0,
 ) -> dict[str, Any]:
     return {
         "signature": signature,
         "raw_documents": raw_documents,
         "chunks": chunks,
+        "main_chunk_count": main_chunk_count,
+        "paper_doc_count": paper_doc_count,
+        "reference_chunk_count": reference_chunk_count,
         "cache_dir": str(config.local_cache_dir),
     }
 

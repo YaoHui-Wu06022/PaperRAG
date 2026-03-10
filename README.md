@@ -1,417 +1,341 @@
 # PaperRAG
 
-PaperRAG 是一个面向论文 PDF 知识库的 RAG 系统。项目重点不是“接一个大模型接口做问答”，而是围绕论文检索场景，把文档解析、切块、增量入库、混合检索、重排、证据追踪和评测流程做成一套可调参与可复现的工程系统。
+面向论文 PDF 的工程化 RAG 知识库系统。
 
-这个仓库按“可写进简历的工程项目”来组织，因此 README 会重点说明：
+这个项目的目标不是做一个“上传 PDF 然后调用大模型”的演示，而是把论文知识库真正拆成可维护的工程链路：文档解析、结构化切块、增量入库、双层检索、证据追踪、引用网络、参数调优和离线评测。
 
-- 系统目标与应用场景
-- 关键技术设计
-- 检索链路细节
-- Benchmark 方法与实验结论
-- 如何将公开数据集上的参数实验迁移到私有论文知识库
+## 项目定位
 
-## 1. 项目定位
+PaperRAG 解决的是“私有论文集合上的可追踪问答与检索”问题，适合以下场景：
 
-这个项目要解决的问题是：给定一批本地论文 PDF，构建一个可检索、可追溯、可评测的论文知识库问答系统。
+- 批量导入本地论文 PDF，构建可持续更新的知识库
+- 针对论文内容做问答、对比、综述、元数据查询、参考文献追踪
+- 返回带页码、章节、证据片段的答案，而不是只给自然语言总结
+- 用统一的检索链路支撑命令行、Streamlit UI 和 Colab Benchmark
 
-目标能力包括：
+## 核心能力
 
-- 从本地 PDF 批量构建论文知识库
-- 对私有论文集合进行问答和多轮对话
-- 返回带证据片段、页码、章节信息的答案
-- 用公开数据集做检索参数实验，再把结论迁移到私有知识库
+- 论文 PDF 结构化解析：抽取标题、作者、年份、关键词、章节、bbox、参考文献区
+- 增量入库：按 `doc_id` 做 upsert / delete，不依赖每次全量重建
+- 双层索引：同时维护 `paper-level` 与 `chunk-level` 检索语料
+- 多路检索：支持 `dense`、`bm25`、`hybrid`
+- Query Router：根据问题类型切换不同检索策略
+- Metadata Filter：支持作者、标题、venue、年份、关键词等显式约束
+- 引用网络：从参考文献条目中抽取 citation edge，支持引用追踪
+- 一致性保护：本地 cache、paper catalog、Milvus collection 联动校验
+- 证据可追踪：答案附带来源论文、页码、章节、块级证据
 
-相比通用的“Chat with PDF”项目，这个系统更强调：
-
-- 结构化论文解析
-- 检索质量可控
-- 参数调优可复现
-- 证据结果可追踪
-
-## 2. 技术栈
+## 技术栈
 
 - Python 3.12
 - LangChain
-- MinerU Cloud：PDF 结构化解析
-- HuggingFace Embedding：默认 `BAAI/bge-m3`
-- Milvus / Zilliz Cloud：主向量库
-- Milvus Lite：Colab 上的轻量 Benchmark 向量库
-- BM25：词法检索
-- Dense + BM25 Hybrid Retrieval + RRF 融合
-- `BAAI/bge-reranker-base`：重排序
-- Streamlit：前端展示
-- Colab Notebook：Qasper 评测与参数实验
+- MinerU Cloud
+- HuggingFace Embedding，默认 `BAAI/bge-m3`
+- Milvus / Zilliz Cloud
+- BM25
+- RRF 融合
+- `BAAI/bge-reranker-base`
+- Streamlit
+- SQLite + JSONL 本地 catalog / cache
+- Colab Notebook + Qasper Benchmark
 
-## 3. 系统结构
+## 系统架构
 
-### 3.1 入库链路
-
-系统的入库流程如下：
-
-```text
-PDF
--> MinerU Cloud 解析
--> 结构化 block / layout metadata
--> parent document + chunk document
--> embedding
--> Milvus 向量索引
--> 本地 chunk / parent / reference cache
+```mermaid
+flowchart TD
+    A["PDF"] --> B["MinerU Cloud 解析"]
+    B --> C["Block / Layout / Metadata"]
+    C --> D["Parent Docs"]
+    C --> E["Chunk Docs"]
+    D --> F["Paper Summary / Section Summary / Citation Graph"]
+    E --> G["Embedding"]
+    F --> G
+    G --> H["Milvus Chunk Collection"]
+    G --> I["Milvus Paper Collection"]
+    D --> J["Local Cache(JSONL/SQLite)"]
+    E --> J
+    F --> J
+    K["User Query"] --> L["Query Router"]
+    L --> M["Paper-level Retrieval"]
+    M --> N["Chunk-level Evidence Retrieval"]
+    N --> O["Rerank / Filter / Diversify"]
+    O --> P["LLM Answer + Evidence"]
 ```
 
-核心代码：
+## 实现路径
 
-- `ingestion/chunking.py`
-- `ingestion/embedding.py`
-- `retrieval/vector_store.py`
-- `pipeline.py`
+### 1. 文档解析与结构化入库
 
-### 3.2 问答检索链路
+入口在 [`main.py`](main.py) 的 `ingest` 命令，主流程在 [`pipeline.py`](pipeline.py)。
 
-问答时的检索流程如下：
+解析阶段由 [`ingestion/pdf_loader.py`](ingestion/pdf_loader.py) 负责，主要工作包括：
 
-```text
-question
--> metadata filter
--> query rewrite
--> dense / bm25 / hybrid retrieval
--> score filtering
--> optional reranker
--> dedupe + diversify by source
--> final evidence docs
--> optional parent-context expansion
--> LLM generation
-```
+- 调用 MinerU Cloud 拿到结构化 `content_list`
+- 生成 block 级文本与布局信息
+- 抽取论文元数据：标题、作者、年份、venue、关键词、语言
+- 识别参考文献区与正文区
+- 保留 `page / bbox / section_path / block_id / doc_id`
 
-核心代码：
-
-- `services/retrieval_service.py`
-- `retrieval/retriever.py`
-- `retrieval/metadata_filter.py`
-- `retrieval/query_rewrite.py`
-
-### 3.3 前端展示
-
-前端使用 Streamlit，重点不是做一个聊天气泡，而是把证据显示出来。当前支持：
-
-- 主知识库问答
-- 参考文献专用检索
-- 证据片段展示
-- 来源、章节、页码展示
-- 在有 bbox 时高亮原始 PDF 页面区域
-
-入口文件：
-
-- `app/streamlit_app.py`
-
-## 4. 关键技术设计
-
-### 4.1 语义块优先的论文切块
-
-项目默认不是简单的固定窗口切块，而是使用 `semantic_paper` 策略：
+切块阶段由 [`ingestion/chunking.py`](ingestion/chunking.py) 负责，默认使用 `semantic_paper` 策略：
 
 - 优先保留语义完整的 parent block
-- 只有当 block 过长时才回退到 token 级切分
-- 保留 `parent_id`、`structure_block_id`、页码、来源等元数据
+- 只有超长段落才回退到 token 级切块
+- 同时构建 `parent_docs` 和 `chunk_docs`
 
-这比单纯 `chunk_size=xxx` 的方案更适合论文类文档，因为论文往往天然存在章节、段落、公式区和参考文献区的结构边界。
+入库阶段会同时生成 5 类持久化资产：
 
-相关配置：
+- `chunk_corpus.jsonl`
+- `parent_corpus.jsonl`
+- `paper_corpus.jsonl`
+- `section_summary_corpus.jsonl`
+- `paper_catalog.sqlite3`
 
-- `CHUNK_SIZE`
-- `CHUNK_OVERLAP`
-- `CHUNK_STRATEGY=semantic_paper`
-- `CHUNK_SEMANTIC_HARD_MAX_CHARS`
-- `CHUNK_MIN_BLOCK_CHARS`
+其中 paper 级资产由 [`services/paper_representation.py`](services/paper_representation.py) 构建，catalog 写入由 [`services/paper_catalog_store.py`](services/paper_catalog_store.py) 完成。
 
-实现位置：
+### 2. Paper-level + Chunk-level 双层检索
 
-- `ingestion/chunking.py`
+这个项目的关键设计之一，是不是只在 chunk 上做检索，而是先做论文级召回，再做证据级召回。
 
-### 4.2 Dense / BM25 / Hybrid 三种检索模式
+对应实现：
 
-系统支持三种检索模式：
+- [`services/paper_representation.py`](services/paper_representation.py)
+- [`retrieval/vector_store.py`](retrieval/vector_store.py)
+- [`services/retrieval_service.py`](services/retrieval_service.py)
+
+具体做法：
+
+- 为每篇论文构建 `paper summary`
+  - 标题
+  - 作者
+  - 年份
+  - venue
+  - 关键词
+  - abstract
+  - section summary
+  - citation 线索
+- 独立写入 `paper` collection
+- 查询时先召回 top papers
+- 再用这些 `doc_id` 约束 chunk evidence 检索
+
+这样做的好处是：
+
+- 宽问题不容易被某个局部 chunk 带偏
+- 综述类、比较类问题更容易先找到正确论文集合
+- 元数据型问题可以直接走 paper/catalog 信息，不必强依赖正文 chunk
+
+### 3. Query Router
+
+不是所有问题都走同一条链路。问题路由在 [`retrieval/query_router.py`](retrieval/query_router.py)，当前区分 5 类：
+
+- `factual`(事实型)
+- `comparison`(比较型)
+- `survey`(综述型)
+- `metadata`(元数据)
+- `references`(参考文献)
+
+路由结果会影响：
+
+- paper-level 是否优先
+- top-k 策略
+- 检索模式
+- prompt 模式
+- 是否只看 references
+
+主检索编排在 [`services/retrieval_service.py`](services/retrieval_service.py)。
+
+### 4. Hybrid Retrieval + Query Rewrite + Metadata Filter
+
+检索层的核心不在“调用一个 retriever”，而在组合多种召回与过滤策略。
+
+#### Hybrid Retrieval
+
+检索器在 [`retrieval/retriever.py`](retrieval/retriever.py)，支持：
 
 - `dense`
 - `bm25`
 - `hybrid`
 
-其中 `hybrid` 通过 RRF 融合 dense 与 BM25 结果。这个设计对论文问答尤其重要：
+其中 `hybrid` 通过 RRF 融合 dense 与 BM25 结果：
 
-- Dense 检索更适合语义改写和抽象表述
-- BM25 更擅长命中精确术语、模型名、数据集名、指标名
-- RRF 不需要对不同检索器的分数做强归一化，工程上更稳
+- dense 负责语义召回
+- BM25 负责精确术语、模型名、数据集名、指标名
+- RRF 避免不同检索器分数难以直接对齐的问题
 
-实现位置：
+#### Query Rewrite
 
-- `retrieval/retriever.py`
+Query Rewrite 在 [`retrieval/query_rewrite.py`](retrieval/query_rewrite.py)，当前不是 LLM 改写，而是规则式多变体扩展：
 
-### 4.3 规则式 Query Rewrite
+- 去掉问句套话
+- 生成关键词查询
+- 补充中英术语
+- 扩展学术缩写
+- 生成多个 query variant 后做融合
 
-项目没有使用 LLM 做 query rewrite，而是实现了一套轻量规则式改写，用于控制成本并避免额外幻觉。
+优点是稳定、低成本、可控，不会引入额外幻觉。
 
-当前改写会生成多个 query variant，来源包括：
+#### Metadata Filter
 
-- 原始问题
-- 去掉套话后的问题
-- 关键词压缩版本
-- 中英术语扩展
-- 学术意图扩展
-- 常见缩写扩展，例如 `RAG`、`LLM`、`QA`、`VQA`、`GNN`
+Metadata Filter 在 [`retrieval/metadata_filter.py`](retrieval/metadata_filter.py)，支持：
 
-这套设计的目标不是“智能改写得像人”，而是让检索器拿到更适合召回的查询表达。
+- `author`
+- `title`
+- `venue`
+- `year`
+- `source`
+- `keyword`
 
-实现位置：
+不仅支持精确年份，还支持时间范围与相对时间表达，并且会把命中的 `doc_id` 约束尽量下推到 Milvus 检索阶段，而不是只做候选后过滤。
 
-- `retrieval/query_rewrite.py`
-- `tests/test_query_rewrite.py`
+### 5. Rerank、证据过滤与多样性控制
 
-### 4.4 Metadata Filter
+召回之后还会做一层证据编排，逻辑在 [`services/retrieval_service.py`](services/retrieval_service.py) 和 [`retrieval/retriever.py`](retrieval/retriever.py)：
 
-项目支持在 query 中显式带元数据约束，例如：
+- score filtering
+- reranker
+- 去重
+- source diversification
+- 每篇论文最多保留若干 chunk
+- 对比较型问题做补召回
 
-- author
-- title
-- venue
-- year
-- source
-- keyword
+目标不是单纯提高召回数，而是让最终喂给生成模型的证据集合更稳定、更少重复、更适合回答。
 
-过滤器支持：
+### 6. 引用网络与参考文献检索
 
-- 精确年份
-- 年份范围
-- 相对时间表达
-- 本地后过滤
-- Milvus 端可下推的预过滤
-
-这样用户可以用接近学术检索的方式提问，而不是只能输入纯自然语言描述。
+论文知识库不应该只看正文，这个项目专门保留了 references 路径。
 
 实现位置：
 
-- `retrieval/metadata_filter.py`
+- [`ingestion/reference_detection.py`](ingestion/reference_detection.py)
+- [`services/paper_representation.py`](services/paper_representation.py)
+- [`services/local_cache_store.py`](services/local_cache_store.py)
 
-### 4.5 Reranker + 证据多样性控制
+当前支持：
 
-召回后系统支持 reranker，并在此基础上做：
+- 识别 reference section
+- 生成 reference chunk
+- 构建 citation edge
+- 在 `references` scope 下只检索参考文献条目
 
-- 证据去重
-- 来源多样性控制
-- 每篇文档最多保留若干条 chunk
-- 比较类问题的实体覆盖补召回
+这使得系统可以回答：
 
-这部分是为了避免回答被单篇文档占满，或者返回多条高度重复的证据。
+- 这篇论文引用了哪些工作
+- 某方法在库里被哪些论文引用
+- 某篇论文是否出现在另一篇论文的参考文献中
 
-实现位置：
+### 7. 一致性与增量更新
 
-- `retrieval/retriever.py`
-- `services/retrieval_service.py`
+这个项目不是“每次删除本地目录重建索引”的 demo，而是做了知识库一致性控制。
 
-### 4.6 按 `doc_id` 的增量入库
+关键模块：
 
-项目支持按 `doc_id` 做增量更新，而不是每次重建全量向量索引。
+- [`services/sync_transaction.py`](services/sync_transaction.py)
+- [`services/knowledge_base_guard.py`](services/knowledge_base_guard.py)
+- [`services/local_cache_store.py`](services/local_cache_store.py)
 
-支持的操作包括：
+当前机制包括：
 
-- 新论文入库
-- 已存在 `doc_id` 的覆盖更新
-- 按 `doc_id` 删除论文
-- 本地 cache 与向量库同步维护
+- 本地 cache 与远端 Milvus 的 journal 式同步
+- `remote_pending / local_pending` 分阶段恢复
+- `ask` 只做轻量校验，不偷偷修库
+- `ingest` 负责重建和远端补齐
+- 缺少 `paper` 索引时明确提示先执行 `ingest`
 
-关键命令：
+## 项目特色
 
-- `python main.py ingest`
-- `python main.py ingest --force`
-- `python main.py delete-doc <doc_id_1> <doc_id_2> ...`
+这部分是这个项目和普通 “Chat with PDF” 最大的差异。
 
-实现位置：
+### 1. 不是纯 chunk 检索，而是 paper-first 检索
 
-- `retrieval/vector_store.py`
-- `services/sync_transaction.py`
+系统不是直接把问题扔给向量库拿 chunk，而是：
 
-## 5. 本地运行方式
+- 先找相关论文
+- 再在论文内部找证据
 
-主程序当前保留的命令包括：
+这让系统更像“论文知识库”，而不是“文本碎片搜索器”。
 
-- `ingest`：构建或更新论文向量索引
-- `delete-doc`：按 `doc_id` 删除论文
-- `ask`：单轮问答
-- `chat`：多轮对话
-- `models`：列出 AIHubMix 可用模型
-- `health`：检查启动依赖与配置状态
+### 2. 本地论文库与公开 Benchmark 共用同一套检索核心
 
-参数定义在：
+本地主程序负责私有论文知识库问答，Colab 侧的 Benchmark 复用同一套核心检索逻辑：
 
-- `main.py`
+- Notebook: [`notebooks/PaperRAG_Qasper_Eval_Colab.ipynb`](notebooks/PaperRAG_Qasper_Eval_Colab.ipynb)
+- Benchmark: [`colab_eval/dataset_benchmark.py`](colab_eval/dataset_benchmark.py)
 
-典型本地使用方式：
+这意味着参数调优不是拍脑袋，而是可以先在 Qasper 上做 A/B，再迁回私有知识库。
+
+### 3. 元数据、引用、摘要三层信息同时保留
+
+系统不是只保留原始 chunk，而是同时维护：
+
+- `chunk-level evidence`
+- `section summary`
+- `paper summary`
+- `paper catalog`
+- `citation graph`
+
+这让系统可以覆盖：
+
+- 正文事实问答
+- 跨论文比较
+- 综述型问题
+- 元数据查询
+- 参考文献追踪
+
+### 4. 强工程可维护性
+
+项目强调的是可维护知识库，而不是一次性 demo：
+
+- 增量入库
+- 删除指定论文
+- 本地 cache
+- paper catalog
+- startup health check
+- 同步恢复
+- 进度可视化 ingest
+
+## 运行方式
+
+### 命令行
 
 ```bash
 python main.py ingest
 python main.py ask "这篇论文用了哪些数据集做实验？"
+python main.py chat
+python main.py delete-doc <doc_id>
+python main.py health
+```
+
+### Web UI
+
+```bash
 streamlit run app/streamlit_app.py
 ```
 
-## 6. Benchmark 工作流
+### Colab Benchmark
 
-本地主程序主要用于私有论文知识库的入库和问答。公开数据集 Benchmark 被拆到了 Colab：
+- Notebook: [`notebooks/PaperRAG_Qasper_Eval_Colab.ipynb`](notebooks/PaperRAG_Qasper_Eval_Colab.ipynb)
+- Benchmark 逻辑: [`colab_eval`](colab_eval)
 
-- Benchmark 主逻辑：`colab_eval/dataset_benchmark.py`
-- Colab Notebook：`notebooks/PaperRAG_Qasper_Eval_Colab.ipynb`
-
-Notebook 支持：
-
-- 云端 Milvus / Zilliz
-- Colab 上的 Milvus Lite
-- 不上传 `.env`，直接在 notebook 内覆盖参数
-- 评测进度显示
-- 输出 summary JSON 和 detail CSV
-
-### 6.1 Benchmark 的解释边界
-
-这里的 Benchmark 是“抽样闭集检索评测”，不是完整生产环境评测。
-
-以 Qasper 为例：
-
-- 先从数据集里采样若干 QA
-- 将样本上下文构成临时评测语料库
-- 再在这个临时语料库上做检索
-
-因此这些指标非常适合做参数对比，但不应直接当成线上最终效果。
-
-## 7. 实验结果与分析
-
-仓库中保存了多组 Benchmark 结果：
-
-- `notebooks/evalute/dataset_benchmark_summary_all.json`
-- `notebooks/evalute/dataset_benchmark_summary_dense.json`
-- `notebooks/evalute/dataset_benchmark_summary_bm25.json`
-- `notebooks/evalute/dataset_benchmark_summary_false_reranker.json`
-- `notebooks/evalute/dataset_benchmark_summary_false_rewrite.json`
-
-以下实验统一条件：
-
-- 数据集：`qasper`
-- 样本数：`50`
-- 向量后端：`milvus`
-- `chunk_size=512`
-- `chunk_overlap=128`
-- `final_top_k=5`
-
-### 7.1 检索模式 A/B：Dense / BM25 / Hybrid
-
-| 配置 | Hit@5 | MRR@5 | 平均延迟(ms) | P95(ms) |
-| --- | ---: | ---: | ---: | ---: |
-| Hybrid | 0.66 | 0.5667 | 101.93 | 274.67 |
-| Dense Only | 0.64 | 0.5253 | 94.01 | 221.26 |
-| BM25 Only | 0.60 | 0.5333 | 12.85 | 28.81 |
-
-结果分析：
-
-- `Hybrid` 取得了三者中最好的综合检索质量。
-- `Dense Only` 的 Hit@5 高于 BM25，说明语义召回在论文问答场景中仍然有效。
-- `BM25 Only` 的速度明显最快，说明精确术语匹配在论文检索中仍然有价值。
-- 当前主系统选择 `Hybrid` 是一个偏质量优先的工程决策，而不是速度优先。
-
-### 7.2 Reranker 的影响
-
-| 配置 | Hit@5 | MRR@5 | 平均延迟(ms) |
-| --- | ---: | ---: | ---: |
-| Hybrid + Rewrite + Reranker | 0.66 | 0.5667 | 101.93 |
-| Hybrid + Rewrite + No Reranker | 0.66 | 0.5667 | 124.35 |
-
-结果分析：
-
-- 在这组 50 样本 Qasper 实验中，打开 reranker 没有进一步提升 Hit@5 或 MRR@5。
-- 当前结果不能说明“reranker 一定更快”，因为 Colab 运行时延迟波动和临时 Milvus 集合差异会带来噪声。
-- 更稳妥的结论是：在当前配置下，reranker 的收益尚未被这组实验显著验证出来。
-
-### 7.3 Query Rewrite 的影响
-
-| 配置 | Hit@5 | MRR@5 | 平均延迟(ms) |
-| --- | ---: | ---: | ---: |
-| Hybrid + Rewrite | 0.66 | 0.5667 | 101.93 |
-| Hybrid + No Rewrite | 0.68 | 0.5380 | 39.47 |
-
-结果分析：
-
-- 开启 Query Rewrite 后，MRR 从 `0.5380` 提升到 `0.5667`，说明相关证据平均排位更靠前。
-- 关闭 Rewrite 时，Hit@5 略高于开启 Rewrite 的结果，因此 Rewrite 不是对所有问题都绝对增益。
-- Rewrite 会带来额外延迟，因为系统需要对多个 query variant 分别检索再做融合。
-- 当前工程上的理解是：Query Rewrite 提升了排序质量，但存在速度成本，而且不保证粗粒度召回一定上升。
-
-### 7.4 当前主线配置
-
-当前仓库中主线配置对应的结果位于：
-
-- `notebooks/evalute/dataset_benchmark_summary_all.json`
-
-配置为：
-
-- `retrieval_mode=hybrid`
-- `retriever_top_k=30`
-- `final_top_k=5`
-- `query_rewrite_enabled=true`
-- `query_rewrite_max_variants=3`
-- `use_reranker=true`
-- `retrieval_score_threshold=0.05`
-- `diversify_by_source=true`
-- `max_chunks_per_source=5`
-
-观测结果：
-
-- `Hit@5 = 0.66`
-- `MRR@5 = 0.5667`
-- `平均检索延迟 = 101.93 ms`
-- `P95 检索延迟 = 274.67 ms`
-
-## 8. 仓库结构
+## 项目结构
 
 ```text
 app/            Streamlit 前端
-colab_eval/     Colab Benchmark 逻辑
-generation/     LLM 客户端与 Prompt 逻辑
+colab_eval/     Colab 侧 Benchmark 逻辑
+generation/     LLM 客户端与 Prompt 构建
 ingestion/      PDF 解析、切块、Embedding
-retrieval/      向量库、检索器、过滤器、Query Rewrite
-services/       检索编排、健康检查、同步事务
-tests/          检索与参考文献相关测试
-notebooks/      Colab Notebook 与实验结果
+retrieval/      检索器、向量库、过滤器、改写器、路由器
+services/       检索编排、catalog、同步、一致性控制
+tests/          检索、路由、元数据、引用相关测试
+notebooks/      Colab Notebook 与评测输出
+pipeline.py     入库 / 删除 / 问答主流程
+main.py         CLI 入口
 ```
 
-## 9. 环境变量
+## 适合作为简历项目的点
 
-仓库中提供了去密钥版本的示例配置：
+如果从简历视角总结，这个项目的价值不在“接了几个模型接口”，而在于做了一套完整的论文知识库系统：
 
-- `.env.example`
+- 把 PDF 解析、双层索引、混合检索、元数据过滤、引用网络和问答生成串成统一工程链路
+- 支持增量入库、删除、同步恢复和一致性校验，能长期维护知识库而不是一次性跑通
+- 在私有知识库之外，提供可复现的 Colab Benchmark，用公开数据集驱动检索参数优化
+- 让答案具备论文来源、页码、章节、证据块追踪能力，满足研究场景对可解释性的要求
 
-典型配置项包括：
-
-```env
-EMBEDDING_PROVIDER=huggingface
-EMBEDDING_MODEL=BAAI/bge-m3
-
-VECTOR_BACKEND=milvus
-MILVUS_URI=https://your-zilliz-endpoint
-MILVUS_TOKEN=your_token
-MILVUS_COLLECTION=rag_pdf_chunks
-
-CHUNK_SIZE=512
-CHUNK_OVERLAP=128
-CHUNK_STRATEGY=semantic_paper
-CHUNK_MIN_BLOCK_CHARS=180
-
-RETRIEVAL_MODE=hybrid
-RETRIEVER_TOP_K=30
-FINAL_TOP_K=5
-QUERY_REWRITE_ENABLED=true
-QUERY_REWRITE_MAX_VARIANTS=3
-USE_RERANKER=true
-```
-
-## 11. 适合写在简历里的项目描述
-
-如果把这个项目写进简历，比较准确的技术表述可以是：
-
-- 设计并实现面向论文 PDF 的 RAG 系统，支持结构化解析、语义切块、增量 Milvus 入库和证据追踪式问答。
-- 实现 Dense、BM25 与 Hybrid 检索链路，并加入 Query Rewrite、Metadata Filter、Reranker 与来源多样性控制。
-- 基于 Qasper 构建 Colab Benchmark 工作流，对检索模式和关键参数进行 A/B 实验，并输出可复现的 JSON/CSV 结果。
-- 开发 Streamlit 前端，支持论文问答、引用证据展示、页码定位和原文高亮。

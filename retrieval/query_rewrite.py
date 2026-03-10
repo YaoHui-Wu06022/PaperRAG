@@ -98,6 +98,36 @@ ACRONYM_EXPANSIONS = {
 }
 
 
+MODEL_ALIAS_EXPANSIONS = {
+    "resnet": "deep residual learning for image recognition residual network kaiming he xiangyu zhang shaoqing ren jian sun",
+    "残差网络": "deep residual learning for image recognition resnet kaiming he xiangyu zhang shaoqing ren jian sun",
+    "resnext": "aggregated residual transformations for deep neural networks saining xie ross girshick piotr dollar zhuowen tu kaiming he",
+    "transformer": "attention is all you need ashish vaswani noam shazeer niki parmar jakob uszkoreit llion jones",
+    "inception": "going deeper with convolutions christian szegedy wei liu yangqing jia pierre sermanet",
+    "efficientnet": "efficientnet rethinking model scaling for convolutional neural networks mingxing tan quoc v le",
+    "alexnet": "imagenet classification with deep convolutional neural networks alex krizhevsky ilya sutskever geoffrey hinton",
+    "senet": "squeeze-and-excitation networks jie hu li shen gang sun",
+    "se-net": "squeeze-and-excitation networks jie hu li shen gang sun",
+    "eca-net": "eca-net efficient channel attention for deep convolutional neural networks qilong wang banggu wu",
+    "normface": "normface l2 hypersphere embedding for face verification jian cheng feng wang alan loddon yuille",
+}
+
+
+MODEL_ALIAS_TITLE_HINTS = {
+    "resnet": "deep residual learning for image recognition",
+    "残差网络": "deep residual learning for image recognition",
+    "resnext": "aggregated residual transformations for deep neural networks",
+    "transformer": "attention is all you need",
+    "inception": "going deeper with convolutions",
+    "efficientnet": "efficientnet: rethinking model scaling for convolutional neural networks",
+    "alexnet": "imagenet classification with deep convolutional neural networks",
+    "senet": "squeeze-and-excitation networks",
+    "se-net": "squeeze-and-excitation networks",
+    "eca-net": "eca-net efficient channel attention for deep convolutional neural networks",
+    "normface": "normface: l2 hypersphere embedding for face verification",
+}
+
+
 INTENT_HINTS = {
     "method": {
         "triggers": ("方法", "模型", "架构", "原理", "how", "method", "approach", "architecture"),
@@ -257,6 +287,26 @@ def _expand_intent_terms(text: str) -> list[str]:
     return _dedup_terms(terms)
 
 
+def _expand_model_alias_terms(text: str) -> list[str]:
+    low = text.lower()
+    terms: list[str] = []
+    for alias, expansion in MODEL_ALIAS_EXPANSIONS.items():
+        alias_low = alias.lower()
+        if alias in text or alias_low in low:
+            terms.extend(expansion.split())
+    return _dedup_terms(terms)
+
+
+def extract_canonical_title_hints(text: str) -> list[str]:
+    low = str(text or "").lower()
+    hints: list[str] = []
+    for alias, title in MODEL_ALIAS_TITLE_HINTS.items():
+        alias_low = alias.lower()
+        if alias in text or alias_low in low:
+            hints.append(title)
+    return _dedup_terms(hints)
+
+
 def _build_keyword_variant(text: str) -> str:
     terms = _extract_keyword_tokens(text)
     return _normalize_spaces(" ".join(terms))
@@ -277,8 +327,16 @@ def _build_academic_variant(text: str) -> str:
     keyword_terms = _extract_keyword_tokens(text)
     intent_terms = _expand_intent_terms(text)
     acronym_terms = _expand_acronyms(text)
-    merged = _dedup_terms(keyword_terms + intent_terms + acronym_terms)
+    alias_terms = _expand_model_alias_terms(text)
+    merged = _dedup_terms(keyword_terms + intent_terms + acronym_terms + alias_terms)
     return _normalize_spaces(" ".join(merged))
+
+
+def _build_alias_variant(text: str) -> str:
+    alias_terms = _expand_model_alias_terms(text)
+    if not alias_terms:
+        return ""
+    return _normalize_spaces(f"{text} {' '.join(alias_terms)}")
 
 
 def build_query_variants(
@@ -297,6 +355,7 @@ def build_query_variants(
     candidates = [
         normalized,
         stripped,
+        _build_alias_variant(stripped or normalized),
         _build_keyword_variant(stripped or normalized),
         _build_cross_lingual_variant(stripped or normalized),
         _build_academic_variant(stripped or normalized),

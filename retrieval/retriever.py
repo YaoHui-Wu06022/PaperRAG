@@ -12,6 +12,9 @@ from typing import Any
 from langchain_core.documents import Document
 
 
+# 这个模块是底层检索引擎。
+# 它负责组合 dense 检索、BM25、query variant 融合、分数过滤、
+# rerank，以及按 source 的多样性控制。
 _RERANKER_CACHE: dict[str, Any] = {}
 _BM25_CACHE: dict[str, tuple[Any, list[Document]]] = {}
 
@@ -201,6 +204,8 @@ def _retrieve_bm25(
     top_k: int,
     corpus_key: str | None,
 ) -> list[Document]:
+    # BM25 运行在本地内存语料上，主要用于
+    # 稀疏关键词匹配、参考文献检索和 hybrid 融合。
     if not corpus_docs or top_k <= 0:
         return []
 
@@ -392,6 +397,8 @@ def _retrieve_dense(
     *,
     metadata_expr: str | None = None,
 ) -> list[Document]:
+    # 优先尝试能返回分数的 dense API，这样后续阶段才能做阈值过滤，
+    # 并判断是否值得再付出 rerank 的额外延迟。
     docs = _retrieve_with_relevance_scores(
         query,
         vector_store,
@@ -487,6 +494,9 @@ def retrieve(
     metadata_allow_doc_ids: set[str] | None = None,
     metadata_milvus_expr: str | None = None,
 ) -> list[Document]:
+    # 这是上层 pipeline 使用的统一检索入口。
+    # 它支持 dense-only、BM25-only、hybrid 三种模式，
+    # 并会用 RRF 把多个 query rewrite 变体融合成一个排序结果。
     mode = retrieval_mode.strip().lower()
     if mode not in {"dense", "hybrid", "bm25"}:
         mode = "dense"
@@ -626,6 +636,7 @@ def rerank_documents(
     top_k: int | None = None,
     score_threshold: float | None = None,
 ) -> list[Document]:
+    # 可选的 cross-encoder 重排阶段，作用于已经召回出来的候选结果。
     """
     可选重排阶段：使用 cross-encoder 对候选文档重排并写入 `reranker_score`。
     当设置 `score_threshold` 时，会过滤低于阈值的候选文档。
@@ -713,6 +724,8 @@ def decide_rerank(
     min_top1_score_small_scale: float = 0.015,
     min_score_gap_small_scale: float = 0.001,
 ) -> RerankDecision:
+    # 如果当前 top1 已经明显领先，就跳过 rerank；
+    # 否则付出额外延迟换取更好的最终排序。
     if not enabled:
         return RerankDecision(False, "conditional_disabled")
     if len(docs) <= 1:
@@ -800,6 +813,7 @@ def diversify_documents_by_source(
     max_per_source: int = 2,
     top_k: int | None = None,
 ) -> list[Document]:
+    # 防止同一篇论文用大量近重复 chunk 淹没最终答案。
     """
     按 source 限制同一论文的块数，减少结果同质化。
     若过滤过严导致数量不足，会回填原序文档以保证 top_k。

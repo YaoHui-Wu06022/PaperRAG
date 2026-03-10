@@ -16,6 +16,8 @@ from retrieval.vector_store import (
 )
 
 
+# This module implements a tiny two-phase commit:
+# remote vector-store write first, then local cache commit.
 @dataclass
 class SyncPlan:
     operation: str
@@ -30,6 +32,7 @@ def has_pending_sync_operation(config: AppConfig) -> bool:
 
 
 def execute_sync_plan(config: AppConfig, plan: SyncPlan, embeddings):
+    """Apply one sync plan with crash recovery via a journal file."""
     journal = _sync_plan_to_journal(plan, status="remote_pending")
     local_cache_store.save_sync_journal(config, journal)
 
@@ -43,15 +46,22 @@ def execute_sync_plan(config: AppConfig, plan: SyncPlan, embeddings):
 
 
 def recover_pending_sync_operation(config: AppConfig, embeddings) -> str | None:
+    """Resume an interrupted sync plan from its journal state.
+
+    `local_pending` means the remote write already succeeded, so recovery
+    should only finish the local cache commit.
+    """
     payload = local_cache_store.load_sync_journal(config)
     if payload is None:
         return None
 
     plan = _sync_plan_from_journal(payload)
-    _apply_remote_operation(config, plan, embeddings)
+    status = str(payload.get("status", "unknown")).strip().lower()
+    if status in {"remote_pending", "unknown"}:
+        _apply_remote_operation(config, plan, embeddings)
     _apply_local_state(config, plan)
     local_cache_store.clear_sync_journal(config)
-    return str(payload.get("status", "unknown"))
+    return status or "unknown"
 
 
 def _apply_local_state(config: AppConfig, plan: SyncPlan) -> None:
@@ -87,6 +97,7 @@ def _sync_plan_from_journal(payload: dict[str, Any]) -> SyncPlan:
 
 
 def _apply_remote_operation(config: AppConfig, plan: SyncPlan, embeddings):
+    """Apply the remote half of a sync plan to the configured vector backend."""
     backend = config.vector_backend.strip().lower()
     reference_strategy = config.references_strategy.strip().lower()
     if reference_strategy not in {"keyword_only", "separate_collection"}:
@@ -113,6 +124,9 @@ def _apply_remote_operation(config: AppConfig, plan: SyncPlan, embeddings):
         reference_documents = local_cache_store.deserialize_documents(
             list(plan.remote_payload.get("reference_documents", []))
         )
+        paper_documents = local_cache_store.deserialize_documents(
+            list(plan.remote_payload.get("paper_documents", []))
+        )
         upsert_doc_ids = [
             str(item)
             for item in plan.remote_payload.get("upsert_doc_ids", plan.doc_ids)
@@ -127,7 +141,9 @@ def _apply_remote_operation(config: AppConfig, plan: SyncPlan, embeddings):
             milvus_token=config.milvus_token,
             milvus_db_name=config.milvus_db_name,
             milvus_collection=config.milvus_collection,
+            milvus_papers_collection=config.milvus_papers_collection,
             doc_ids_to_replace=upsert_doc_ids,
+            paper_documents=paper_documents,
             reference_documents=reference_documents,
             references_strategy=reference_strategy,
             milvus_references_collection=config.milvus_references_collection,
@@ -144,6 +160,8 @@ def _apply_remote_operation(config: AppConfig, plan: SyncPlan, embeddings):
                     milvus_uri=config.milvus_uri,
                     milvus_token=config.milvus_token,
                     milvus_db_name=config.milvus_db_name,
+                    milvus_papers_collection=config.milvus_papers_collection,
+                    paper_documents=plan.target_state.paper_docs,
                 )
             _clear_faiss_dir(config)
             return None
@@ -162,6 +180,7 @@ def _apply_remote_operation(config: AppConfig, plan: SyncPlan, embeddings):
             milvus_token=config.milvus_token,
             milvus_db_name=config.milvus_db_name,
             milvus_collection=config.milvus_collection,
+            milvus_papers_collection=config.milvus_papers_collection,
             references_strategy=reference_strategy,
             milvus_references_collection=config.milvus_references_collection,
         )

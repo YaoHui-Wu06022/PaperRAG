@@ -13,6 +13,9 @@ from services.sync_transaction import (
     recover_pending_sync_operation,
 )
 
+# `main.py` 是很薄的一层 CLI 入口。
+# 它应该只负责参数解析、启动检查，以及把请求分发到 `pipeline.py` 的编排层。
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="RAG-based PDF Knowledge Base QA System"
@@ -86,6 +89,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _startup_requirements(args: argparse.Namespace) -> dict[str, bool]:
+    """声明每个 CLI 命令要求哪些依赖处于健康状态。"""
     command = args.command
     if command == "health":
         return {
@@ -108,6 +112,7 @@ def _startup_requirements(args: argparse.Namespace) -> dict[str, bool]:
 
 
 def _build_recovery_embeddings(config):
+    # 恢复 sync journal 只需要 embeddings 来重新连上向量库。
     return build_embedding_model(
         config.embedding_provider,
         config.embedding_model,
@@ -119,6 +124,7 @@ def _build_recovery_embeddings(config):
 
 
 def _recover_pending_sync_if_needed(config) -> None:
+    """在接受新命令前，先完成上次中断的 sync journal 恢复。"""
     if not has_pending_sync_operation(config):
         return
     embeddings = _build_recovery_embeddings(config)
@@ -126,7 +132,16 @@ def _recover_pending_sync_if_needed(config) -> None:
     print(f"Recovered pending sync journal (previous_status={status}).")
 
 
+def _configure_stdio() -> None:
+    """保证 CLI 输出在 Windows GBK 控制台里也能正常打印。"""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(errors="replace")
+
+
 def main() -> None:
+    """`ingest / ask / chat / delete / health` 的 CLI 入口。"""
+    _configure_stdio()
     parser = build_parser()
     args = parser.parse_args()
     config = load_config()

@@ -27,5 +27,4 @@ data/cache/
 !data/cache/.gitkeep
 data/hf_cache/
 data/mineru_output/
-data/临时/
 evalout/

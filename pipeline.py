@@ -14,6 +14,7 @@ from generation.prompt import build_qa_prompt
 from ingestion.chunking import split_documents_with_parents
 from ingestion.embedding import build_embedding_model
 from ingestion.pdf_loader import PdfLoadResult, load_documents_from_dir, load_pdf_pages
+from retrieval.query_router import route_query
 from retrieval.retriever import (
     clear_retrieval_cache,
 )
@@ -22,11 +23,20 @@ from retrieval.vector_store import (
     vector_index_exists,
 )
 from services import local_cache_store as cache_store
+from services.knowledge_base_guard import (
+    build_readiness_error_message,
+    check_query_readiness,
+    ensure_knowledge_base_consistency,
+    validate_cache_hit_state,
+)
+from services.paper_representation import build_paper_assets
 from services.retrieval_service import run_retrieval_flow
 from services.sync_transaction import SyncPlan, execute_sync_plan
 from services.telemetry import OperationTrace
 
 
+# 这个模块是项目的编排层：
+# ingest 负责构建知识库，ask/delete 则在这套状态之上读写。
 INSUFFICIENT_EVIDENCE_ANSWER = (
     "根据当前检索到的资料，未找到充分证据支持回答该问题。"
     "请尝试换一种问法，或补充相关文档后再提问。"
@@ -80,6 +90,10 @@ class QAResult:
     retrieval_scope: str = "main"
 
 
+def _emit_ingest_progress(message: str) -> None:
+    print(f"[ingest] {message}", flush=True)
+
+
 def _collect_pdf_paths(config: AppConfig, pdf_path: Path | None) -> list[Path]:
     if pdf_path:
         target = pdf_path.resolve()
@@ -119,10 +133,13 @@ def _build_ingest_signature(config: AppConfig, pdf_paths: list[Path]) -> dict[st
         "chunk_min_block_chars": config.chunk_min_block_chars,
         "chunk_quality_check_enabled": config.chunk_quality_check_enabled,
         "chunk_quality_header_footer_min_freq": config.chunk_quality_header_footer_min_freq,
-        "ingestion_schema_version": 5,
+        "paper_summary_max_chars": config.paper_summary_max_chars,
+        "section_summary_max_chars": config.section_summary_max_chars,
+        "ingestion_schema_version": 6,
         "milvus_uri": config.milvus_uri,
         "milvus_db_name": config.milvus_db_name,
         "milvus_collection": config.milvus_collection,
+        "milvus_papers_collection": config.milvus_papers_collection,
         "milvus_references_collection": config.milvus_references_collection,
         "references_strategy": config.references_strategy,
         "references_keyword_index_file": str(config.references_keyword_index_file),
@@ -428,12 +445,22 @@ def _build_evidence_record(doc: Document) -> EvidenceRecord:
     )
 
 
+def _select_citation_docs(
+    route,
+    retrieval_result,
+    evidence_docs: list[Document],
+) -> list[Document]:
+    if getattr(route, "prompt_mode", "") == "metadata" and retrieval_result.paper_docs:
+        return retrieval_result.paper_docs
+    return evidence_docs
+
+
 def _strip_inline_citations(answer: str) -> str:
     text = (answer or "").strip()
     if not text:
         return text
 
-    # Strip common inline citation tags produced by LLM.
+    # 去掉 LLM 生成答案里常见的行内引用标签。
     patterns = [
         r"\[[^\[\]\n]{0,220}(?:doc:|source:|section:|block:)[^\[\]\n]*\]",
         r"\[[^\[\]\n]{0,220}p\.\s*\d+[^\[\]\n]*\]",
@@ -442,7 +469,7 @@ def _strip_inline_citations(answer: str) -> str:
     for pattern in patterns:
         cleaned = re.sub(pattern, "", cleaned, flags=re.IGNORECASE)
 
-    # Drop explicit citation/reference section in answer body.
+    # 去掉答案正文里显式的“引用/参考文献”小节。
     drop_headers = {"引用：", "引用:", "references:", "references：", "参考：", "参考:"}
     kept_lines: list[str] = []
     skipping = False
@@ -567,6 +594,19 @@ def _normalize_doc_id_list(doc_ids: list[str]) -> list[str]:
     return sorted({str(item).strip() for item in doc_ids if str(item).strip()})
 
 
+def _build_scope_hint(normalized_scope: str, prompt_mode: str) -> str:
+    if normalized_scope == "references":
+        return (
+            "以下上下文全部来自论文的参考文献列表。回答时只依据这些参考文献条目，"
+            "优先回答是否引用、引用了哪些工作、涉及哪些作者或年份。"
+        )
+    if prompt_mode == "survey":
+        return "以下上下文是论文级摘要与代表性证据的混合结果，请总结当前知识库覆盖范围内的研究脉络。"
+    if prompt_mode == "metadata":
+        return "以下上下文优先包含论文级元数据与摘要，请优先回答题目、作者、年份、venue、关键词等结构化信息。"
+    return ""
+
+
 def _get_llm_client(config: AppConfig):
     key = _llm_cache_key(config)
     if key not in _LLM_CACHE:
@@ -599,6 +639,12 @@ def _load_question_answering_resources(
     *,
     scope: str,
 ):
+    """加载一次 QA 请求所需的检索资源。
+
+    `main` scope 使用正常的论文知识库；
+    `references` scope 切到仅参考文献语料，通常更适合 BM25，
+    因为引用条目更短、关键词更密集。
+    """
     normalized_scope = _normalize_retrieval_scope(scope)
     if normalized_scope == "references":
         reference_corpus, reference_corpus_key = cache_store.load_reference_chunk_corpus(config)
@@ -621,14 +667,28 @@ def _load_question_answering_resources(
             "apply_metadata_filters": False,
             "retrieval_mode_override": retrieval_mode_override,
             "use_parent_context": False,
+            "paper_vector_store": None,
+            "paper_corpus": [],
+            "paper_corpus_key": None,
+            "section_corpus": [],
         }
 
     chunk_corpus, chunk_corpus_key = cache_store.load_chunk_corpus(config)
+    paper_corpus, paper_corpus_key = cache_store.load_paper_corpus(config)
+    section_corpus, _ = cache_store.load_section_summary_corpus(config)
     return {
         "scope": "main",
         "vector_store": _get_vector_store(config, embeddings),
         "chunk_corpus": chunk_corpus,
         "chunk_corpus_key": chunk_corpus_key,
+        "paper_vector_store": _get_optional_vector_store(
+            config,
+            embeddings,
+            collection_name=config.milvus_papers_collection,
+        ),
+        "paper_corpus": paper_corpus,
+        "paper_corpus_key": paper_corpus_key,
+        "section_corpus": section_corpus,
         "parent_map": cache_store.load_parent_corpus_map(config),
         "apply_metadata_filters": True,
         "retrieval_mode_override": None,
@@ -642,6 +702,15 @@ def ingest_documents(
     *,
     force: bool = False,
 ) -> IngestResult:
+    """把 PDF 入库到本地缓存和向量索引。
+
+    高层流程如下：
+    1. 发现 PDF，并构建用于 cache-hit 判断的签名。
+    2. 通过 MinerU 缓存结果或云 API 解析 PDF。
+    3. 构建 chunk / parent / reference 语料和 paper-level 资产。
+    4. 把本次进入的 doc_id 与已有本地状态合并。
+    5. 以事务方式把合并后的状态同步到向量库。
+    """
     trace = OperationTrace(
         "ingest",
         config.local_cache_dir / "observability.jsonl",
@@ -652,6 +721,7 @@ def ingest_documents(
             pdf_paths = _collect_pdf_paths(config, pdf_path)
         if not pdf_paths:
             raise ValueError("No PDF text found. Add PDFs to data/pdf and retry.")
+        _emit_ingest_progress(f"discovered {len(pdf_paths)} PDF file(s)")
 
         signature = _build_ingest_signature(config, pdf_paths)
         cached = cache_store.load_ingest_cache(config)
@@ -665,19 +735,33 @@ def ingest_documents(
             and chunk_corpus_exists
             and parent_corpus_exists
         ):
-            result = IngestResult(
-                raw_documents=int(cached.get("raw_documents", 0)),
-                chunks=int(cached.get("chunks", 0)),
-                cache_dir=config.local_cache_dir,
-                skipped=True,
-            )
-            trace.set_field("skipped", True)
-            trace.finish(status="ok")
-            return result
+            # 快速路径只有在本地文件和远端索引都仍然匹配当前签名时，
+            # 才会复用现有 cache。
+            with trace.stage("validate_cached_state"):
+                _emit_ingest_progress("validating existing cache and remote index state")
+                embeddings = _get_embeddings(config)
+                cache_health = validate_cache_hit_state(config, cached, embeddings)
+            if cache_health.ok:
+                result = IngestResult(
+                    raw_documents=int(cached.get("raw_documents", 0)),
+                    chunks=int(cached.get("chunks", 0)),
+                    cache_dir=config.local_cache_dir,
+                    skipped=True,
+                    reference_chunks=int(cached.get("reference_chunk_count", 0) or 0),
+                )
+                trace.set_field("skipped", True)
+                trace.set_field("cache_repaired", cache_health.repaired)
+                trace.finish(status="ok")
+                _emit_ingest_progress(
+                    f"cache hit confirmed: {result.raw_documents} pages, {result.chunks} chunks"
+                )
+                return result
 
         with trace.stage("parse_documents"):
+            _emit_ingest_progress("parsing PDFs with MinerU cached outputs / cloud parser")
             parse_result: PdfLoadResult
             if pdf_path:
+                _emit_ingest_progress(f"[1/1] parsing {pdf_path.name}")
                 parse_result = load_pdf_pages(
                     pdf_path,
                     mineru_output_dir=config.mineru_output_dir,
@@ -686,6 +770,9 @@ def ingest_documents(
                     mineru_cloud_model_version=config.mineru_cloud_model_version,
                     mineru_cloud_poll_interval_sec=config.mineru_cloud_poll_interval_sec,
                     mineru_cloud_timeout_sec=config.mineru_cloud_timeout_sec,
+                )
+                _emit_ingest_progress(
+                    f"[1/1] parsed {pdf_path.name} -> {len(parse_result.documents)} raw docs"
                 )
             else:
                 parse_result = load_documents_from_dir(
@@ -696,13 +783,18 @@ def ingest_documents(
                     mineru_cloud_model_version=config.mineru_cloud_model_version,
                     mineru_cloud_poll_interval_sec=config.mineru_cloud_poll_interval_sec,
                     mineru_cloud_timeout_sec=config.mineru_cloud_timeout_sec,
+                    progress_callback=_emit_ingest_progress,
                 )
         docs = parse_result.documents
         block_rows = parse_result.blocks
         if not docs:
             raise ValueError("No PDF text found. Add PDFs to data/pdf and retry.")
+        _emit_ingest_progress(
+            f"parsed corpus -> {len(docs)} raw docs, {len(block_rows)} structured blocks"
+        )
 
         with trace.stage("chunk_documents"):
+            _emit_ingest_progress("building parent/chunk structure")
             chunks, parent_docs = split_documents_with_parents(
                 documents=docs,
                 chunk_size=config.chunk_size,
@@ -714,12 +806,15 @@ def ingest_documents(
                 semantic_hard_max_chars=config.chunk_semantic_hard_max_chars,
             )
         with trace.stage("chunk_quality"):
+            _emit_ingest_progress("running chunk quality checks")
             chunks, quality_summary = cache_store.run_chunk_quality_checks(
                 chunks,
                 enabled=config.chunk_quality_check_enabled,
                 header_footer_min_freq=config.chunk_quality_header_footer_min_freq,
             )
 
+        # 参考文献 chunk 会单独存一份，因为它们对引用类问题有帮助，
+        # 但通常会干扰普通正文证据检索。
         main_chunks, reference_chunks = cache_store.split_reference_docs(chunks)
         main_parent_docs, _ = cache_store.split_reference_docs(parent_docs)
         if not main_chunks and reference_chunks:
@@ -729,7 +824,21 @@ def ingest_documents(
         reference_purity_summary = cache_store.build_reference_purity_summary(reference_chunks)
         quality_summary["reference_purity"] = reference_purity_summary
         cache_store.save_chunk_quality_report(config, quality_summary)
+        _emit_ingest_progress(
+            "chunk summary -> "
+            f"main={len(main_chunks)}, parents={len(main_parent_docs)}, "
+            f"references={len(reference_chunks)}"
+        )
 
+        _emit_ingest_progress("building paper summaries, section summaries, and citation graph")
+        paper_assets = build_paper_assets(
+            main_parent_docs,
+            block_rows,
+            reference_chunks,
+            source_root=config.data_pdf_dir,
+            paper_summary_max_chars=config.paper_summary_max_chars,
+            section_summary_max_chars=config.section_summary_max_chars,
+        )
         incoming_chunk_rows = [cache_store.chunk_to_structured_row(doc) for doc in chunks]
         incoming_reference_keyword_rows = cache_store.build_reference_keyword_rows(reference_chunks)
         incoming_doc_ids = cache_store.collect_doc_ids_from_docs(chunks)
@@ -739,6 +848,7 @@ def ingest_documents(
             raise ValueError("Failed to extract doc_id from parsed documents.")
 
         with trace.stage("load_local_cache"):
+            _emit_ingest_progress("loading existing local cache state")
             existing_state = cache_store.load_local_cache_state(config)
 
         existing_doc_ids = (
@@ -763,8 +873,10 @@ def ingest_documents(
             )
             trace.set_field("skipped", True)
             trace.finish(status="ok")
+            _emit_ingest_progress("no new doc_id detected; nothing to ingest")
             return result
 
+        # 把语料拆成两部分：本次要写入的新行，以及合并后应继续保留的旧行。
         active_main_chunks = cache_store.filter_docs_by_doc_ids(main_chunks, active_doc_ids, keep=True)
         active_parent_docs = cache_store.filter_docs_by_doc_ids(
             main_parent_docs,
@@ -784,6 +896,26 @@ def ingest_documents(
         )
         active_reference_keyword_rows = cache_store.filter_rows_by_doc_ids(
             incoming_reference_keyword_rows,
+            active_doc_ids,
+            keep=True,
+        )
+        active_paper_docs = cache_store.filter_docs_by_doc_ids(
+            paper_assets.paper_docs,
+            active_doc_ids,
+            keep=True,
+        )
+        active_section_docs = cache_store.filter_docs_by_doc_ids(
+            paper_assets.section_docs,
+            active_doc_ids,
+            keep=True,
+        )
+        active_paper_rows = cache_store.filter_rows_by_doc_ids(
+            paper_assets.catalog_rows,
+            active_doc_ids,
+            keep=True,
+        )
+        active_citation_rows = cache_store.filter_rows_by_doc_ids(
+            paper_assets.citation_rows,
             active_doc_ids,
             keep=True,
         )
@@ -818,13 +950,37 @@ def ingest_documents(
             active_doc_ids,
             keep=False,
         )
+        kept_existing_papers = cache_store.filter_docs_by_doc_ids(
+            existing_state.paper_docs,
+            active_doc_ids,
+            keep=False,
+        )
+        kept_existing_sections = cache_store.filter_docs_by_doc_ids(
+            existing_state.section_docs,
+            active_doc_ids,
+            keep=False,
+        )
+        kept_existing_paper_rows = cache_store.filter_rows_by_doc_ids(
+            existing_state.paper_rows,
+            active_doc_ids,
+            keep=False,
+        )
+        kept_existing_citation_rows = cache_store.filter_rows_by_doc_ids(
+            existing_state.citation_rows,
+            active_doc_ids,
+            keep=False,
+        )
 
         merged_state = cache_store.LocalCacheState(
             main_chunks=[*kept_existing_main, *active_main_chunks],
             parent_docs=[*kept_existing_parents, *active_parent_docs],
+            paper_docs=[*kept_existing_papers, *active_paper_docs],
+            section_docs=[*kept_existing_sections, *active_section_docs],
             reference_chunks=[*kept_existing_reference, *active_reference_chunks],
             block_rows=[*kept_existing_blocks, *active_block_rows],
             chunk_rows=[*kept_existing_chunk_rows, *active_chunk_rows],
+            paper_rows=[*kept_existing_paper_rows, *active_paper_rows],
+            citation_rows=[*kept_existing_citation_rows, *active_citation_rows],
             reference_keyword_rows=[
                 *kept_existing_reference_keywords,
                 *active_reference_keyword_rows,
@@ -839,11 +995,22 @@ def ingest_documents(
                 total_page_count if total_page_count > 0 else len(merged_state.parent_docs)
             ),
             chunks=len(merged_state.main_chunks),
+            main_chunk_count=len(merged_state.main_chunks),
+            paper_doc_count=len(merged_state.paper_docs),
+            reference_chunk_count=len(merged_state.reference_chunks),
         )
 
         with trace.stage("build_embeddings"):
+            _emit_ingest_progress("loading embedding model")
             embeddings = _get_embeddings(config)
         with trace.stage("sync_remote_and_local"):
+            # 远端写入发生在本地 cache commit 之前。
+            # 如果进程恰好卡在中间，sync journal 能帮助后续安全恢复。
+            _emit_ingest_progress(
+                "syncing to vector store -> "
+                f"doc_ids={len(active_doc_ids)}, main_chunks={len(active_main_chunks)}, "
+                f"paper_docs={len(active_paper_docs)}, reference_chunks={len(active_reference_chunks)}"
+            )
             vector_store = execute_sync_plan(
                 config,
                 SyncPlan(
@@ -851,6 +1018,7 @@ def ingest_documents(
                     doc_ids=sorted(active_doc_ids),
                     remote_payload={
                         "main_documents": cache_store.serialize_documents(active_main_chunks),
+                        "paper_documents": cache_store.serialize_documents(active_paper_docs),
                         "reference_documents": cache_store.serialize_documents(active_reference_chunks),
                         "upsert_doc_ids": sorted(active_doc_ids),
                     },
@@ -859,11 +1027,16 @@ def ingest_documents(
                 ),
                 embeddings,
             )
+        _emit_ingest_progress("vector store sync completed; refreshing caches")
 
         if vector_store is not None:
             _set_vector_store_cache(config, vector_store)
         else:
             _VECTOR_STORE_CACHE.pop(_vector_store_cache_key(config), None)
+        _VECTOR_STORE_CACHE.pop(
+            _vector_store_cache_key(config, collection_name=config.milvus_papers_collection),
+            None,
+        )
 
         cache_store.clear_local_cache_caches()
         clear_retrieval_cache()
@@ -888,6 +1061,10 @@ def ingest_documents(
             result.suspicious_reference_chunks,
         )
         trace.finish(status="ok")
+        _emit_ingest_progress(
+            f"done -> pages={result.raw_documents}, chunks={result.chunks}, "
+            f"reference_chunks={result.reference_chunks}"
+        )
         return result
     except Exception as exc:
         trace.finish(status="error", error=str(exc))
@@ -912,9 +1089,13 @@ def delete_documents(config: AppConfig, doc_ids: list[str]) -> DeleteResult:
         known_doc_ids = (
             cache_store.collect_doc_ids_from_docs(existing_state.main_chunks)
             | cache_store.collect_doc_ids_from_docs(existing_state.parent_docs)
+            | cache_store.collect_doc_ids_from_docs(existing_state.paper_docs)
+            | cache_store.collect_doc_ids_from_docs(existing_state.section_docs)
             | cache_store.collect_doc_ids_from_docs(existing_state.reference_chunks)
             | cache_store.collect_doc_ids_from_rows(existing_state.block_rows)
             | cache_store.collect_doc_ids_from_rows(existing_state.chunk_rows)
+            | cache_store.collect_doc_ids_from_rows(existing_state.paper_rows)
+            | cache_store.collect_doc_ids_from_rows(existing_state.citation_rows)
             | cache_store.collect_doc_ids_from_rows(existing_state.reference_keyword_rows)
         )
         deleted_doc_ids = sorted(target_doc_ids & known_doc_ids)
@@ -930,6 +1111,16 @@ def delete_documents(config: AppConfig, doc_ids: list[str]) -> DeleteResult:
                 target_doc_ids,
                 keep=False,
             ),
+            paper_docs=cache_store.filter_docs_by_doc_ids(
+                existing_state.paper_docs,
+                target_doc_ids,
+                keep=False,
+            ),
+            section_docs=cache_store.filter_docs_by_doc_ids(
+                existing_state.section_docs,
+                target_doc_ids,
+                keep=False,
+            ),
             reference_chunks=cache_store.filter_docs_by_doc_ids(
                 existing_state.reference_chunks,
                 target_doc_ids,
@@ -942,6 +1133,16 @@ def delete_documents(config: AppConfig, doc_ids: list[str]) -> DeleteResult:
             ),
             chunk_rows=cache_store.filter_rows_by_doc_ids(
                 existing_state.chunk_rows,
+                target_doc_ids,
+                keep=False,
+            ),
+            paper_rows=cache_store.filter_rows_by_doc_ids(
+                existing_state.paper_rows,
+                target_doc_ids,
+                keep=False,
+            ),
+            citation_rows=cache_store.filter_rows_by_doc_ids(
+                existing_state.citation_rows,
                 target_doc_ids,
                 keep=False,
             ),
@@ -971,6 +1172,10 @@ def delete_documents(config: AppConfig, doc_ids: list[str]) -> DeleteResult:
             _set_vector_store_cache(config, vector_store)
         else:
             _VECTOR_STORE_CACHE.pop(_vector_store_cache_key(config), None)
+        _VECTOR_STORE_CACHE.pop(
+            _vector_store_cache_key(config, collection_name=config.milvus_papers_collection),
+            None,
+        )
 
         cache_store.clear_local_cache_caches()
         clear_retrieval_cache()
@@ -1004,13 +1209,29 @@ def answer_question(
     *,
     scope: str = "main",
 ) -> QAResult:
-    normalized_scope = _normalize_retrieval_scope(scope)
+    """基于现有知识库回答一个问题。
+
+    这条路径刻意保持只读。如果缺少所需的 cache 文件或向量 collection，
+    就明确提示调用方先执行 `ingest`，而不是在问答过程中偷偷重建索引。
+    """
+    route = route_query(config, question, scope=scope)
+    normalized_scope = _normalize_retrieval_scope(route.retrieval_scope)
     trace = OperationTrace(
         "answer_question",
         config.local_cache_dir / "observability.jsonl",
-        metadata={"question_length": len(question), "scope": normalized_scope},
+        metadata={
+            "question_length": len(question),
+            "scope": normalized_scope,
+            "route_type": route.route_type,
+        },
     )
     try:
+        with trace.stage("check_query_readiness"):
+            # `ask` 只做就绪性检查，不负责修复知识库。
+            readiness = check_query_readiness(config, route=route)
+            trace.set_field("kb_ready", readiness.ok)
+            if not readiness.ok:
+                raise RuntimeError(build_readiness_error_message(readiness, route=route))
         with trace.stage("build_embeddings"):
             embeddings = _get_embeddings(config)
         with trace.stage("load_retrieval_resources"):
@@ -1020,20 +1241,27 @@ def answer_question(
                 scope=normalized_scope,
             )
         with trace.stage("retrieve_evidence"):
+            # 检索会根据路由选择不同策略：
+            # 例如先 paper-level、只查 references、comparison、metadata 等。
             retrieval_result = run_retrieval_flow(
                 config,
                 question,
                 resources["vector_store"],
                 chunk_corpus=resources["chunk_corpus"],
                 chunk_corpus_key=resources["chunk_corpus_key"],
+                paper_vector_store=resources["paper_vector_store"],
+                paper_corpus=resources["paper_corpus"],
+                paper_corpus_key=resources["paper_corpus_key"],
+                section_corpus=resources["section_corpus"],
                 parent_map=resources["parent_map"],
                 apply_metadata_filters=bool(resources["apply_metadata_filters"]),
                 retrieval_mode_override=resources["retrieval_mode_override"],
                 use_parent_context=bool(resources["use_parent_context"]),
+                route=route,
             )
 
         docs = retrieval_result.evidence_docs
-        if not docs:
+        if not docs and not retrieval_result.generation_docs:
             result = QAResult(
                 answer=INSUFFICIENT_EVIDENCE_ANSWER,
                 citations=[],
@@ -1046,18 +1274,16 @@ def answer_question(
             return result
 
         with trace.stage("generate_answer"):
+            # `generation_docs` 可能是更大的 parent context 或 paper summary，
+            # 而 `evidence_docs` 会保持紧凑，更适合引用展示。
             prompt = build_qa_prompt(
                 question=question,
                 documents=retrieval_result.generation_docs,
                 context_label=(
                     "参考文献上下文" if normalized_scope == "references" else "上下文"
                 ),
-                scope_hint=(
-                    "以下上下文全部来自论文的参考文献列表。回答时只依据这些参考文献条目，"
-                    "优先回答是否引用、引用了哪些工作、涉及哪些作者或年份。"
-                    if normalized_scope == "references"
-                    else ""
-                ),
+                scope_hint=_build_scope_hint(normalized_scope, route.prompt_mode),
+                answer_mode=route.prompt_mode,
             )
             llm = _get_llm_client(config)
             answer = _normalize_answer_from_llm(llm.generate(prompt))
@@ -1065,10 +1291,13 @@ def answer_question(
         citations: list[str] = []
         evidences: list[EvidenceRecord] = []
         contexts = [doc.page_content for doc in retrieval_result.generation_docs]
+        citation_docs = _select_citation_docs(route, retrieval_result, docs)
         seen = set()
         for doc in docs:
             evidence = _build_evidence_record(doc)
             evidences.append(evidence)
+        for doc in citation_docs:
+            evidence = _build_evidence_record(doc)
             if evidence.citation_text not in seen:
                 citations.append(evidence.citation_text)
                 seen.add(evidence.citation_text)
@@ -1081,6 +1310,7 @@ def answer_question(
             retrieval_scope=normalized_scope,
         )
         trace.set_field("evidence_docs", len(docs))
+        trace.set_field("paper_docs", len(retrieval_result.paper_docs))
         trace.set_field("generation_docs", len(retrieval_result.generation_docs))
         trace.finish(status="ok")
         return result

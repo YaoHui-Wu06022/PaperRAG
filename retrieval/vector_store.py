@@ -15,6 +15,8 @@ warnings.filterwarnings(
 )
 FAISS_INDEX_DIRNAME = "faiss_index"
 
+# 这个模块屏蔽本地 FAISS 和远端 Milvus/Zilliz 的差异，
+# 让项目其它部分都可以统一按 doc_id 这一层来操作索引。
 
 def _get_langchain_milvus_class():
     try:
@@ -42,11 +44,18 @@ def build_vector_index(
     milvus_token: str = "",
     milvus_db_name: str = "",
     milvus_collection: str = "rag_pdf_chunks",
+    milvus_papers_collection: str = "rag_pdf_papers",
     milvus_drop_old: bool = True,
+    paper_documents: list[Document] | None = None,
     reference_documents: list[Document] | None = None,
     references_strategy: str = "keyword_only",
     milvus_references_collection: str = "rag_pdf_references",
 ):
+    """从零开始构建一套新的向量索引。
+
+    对 Milvus 来说，这一步最多会创建三层 collection：
+    chunk-level 文档、paper-level 文档，以及可选的 references collection。
+    """
     backend = backend.strip().lower()
     if backend == "faiss":
         return _build_faiss_index(documents, embeddings, persist_dir)
@@ -61,6 +70,16 @@ def build_vector_index(
             milvus_collection=milvus_collection,
             milvus_drop_old=milvus_drop_old,
         )
+        if paper_documents:
+            _build_milvus_index(
+                documents=paper_documents,
+                embeddings=embeddings,
+                milvus_uri=milvus_uri,
+                milvus_token=milvus_token,
+                milvus_db_name=milvus_db_name,
+                milvus_collection=milvus_papers_collection,
+                milvus_drop_old=milvus_drop_old,
+            )
         if (
             references_strategy.strip().lower() == "separate_collection"
             and reference_documents
@@ -89,11 +108,18 @@ def upsert_vector_index(
     milvus_token: str = "",
     milvus_db_name: str = "",
     milvus_collection: str = "rag_pdf_chunks",
+    milvus_papers_collection: str = "rag_pdf_papers",
     doc_ids_to_replace: list[str] | None = None,
+    paper_documents: list[Document] | None = None,
     reference_documents: list[Document] | None = None,
     references_strategy: str = "keyword_only",
     milvus_references_collection: str = "rag_pdf_references",
 ):
+    """按 doc_id 执行文档 upsert。
+
+    Milvus 支持按 doc_id 先删后写，所以 ingest 可以保持增量；
+    FAISS 不支持这一套，因此 FAISS 路径会退回全量重建。
+    """
     backend = backend.strip().lower()
     replace_ids = sorted({str(item).strip() for item in (doc_ids_to_replace or []) if str(item).strip()})
 
@@ -109,6 +135,13 @@ def upsert_vector_index(
         _delete_milvus_by_doc_ids(
             uri,
             milvus_collection,
+            replace_ids,
+            milvus_token=milvus_token,
+            milvus_db_name=milvus_db_name,
+        )
+        _delete_milvus_by_doc_ids(
+            uri,
+            milvus_papers_collection,
             replace_ids,
             milvus_token=milvus_token,
             milvus_db_name=milvus_db_name,
@@ -129,6 +162,16 @@ def upsert_vector_index(
             milvus_token=milvus_token,
             milvus_db_name=milvus_db_name,
             milvus_collection=milvus_collection,
+        )
+
+    if paper_documents:
+        _append_milvus_documents(
+            documents=paper_documents,
+            embeddings=embeddings,
+            milvus_uri=uri,
+            milvus_token=milvus_token,
+            milvus_db_name=milvus_db_name,
+            milvus_collection=milvus_papers_collection,
         )
 
     if references_strategy.strip().lower() == "separate_collection":
@@ -162,9 +205,11 @@ def delete_documents_from_index(
     milvus_token: str = "",
     milvus_db_name: str = "",
     milvus_collection: str = "rag_pdf_chunks",
+    milvus_papers_collection: str = "rag_pdf_papers",
     references_strategy: str = "keyword_only",
     milvus_references_collection: str = "rag_pdf_references",
 ) -> None:
+    """从所有保存这篇论文的索引层里删除它。"""
     backend = backend.strip().lower()
     normalized_ids = sorted({str(item).strip() for item in doc_ids if str(item).strip()})
     if not normalized_ids:
@@ -181,6 +226,13 @@ def delete_documents_from_index(
     _delete_milvus_by_doc_ids(
         uri,
         milvus_collection,
+        normalized_ids,
+        milvus_token=milvus_token,
+        milvus_db_name=milvus_db_name,
+    )
+    _delete_milvus_by_doc_ids(
+        uri,
+        milvus_papers_collection,
         normalized_ids,
         milvus_token=milvus_token,
         milvus_db_name=milvus_db_name,
@@ -204,6 +256,7 @@ def load_vector_index(
     milvus_db_name: str = "",
     milvus_collection: str = "rag_pdf_chunks",
 ):
+    """加载已有的向量索引或 collection，且不做任何写入。"""
     backend = backend.strip().lower()
     if backend == "faiss":
         return _load_faiss_index(embeddings, persist_dir)
@@ -241,6 +294,30 @@ def vector_index_exists(
             milvus_db_name=milvus_db_name,
         )
 
+    raise ValueError(f"Unsupported vector backend: {backend}. Use 'faiss' or 'milvus'.")
+
+
+def vector_index_entity_count(
+    backend: str,
+    persist_dir: Path,
+    *,
+    milvus_uri: str | None = None,
+    milvus_token: str = "",
+    milvus_db_name: str = "",
+    milvus_collection: str = "rag_pdf_chunks",
+) -> int | None:
+    backend = backend.strip().lower()
+    if backend == "faiss":
+        if not _faiss_persist_dir(persist_dir).exists():
+            return 0
+        return None
+    if backend == "milvus":
+        return _milvus_collection_entity_count(
+            milvus_uri,
+            milvus_collection,
+            milvus_token=milvus_token,
+            milvus_db_name=milvus_db_name,
+        )
     raise ValueError(f"Unsupported vector backend: {backend}. Use 'faiss' or 'milvus'.")
 
 
@@ -298,6 +375,7 @@ def build_milvus_connection_args(
     milvus_token: str = "",
     milvus_db_name: str = "",
 ) -> dict[str, str]:
+    """把 Milvus 的 cloud / lite 两种配置统一整理成同一种连接参数。"""
     connection_args = {"uri": _normalize_milvus_uri(milvus_uri)}
     token = str(milvus_token or "").strip()
     db_name = str(milvus_db_name or "").strip()
@@ -317,6 +395,8 @@ def _build_milvus_index(
     milvus_collection: str,
     milvus_drop_old: bool,
 ):
+    # `langchain_milvus` 和较旧的 community wrapper 构造参数不完全一致，
+    # 所以这里集中做一层兼容适配。
     Milvus = _get_langchain_milvus_class()
 
     connection_args = build_milvus_connection_args(
@@ -497,6 +577,39 @@ def _milvus_collection_exists(
     )
     try:
         return bool(utility.has_collection(collection_name=collection_name, using=alias))
+    finally:
+        connections.disconnect(alias=alias)
+
+
+def _milvus_collection_entity_count(
+    milvus_uri: str | None,
+    collection_name: str,
+    *,
+    milvus_token: str = "",
+    milvus_db_name: str = "",
+) -> int:
+    try:
+        from pymilvus import Collection, connections, utility
+    except ImportError as exc:
+        raise ImportError(
+            "Milvus collection checks require pymilvus. Please `pip install pymilvus`."
+        ) from exc
+
+    alias = f"rag_count_{abs(hash((milvus_uri, collection_name))) % 100000}"
+    connections.connect(
+        alias=alias,
+        **build_milvus_connection_args(
+            milvus_uri,
+            milvus_token=milvus_token,
+            milvus_db_name=milvus_db_name,
+        ),
+    )
+    try:
+        if not utility.has_collection(collection_name=collection_name, using=alias):
+            return 0
+        collection = Collection(name=collection_name, using=alias)
+        collection.load()
+        return int(collection.num_entities)
     finally:
         connections.disconnect(alias=alias)
 

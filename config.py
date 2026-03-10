@@ -9,6 +9,10 @@ from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent
 
+# 这个模块是运行时配置的唯一入口。
+# `load_config()` 会一次性解析环境变量，并返回不可变的 AppConfig，
+# 这样下游模块基本可以保持无状态。
+
 
 def _env_int(name: str, default: int) -> int:
     value = os.getenv(name)
@@ -53,6 +57,7 @@ def _env_bool(name: str, default: bool) -> bool:
 
 
 def _resolve_milvus_settings() -> tuple[str, str, str]:
+    """把云端 Milvus 和 Milvus Lite 的配置整理成统一格式。"""
     mode = os.getenv("MILVUS_MODE", "").strip().lower()
     if mode == "lite":
         lite_uri = os.getenv("MILVUS_LITE_URI", "").strip()
@@ -67,6 +72,8 @@ def _resolve_milvus_settings() -> tuple[str, str, str]:
 
 @dataclass(frozen=True)
 class AppConfig:
+    # 配置项按职责大致分成：
+    # 输入与缓存路径 -> 解析 -> 切块 -> 检索 -> 生成。
     data_pdf_dir: Path
     local_cache_dir: Path
     mineru_api_token: str
@@ -82,6 +89,7 @@ class AppConfig:
     milvus_token: str
     milvus_db_name: str
     milvus_collection: str
+    milvus_papers_collection: str
     milvus_references_collection: str
     references_strategy: str
     references_keyword_index_file: Path
@@ -119,6 +127,8 @@ class AppConfig:
     generation_use_parent_context: bool
     generation_parent_top_n: int
     generation_parent_max_chars: int
+    paper_summary_max_chars: int
+    section_summary_max_chars: int
     llm_provider: str
     llm_model: str
     llm_temperature: float
@@ -132,6 +142,7 @@ class AppConfig:
 
 
 def load_config() -> AppConfig:
+    """加载环境变量并构建不可变的运行时配置对象。"""
     load_dotenv()
     milvus_uri, milvus_token, milvus_db_name = _resolve_milvus_settings()
     data_pdf_dir = BASE_DIR / "data" / "pdf"
@@ -173,6 +184,10 @@ def load_config() -> AppConfig:
         milvus_token=milvus_token,
         milvus_db_name=milvus_db_name,
         milvus_collection=os.getenv("MILVUS_COLLECTION", "rag_pdf_chunks"),
+        milvus_papers_collection=os.getenv(
+            "MILVUS_PAPERS_COLLECTION",
+            "rag_pdf_papers",
+        ),
         milvus_references_collection=os.getenv(
             "MILVUS_REFERENCES_COLLECTION",
             "rag_pdf_references",
@@ -250,6 +265,8 @@ def load_config() -> AppConfig:
         ),
         generation_parent_top_n=_env_int("GENERATION_PARENT_TOP_N", 3),
         generation_parent_max_chars=_env_int("GENERATION_PARENT_MAX_CHARS", 2200),
+        paper_summary_max_chars=_env_int("PAPER_SUMMARY_MAX_CHARS", 2400),
+        section_summary_max_chars=_env_int("SECTION_SUMMARY_MAX_CHARS", 700),
         llm_provider=os.getenv("LLM_PROVIDER", "aihubmix"),
         llm_model=os.getenv("LLM_MODEL", "your-free-model-id"),
         llm_temperature=_env_float("LLM_TEMPERATURE", 0.1),
