@@ -222,7 +222,10 @@ def run_retrieval_flow(
             reranked_docs = rerank_documents(
                 query=question,
                 docs=docs,
+                provider=config.reranker_provider,
                 reranker_model=config.reranker_model,
+                api_key=config.reranker_api_key,
+                base_url=config.reranker_base_url,
                 top_k=candidate_k,
                 score_threshold=config.reranker_score_threshold,
             )

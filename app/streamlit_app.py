@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from concurrent.futures import Future, ThreadPoolExecutor
-import io
 import re
 import sys
 import time
@@ -97,10 +96,8 @@ def _recover_pending_sync_if_needed(config) -> str | None:
     embeddings = build_embedding_model(
         config.embedding_provider,
         config.embedding_model,
-        openai_api_key=config.openai_api_key,
-        openai_base_url=config.openai_base_url,
-        aihubmix_api_key=config.aihubmix_api_key,
-        aihubmix_base_url=config.aihubmix_base_url,
+        api_key=config.embedding_api_key,
+        base_url=config.embedding_base_url,
     )
     return recover_pending_sync_operation(config, embeddings)
 
@@ -203,10 +200,10 @@ def _render_task_panel(config) -> None:
                 )
 
         if task_key == "ask" and task["status"] == "succeeded":
-            _render_qa_result(task["result"], config)
+            _render_qa_result(task["result"])
 
 
-def _render_qa_result(result, config) -> None:
+def _render_qa_result(result) -> None:
     st.subheader("Answer")
     st.caption(f"Retrieval scope: {result.retrieval_scope}")
     st.write(result.answer)
@@ -215,7 +212,6 @@ def _render_qa_result(result, config) -> None:
     if result.evidences:
         for idx, evidence in enumerate(result.evidences, start=1):
             st.markdown(f"{idx}. {evidence.citation_text}")
-            expander_key = f"{idx}_{evidence.doc_id}_{evidence.block_id}"
             with st.expander(f"Expand Evidence {idx}", expanded=False):
                 st.markdown(f"**Citation**: `{evidence.citation_text}`")
                 st.markdown(f"**Tag**: `{evidence.citation_tag}`")
@@ -227,35 +223,10 @@ def _render_qa_result(result, config) -> None:
                         "doc_id": evidence.doc_id,
                         "block_id": evidence.block_id,
                         "page": evidence.page,
-                        "bbox": evidence.bbox,
                         "source": evidence.source,
                         "section_path": evidence.section_path,
                     }
                 )
-
-                target_pdf = config.data_pdf_dir / evidence.source
-                if target_pdf.exists():
-                    show_page = st.checkbox(
-                        "Show PDF page and highlight bbox",
-                        key=f"show_pdf_{expander_key}",
-                    )
-                    if show_page:
-                        page_number = _safe_int(evidence.page, 0)
-                        image_bytes, err = _render_pdf_page_with_bbox(
-                            str(target_pdf),
-                            page_number,
-                            evidence.bbox,
-                        )
-                        if err:
-                            st.warning(err)
-                        elif image_bytes is not None:
-                            st.image(
-                                image_bytes,
-                                caption=f"{evidence.source} - page {page_number}",
-                                use_container_width=True,
-                            )
-                else:
-                    st.caption(f"PDF file not found: {target_pdf}")
     else:
         for citation in result.citations:
             st.markdown(f"- `{citation}`")
@@ -270,120 +241,6 @@ def _render_qa_result(result, config) -> None:
 def _render_live_task_panel(config) -> None:
     _refresh_tasks()
     _render_task_panel(config)
-
-
-def _safe_int(value, default: int = 0) -> int:
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return default
-
-
-def _normalize_bbox(bbox: list[float] | None) -> list[float]:
-    if not isinstance(bbox, list) or len(bbox) < 4:
-        return []
-    normalized: list[float] = []
-    for item in bbox[:4]:
-        try:
-            normalized.append(float(item))
-        except (TypeError, ValueError):
-            return []
-    x0, y0, x1, y1 = normalized
-    if x0 > x1:
-        x0, x1 = x1, x0
-    if y0 > y1:
-        y0, y1 = y1, y0
-    return [x0, y0, x1, y1]
-
-
-def _map_bbox_to_pdf_space(
-    bbox: list[float],
-    *,
-    page_width: float,
-    page_height: float,
-) -> tuple[float, float, float, float] | None:
-    values = _normalize_bbox(bbox)
-    if not values:
-        return None
-    x0, y0, x1, y1 = values
-
-    if max(abs(v) for v in values) <= 1.5:
-        x0 *= page_width
-        x1 *= page_width
-        y0 *= page_height
-        y1 *= page_height
-    else:
-        max_x = max(x0, x1)
-        max_y = max(y0, y1)
-        if max_x > page_width * 1.2 or max_y > page_height * 1.2:
-            sx = page_width / max(max_x, page_width)
-            sy = page_height / max(max_y, page_height)
-            x0 *= sx
-            x1 *= sx
-            y0 *= sy
-            y1 *= sy
-
-    x0 = max(0.0, min(x0, page_width))
-    x1 = max(0.0, min(x1, page_width))
-    y0 = max(0.0, min(y0, page_height))
-    y1 = max(0.0, min(y1, page_height))
-    if x1 - x0 <= 1e-3 or y1 - y0 <= 1e-3:
-        return None
-    return x0, y0, x1, y1
-
-
-@st.cache_data(show_spinner=False)
-def _render_pdf_page_with_bbox(
-    pdf_path: str,
-    page_number: int,
-    bbox: list[float] | None,
-) -> tuple[bytes | None, str | None]:
-    if page_number <= 0:
-        return None, "Invalid page number."
-
-    try:
-        import fitz
-    except ImportError:
-        return None, "PyMuPDF is not installed. Run `pip install pymupdf`."
-
-    try:
-        from PIL import Image, ImageDraw
-    except ImportError:
-        return None, "Pillow is not installed. Run `pip install pillow`."
-
-    target = Path(pdf_path)
-    if not target.exists():
-        return None, f"PDF file not found: {target}"
-
-    try:
-        with fitz.open(str(target)) as doc:
-            if page_number > doc.page_count:
-                return None, f"Page number out of range: {doc.page_count}"
-            page = doc.load_page(page_number - 1)
-            page_rect = page.rect
-            zoom = 2.0
-            pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), alpha=False)
-
-        image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-        draw = ImageDraw.Draw(image)
-        mapped = _map_bbox_to_pdf_space(
-            bbox or [],
-            page_width=float(page_rect.width),
-            page_height=float(page_rect.height),
-        )
-        if mapped:
-            x0, y0, x1, y1 = mapped
-            draw.rectangle(
-                [x0 * zoom, y0 * zoom, x1 * zoom, y1 * zoom],
-                outline=(255, 0, 0),
-                width=max(2, int(2 * zoom)),
-            )
-
-        buf = io.BytesIO()
-        image.save(buf, format="PNG")
-        return buf.getvalue(), None
-    except Exception as exc:
-        return None, f"Failed to render PDF page: {exc}"
 
 
 def main() -> None:
@@ -433,7 +290,7 @@ def main() -> None:
         st.write(f"Hybrid RRF k: `{config.hybrid_rrf_k}`")
         st.write(f"Use reranker: `{config.use_reranker}`")
         st.write(f"Reranker: `{config.reranker_model}`")
-        st.write(f"LLM: `{config.llm_provider}/{config.llm_model}`")
+        st.write(f"LLM: `{config.llm_model}`")
         st.divider()
         st.subheader("Health")
         for item in health_snapshot:

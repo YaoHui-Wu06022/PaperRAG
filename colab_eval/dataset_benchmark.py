@@ -334,25 +334,18 @@ def _build_embeddings(config: AppConfig):
     return build_embedding_model(
         config.embedding_provider,
         config.embedding_model,
-        openai_api_key=config.openai_api_key,
-        openai_base_url=config.openai_base_url,
-        aihubmix_api_key=config.aihubmix_api_key,
-        aihubmix_base_url=config.aihubmix_base_url,
+        api_key=config.embedding_api_key,
+        base_url=config.embedding_base_url,
     )
 
 
 def _build_llm(config: AppConfig):
     return build_llm_client(
-        provider=config.llm_provider,
         model=config.llm_model,
         temperature=config.llm_temperature,
-        aihubmix_api_key=config.aihubmix_api_key,
-        aihubmix_base_url=config.aihubmix_base_url,
-        aihubmix_api_mode=config.aihubmix_api_mode,
-        openai_api_key=config.openai_api_key,
-        openai_base_url=config.openai_base_url,
-        openai_api_mode=config.openai_api_mode,
-        ollama_base_url=config.ollama_base_url,
+        api_key=config.llm_api_key,
+        base_url=config.llm_base_url,
+        api_mode=config.llm_api_mode,
     )
 
 

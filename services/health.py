@@ -29,6 +29,7 @@ def build_startup_health_report(
     results = [
         _check_pending_sync_journal(config),
         _check_local_cache_dir(config),
+        _check_embedding_config(config),
     ]
     if require_local_cache:
         results.append(_check_required_local_cache_files(config))
@@ -36,6 +37,7 @@ def build_startup_health_report(
         results.append(_check_mineru_config(config))
     if require_llm:
         results.append(_check_llm_config(config))
+    results.append(_check_reranker_config(config))
     if require_milvus:
         results.extend(_check_milvus(config))
     return results
@@ -108,21 +110,38 @@ def _check_mineru_config(config: AppConfig) -> HealthCheckResult:
     return HealthCheckResult("mineru_config", False, "MINERU_API_TOKEN is empty")
 
 
+def _check_embedding_config(config: AppConfig) -> HealthCheckResult:
+    provider = config.embedding_provider.strip().lower()
+    if provider != "openai":
+        return HealthCheckResult("embedding_config", True, provider, False)
+    ok = bool(config.embedding_api_key)
+    message = (
+        "EMBEDDING_API_KEY present"
+        if ok
+        else "EMBEDDING_API_KEY is empty for openai-compatible embeddings"
+    )
+    return HealthCheckResult("embedding_config", ok, message)
+
+
 def _check_llm_config(config: AppConfig) -> HealthCheckResult:
-    provider = config.llm_provider.strip().lower()
-    if provider == "aihubmix":
-        ok = bool(config.aihubmix_api_key)
-        message = "AIHUBMIX_API_KEY present" if ok else "AIHUBMIX_API_KEY is empty"
-        return HealthCheckResult("llm_config", ok, message)
-    if provider == "openai":
-        ok = bool(config.openai_api_key)
-        message = "OPENAI_API_KEY present" if ok else "OPENAI_API_KEY is empty"
-        return HealthCheckResult("llm_config", ok, message)
-    if provider == "ollama":
-        return HealthCheckResult("llm_config", True, config.ollama_base_url, False)
-    if provider == "mock":
-        return HealthCheckResult("llm_config", True, "mock provider", False)
-    return HealthCheckResult("llm_config", False, f"unsupported provider: {provider}")
+    ok = bool(config.llm_api_key)
+    message = "LLM_API_KEY present" if ok else "LLM_API_KEY is empty"
+    return HealthCheckResult("llm_config", ok, message)
+
+
+def _check_reranker_config(config: AppConfig) -> HealthCheckResult:
+    if not config.use_reranker:
+        return HealthCheckResult("reranker_config", True, "disabled", False)
+    provider = config.reranker_provider.strip().lower()
+    if provider != "jina":
+        return HealthCheckResult("reranker_config", True, provider, False)
+    ok = bool(config.reranker_api_key)
+    message = (
+        "RERANKER_API_KEY present"
+        if ok
+        else "RERANKER_API_KEY is empty for jina reranker"
+    )
+    return HealthCheckResult("reranker_config", ok, message, False)
 
 
 def _check_milvus(config: AppConfig) -> list[HealthCheckResult]:

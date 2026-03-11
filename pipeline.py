@@ -77,7 +77,6 @@ class EvidenceRecord:
     section_path: str
     doc_id: str
     block_id: str
-    bbox: list[float]
     snippet: str
 
 
@@ -166,21 +165,16 @@ def _embedding_cache_key(config: AppConfig) -> tuple:
     return (
         config.embedding_provider,
         config.embedding_model,
-        config.openai_base_url,
-        config.aihubmix_base_url,
+        config.embedding_base_url,
     )
 
 
 def _llm_cache_key(config: AppConfig) -> tuple:
     return (
-        config.llm_provider,
         config.llm_model,
         config.llm_temperature,
-        config.aihubmix_base_url,
-        config.aihubmix_api_mode,
-        config.openai_base_url,
-        config.openai_api_mode,
-        config.ollama_base_url,
+        config.llm_base_url,
+        config.llm_api_mode,
     )
 
 
@@ -190,10 +184,8 @@ def _get_embeddings(config: AppConfig):
         _EMBEDDING_CACHE[key] = build_embedding_model(
             config.embedding_provider,
             config.embedding_model,
-            openai_api_key=config.openai_api_key,
-            openai_base_url=config.openai_base_url,
-            aihubmix_api_key=config.aihubmix_api_key,
-            aihubmix_base_url=config.aihubmix_base_url,
+            api_key=config.embedding_api_key,
+            base_url=config.embedding_base_url,
         )
     return _EMBEDDING_CACHE[key]
 
@@ -283,27 +275,6 @@ def _to_str_list(value: Any) -> list[str]:
     return [str(value)]
 
 
-def _to_bbox_list(value: Any) -> list[dict[str, Any]]:
-    if isinstance(value, list):
-        rows: list[dict[str, Any]] = []
-        for item in value:
-            if isinstance(item, dict):
-                page = item.get("page")
-                bbox = item.get("bbox")
-                rows.append({"page": page, "bbox": bbox})
-        return rows
-    if isinstance(value, str):
-        text = value.strip()
-        if not text:
-            return []
-        try:
-            parsed = json.loads(text)
-        except json.JSONDecodeError:
-            return []
-        return _to_bbox_list(parsed)
-    return []
-
-
 def _first_block_id(doc: Document) -> str:
     metadata = dict(doc.metadata or {})
     block_ids = _to_str_list(metadata.get("mineru_block_ids"))
@@ -313,32 +284,6 @@ def _first_block_id(doc: Document) -> str:
     if parent_id:
         return parent_id
     return f"chunk_{metadata.get('chunk_id', '?')}"
-
-
-def _normalize_bbox_numbers(value: Any) -> list[float]:
-    if not isinstance(value, list) or len(value) < 4:
-        return []
-    bbox: list[float] = []
-    for item in value[:4]:
-        try:
-            bbox.append(float(item))
-        except (TypeError, ValueError):
-            return []
-    return bbox
-
-
-def _pick_bbox(metadata: dict[str, Any], page: str) -> list[float]:
-    rows = _to_bbox_list(metadata.get("mineru_bboxes"))
-    for row in rows:
-        row_page = str(row.get("page", "")).strip()
-        bbox = _normalize_bbox_numbers(row.get("bbox"))
-        if bbox and row_page == page:
-            return bbox
-    for row in rows:
-        bbox = _normalize_bbox_numbers(row.get("bbox"))
-        if bbox:
-            return bbox
-    return []
 
 
 def _page_label(doc: Document) -> str:
@@ -440,7 +385,6 @@ def _build_evidence_record(doc: Document) -> EvidenceRecord:
         section_path=_section_label(doc),
         doc_id=str(metadata.get("doc_id", "")).strip(),
         block_id=_first_block_id(doc),
-        bbox=_pick_bbox(metadata, page),
         snippet=snippet,
     )
 
@@ -611,16 +555,11 @@ def _get_llm_client(config: AppConfig):
     key = _llm_cache_key(config)
     if key not in _LLM_CACHE:
         _LLM_CACHE[key] = build_llm_client(
-            provider=config.llm_provider,
             model=config.llm_model,
             temperature=config.llm_temperature,
-            aihubmix_api_key=config.aihubmix_api_key,
-            aihubmix_base_url=config.aihubmix_base_url,
-            aihubmix_api_mode=config.aihubmix_api_mode,
-            openai_api_key=config.openai_api_key,
-            openai_base_url=config.openai_base_url,
-            openai_api_mode=config.openai_api_mode,
-            ollama_base_url=config.ollama_base_url,
+            api_key=config.llm_api_key,
+            base_url=config.llm_base_url,
+            api_mode=config.llm_api_mode,
         )
     return _LLM_CACHE[key]
 

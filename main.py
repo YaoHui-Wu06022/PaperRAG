@@ -72,7 +72,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     models_parser = subparsers.add_parser(
         "models",
-        help="List available models from AIHubMix",
+        help="List available models from the configured OpenAI-compatible endpoint",
     )
     models_parser.add_argument(
         "--free-only",
@@ -116,10 +116,8 @@ def _build_recovery_embeddings(config):
     return build_embedding_model(
         config.embedding_provider,
         config.embedding_model,
-        openai_api_key=config.openai_api_key,
-        openai_base_url=config.openai_base_url,
-        aihubmix_api_key=config.aihubmix_api_key,
-        aihubmix_base_url=config.aihubmix_base_url,
+        api_key=config.embedding_api_key,
+        base_url=config.embedding_base_url,
     )
 
 
@@ -239,12 +237,12 @@ def main() -> None:
             return
 
         if args.command == "models":
-            if not config.aihubmix_api_key:
-                raise ValueError("AIHUBMIX_API_KEY is empty. Please set it in .env.")
-            endpoint = f"{config.aihubmix_base_url.rstrip('/')}/models"
+            if not config.llm_api_key:
+                raise ValueError("LLM_API_KEY is empty. Please set it in .env.")
+            endpoint = f"{config.llm_base_url.rstrip('/')}/models"
             response = requests.get(
                 endpoint,
-                headers={"Authorization": f"Bearer {config.aihubmix_api_key}"},
+                headers={"Authorization": f"Bearer {config.llm_api_key}"},
                 timeout=60,
             )
             if response.status_code >= 400:
@@ -271,7 +269,7 @@ def main() -> None:
                 else:
                     print(
                         "\nNo 'free' keyword found in model IDs. "
-                        "Use AIHubMix website filters to confirm free quota."
+                        "Use your provider console or docs to confirm free quota."
                     )
             return
 

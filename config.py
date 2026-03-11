@@ -84,6 +84,8 @@ class AppConfig:
     mineru_output_dir: Path
     embedding_provider: str
     embedding_model: str
+    embedding_api_key: str
+    embedding_base_url: str
     vector_backend: str
     milvus_uri: str
     milvus_token: str
@@ -120,8 +122,11 @@ class AppConfig:
     rerank_skip_min_top1_score: float
     rerank_skip_min_score_gap: float
     rerank_skip_min_rel_gap: float
+    reranker_provider: str
     reranker_model: str
     reranker_score_threshold: float | None
+    reranker_api_key: str
+    reranker_base_url: str
     diversify_by_source: bool
     max_chunks_per_source: int
     generation_use_parent_context: bool
@@ -129,16 +134,11 @@ class AppConfig:
     generation_parent_max_chars: int
     paper_summary_max_chars: int
     section_summary_max_chars: int
-    llm_provider: str
     llm_model: str
     llm_temperature: float
-    aihubmix_api_key: str
-    aihubmix_base_url: str
-    aihubmix_api_mode: str
-    openai_api_key: str
-    openai_base_url: str
-    openai_api_mode: str
-    ollama_base_url: str
+    llm_api_key: str
+    llm_base_url: str
+    llm_api_mode: str
 
 
 def load_config() -> AppConfig:
@@ -179,6 +179,13 @@ def load_config() -> AppConfig:
         ).resolve(),
         embedding_provider=os.getenv("EMBEDDING_PROVIDER", "huggingface"),
         embedding_model=os.getenv("EMBEDDING_MODEL", "BAAI/bge-m3"),
+        embedding_api_key=os.getenv("EMBEDDING_API_KEY", "").strip(),
+        embedding_base_url=os.getenv(
+            "EMBEDDING_BASE_URL",
+            "",
+        )
+        .strip()
+        .rstrip("/"),
         vector_backend=os.getenv("VECTOR_BACKEND", "milvus"),
         milvus_uri=milvus_uri,
         milvus_token=milvus_token,
@@ -253,10 +260,18 @@ def load_config() -> AppConfig:
         rerank_skip_min_top1_score=_env_float("RERANK_SKIP_MIN_TOP1_SCORE", 0.55),
         rerank_skip_min_score_gap=_env_float("RERANK_SKIP_MIN_SCORE_GAP", 0.08),
         rerank_skip_min_rel_gap=_env_float("RERANK_SKIP_MIN_REL_GAP", 0.2),
+        reranker_provider=os.getenv("RERANKER_PROVIDER", "local").strip().lower(),
         reranker_model=os.getenv("RERANKER_MODEL", "BAAI/bge-reranker-base"),
         reranker_score_threshold=_env_optional_float(
             "RERANKER_SCORE_THRESHOLD", 0.0005
         ),
+        reranker_api_key=os.getenv("RERANKER_API_KEY", "").strip(),
+        reranker_base_url=os.getenv(
+            "RERANKER_BASE_URL",
+            "https://api.jina.ai/v1/rerank",
+        )
+        .strip()
+        .rstrip("/"),
         diversify_by_source=_env_bool("DIVERSIFY_BY_SOURCE", True),
         max_chunks_per_source=_env_int("MAX_CHUNKS_PER_SOURCE", 2),
         generation_use_parent_context=_env_bool(
@@ -267,23 +282,11 @@ def load_config() -> AppConfig:
         generation_parent_max_chars=_env_int("GENERATION_PARENT_MAX_CHARS", 2200),
         paper_summary_max_chars=_env_int("PAPER_SUMMARY_MAX_CHARS", 2400),
         section_summary_max_chars=_env_int("SECTION_SUMMARY_MAX_CHARS", 700),
-        llm_provider=os.getenv("LLM_PROVIDER", "aihubmix"),
         llm_model=os.getenv("LLM_MODEL", "your-free-model-id"),
         llm_temperature=_env_float("LLM_TEMPERATURE", 0.1),
-        aihubmix_api_key=os.getenv(
-            "AIHUBMIX_API_KEY",
-            os.getenv("OPENAI_API_KEY", ""),
-        ),
-        aihubmix_base_url=os.getenv(
-            "AIHUBMIX_BASE_URL",
-            os.getenv("OPENAI_BASE_URL", "https://aihubmix.com/v1"),
-        ),
-        aihubmix_api_mode=os.getenv(
-            "AIHUBMIX_API_MODE",
-            os.getenv("OPENAI_API_MODE", "chat"),
-        ),
-        openai_api_key=os.getenv("OPENAI_API_KEY", ""),
-        openai_base_url=os.getenv("OPENAI_BASE_URL", ""),
-        openai_api_mode=os.getenv("OPENAI_API_MODE", "chat"),
-        ollama_base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+        llm_api_key=os.getenv("LLM_API_KEY", "").strip(),
+        llm_base_url=os.getenv("LLM_BASE_URL", "https://aihubmix.com/v1")
+        .strip()
+        .rstrip("/"),
+        llm_api_mode=os.getenv("LLM_API_MODE", "chat").strip().lower(),
     )

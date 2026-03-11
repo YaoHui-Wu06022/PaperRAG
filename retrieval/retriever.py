@@ -8,6 +8,7 @@ import json
 import os
 import re
 from typing import Any
+import requests
 
 from langchain_core.documents import Document
 
@@ -624,6 +625,70 @@ def _get_reranker_model(reranker_model: str):
     return _RERANKER_CACHE[reranker_model]
 
 
+def _rerank_documents_with_jina(
+    query: str,
+    docs: list[Document],
+    *,
+    reranker_model: str,
+    api_key: str,
+    base_url: str,
+    top_k: int | None,
+    score_threshold: float | None,
+) -> list[Document]:
+    if not api_key or not base_url:
+        ranked = docs
+        return ranked[:top_k] if top_k else ranked
+
+    payload = {
+        "model": reranker_model,
+        "query": query,
+        "top_n": max(1, int(top_k or len(docs))),
+        "documents": [doc.page_content for doc in docs],
+    }
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    try:
+        response = requests.post(
+            base_url,
+            headers=headers,
+            json=payload,
+            timeout=60,
+        )
+        response.raise_for_status()
+        body = response.json()
+    except Exception:
+        ranked = docs
+        return ranked[:top_k] if top_k else ranked
+
+    rows = body.get("results") or body.get("data") or []
+    ranked_docs: list[Document] = []
+    for item in rows:
+        if not isinstance(item, dict):
+            continue
+        index = item.get("index")
+        if not isinstance(index, int) or index < 0 or index >= len(docs):
+            continue
+        score = item.get("relevance_score", item.get("score"))
+        try:
+            ranked_docs.append(
+                _attach_score(docs[index], "reranker_score", float(score))
+            )
+        except (TypeError, ValueError):
+            ranked_docs.append(docs[index])
+
+    if not ranked_docs:
+        ranked_docs = docs
+
+    ranked_docs = _filter_docs_by_score(
+        ranked_docs,
+        "reranker_score",
+        score_threshold,
+    )
+    return ranked_docs[:top_k] if top_k else ranked_docs
+
+
 def clear_retrieval_cache() -> None:
     _BM25_CACHE.clear()
     _RERANKER_CACHE.clear()
@@ -632,7 +697,10 @@ def clear_retrieval_cache() -> None:
 def rerank_documents(
     query: str,
     docs: list[Document],
+    provider: str = "local",
     reranker_model: str | None = None,
+    api_key: str = "",
+    base_url: str = "",
     top_k: int | None = None,
     score_threshold: float | None = None,
 ) -> list[Document]:
@@ -644,9 +712,21 @@ def rerank_documents(
     if not docs:
         return []
 
+    provider = str(provider or "local").strip().lower()
     if not reranker_model:
         ranked = docs
         return ranked[:top_k] if top_k else ranked
+
+    if provider == "jina":
+        return _rerank_documents_with_jina(
+            query,
+            docs,
+            reranker_model=reranker_model,
+            api_key=api_key,
+            base_url=base_url,
+            top_k=top_k,
+            score_threshold=score_threshold,
+        )
 
     model = _get_reranker_model(reranker_model)
     if model is None:

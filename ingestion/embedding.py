@@ -110,10 +110,8 @@ def build_embedding_model(
     provider: str,
     model_name: str,
     *,
-    openai_api_key: str = "",
-    openai_base_url: str = "",
-    aihubmix_api_key: str = "",
-    aihubmix_base_url: str = "https://aihubmix.com/v1",
+    api_key: str = "",
+    base_url: str = "",
 ):
     """根据配置构建 Embedding 模型。"""
     provider = provider.strip().lower()
@@ -144,17 +142,8 @@ def build_embedding_model(
 
         return OpenAIEmbeddings(
             model=model_name,
-            api_key=openai_api_key or None,
-            base_url=openai_base_url or None,
-        )
-
-    if provider == "aihubmix":
-        from langchain_openai import OpenAIEmbeddings
-
-        return OpenAIEmbeddings(
-            model=model_name,
-            api_key=aihubmix_api_key or None,
-            base_url=aihubmix_base_url or None,
+            api_key=api_key or None,
+            base_url=base_url or None,
         )
 
     if provider in {"localhash", "local"}:
@@ -162,5 +151,5 @@ def build_embedding_model(
 
     raise ValueError(
         "不支持的 embedding provider："
-        f"{provider}。可选：huggingface / openai / aihubmix / localhash"
+        f"{provider}。可选：huggingface / openai / localhash"
     )
