@@ -4,6 +4,8 @@ from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass
 import os
 from pathlib import Path
+import time
+from typing import Iterable
 
 from sklearn.feature_extraction.text import HashingVectorizer
 
@@ -34,6 +36,71 @@ class LocalHashEmbeddings:
 
     def embed_query(self, text: str) -> list[float]:
         return self._encode([text or ""])[0]
+
+
+@dataclass
+class OpenAICompatibleEmbeddings:
+    """
+    直接使用 OpenAI 官方 client 调兼容接口。
+
+    这样可以避开部分第三方 embedding 服务与 `langchain_openai.OpenAIEmbeddings`
+    在分词/请求体上的兼容问题；对 Jina 这类兼容 OpenAI Embeddings API 的服务更稳。
+    """
+
+    model: str
+    api_key: str
+    base_url: str = ""
+    batch_size: int = 64
+    max_retries: int = 6
+    retry_delay_sec: int = 20
+
+    def __post_init__(self) -> None:
+        from openai import OpenAI
+
+        self._client = OpenAI(
+            api_key=self.api_key or None,
+            base_url=self.base_url or None,
+        )
+
+    def _sanitize_text(self, text: str | None) -> str:
+        normalized = str(text or "").strip()
+        # 兼容部分服务端对空串更严格的校验，避免发出空输入。
+        return normalized or " "
+
+    def _iter_batches(self, texts: list[str]) -> Iterable[list[str]]:
+        size = max(int(self.batch_size or 64), 1)
+        for start in range(0, len(texts), size):
+            yield texts[start : start + size]
+
+    def _create_embeddings(self, input_value):
+        for attempt in range(self.max_retries + 1):
+            try:
+                return self._client.embeddings.create(
+                    model=self.model,
+                    input=input_value,
+                )
+            except Exception as exc:
+                status_code = getattr(exc, "status_code", None)
+                message = str(exc)
+                is_rate_limit = status_code == 429 or "RATE_TOKEN_LIMIT_EXCEEDED" in message
+                if not is_rate_limit or attempt >= self.max_retries:
+                    raise
+                sleep_seconds = self.retry_delay_sec * (attempt + 1)
+                time.sleep(sleep_seconds)
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        sanitized = [self._sanitize_text(text) for text in texts]
+        if not sanitized:
+            return []
+        vectors: list[list[float]] = []
+        for batch in self._iter_batches(sanitized):
+            response = self._create_embeddings(batch)
+            vectors.extend(item.embedding for item in response.data)
+        return vectors
+
+    def embed_query(self, text: str) -> list[float]:
+        response = self._create_embeddings(self._sanitize_text(text))
+        return list(response.data[0].embedding)
 
 
 def _build_hf_embeddings(model_name: str):
@@ -138,12 +205,25 @@ def build_embedding_model(
                 return _build_hf_embeddings(model_name)
 
     if provider == "openai":
-        from langchain_openai import OpenAIEmbeddings
-
-        return OpenAIEmbeddings(
+        batch_size = os.getenv("EMBEDDING_BATCH_SIZE", "").strip()
+        try:
+            if batch_size:
+                resolved_batch_size = max(int(batch_size), 1)
+            elif "jina.ai" in (base_url or "").lower():
+                resolved_batch_size = 16
+            else:
+                resolved_batch_size = 64
+        except ValueError:
+            resolved_batch_size = 16 if "jina.ai" in (base_url or "").lower() else 64
+        max_retries = os.getenv("EMBEDDING_MAX_RETRIES", "").strip()
+        retry_delay_sec = os.getenv("EMBEDDING_RETRY_DELAY_SEC", "").strip()
+        return OpenAICompatibleEmbeddings(
             model=model_name,
-            api_key=api_key or None,
-            base_url=base_url or None,
+            api_key=api_key,
+            base_url=base_url,
+            batch_size=resolved_batch_size,
+            max_retries=max(int(max_retries), 0) if max_retries.isdigit() else 6,
+            retry_delay_sec=max(int(retry_delay_sec), 1) if retry_delay_sec.isdigit() else 20,
         )
 
     if provider in {"localhash", "local"}:
