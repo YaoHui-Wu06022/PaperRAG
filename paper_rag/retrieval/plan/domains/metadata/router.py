@@ -1,28 +1,12 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
 from typing import Any
 
-from ...config import Settings
-from ..data.aliases import AliasMatch, resolve_target_papers
-from .semantic_parser import PlanParseError, PlanParserClient, validate_metadata_parse
-
-
-@dataclass(frozen=True)
-class RouteDecision:
-    route: str
-    reason: str
-    intent: str | None = None
-    target_query: str = ""
-    target_queries: list[str] = field(default_factory=list)
-    target_papers: list[dict[str, Any]] = field(default_factory=list)
-    alias_matches: list[AliasMatch] = field(default_factory=list)
-    parser_result: dict[str, Any] | None = None
-    parse_status: str = "not_parsed"
-    parser_error: str | None = None
-    return_field: str | None = None
-    filters: list[dict[str, Any]] = field(default_factory=list)
+from .....config import Settings
+from ....data.aliases import AliasMatch, resolve_target_papers
+from ...top_router import RouteDecision, first_matching_term, route_tokens
+from .parser import PlanParseError, PlanParserClient, validate_metadata_parse
 
 
 METADATA_ENTRY_TERMS = {
@@ -49,71 +33,6 @@ METADATA_ENTRY_PHRASES = [
 METADATA_LIST_TERMS = {"paper", "papers"}
 METADATA_COUNT_TERMS = {"count", "many", "number"}
 
-REFERENCE_TERMS = {
-    "bibliography",
-    "bibliographies",
-    "citation",
-    "citations",
-    "cite",
-    "cited",
-    "cites",
-    "citing",
-    "reference",
-    "referenced",
-    "references",
-    "referencing",
-}
-
-
-def route_query(query: str) -> RouteDecision:
-    tokens = route_tokens(query)
-    reference_term = first_matching_term(tokens, REFERENCE_TERMS)
-    if reference_term:
-        return RouteDecision(
-            route="reference",
-            reason=f"matched reference term: {reference_term}",
-            intent=None,
-            target_query=query,
-        )
-    metadata = metadata_route(query, tokens)
-    if metadata:
-        return metadata
-    return RouteDecision(
-        route="content",
-        reason="default content route for translated/English query",
-        intent=None,
-        target_query="",
-    )
-
-
-def build_route_decision(
-    settings: Settings,
-    query: str,
-    *,
-    warnings: list[str],
-    plan_parser=None,
-) -> RouteDecision:
-    decision = route_query(query)
-    if decision.route == "metadata":
-        return parse_metadata_decision(settings, decision, query, warnings, plan_parser=plan_parser)
-    return decision
-
-
-def has_reference_term(query: str) -> bool:
-    return first_matching_term(route_tokens(query), REFERENCE_TERMS) is not None
-
-
-def route_tokens(query: str) -> list[str]:
-    return re.findall(r"[a-z0-9]+", query.lower())
-
-
-def first_matching_term(tokens: list[str], candidates: set[str]) -> str | None:
-    token_set = set(tokens)
-    for term in sorted(candidates):
-        if term in token_set:
-            return term
-    return None
-
 
 def metadata_route(query: str, tokens: list[str]) -> RouteDecision | None:
     reason = metadata_entry_reason(tokens)
@@ -127,7 +46,7 @@ def metadata_route(query: str, tokens: list[str]) -> RouteDecision | None:
     )
 
 
-def parse_metadata_decision(
+def build_metadata_decision(
     settings: Settings,
     decision: RouteDecision,
     query: str,
@@ -217,7 +136,7 @@ def resolve_decision_targets(settings: Settings, decision: RouteDecision, target
 
 
 def metadata_entry_reason(tokens: list[str]) -> str:
-    """只判断是否进入 metadata 语义解析，不在这里判断具体字段意图。"""
+    """Only decide whether to enter metadata parsing."""
     for phrase in METADATA_ENTRY_PHRASES:
         label, sequence, *required_terms = phrase
         required = required_terms[0] if required_terms else set()

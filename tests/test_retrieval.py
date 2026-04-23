@@ -236,11 +236,13 @@ class RetrievalTests(unittest.TestCase):
         search_args = parser.parse_args(["search", "center loss", "--top-k", "3"])
         plan_args = parser.parse_args(["plan", "center loss 如何提升类内紧凑性"])
         ask_args = parser.parse_args(["ask", "center loss"])
+        debug_ask_args = parser.parse_args(["ask", "center loss", "--debug"])
         self.assertEqual(index_args.command, "index")
         self.assertEqual(search_args.command, "search")
         self.assertEqual(search_args.top_k, 3)
         self.assertEqual(plan_args.command, "plan")
         self.assertEqual(ask_args.command, "ask")
+        self.assertTrue(debug_ask_args.debug)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,7 @@
 # Paper_RAG Maintenance Plan
 
+记住，PowerShell 的中文输入编码始终用'utf-8'
+
 ## 1. 项目目标
 
 把一组 PDF 论文整理成可检索、可追踪、可重建的本地知识库，并提供面向论文问答的 CLI/API 工作流
@@ -92,10 +94,29 @@ paper_rag/
   retrieval/
     answer.py
     plan/
+      top_router.py
       planner.py
-      router.py
       translation.py
       context.py
+      domains/
+        __init__.py
+        metadata/
+          __init__.py
+          router.py
+          parser.py
+          prompt.py
+          schema.py
+        reference/
+          __init__.py
+          router.py
+          parser.py
+          prompt.py
+          schema.py
+        content/
+          __init__.py
+          parser.py
+          prompt.py
+          schema.py
     dense/
       service.py
       embedding.py
@@ -115,12 +136,16 @@ paper_rag/
 - `cli/`：命令行入口和参数解析，只做薄封装，把实际工作委托给 dataprocess/retrieval 服务。
 - `dataprocess/`：PDF 同步、MinerU 解析、论文内容抽取、manifest 和 paper_data 生成。
 - `dataprocess/metadata/`：外部论文元数据查询客户端，不参与用户问题检索。
-- `retrieval/plan/`：接入最终回答 LLM 前的证据链路；包含中文 query 翻译、英文规则顶层路由、各 route 的下层语义解析、evidence pack 编排和命中 block 扩展。
+- `retrieval/plan/top_router.py`：顶层规则路由与通用 route 决策对象，只负责 `reference / metadata / content` 的第一层分流。
+- `retrieval/plan/domains/metadata/`：metadata 路由入口、metadata parser prompt、metadata schema 和解析客户端。
+- `retrieval/plan/domains/reference/`：reference 路由入口、reference parser prompt、schema 校验和解析客户端；负责把引用类问题解析为 `intent / direction / anchor / anchor_mode / filters`。
+- `retrieval/plan/domains/content/`：content 路由入口与正文链路的独立承载目录，当前先只放入口和骨架。
+- `retrieval/plan/planner.py`：接入最终回答 LLM 前的证据链路编排层；负责翻译、调用顶层路由，并把 route decision 展开成 evidence pack。
 - `retrieval/dense/`：向量侧能力；包含 DashScope embedding、embedding cache、Milvus/Zilliz 存储和 `index/search` 服务。
 - `retrieval/sparse/`：本地稀疏检索算法；第一版只包含 BM25 和 tokenizer。
 - `retrieval/data/`：本地检索数据适配层；读取 `chunks.jsonl`、`references.jsonl` 和 `manifest.jsonl`。
 - 当前不保留旧路径兼容包装；内部代码和测试统一使用新路径。
-- 暂不新增未讨论清楚的 `ask/` 或 LLM 目录；等 ask 链路边界确定后再建立。
+- `ask` 的答案整合逻辑已经落在 `retrieval/answer.py`，CLI 入口在 `cli/ask.py`。
 
 ## 6. 数据流
 
@@ -248,7 +273,7 @@ CLI 行为：
 - evidence 不使用 `scope` 和 `expanded_query`；范围限定统一由 `target_papers` 表达，内部 alias/canonical 扩展不暴露。
 - 第二层语义解析是 `metadata / reference / content` 三个分支共用的设计原则，但每个分支的下沉 schema 可以不同：
   - metadata 重点解析字段查询、论文列表、数量统计、字段过滤和否定过滤。
-  - reference 重点解析 `cite / cited` 引用方向、目标论文、引用范围过滤和引用列表/统计意图。
+  - reference 重点解析 `cite / cited` 引用方向、目标论文、引用范围过滤和引用列表/统计意图；对应的路由与 parser 骨架独立放在 `retrieval/plan/domains/reference/`。
   - content 重点解析正文问题类型、目标论文范围、比较对象和需要召回的内容焦点。
   - 当前先细化 metadata schema；reference/content 的 parser schema 后续单独讨论，避免把不同任务硬塞进同一个结构。
 
@@ -278,8 +303,9 @@ CLI 行为：
   - `intent` 只能是 `lookup / list / count / unknown`。
   - `return_field` 只能是 `author / year / venue / title / null`；只有 `lookup` 时最关键。
   - `filters[].field` 只能是 `author / year / venue / title`。
-  - `filters[].op` 只能是 `= / in / contains / between`。
+  - `filters[].op` 只能是 `= / in / contains / interval`。
   - `filters[].value` 可以是字符串、数字、字符串列表或区间列表，例如 `"Kaiming He"`、`2015`、`["ResNet", "Transformer"]`、`[2015, 2020]`。
+  - 年份范围统一用 `interval` 表达，闭区间写作 `[2015, 2020]`，单边区间用字符串哨兵表示，例如 `[2015, "inf"]` 表示 2015 年以后，`["-inf", 2019]` 表示 2019 年以前。
   - `filters[].negated` 必须显式输出 `true / false`，不能只靠自然语言表达否定。
   - 不允许输出 `!=`、`not contains`、`not in` 等非 schema 运算符；否定只能通过 `negated=true` 表达，且 op 仍保持正向。
   - `not on ArXiv` / “不在 ArXiv 上发布”必须解析为 `field=venue / op=contains / value=ArXiv / negated=true`，不能写成 `not contains`。
@@ -301,12 +327,22 @@ CLI 行为：
 
 ### 8.3 Reference Route
 
-- reference route 当前只保留顶层入口，不进入 Milvus，不查本地 `references.jsonl`，不做 cite/cited 方向识别。
+- reference route 顶层入口仍由规则 token 命中，不进入 Milvus，不联网解析 DOI/DBLP，也不把参考文献条目拆成结构化论文 metadata。
 - 进入条件为英文 query 命中完整 token：`reference / references / referenced / referencing / bibliography / bibliographies / citation / citations / cite / cites / cited / citing`。
-- reference 命中时 evidence 返回 `parse_status=not_implemented` 和空 `references`，并在 warnings 中提示 reference evidence 尚未实现。
-- ask v1 不对 reference 生成最终答案；只要 route 进入 reference，就统一返回明确的未实现提示，避免把未完成的引用链路伪装成可答状态。
-- reference 命中后的第二层也属于 plan parser 的职责，后续应使用 reference 专用提示词解析引用方向、目标论文、列表/统计意图和范围过滤；reference schema 单独讨论后再实现。
-- 在 reference schema 确定前，不输出 `reference_direction`，不做 reference intent cleanup，不运行 reference BM25。
+- reference 命中后调用 `PLAN_PARSER_*` 配置下的 OpenAI-compatible parser，只做语义解析，不回答问题。
+- reference parser 输出严格 JSON：`router / intent / direction / anchor / anchor_mode / filters / raw_query`。
+  - `intent` 只接受 `list / count / null`。
+  - `direction=cite` 表示 anchor 论文引用了哪些参考文献。
+  - `direction=cited_by` 表示哪些本地论文引用了 anchor。
+  - `direction=null` 时不检索，evidence 标记 `parse_status=unknown_direction` 并写 warning。
+  - `anchor` 是锚点论文列表，v1 只接受 `field=title`。
+  - `anchor_mode` 支持 `per / or / and`；缺失或 null 默认 `per`。
+  - `filters` 复用 metadata filter schema：`field=author/year/venue/title`，`op==/in/contains/interval`，并显式保存 `negated`。
+- `direction=cite`：先把 anchor 解析到本地 `paper_data`，读取 anchor 自己的 `references.jsonl`；v1 只支持 `title/year` filter，作用于 reference `raw_text`。
+- `direction=cited_by`：在全库本地 `references.jsonl.raw_text` 中查 anchor title/alias；filters 作用于“引用者论文”的 manifest metadata。
+- `anchor_mode=per` 分别返回每个 anchor 的结果；`or` 返回并集；`and` 返回交集。
+- `intent=count` 返回数量，同时保留命中 reference 条目，方便 ask 追溯来源。
+- evidence 不输出 `expanded_query`，不使用 `scope`，也不恢复旧的 `reference_direction` 字段或 reference cleanup 逻辑。
 
 ### 8.4 Content Route
 
@@ -356,12 +392,13 @@ CLI 行为：
 
 ## 9. 生成策略
 
-生成层第一版只打通 metadata 问答，`paper-rag ask` 作为 plan evidence 的可读答案出口。
+生成层第一版打通 metadata 和 reference 的确定性问答，`paper-rag ask` 作为 plan evidence 的可读答案出口。
 
-- `paper-rag ask "问题"` 复用 `paper-rag plan` 的 evidence pack；当前只对 metadata 用确定性模板输出自然语言答案。
+- `paper-rag ask "问题"` 复用 `paper-rag plan` 的 evidence pack；当前对 metadata/reference 用确定性模板输出自然语言答案。
 - ask 不重新做 PDF ingest、MinerU 解析或外部 metadata 查询；它只消费当前 evidence pack 和本地 `paper_data`。
 - metadata evidence 用于回答作者、年份、venue、标题和论文列表类问题；lookup/list/count 都可直接出答案。
-- reference 和 content 仍保留入口，但 ask v1 只对 metadata 生成答案，reference/content 先统一返回明确的未实现提示。
+- reference evidence 用于回答“某论文引用了哪些参考文献”和“哪些本地论文引用了某论文”这两类本地引用关系问题；list/count 都可直接出答案。
+- content 仍保留入口，但 ask v1 不对 content 生成最终答案，先统一返回明确的未实现提示。
 - 生成回答时保留简短 provenance；metadata 结果仍可追溯到 manifest/paper_data。
 - 第一版 ask 不在本阶段实现 rerank、长答案规划、引用网络图、DOI/DBLP 解析或联网补全。
 
@@ -528,12 +565,11 @@ TOC 构建规则：
   - `Which journal / Which conference / venue` 进入 metadata route，并由 parser 输出 `intent=lookup / return_field=venue`。
   - `What is the title / title of` 进入 metadata route，并由 parser 输出 `intent=lookup / return_field=title`。
 - `Who are the authors of ResNet and Transformer respectively` 进入 metadata route，并由 parser 输出 `intent=lookup / return_field=author`，多个目标自动分组。
-  - `Which papers were published in 2015-2019` 进入 metadata route，并由 parser 输出 `intent=list` 和 `year between [2015, 2019]` filter。
+  - `Which papers were published in 2015-2019` 进入 metadata route，并由 parser 输出 `intent=list` 和 `year interval [2015, 2019]` filter。
   - `Which papers are written by Kaiming He` 进入 metadata route，并由 parser 输出 `intent=list` 和 `author = Kaiming He` filter；作者完整姓名匹配，`He` 不应匹配 `Kaiming He`。
   - `How many papers were published in 2019` 进入 metadata route，并由 parser 输出 `intent=count` 和 `year = 2019` filter。
-  - `Which papers were not published on ArXiv between 2015 and 2020` 进入 metadata route，并由 parser 输出 `year between [2015, 2020]` 以及 `venue contains ArXiv` 且 `negated=true`。
-  - 英文 reference、referenced、citation、bibliography、cited、cite 类完整 token 问题进入 reference route。
-  - reference/citation/bibliography/cite/cited 等完整 token 问题进入 reference route，但当前只返回 `parse_status=not_implemented`，不做引用方向识别和 reference evidence 检索。
+  - `Which papers were not published on ArXiv between 2015 and 2020` 进入 metadata route，并由 parser 输出 `year interval [2015, 2020]` 以及 `venue contains ArXiv` 且 `negated=true`。
+  - 英文 reference、referenced、citation、bibliography、cited、cite 类完整 token 问题进入 reference route，并调用 reference parser 解析 `intent / direction / anchor / anchor_mode / filters`。
   - `recite` 不误命中 reference，`authorization` 不误命中 metadata。
   - 其他英文问题默认进入 `content` route，`intent=None`。
   - 中文 metadata/reference/body query 必须先经百度翻译得到英文 `retrieval_query`，再触发路由。
@@ -550,9 +586,16 @@ TOC 构建规则：
   - `count` 按 filters 查询 manifest，同时返回 `count` 和匹配论文列表。
   - 多目标 lookup 时 evidence 按目标论文或实体分组返回。
   - evidence 返回 metadata 字段，但 plan 不直接回答。
-- 验证 reference route 入口：
+- 验证 reference route：
   - reference/citation/bibliography/cite/cited 等完整 token 问题进入 reference route。
-  - evidence 返回 `parse_status=not_implemented` 和空 `references`，不运行 BM25，不联网解析 DOI/DBLP。
+  - `References of ResNet` 解析为 `direction=cite`，读取 ResNet 自己的 `references.jsonl`。
+  - `Which papers cited ResNet` 解析为 `direction=cited_by`，扫描全库本地 `references.jsonl.raw_text` 并返回引用者论文。
+  - `Which papers cited ResNet and EfficientNet respectively` 使用 `anchor_mode=per`，分别返回每个 anchor 的结果。
+  - `Which papers cited both ResNet and EfficientNet` 使用 `anchor_mode=and`，返回交集。
+  - `Which papers cited ResNet or EfficientNet` 使用 `anchor_mode=or`，返回并集。
+  - `Which 2019 papers cited ResNet` 的 year filter 作用于引用者论文 manifest metadata。
+  - `direction=null` 不检索，返回 `parse_status=unknown_direction` 和明确 warning。
+  - reference evidence 不联网解析 DOI/DBLP，不把 reference item 自动补成结构化论文 metadata。
 - 验证 body route：
   - mock Milvus dense top20 + 本地 BM25 top20。
   - 使用 RRF 融合，按 `chunk_id` 去重，输出 top8。
@@ -568,7 +611,7 @@ TOC 构建规则：
 ## 12. 待决策问题
 
 - reference 专门链路后续如何基于 `references.jsonl` 解析 DBLP/DOI/标题/作者/年份/venue。
-- `ask` 如何消费 `plan` evidence pack、如何组织 prompt、如何生成引用。
+- `ask` 后续如何为 content evidence 组织 prompt、如何生成带引用的长答案。
 - body route 后续是否需要细分 method/experiment/result/definition/comparison 等子路由。
 - 是否需要 reference 编号定位，例如 `[12]` 或“第 12 篇引用”。
 

@@ -12,7 +12,9 @@ from paper_rag.config import Settings
 from paper_rag.retrieval.answer import run_ask
 from paper_rag.retrieval.dense.milvus_store import SearchResult
 from paper_rag.retrieval.plan.planner import prepare_query, run_plan
-from paper_rag.retrieval.plan.router import route_query
+from paper_rag.retrieval.plan.domains.metadata.schema import PlanParseError
+from paper_rag.retrieval.plan.domains.reference.schema import validate_reference_parse
+from paper_rag.retrieval.plan.top_router import route_query
 from paper_rag.retrieval.plan.translation import BaiduTranslator, TranslationError, TranslationResult
 
 
@@ -84,6 +86,22 @@ class StaticMetadataParser:
         return payload
 
 
+class StaticReferenceParser:
+    def __init__(self, payload: dict):
+        self.payload = payload
+        self.calls: list[str] = []
+
+    def parse_reference(self, query: str) -> dict:
+        self.calls.append(query)
+        payload = dict(self.payload)
+        payload.setdefault("router", "reference")
+        payload.setdefault("anchor", [])
+        payload.setdefault("anchor_mode", "per")
+        payload.setdefault("filters", [])
+        payload.setdefault("raw_query", query)
+        return payload
+
+
 def metadata_lookup(field: str, title: str) -> StaticMetadataParser:
     return StaticMetadataParser({
         "intent": "lookup",
@@ -97,6 +115,23 @@ def metadata_list(filters: list[dict]) -> StaticMetadataParser:
         "intent": "list",
         "return_field": None,
         "filters": filters,
+    })
+
+
+def reference_payload(
+    direction: str | None,
+    anchors: list[str],
+    *,
+    intent: str | None = "list",
+    anchor_mode: str = "per",
+    filters: list[dict] | None = None,
+) -> StaticReferenceParser:
+    return StaticReferenceParser({
+        "intent": intent,
+        "direction": direction,
+        "anchor": [{"field": "title", "value": anchor} for anchor in anchors],
+        "anchor_mode": anchor_mode,
+        "filters": filters or [],
     })
 
 
@@ -193,6 +228,33 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(decision.route, "reference")
         self.assertEqual(decision.target_query, query)
 
+    def test_reference_parser_schema_normalizes_valid_payload(self) -> None:
+        payload = validate_reference_parse({
+            "router": "reference",
+            "intent": "count",
+            "direction": "cited_by",
+            "anchor": [{"field": "title", "value": "ResNet"}],
+            "anchor_mode": "and",
+            "filters": [{"field": "year", "op": "interval", "value": [2015, "inf"], "negated": False}],
+            "raw_query": "Which papers cited ResNet after 2015?",
+        })
+        self.assertEqual(payload["intent"], "count")
+        self.assertEqual(payload["direction"], "cited_by")
+        self.assertEqual(payload["anchor_mode"], "and")
+        self.assertEqual(payload["filters"][0]["value"], [2015, "inf"])
+
+    def test_reference_parser_schema_rejects_invalid_anchor_field(self) -> None:
+        with self.assertRaises(PlanParseError):
+            validate_reference_parse({
+                "router": "reference",
+                "intent": "list",
+                "direction": "cite",
+                "anchor": [{"field": "author", "value": "Kaiming He"}],
+                "anchor_mode": "per",
+                "filters": [],
+                "raw_query": "References by Kaiming He",
+            })
+
     def test_chinese_query_uses_translator_and_english_query_skips_it(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             settings = Settings.load(Path(tmp))
@@ -284,12 +346,12 @@ class PlanTests(unittest.TestCase):
                 settings,
                 "Which papers were published in 2015-2019",
                 plan_parser=metadata_list([
-                    {"field": "year", "op": "between", "value": [2015, 2019], "negated": False},
+                    {"field": "year", "op": "interval", "value": [2015, 2019], "negated": False},
                 ]),
             )
             self.assertEqual(by_year["route"], "metadata")
             self.assertEqual(by_year["intent"], "list")
-            self.assertEqual(by_year["evidence"]["filters"], [{"field": "year", "op": "between", "value": [2015, 2019], "negated": False}])
+            self.assertEqual(by_year["evidence"]["filters"], [{"field": "year", "op": "interval", "value": [2015, 2019], "negated": False}])
             self.assertEqual(len(by_year["evidence"]["records"]), 2)
             by_author = run_plan(
                 settings,
@@ -379,7 +441,7 @@ class PlanTests(unittest.TestCase):
             self.assertEqual(pack["intent"], "list")
             self.assertEqual(pack["evidence"]["parse_status"], "ok")
 
-    def test_metadata_parser_accepts_between_numeric_list(self) -> None:
+    def test_metadata_parser_accepts_interval_numeric_list(self) -> None:
         with sample_project() as root:
             settings = Settings.load(Path(root))
             pack = run_plan(
@@ -388,11 +450,43 @@ class PlanTests(unittest.TestCase):
                 plan_parser=StaticMetadataParser({
                     "intent": "list",
                     "return_field": None,
-                    "filters": [{"field": "year", "op": "between", "value": [2015, 2020], "negated": False}],
+                    "filters": [{"field": "year", "op": "interval", "value": [2015, 2020], "negated": False}],
                 }),
             )
             self.assertEqual(pack["route"], "metadata")
             self.assertEqual(pack["evidence"]["filters"][0]["value"], [2015, 2020])
+
+    def test_metadata_parser_accepts_open_ended_interval_upper_bound(self) -> None:
+        with sample_project() as root:
+            settings = Settings.load(Path(root))
+            pack = run_plan(
+                settings,
+                "Which papers were published after 2015?",
+                plan_parser=StaticMetadataParser({
+                    "intent": "list",
+                    "return_field": None,
+                    "filters": [{"field": "year", "op": "interval", "value": [2015, "inf"], "negated": False}],
+                }),
+            )
+            self.assertEqual(pack["route"], "metadata")
+            self.assertEqual(pack["evidence"]["filters"][0]["value"], [2015, "inf"])
+            self.assertEqual(len(pack["evidence"]["records"]), 2)
+
+    def test_metadata_parser_accepts_open_ended_interval_lower_bound(self) -> None:
+        with sample_project() as root:
+            settings = Settings.load(Path(root))
+            pack = run_plan(
+                settings,
+                "Which papers were published before 2019?",
+                plan_parser=StaticMetadataParser({
+                    "intent": "list",
+                    "return_field": None,
+                    "filters": [{"field": "year", "op": "interval", "value": ["-inf", 2019], "negated": False}],
+                }),
+            )
+            self.assertEqual(pack["route"], "metadata")
+            self.assertEqual(pack["evidence"]["filters"][0]["value"], ["-inf", 2019])
+            self.assertEqual(len(pack["evidence"]["records"]), 2)
 
     def test_chinese_metadata_paper_list_uses_translated_query(self) -> None:
         with sample_project() as root:
@@ -402,12 +496,12 @@ class PlanTests(unittest.TestCase):
                 "哪些论文在2015-2019发表",
                 translator=YearRangeTranslator(),
                 plan_parser=metadata_list([
-                    {"field": "year", "op": "between", "value": [2015, 2019], "negated": False},
+                    {"field": "year", "op": "interval", "value": [2015, 2019], "negated": False},
                 ]),
             )
             self.assertEqual(by_year["route"], "metadata")
             self.assertEqual(by_year["intent"], "list")
-            self.assertEqual(by_year["evidence"]["filters"], [{"field": "year", "op": "between", "value": [2015, 2019], "negated": False}])
+            self.assertEqual(by_year["evidence"]["filters"], [{"field": "year", "op": "interval", "value": [2015, 2019], "negated": False}])
             full_author = run_plan(
                 settings,
                 "哪些论文是Kaiming He写的",
@@ -458,12 +552,17 @@ class PlanTests(unittest.TestCase):
             self.assertIn("Deep Residual Learning for Image Recognition", result.answer)
             self.assertIn("A Discriminative Feature Learning Approach for Deep Face Recognition", result.answer)
 
-    def test_ask_reference_route_reports_not_implemented(self) -> None:
+    def test_ask_reference_route_formats_answer(self) -> None:
         with sample_project() as root:
             settings = Settings.load(Path(root))
-            result = run_ask(settings, "Which papers cited ResNet")
+            result = run_ask(
+                settings,
+                "Which papers cited ResNet",
+                plan_parser=reference_payload("cited_by", ["ResNet"]),
+            )
             self.assertEqual(result.route, "reference")
-            self.assertIn("reference", result.answer.lower())
+            self.assertIn("reference match", result.answer.lower())
+            self.assertIn("Deep Face Recognition", result.answer)
 
     def test_ask_parse_failed_reports_failure(self) -> None:
         class BadParser:
@@ -489,27 +588,67 @@ class PlanTests(unittest.TestCase):
     def test_chinese_reference_with_year_constraint_stays_reference(self) -> None:
         with sample_project() as root:
             settings = Settings.load(Path(root))
-            pack = run_plan(settings, "哪些在2019发表的论文引用了resnet", translator=ReferenceYearTranslator())
+            pack = run_plan(
+                settings,
+                "哪些在2019发表的论文引用了resnet",
+                translator=ReferenceYearTranslator(),
+                plan_parser=reference_payload(
+                    "cited_by",
+                    ["ResNet"],
+                    filters=[{"field": "year", "op": "=", "value": 2016, "negated": False}],
+                ),
+            )
             self.assertEqual(pack["retrieval_query"], "Which papers published in 2019 cite RESNET")
             self.assertEqual(pack["route"], "reference")
-            self.assertEqual(pack["intent"], None)
-            self.assertEqual(pack["evidence"]["parse_status"], "not_implemented")
+            self.assertEqual(pack["intent"], "list")
+            self.assertEqual(pack["evidence"]["parse_status"], "ok")
+            self.assertEqual(len(pack["evidence"]["references"]), 1)
 
-    def test_reference_route_is_entry_only_for_now(self) -> None:
+    def test_reference_cited_by_returns_local_citing_papers(self) -> None:
         with sample_project() as root:
             settings = Settings.load(Path(root))
             pack = run_plan(
                 settings,
-                "Which papers cited LSTM",
+                "Which papers cited ResNet",
+                plan_parser=reference_payload("cited_by", ["ResNet"]),
             )
             self.assertEqual(pack["route"], "reference")
-            self.assertEqual(pack["intent"], None)
-            self.assertEqual(pack["evidence"]["query"], "Which papers cited LSTM")
+            self.assertEqual(pack["intent"], "list")
+            self.assertEqual(pack["evidence"]["query"], "Which papers cited ResNet")
             self.assertNotIn("scope", pack["evidence"])
             self.assertNotIn("expanded_query", pack["evidence"])
-            self.assertEqual(pack["evidence"]["parse_status"], "not_implemented")
+            self.assertEqual(pack["evidence"]["parse_status"], "ok")
+            self.assertEqual(len(pack["evidence"]["references"]), 1)
+            self.assertEqual(pack["evidence"]["references"][0]["citing_paper"]["title"], "A Discriminative Feature Learning Approach for Deep Face Recognition")
+
+    def test_reference_cite_reads_anchor_references_and_filters_raw_text(self) -> None:
+        with sample_project() as root:
+            settings = Settings.load(Path(root))
+            pack = run_plan(
+                settings,
+                "References of ResNet about ImageNet",
+                plan_parser=reference_payload(
+                    "cite",
+                    ["ResNet"],
+                    filters=[{"field": "title", "op": "contains", "value": "ImageNet", "negated": False}],
+                ),
+            )
+            self.assertEqual(pack["route"], "reference")
+            self.assertEqual(pack["evidence"]["direction"], "cite")
+            self.assertEqual(len(pack["evidence"]["references"]), 1)
+            self.assertIn("ImageNet", pack["evidence"]["references"][0]["reference"]["raw_text"])
+
+    def test_reference_unknown_direction_does_not_retrieve(self) -> None:
+        with sample_project() as root:
+            settings = Settings.load(Path(root))
+            pack = run_plan(
+                settings,
+                "Reference graph around ResNet",
+                plan_parser=reference_payload(None, ["ResNet"]),
+            )
+            self.assertEqual(pack["route"], "reference")
+            self.assertEqual(pack["evidence"]["parse_status"], "unknown_direction")
             self.assertEqual(pack["evidence"]["references"], [])
-            self.assertIn("reference route is recognized", pack["warnings"][0])
 
     def test_chinese_reference_route_uses_translated_query_for_routing(self) -> None:
         with sample_project() as root:
@@ -518,11 +657,12 @@ class PlanTests(unittest.TestCase):
                 settings,
                 "Center Loss 引用了哪些工作",
                 translator=ReferenceTranslator(),
+                plan_parser=reference_payload("cite", ["Center Loss"]),
             )
             self.assertEqual(pack["route"], "reference")
-            self.assertEqual(pack["intent"], None)
-            self.assertEqual(pack["evidence"]["parse_status"], "not_implemented")
-            self.assertEqual(pack["evidence"]["references"], [])
+            self.assertEqual(pack["intent"], "list")
+            self.assertEqual(pack["evidence"]["parse_status"], "ok")
+            self.assertGreaterEqual(len(pack["evidence"]["references"]), 2)
 
     def test_body_route_fuses_dense_bm25_and_expands_context(self) -> None:
         with sample_project() as root:
@@ -554,7 +694,9 @@ def sample_project():
     root = Path(temp.name)
     data = root / "data"
     paper = data / "paper_data" / "Center_Loss_abc"
+    resnet_paper = data / "paper_data" / "ResNet_def"
     paper.mkdir(parents=True)
+    resnet_paper.mkdir(parents=True)
     (root / ".env").write_text(
         "\n".join([
             "PLAN_DENSE_TOP_K=20",
@@ -697,6 +839,29 @@ def sample_project():
                 "raw_text": "S. Hochreiter and J. Schmidhuber. Long Short-Term Memory (LSTM). Neural Computation, 1997.",
                 "page": 9,
                 "source_block_id": "b9",
+            }),
+            json.dumps({
+                "ref_index": 3,
+                "raw_text": "Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep Residual Learning for Image Recognition. CVPR, 2016.",
+                "page": 9,
+                "source_block_id": "b9",
+            }),
+        ]) + "\n",
+        encoding="utf-8",
+    )
+    (resnet_paper / "references.jsonl").write_text(
+        "\n".join([
+            json.dumps({
+                "ref_index": 1,
+                "raw_text": "Jia Deng et al. ImageNet: A large-scale hierarchical image database. CVPR, 2009.",
+                "page": 9,
+                "source_block_id": "r9",
+            }),
+            json.dumps({
+                "ref_index": 2,
+                "raw_text": "Karen Simonyan and Andrew Zisserman. Very Deep Convolutional Networks for Large-Scale Image Recognition. ICLR, 2015.",
+                "page": 9,
+                "source_block_id": "r9",
             }),
         ]) + "\n",
         encoding="utf-8",

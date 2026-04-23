@@ -58,6 +58,8 @@ def render_ask_answer(plan_pack: dict[str, Any]) -> tuple[str, list[str]]:
 
     if route == "error":
         return localized_message(chinese, "中文翻译失败，无法回答。", "Translation failed, unable to answer."), build_provenance(route, plan_pack)
+    if route == "reference":
+        return render_reference_answer(plan_pack, evidence, chinese), build_provenance(route, plan_pack)
     if route != "metadata":
         return localized_message(
             chinese,
@@ -90,10 +92,49 @@ def build_provenance(route: str, plan_pack: dict[str, Any]) -> list[str]:
     parts = [f"plan({route})"]
     if route == "metadata":
         parts.append(f"records={count if count is not None else record_count}")
+    if route == "reference":
+        parts.append(f"references={count if count is not None else len(evidence.get('references') or [])}")
     translation_provider = plan_pack.get("translation_provider")
     if translation_provider:
         parts.append(f"translation={translation_provider}")
     return ["，".join(parts)]
+
+
+def render_reference_answer(plan_pack: dict[str, Any], evidence: dict[str, Any], chinese: bool) -> str:
+    parse_status = str(evidence.get("parse_status") or "")
+    if parse_status == "parse_failed":
+        return localized_message(chinese, "这个 reference 问题暂时无法解析。", "This reference question could not be parsed.")
+    if parse_status == "unknown_direction":
+        return localized_message(chinese, "暂时无法判断引用方向。", "Unable to determine the reference direction.")
+    references = list(evidence.get("references") or [])
+    if not references:
+        return localized_message(chinese, "没有找到匹配的引用证据。", "No matching reference evidence was found.")
+    if str(plan_pack.get("intent") or "list") == "count":
+        total = evidence.get("count") if isinstance(evidence.get("count"), int) else len(references)
+        head = localized_message(chinese, f"共找到 {total} 条引用证据。", f"Found {total} reference match(es).")
+    else:
+        head = localized_message(chinese, f"共找到 {len(references)} 条引用证据：", f"Found {len(references)} reference match(es):")
+    lines = [head]
+    for index, reference in enumerate(references[:MAX_DISPLAY_ITEMS], start=1):
+        lines.append(f"{index}. {reference_summary(reference)}")
+    if len(references) > MAX_DISPLAY_ITEMS:
+        lines.append("...")
+    return "\n".join(lines)
+
+
+def reference_summary(reference: dict[str, Any]) -> str:
+    direction = reference.get("direction")
+    ref = reference.get("reference") or {}
+    raw_text = str(ref.get("raw_text") or "").strip()
+    if len(raw_text) > 220:
+        raw_text = f"{raw_text[:217]}..."
+    if direction == "cited_by":
+        paper = reference.get("citing_paper") or {}
+        title = str(paper.get("title") or "Unknown paper")
+        return f"{title} -> {raw_text}"
+    paper = reference.get("anchor_paper") or {}
+    title = str(paper.get("title") or "Unknown paper")
+    return f"{title} cites -> {raw_text}"
 
 
 def render_lookup_answer(records: list[dict[str, Any]], return_field: Any, chinese: bool) -> str:
