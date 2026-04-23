@@ -1,0 +1,594 @@
+{
+  "sections": [
+    {
+      "section_id": "sec_abstract",
+      "parent_id": null,
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 5,
+      "end_block_index": 6
+    },
+    {
+      "section_id": "sec_1",
+      "parent_id": null,
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 7,
+      "end_block_index": 14
+    },
+    {
+      "section_id": "sec_2",
+      "parent_id": null,
+      "number": "2",
+      "title": "Related Work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Related Work"
+      ],
+      "start_block_index": 15,
+      "end_block_index": 27
+    },
+    {
+      "section_id": "sec_2_1",
+      "parent_id": "sec_2",
+      "number": "2.1",
+      "title": "Unsupervised Feature-based Approaches",
+      "region": "body",
+      "order": 3,
+      "level": 2,
+      "path": [
+        "2 Related Work",
+        "2.1 Unsupervised Feature-based Approaches"
+      ],
+      "start_block_index": 17,
+      "end_block_index": 20
+    },
+    {
+      "section_id": "sec_2_2",
+      "parent_id": "sec_2",
+      "number": "2.2",
+      "title": "Unsupervised Fine-tuning Approaches",
+      "region": "body",
+      "order": 4,
+      "level": 2,
+      "path": [
+        "2 Related Work",
+        "2.2 Unsupervised Fine-tuning Approaches"
+      ],
+      "start_block_index": 21,
+      "end_block_index": 25
+    },
+    {
+      "section_id": "sec_2_3",
+      "parent_id": "sec_2",
+      "number": "2.3",
+      "title": "Transfer Learning from Supervised Data",
+      "region": "body",
+      "order": 5,
+      "level": 2,
+      "path": [
+        "2 Related Work",
+        "2.3 Transfer Learning from Supervised Data"
+      ],
+      "start_block_index": 26,
+      "end_block_index": 27
+    },
+    {
+      "section_id": "sec_3",
+      "parent_id": null,
+      "number": "3",
+      "title": "BERT",
+      "region": "body",
+      "order": 6,
+      "level": 1,
+      "path": [
+        "3 BERT"
+      ],
+      "start_block_index": 28,
+      "end_block_index": 55
+    },
+    {
+      "section_id": "sec_3_1",
+      "parent_id": "sec_3",
+      "number": "3.1",
+      "title": "Pre-training BERT",
+      "region": "body",
+      "order": 7,
+      "level": 2,
+      "path": [
+        "3 BERT",
+        "3.1 Pre-training BERT"
+      ],
+      "start_block_index": 39,
+      "end_block_index": 50
+    },
+    {
+      "section_id": "sec_3_2",
+      "parent_id": "sec_3",
+      "number": "3.2",
+      "title": "Fine-tuning BERT",
+      "region": "body",
+      "order": 8,
+      "level": 2,
+      "path": [
+        "3 BERT",
+        "3.2 Fine-tuning BERT"
+      ],
+      "start_block_index": 51,
+      "end_block_index": 55
+    },
+    {
+      "section_id": "sec_4",
+      "parent_id": null,
+      "number": "4",
+      "title": "Experiments",
+      "region": "body",
+      "order": 9,
+      "level": 1,
+      "path": [
+        "4 Experiments"
+      ],
+      "start_block_index": 56,
+      "end_block_index": 87
+    },
+    {
+      "section_id": "sec_4_1",
+      "parent_id": "sec_4",
+      "number": "4.1",
+      "title": "GLUE",
+      "region": "body",
+      "order": 10,
+      "level": 2,
+      "path": [
+        "4 Experiments",
+        "4.1 GLUE"
+      ],
+      "start_block_index": 58,
+      "end_block_index": 66
+    },
+    {
+      "section_id": "sec_4_2",
+      "parent_id": "sec_4",
+      "number": "4.2",
+      "title": "SQuAD v1.1",
+      "region": "body",
+      "order": 11,
+      "level": 2,
+      "path": [
+        "4 Experiments",
+        "4.2 SQuAD v1.1"
+      ],
+      "start_block_index": 67,
+      "end_block_index": 77
+    },
+    {
+      "section_id": "sec_4_3",
+      "parent_id": "sec_4",
+      "number": "4.3",
+      "title": "SQuAD v2.0",
+      "region": "body",
+      "order": 12,
+      "level": 2,
+      "path": [
+        "4 Experiments",
+        "4.3 SQuAD v2.0"
+      ],
+      "start_block_index": 78,
+      "end_block_index": 83
+    },
+    {
+      "section_id": "sec_4_4",
+      "parent_id": "sec_4",
+      "number": "4.4",
+      "title": "SWAG",
+      "region": "body",
+      "order": 13,
+      "level": 2,
+      "path": [
+        "4 Experiments",
+        "4.4 SWAG"
+      ],
+      "start_block_index": 84,
+      "end_block_index": 87
+    },
+    {
+      "section_id": "sec_5",
+      "parent_id": null,
+      "number": "5",
+      "title": "Ablation Studies",
+      "region": "body",
+      "order": 14,
+      "level": 1,
+      "path": [
+        "5 Ablation Studies"
+      ],
+      "start_block_index": 88,
+      "end_block_index": 113
+    },
+    {
+      "section_id": "sec_5_1",
+      "parent_id": "sec_5",
+      "number": "5.1",
+      "title": "Effect of Pre-training Tasks",
+      "region": "body",
+      "order": 15,
+      "level": 2,
+      "path": [
+        "5 Ablation Studies",
+        "5.1 Effect of Pre-training Tasks"
+      ],
+      "start_block_index": 93,
+      "end_block_index": 100
+    },
+    {
+      "section_id": "sec_5_2",
+      "parent_id": "sec_5",
+      "number": "5.2",
+      "title": "Effect of Model Size",
+      "region": "body",
+      "order": 16,
+      "level": 2,
+      "path": [
+        "5 Ablation Studies",
+        "5.2 Effect of Model Size"
+      ],
+      "start_block_index": 101,
+      "end_block_index": 105
+    },
+    {
+      "section_id": "sec_5_3",
+      "parent_id": "sec_5",
+      "number": "5.3",
+      "title": "Feature-based Approach with BERT",
+      "region": "body",
+      "order": 17,
+      "level": 2,
+      "path": [
+        "5 Ablation Studies",
+        "5.3 Feature-based Approach with BERT"
+      ],
+      "start_block_index": 106,
+      "end_block_index": 113
+    },
+    {
+      "section_id": "sec_6",
+      "parent_id": null,
+      "number": "6",
+      "title": "Conclusion",
+      "region": "body",
+      "order": 18,
+      "level": 1,
+      "path": [
+        "6 Conclusion"
+      ],
+      "start_block_index": 114,
+      "end_block_index": 115
+    },
+    {
+      "section_id": "sec_appendix",
+      "parent_id": null,
+      "number": null,
+      "title": "Appendix",
+      "region": "appendix",
+      "order": 19,
+      "level": 1,
+      "path": [
+        "Appendix"
+      ],
+      "start_block_index": 130,
+      "end_block_index": 207
+    }
+  ],
+  "tree": [
+    {
+      "section_id": "sec_abstract",
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 5,
+      "end_block_index": 6,
+      "children": []
+    },
+    {
+      "section_id": "sec_1",
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 7,
+      "end_block_index": 14,
+      "children": []
+    },
+    {
+      "section_id": "sec_2",
+      "number": "2",
+      "title": "Related Work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Related Work"
+      ],
+      "start_block_index": 15,
+      "end_block_index": 27,
+      "children": [
+        {
+          "section_id": "sec_2_1",
+          "number": "2.1",
+          "title": "Unsupervised Feature-based Approaches",
+          "region": "body",
+          "order": 3,
+          "level": 2,
+          "path": [
+            "2 Related Work",
+            "2.1 Unsupervised Feature-based Approaches"
+          ],
+          "start_block_index": 17,
+          "end_block_index": 20,
+          "children": []
+        },
+        {
+          "section_id": "sec_2_2",
+          "number": "2.2",
+          "title": "Unsupervised Fine-tuning Approaches",
+          "region": "body",
+          "order": 4,
+          "level": 2,
+          "path": [
+            "2 Related Work",
+            "2.2 Unsupervised Fine-tuning Approaches"
+          ],
+          "start_block_index": 21,
+          "end_block_index": 25,
+          "children": []
+        },
+        {
+          "section_id": "sec_2_3",
+          "number": "2.3",
+          "title": "Transfer Learning from Supervised Data",
+          "region": "body",
+          "order": 5,
+          "level": 2,
+          "path": [
+            "2 Related Work",
+            "2.3 Transfer Learning from Supervised Data"
+          ],
+          "start_block_index": 26,
+          "end_block_index": 27,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_3",
+      "number": "3",
+      "title": "BERT",
+      "region": "body",
+      "order": 6,
+      "level": 1,
+      "path": [
+        "3 BERT"
+      ],
+      "start_block_index": 28,
+      "end_block_index": 55,
+      "children": [
+        {
+          "section_id": "sec_3_1",
+          "number": "3.1",
+          "title": "Pre-training BERT",
+          "region": "body",
+          "order": 7,
+          "level": 2,
+          "path": [
+            "3 BERT",
+            "3.1 Pre-training BERT"
+          ],
+          "start_block_index": 39,
+          "end_block_index": 50,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_2",
+          "number": "3.2",
+          "title": "Fine-tuning BERT",
+          "region": "body",
+          "order": 8,
+          "level": 2,
+          "path": [
+            "3 BERT",
+            "3.2 Fine-tuning BERT"
+          ],
+          "start_block_index": 51,
+          "end_block_index": 55,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_4",
+      "number": "4",
+      "title": "Experiments",
+      "region": "body",
+      "order": 9,
+      "level": 1,
+      "path": [
+        "4 Experiments"
+      ],
+      "start_block_index": 56,
+      "end_block_index": 87,
+      "children": [
+        {
+          "section_id": "sec_4_1",
+          "number": "4.1",
+          "title": "GLUE",
+          "region": "body",
+          "order": 10,
+          "level": 2,
+          "path": [
+            "4 Experiments",
+            "4.1 GLUE"
+          ],
+          "start_block_index": 58,
+          "end_block_index": 66,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_2",
+          "number": "4.2",
+          "title": "SQuAD v1.1",
+          "region": "body",
+          "order": 11,
+          "level": 2,
+          "path": [
+            "4 Experiments",
+            "4.2 SQuAD v1.1"
+          ],
+          "start_block_index": 67,
+          "end_block_index": 77,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_3",
+          "number": "4.3",
+          "title": "SQuAD v2.0",
+          "region": "body",
+          "order": 12,
+          "level": 2,
+          "path": [
+            "4 Experiments",
+            "4.3 SQuAD v2.0"
+          ],
+          "start_block_index": 78,
+          "end_block_index": 83,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_4",
+          "number": "4.4",
+          "title": "SWAG",
+          "region": "body",
+          "order": 13,
+          "level": 2,
+          "path": [
+            "4 Experiments",
+            "4.4 SWAG"
+          ],
+          "start_block_index": 84,
+          "end_block_index": 87,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_5",
+      "number": "5",
+      "title": "Ablation Studies",
+      "region": "body",
+      "order": 14,
+      "level": 1,
+      "path": [
+        "5 Ablation Studies"
+      ],
+      "start_block_index": 88,
+      "end_block_index": 113,
+      "children": [
+        {
+          "section_id": "sec_5_1",
+          "number": "5.1",
+          "title": "Effect of Pre-training Tasks",
+          "region": "body",
+          "order": 15,
+          "level": 2,
+          "path": [
+            "5 Ablation Studies",
+            "5.1 Effect of Pre-training Tasks"
+          ],
+          "start_block_index": 93,
+          "end_block_index": 100,
+          "children": []
+        },
+        {
+          "section_id": "sec_5_2",
+          "number": "5.2",
+          "title": "Effect of Model Size",
+          "region": "body",
+          "order": 16,
+          "level": 2,
+          "path": [
+            "5 Ablation Studies",
+            "5.2 Effect of Model Size"
+          ],
+          "start_block_index": 101,
+          "end_block_index": 105,
+          "children": []
+        },
+        {
+          "section_id": "sec_5_3",
+          "number": "5.3",
+          "title": "Feature-based Approach with BERT",
+          "region": "body",
+          "order": 17,
+          "level": 2,
+          "path": [
+            "5 Ablation Studies",
+            "5.3 Feature-based Approach with BERT"
+          ],
+          "start_block_index": 106,
+          "end_block_index": 113,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_6",
+      "number": "6",
+      "title": "Conclusion",
+      "region": "body",
+      "order": 18,
+      "level": 1,
+      "path": [
+        "6 Conclusion"
+      ],
+      "start_block_index": 114,
+      "end_block_index": 115,
+      "children": []
+    },
+    {
+      "section_id": "sec_appendix",
+      "number": null,
+      "title": "Appendix",
+      "region": "appendix",
+      "order": 19,
+      "level": 1,
+      "path": [
+        "Appendix"
+      ],
+      "start_block_index": 130,
+      "end_block_index": 207,
+      "children": []
+    }
+  ]
+}

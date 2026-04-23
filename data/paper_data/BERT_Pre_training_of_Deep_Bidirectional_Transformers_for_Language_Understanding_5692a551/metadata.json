@@ -1,0 +1,12 @@
+{
+  "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+  "author": [
+    "Jacob Devlin",
+    "Ming-Wei Chang",
+    "Kenton Lee",
+    "Kristina Toutanova"
+  ],
+  "year": 2019,
+  "venue": "NAACL-HLT",
+  "pdf_path": "E:\\Pythonproject\\RAG_project_new\\data\\pdf\\2019_BERT_Pre_training_of_Deep_Bidirectional_Transformers_for_Language_Understanding.pdf"
+}

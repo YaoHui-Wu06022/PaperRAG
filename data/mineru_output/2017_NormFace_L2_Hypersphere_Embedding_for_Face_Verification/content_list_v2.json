@@ -1,0 +1,4981 @@
+[
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "舟 Latest updates: hps://dl.acm.org/doi/10.1145/3123266.3123359 "
+                    }
+                ]
+            },
+            "bbox": [
+                78,
+                130,
+                531,
+                145
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "RESEARCH-ARTICLE "
+                    }
+                ]
+            },
+            "bbox": [
+                78,
+                159,
+                199,
+                170
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "NormFace: L2 Hypersphere Embedding for Face Verification "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                78,
+                172,
+                617,
+                191
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "FENG WANG, University of Electronic Science and Technology of China, Chengdu, Sichuan, China "
+                    }
+                ]
+            },
+            "bbox": [
+                76,
+                203,
+                704,
+                233
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "XIANG XIANG, Johns Hopkins University, Baltimore, MD, United States "
+                    }
+                ]
+            },
+            "bbox": [
+                76,
+                239,
+                573,
+                255
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "JIAN CHENG, University of Electronic Science and Technology of China, Chengdu, Sichuan, China "
+                    }
+                ]
+            },
+            "bbox": [
+                76,
+                262,
+                702,
+                292
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "ALAN LODDON YUILLE, Johns Hopkins University, Baltimore, MD, United States "
+                    }
+                ]
+            },
+            "bbox": [
+                78,
+                300,
+                645,
+                314
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Open Access Support provided by: "
+                    }
+                ]
+            },
+            "bbox": [
+                76,
+                334,
+                325,
+                349
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "University of Electronic Science and Technology of China "
+                    }
+                ]
+            },
+            "bbox": [
+                76,
+                354,
+                503,
+                371
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Johns Hopkins University "
+                    }
+                ]
+            },
+            "bbox": [
+                76,
+                377,
+                269,
+                392
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/fdd7f7605a96d5ed4a660612187918f3fdd18355251947b7a6b5ba136af29699.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                754,
+                85,
+                790,
+                112
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "PDF Download "
+                    }
+                ]
+            },
+            "bbox": [
+                803,
+                85,
+                872,
+                93
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "3123266.3123359.pdf "
+                    }
+                ]
+            },
+            "bbox": [
+                805,
+                94,
+                893,
+                102
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Total Citations: 497 "
+                    }
+                ]
+            },
+            "bbox": [
+                805,
+                112,
+                887,
+                119
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Total Downloads: 3493 "
+                    }
+                ]
+            },
+            "bbox": [
+                805,
+                119,
+                901,
+                128
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Published: 19 October 2017 "
+                    }
+                ]
+            },
+            "bbox": [
+                754,
+                141,
+                888,
+                152
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Citation in BibTeX format "
+                    }
+                ]
+            },
+            "bbox": [
+                754,
+                164,
+                888,
+                175
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "MM '17: ACM Multimedia Conference "
+                    }
+                ]
+            },
+            "bbox": [
+                754,
+                186,
+                934,
+                196
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "October 23 - 27, 2017 "
+                    }
+                ]
+            },
+            "bbox": [
+                754,
+                199,
+                857,
+                209
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "California, Mountain View, USA "
+                    }
+                ]
+            },
+            "bbox": [
+                754,
+                210,
+                905,
+                220
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Conference Sponsors: "
+                    }
+                ]
+            },
+            "bbox": [
+                754,
+                233,
+                867,
+                244
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "SIGMM "
+                    }
+                ]
+            },
+            "bbox": [
+                754,
+                244,
+                794,
+                253
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Check for updates "
+                    }
+                ]
+            },
+            "bbox": [
+                0,
+                88,
+                45,
+                125
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "D (acm) Gssociatig ahbnery acm open> "
+                    }
+                ]
+            },
+            "bbox": [
+                78,
+                88,
+                421,
+                112
+            ]
+        },
+        {
+            "type": "page_footer",
+            "content": {
+                "page_footer_content": [
+                    {
+                        "type": "text",
+                        "content": "MM '17: Proceedings of the 25th ACM international conference on Multimedia (October 2017) "
+                    }
+                ]
+            },
+            "bbox": [
+                506,
+                940,
+                941,
+                950
+            ]
+        },
+        {
+            "type": "page_footer",
+            "content": {
+                "page_footer_content": [
+                    {
+                        "type": "text",
+                        "content": "hps://doi.org/10.1145/3123266.3123359 "
+                    }
+                ]
+            },
+            "bbox": [
+                756,
+                952,
+                941,
+                962
+            ]
+        },
+        {
+            "type": "page_footer",
+            "content": {
+                "page_footer_content": [
+                    {
+                        "type": "text",
+                        "content": "ISBN: 9781450349062 "
+                    }
+                ]
+            },
+            "bbox": [
+                841,
+                962,
+                941,
+                970
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "NormFace: "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "L _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "Hypersphere Embedding for Face Verification "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                114,
+                101,
+                880,
+                126
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Feng Wang∗ "
+                    }
+                ]
+            },
+            "bbox": [
+                246,
+                140,
+                346,
+                157
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "University of Electronic Science and Technology of China "
+                    }
+                ]
+            },
+            "bbox": [
+                104,
+                157,
+                491,
+                172
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "2006 Xiyuan Ave. "
+                    }
+                ]
+            },
+            "bbox": [
+                238,
+                172,
+                357,
+                186
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Chengdu, Sichuan 611731 "
+                    }
+                ]
+            },
+            "bbox": [
+                210,
+                188,
+                383,
+                202
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "feng.w\u001d@gmail.com "
+                    }
+                ]
+            },
+            "bbox": [
+                227,
+                203,
+                369,
+                217
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Jian Cheng "
+                    }
+                ]
+            },
+            "bbox": [
+                250,
+                229,
+                344,
+                246
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "University of Electronic Science and Technology of China "
+                    }
+                ]
+            },
+            "bbox": [
+                104,
+                246,
+                488,
+                260
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "2006 Xiyuan Ave. "
+                    }
+                ]
+            },
+            "bbox": [
+                238,
+                261,
+                357,
+                275
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Chengdu, Sichuan 611731 "
+                    }
+                ]
+            },
+            "bbox": [
+                210,
+                276,
+                383,
+                290
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "chengjian@uestc.edu.cn "
+                    }
+                ]
+            },
+            "bbox": [
+                215,
+                292,
+                379,
+                306
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "ABSTRACT "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                83,
+                316,
+                184,
+                329
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Thanks to the recent developments of Convolutional Neural Networks, the performance of face veri\u001bcation methods has increased rapidly. In a typical face veri\u001bcation method, feature normalization is a critical step for boosting performance. This motivates us to introduce and study the e\u001dect of normalization during training. But we \u001bnd this is non-trivial, despite normalization being di\u001derentiable. We identify and study four issues related to normalization through mathematical analysis, which yields understanding and helps with parameter settings. Based on this analysis we propose two strategies for training using normalized features. The \u001brst is a modi\u001bcation of softmax loss, which optimizes cosine similarity instead of inner-product. The second is a reformulation of metric learning by introducing an agent vector for each class. We show that both strategies, and small variants, consistently improve performance by between "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "0 . 2 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "0 . 4 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "on the LFW dataset based on two models. This is signi\u001bcant because the performance of the two models on LFW dataset is close to saturation at over "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "9 8 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                334,
+                483,
+                569
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "CCS CONCEPTS "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                83,
+                580,
+                220,
+                594
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "• Computing methodologies "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\longrightarrow"
+                    },
+                    {
+                        "type": "text",
+                        "content": "Object identi\u001bcation; Supervised learning by classi\u001bcation; Neural networks; Regularization; "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                599,
+                483,
+                641
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "KEYWORDS "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                83,
+                654,
+                191,
+                667
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Face Veri\u001bcation, Metric Learning, Feature Normalization "
+                    }
+                ]
+            },
+            "bbox": [
+                83,
+                672,
+                433,
+                686
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "1 INTRODUCTION "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                84,
+                703,
+                256,
+                715
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In recent years, Convolutional neural networks (CNNs) achieve state-of-the-art performance for various computer vision tasks, such as object recognition [12, 29, 32], detection [5], segmentation "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                720,
+                482,
+                763
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Xiang Xiang "
+                    }
+                ]
+            },
+            "bbox": [
+                647,
+                140,
+                751,
+                157
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Johns Hopkins University "
+                    }
+                ]
+            },
+            "bbox": [
+                611,
+                157,
+                787,
+                172
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "3400 N. Charles St. "
+                    }
+                ]
+            },
+            "bbox": [
+                638,
+                172,
+                764,
+                186
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Baltimore, Maryland 21218 "
+                    }
+                ]
+            },
+            "bbox": [
+                609,
+                186,
+                790,
+                202
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "xxiang@cs.jhu.edu "
+                    }
+                ]
+            },
+            "bbox": [
+                635,
+                203,
+                764,
+                217
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Alan L. Yuille "
+                    }
+                ]
+            },
+            "bbox": [
+                643,
+                229,
+                754,
+                244
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Johns Hopkins University "
+                    }
+                ]
+            },
+            "bbox": [
+                609,
+                246,
+                787,
+                261
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "3400 N. Charles St. "
+                    }
+                ]
+            },
+            "bbox": [
+                637,
+                262,
+                764,
+                273
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Baltimore, Maryland 21218 "
+                    }
+                ]
+            },
+            "bbox": [
+                609,
+                276,
+                790,
+                290
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "alan.yuille@jhu.edu "
+                    }
+                ]
+            },
+            "bbox": [
+                630,
+                291,
+                767,
+                306
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "[19] and so on. In the \u001beld of face veri\u001bcation, CNNs have already surpassed humans’ abilities on several benchmarks[20, 33]. "
+                    }
+                ]
+            },
+            "bbox": [
+                513,
+                316,
+                911,
+                344
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The most common pipeline for a face veri\u001bcation application involves face detection, facial landmark detection, face alignment, feature extraction, and \u001bnally feature comparison. In the feature comparison step, the cosine similarity or equivalently "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "L _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "normalized LEuclidean distance is used to measure the similarities between features. The cosine similarity "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\frac { \\langle \\cdot , \\cdot \\rangle } { \\| \\cdot \\| \\| \\cdot \\| }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a similarity measure which is independent of magnitude. It can be seen as the normalized version of inner-product of two vectors. But in practice the inner product without normalization is the most widely-used similarity measure when training a CNN classi\u001bcation models [12, 29, 32]. In other words, the similarity or distance metric used during training is di\u001derent from that used in the testing phase. To our knowledge, no researcher in the face veri\u001bcation community has clearly explained why the features should be normalized to calculate the similarity in the testing phase. Feature normalization is treated only as a trick to promote the performance during testing. "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                345,
+                913,
+                568
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To illustrate this, we performed an experiment which compared the face features without normalization, i.e. using the unnormalized inner-product or Euclidean distance as the similarity measurement. The features were extracted from an online available model [36]1. We followed the standard protocol of unrestricted with labeled outside data[9] and test the model on the Labeled Faces in the Wild (LFW) dataset[10]. The results are listed in Table 1. "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                568,
+                913,
+                664
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/44e6ffa2dba9fb233218a38892975482d1b0c466d3a5fec5f00710e71f4285cc.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 1: E\u001dect of Feature Normalization "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>Similarity</td><td>Before Normalization</td><td>After Normalization</td></tr><tr><td>Inner-Product</td><td>98.27%</td><td>98.98%</td></tr><tr><td>Euclidean</td><td>98.35%</td><td>98.95%</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                519,
+                705,
+                906,
+                763
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "As shown in the table, feature normalization promoted the performance by about "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "0 . 6 \\% \\sim 0 . 7 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", which is a signi\u001bcant improvement since the accuracies are already above "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "9 8 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Feature normalization seems to be a crucial step to get good performance during testing. Noting that the normalization operation is di\u001derentiable, there is no reason that stops us importing this operation into the CNN model to perform end-to-end training. "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                777,
+                913,
+                876
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Session: Fast Forward 4 "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                45,
+                230,
+                56
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "MM’17, October 23-27, 2017, Mountain View, CA, USA "
+                    }
+                ]
+            },
+            "bbox": [
+                578,
+                44,
+                913,
+                56
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "∗Alan L. Yuille’s visiting student. "
+                    }
+                ]
+            },
+            "bbox": [
+                83,
+                768,
+                238,
+                781
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "Permission to make digital or hard copies of all or part of this work for personal or classroom use is granted without fee provided that copies are not made or distributed for pro\u001bt or commercial advantage and that copies bear this notice and the full citation on the \u001brst page. Copyrights for components of this work owned by others than ACM must be honored. Abstracting with credit is permitted. To copy otherwise, or republish, to post on servers or to redistribute to lists, requires prior speci\u001bc permission and/or a fee. Request permissions from permissions@acm.org. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                790,
+                482,
+                863
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "MM ’17, October 23–27, 2017, Mountain View, CA, USA. "
+                    }
+                ]
+            },
+            "bbox": [
+                83,
+                863,
+                339,
+                873
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "equation_inline",
+                        "content": "\\circledcirc"
+                    },
+                    {
+                        "type": "text",
+                        "content": "2017 ACM. ISBN 978-1-4503-4906-2/17/10. . . $15.00 "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                875,
+                334,
+                883
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "DOI: https://doi.org/10.1145/3123266.3123359 "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                883,
+                297,
+                895
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "1https://github.com/ydwen/ca\u001de-face "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                883,
+                694,
+                895
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "1041 "
+                    }
+                ]
+            },
+            "bbox": [
+                483,
+                950,
+                513,
+                962
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/d07b5060e15ff3c4b5d6a9a11edce6c9130ada2065d1aff8a2f85348bfee53fc.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 1: Pipeline of face veri\u001bcation model training and testing using a classi\u001bcation loss function. Previous works did not use the normalization after feature extraction during training. But in the testing phase, all methods used a normalized similarity, e.g. cosine, to compare two features. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                89,
+                104,
+                478,
+                250
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Some previous works[23, 28] successfully trained CNN models with the features being normalized in an end-to-end fashion. However, both of them used the triplet loss, which needs to sample triplets of face images during training. It is di\u001ccult to train because we usually need to implement hard mining algorithms to \u001bnd non-trivial triplets[28]. Another route is to train a classi\u001bcation network using softmax loss[31, 38] and regularizations to limit the intra-class variance[16, 36]. Furthermore, some works combine the classi\u001bcation and metric learning loss functions together to train CNN models[31, 41]. All these methods that used classi\u001bcation loss functions, e.g. softmax loss, did not apply feature normalization, even though they all used normalized similarity measure, e.g. cosine similarity, to get the con\u001bdence of judging two samples being of the same identity at testing phase(Figure 1). "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                356,
+                482,
+                547
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We did an experiment by normalizing both the features and the weights of the last inner-product layer to build a cosine layer in an ordinary CNN model. After su\u001ccient iterations, the network still did not converge. After observing this phenomenon, we deeply dig into this problem. In this paper, we will \u001bnd out the reason and propose methods to enable us to train the normalized features. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                549,
+                480,
+                632
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To sum up, in this work, we analyze and answer the questions mentioned above about the feature normalization and the model training: "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                632,
+                480,
+                672
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "(1) Why is feature normalization so e\u001ccient when comparing the CNN features trained by classi\u001bcation loss, especially for softmax loss? "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "(2) Why does directly optimizing the cosine similarity using softmax loss cause the network to fail to converge? "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "(3) How to optimize a cosine similarity when using softmax loss? "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "(4) Since models with softmax loss fail to converge after normalization, are there any other loss functions suitable for normalized features? "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                83,
+                674,
+                482,
+                796
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "For the \u001brst question, we explain it through a property of softmax loss in Section 3.1. For the second and third questions, we provide a bound to describe the di\u001cculty of using softmax loss to optimize a cosine similarity and propose using the scaled cosine similarity in Section 3.3. For the fourth question, we reformulate a set of loss functions in metric learning, such as contrastive loss and triplet loss to perform the classi\u001bcation task by introducing an ‘agent’ "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                799,
+                482,
+                896
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "strategy (Section 4). Utilizing the ‘agent’ strategy, there is no need to sample pairs and triplets of samples nor to implement the hard mining algorithm. "
+                    }
+                ]
+            },
+            "bbox": [
+                513,
+                106,
+                913,
+                148
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We also propose two tricks to improve performance for both static and video face veri\u001bcation. The \u001brst is to merge features extracted from both original image and mirror image by summation, while previous works usually merge the features by concatenation[31, 36]. The second is to use histogram of face similarities between video pairs instead of the mean[23, 36] or max[39] similarity when making classi\u001bcation. "
+                    }
+                ]
+            },
+            "bbox": [
+                513,
+                148,
+                919,
+                244
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Finally, by experiments, we show that normalization during training can promote the accuracies of two publicly available stateof-the-art models by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "0 . 2 \\sim 0 . 4 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "on LFW[10] and about "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "0 . 6 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "on YTF[37]. "
+                    }
+                ]
+            },
+            "bbox": [
+                513,
+                244,
+                913,
+                301
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2 RELATED WORKS "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                514,
+                308,
+                697,
+                321
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Normalization in Neural Network. Normalization is a common operation in modern neural network models. Local Response Normalization and Local Contrast Normalization are studied in the AlexNet model[12], even though these techniques are no longer common in modern models. Batch normalization[11] is widely used to accelerate the speed of neural network convergence by reducing the internal covariate shift of intermediate features. Weight normalization [27] was proposed to normalize the weights of convolution layers and inner-product layers, and also lead to faster convergence speed. Layer normalization [1] tried to solve the batch size dependent problem of batch normalization, and works well on Recurrent Neural Networks. "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                325,
+                913,
+                491
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Face Veri\u001bcation. Face veri\u001bcation is to decide whether two images containing faces represent the same person or two di\u001derent people, and thus is important for access control or re-identi\u001bcation tasks. Face veri\u001bcation using deep learning techniques achieved a series of breakthroughs in recent years [20, 23, 28, 33, 36]. There are mainly two types of methods according to their loss functions. One type uses metric learning loss functions, such as contrastive loss[4, 40] and triplet loss[23, 28, 34]. The other type uses softmax loss and treats the problem as a classi\u001bcation task, but also constrains the intra-class variance to get better generalization for comparing face features [16, 36]. Some works also combine both kinds of loss functions[40, 41]. "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                492,
+                913,
+                657
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Metric Learning. Metric learning[4, 25, 34] tries to learn semantic distance measures and embeddings such that similar samples are nearer and di\u001derent samples are further apart from each other on a manifold. With the help of neural networks’ enormous ability of representation learning, deep metric learning[3, 19] can do even better than the traditional methods. Recently, more complicated loss functions were proposed to get better local embedding structures[8, 22, 30]. "
+                    }
+                ]
+            },
+            "bbox": [
+                513,
+                657,
+                913,
+                768
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Recent Works on Normalization. Recently, cosine similarity [17] was used instead of the inner-product for training a CNN for person recognition, which is quite similar with face veri\u001bcation. The Cosine Loss proposed in [17] is quite similar with the one described in Section 3.3, normalizing both the features and weights. L2-softmax[24] shares a similar analysis about the convergence problem described in Section 3.3. In [24], the authors also propose to add a scale parameter after normalization, but they only normalize the features. SphereFace[35] improves the performance of Large "
+                    }
+                ]
+            },
+            "bbox": [
+                513,
+                768,
+                913,
+                893
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Session: Fast Forward 4 "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                45,
+                230,
+                56
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "MM’17, October 23-27, 2017, Mountain View, CA, USA "
+                    }
+                ]
+            },
+            "bbox": [
+                578,
+                45,
+                913,
+                56
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "1042 "
+                    }
+                ]
+            },
+            "bbox": [
+                485,
+                950,
+                514,
+                962
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/6e191d4673725197a8ddfc5d72885def843495b803d93793df74a6e6a3da4f67.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                101,
+                102,
+                277,
+                210
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/512de3c95cc571cc2338962fffc90138349879367ffbff095d61bc43060058aa.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 2: Le\u001e: The optimized 2-dimensional feature distribution using softmax loss on MNIST[14] dataset. Note that the Euclidean distance between "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { f } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { f } _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is much smaller than the distance between f2 and f3, even though f2 and f3 are from the same class. Right: The softmax probability for class 0 on the 2-dimension plane. Best viewed in color. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                282,
+                102,
+                464,
+                210
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Margin Softmax[16] by normalizing the weights of the last innerproduct layer only. Von Mises-Fisher Mixture Model(vMFMM)[21] interprets the hypersphere embedding as a mixture of von Mises-Fisher distributions. To sum up, the Cosine Loss[17], vMFMM[21] and our proposed loss functions optimize both features and weights, while the L2-softmax[24] normalizes the features only and the SphereFace[35] normalizes the weights only. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                328,
+                482,
+                426
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3 "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "L _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "NORMALIZATION LAYER "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                83,
+                436,
+                349,
+                452
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this section, we answer the question why we should normalize the features when the loss function is softmax loss and why the network does not converge if we directly put a softmax loss on the normalized features. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                455,
+                482,
+                511
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.1 Necessity of Normalization "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                83,
+                523,
+                348,
+                539
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In order to give an intuitive feeling about the softmax loss, we did a toy experiment of training a deeper LeNet[13] model on the MNIST dataset[14]. We reduced the number of the feature dimension to 2 and plot 10,000 2-dimensional features from the training set on a plane in Figure 2. From the \u001bgure, we \u001bnd that f2 can be much closer to f1 than to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { f } _ { 3 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "if we use Euclidean distance as the metric. Hence directly using the features for comparison may lead to bad performance. At the same time, we \u001bnd that the angles between feature vectors seem to be a good metric compared with Euclidean distance or inner-product operations. Actually, most previous work takes the cosine of the angle between feature vectors as the similarity [31, 36, 38], even though they all use softmax loss to train the network. Since the most common similarity metric for softmax loss is the inner-product with unnormalized features, there is a gap between the metrics used in the training and testing phases. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                542,
+                482,
+                750
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The reason why the softmax loss tends to create a ‘radial’ feature distribution (Figure 2) is that the softmax loss actually acts as the soft version of max operator. Scaling the feature vectors’ magnitude does not a\u001dect the assignment of its class. Formally speaking, we recall the de\u001bnition of the softmax loss, "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                750,
+                482,
+                819
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathcal {L} _ {S} = - \\frac {1}{m} \\sum_ {i = 1} ^ {m} \\log \\frac {e ^ {W _ {y _ {i}} ^ {T} \\mathbf {f} _ {i} + b _ {y _ {i}}}}{\\sum_ {j = 1} ^ {n} e ^ {W _ {j} ^ {T} \\mathbf {f} _ {i} + b _ {j}}}, \\tag {1}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/94aa17693d8adfa78e015b81d194faa3e8ef0b7abf2c1155531b5105226fbdc6.jpg"
+                }
+            },
+            "bbox": [
+                179,
+                821,
+                480,
+                864
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "m"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the number of training samples, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "n"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the number of classes, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { f } _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the feature of the -th sample, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "nis the corresponding "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                867,
+                482,
+                896
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/1737da4fafc8114c584c08e319b4702d8094692eee5f58e3869c336524bf4460.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                535,
+                109,
+                705,
+                219
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/796b9f431a6532d0cc6b3740ed506df8a9fb75785d2cafd64fac7629f1cbdc99.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 3: Two selected scatter diagrams when bias term is added after inner-product operation. Please note that there are one or two clusters that are located near the zero point. If we normalize the features of the center clusters, they would spread everywhere on the unit circle, which would cause misclassi\u001bcation. Best viewed in color. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                714,
+                109,
+                893,
+                219
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "label in range "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "[ 1 , n ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": ",  and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "^ { b }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are the weight matrix and the bias , n W bvector of the last inner-product layer before the softmax loss, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "W _ { j }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "j"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-th column of  , which is corresponding to the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "j"
+                    },
+                    {
+                        "type": "text",
+                        "content": "j-th class. In j Wthe testing phase, we classify a sample by "
+                    }
+                ]
+            },
+            "bbox": [
+                513,
+                353,
+                913,
+                410
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "C l a s s (\\mathbf {f}) = i = \\arg \\max  _ {i} \\left(W _ {i} ^ {T} \\mathbf {f} + b _ {i}\\right). \\tag {2}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/039a629965f9caa60dbdcd4f14a1ad8ef1f467b32e8dcbea498019459e810666.jpg"
+                }
+            },
+            "bbox": [
+                604,
+                417,
+                911,
+                440
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this case, we can infer that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( W _ { i } \\mathbf { f } + b _ { i } ) - ( W _ { j } \\mathbf { f } + b _ { j } ) \\geq 0 , \\forall j \\in [ 1 , n ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": "Wi bi Wj bj , jUsing this inequality, we obtain the following proposition. "
+                    }
+                ]
+            },
+            "bbox": [
+                513,
+                448,
+                913,
+                477
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proposition 1. For the softmax loss with no-bias inner-product similarity as its metric, let "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { P _ { i } ( \\mathbf { f } ) = \\frac { e ^ { W _ { i } ^ { T } \\mathbf { f } } } { \\sum _ { j = 1 } ^ { n } e ^ { W _ { j } ^ { T } \\mathbf { f } } } } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "W T f e denote the probability of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { x }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "jbeing classi\u001bed as class . For any given scale "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s \\ > \\ 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i f i ="
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\operatorname { a r g m a x } _ { j } \\left( W _ { j } ^ { T } \\mathbf { f } \\right)"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", then "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P _ { i } ( s \\mathbf { f } ) \\geq P _ { i } ( \\mathbf { f } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "always holds. "
+                    }
+                ]
+            },
+            "bbox": [
+                513,
+                483,
+                915,
+                558
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The proof is given in Appendix 8.1. This proposition implies that softmax loss always encourages well-separated features to have bigger magnitudes. This is the reason why the feature distribution of softmax is ‘radial’. However, we may not need this property as shown in Figure2. By normalization, we can eliminate its e\u001dect. Thus, we usually use the cosine of two feature vectors to measure the similarity of two samples. "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                563,
+                913,
+                659
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "However, Proposition 1 does not hold if a bias term is added after the inner-product operation. In fact, the weight vector of the two classes could be the same and the model still could make a decision via the biases. We found this kind of case during the MNIST experiments and the scatters are shown in Figure 3. It can be discovered from the \u001bgure that the points of some classes all locate around the zero point, and after normalization the points from each of these classes may be spread out on the unit circle, overlapping with other classes. In these cases, feature normalization may destroy the discrimination ability of the speci\u001bc classes. To avoid this kind of risk, we do not add the bias term before the softmax loss in this work, even though it is commonly used for classi\u001bcation tasks. "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                660,
+                915,
+                825
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.2 Layer De\u001bnition "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                514,
+                840,
+                692,
+                856
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this paper, we de\u001bne "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\| \\mathbf { x } \\| _ { 2 } = \\sqrt { \\sum _ { i } \\mathbf { x } _ { i } ^ { 2 } + \\epsilon }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\epsilon"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a small i ipositive value to prevent dividing zero. For an input vector "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { x } \\in \\mathcal { R } ^ { n }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                859,
+                913,
+                895
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Session: Fast Forward 4 "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                45,
+                230,
+                56
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "MM’17, October 23-27, 2017, Mountain View, CA, USA "
+                    }
+                ]
+            },
+            "bbox": [
+                578,
+                44,
+                913,
+                56
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "1043 "
+                    }
+                ]
+            },
+            "bbox": [
+                483,
+                950,
+                514,
+                962
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/c64ca7ab46fcfb4e678a3e9166d35b2ac9bccaad27e19ec0edc2d44e0ef21863.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 4: Le\u001e: The normalization operation and its gradient in 2-dimensional space. Please note that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\| \\mathbf { x } + \\alpha \\frac { \\partial \\mathcal { L } } { \\partial \\mathbf { x } } \\|"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is always bigger than "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\| \\mathbf { x } \\|"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for all "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha > 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "α ∂ because of the Pythagoras theα >orem. Right: An example of the gradients w.r.t. the weight vector. All the gradients are in the tangent space of the unit sphere (denoted as the blue plane). The red, yellow and green points are normalized features from 3 di\u001derent classes. The blue point is the normalized weight corresponding to the red class. Here we assume that the model tries to make features get close to their corresponding classes and away from other classes. Even though we illustrate the gradients applied on the normalized weight only, please note that opposite gradients are also applied on the normalized features (red, yellow, green points). Finally, all the gradients are accumulated together to decide which direction the weight should be updated. Best viewed in color, zoomed in. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                107,
+                102,
+                459,
+                231
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "an "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "L _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "normalization layer outputs the normalized vector, "
+                    }
+                ]
+            },
+            "bbox": [
+                83,
+                489,
+                429,
+                503
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\tilde {\\mathbf {x}} = \\frac {\\mathbf {x}}{\\| \\mathbf {x} \\| _ {2}} = \\frac {\\mathbf {x}}{\\sqrt {\\sum_ {i} \\mathbf {x} _ {i} ^ {2} + \\epsilon}}. \\tag {3}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/c5a22da87590b8e9e483aaf21adfb72131ce681595afe9f22dd80353db478e92.jpg"
+                }
+            },
+            "bbox": [
+                202,
+                507,
+                480,
+                544
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Here "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { x }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can be either the feature vector f or one column of the weight matrix "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "W _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". In backward propagation, the gradient w.r.t. x Wican be obtained by the chain-rule, "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                549,
+                482,
+                590
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} \\frac {\\partial \\mathcal {L}}{\\partial \\mathbf {x} _ {i}} = \\frac {\\partial \\mathcal {L}}{\\partial \\tilde {\\mathbf {x}} _ {i}} \\frac {\\partial \\tilde {\\mathbf {x}} _ {i}}{\\partial \\mathbf {x} _ {i}} + \\sum_ {j} \\frac {\\partial \\mathcal {L}}{\\partial \\tilde {\\mathbf {x}} _ {j}} \\frac {\\partial \\tilde {\\mathbf {x}} _ {j}}{\\partial \\| \\mathbf {x} \\| _ {2}} \\frac {\\partial \\| \\mathbf {x} \\| _ {2}}{\\partial \\mathbf {x} _ {i}} \\\\ = \\frac {\\frac {\\partial \\underline {{f}}}{\\partial \\bar {\\mathbf {x}} _ {i}} - \\tilde {\\mathbf {x}} _ {i} \\sum_ {j} \\frac {\\partial \\underline {{f}}}{\\partial \\bar {\\mathbf {x}} _ {j}} \\tilde {\\mathbf {x}} _ {j}}{\\| \\mathbf {x} \\| _ {2}}. \\tag {4} \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/35ac19942d265eaaf96a0fd500337e3bb5f0092945190eec51d363dc66d6250d.jpg"
+                }
+            },
+            "bbox": [
+                161,
+                595,
+                480,
+                669
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "It is noteworthy that vector "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { x }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { \\frac { { \\partial { \\mathcal { L } } } } { { \\partial { \\bf x } } } } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are orthogonal with each other, i.e. "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { \\langle \\mathbf { x } , \\frac { \\partial \\mathcal { L } } { \\partial \\mathbf { x } } \\rangle = 0 } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "∂ x ∂. From a geometric perspective, the gradient "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { \\frac { { \\partial { \\mathcal { L } } } } { { \\partial { \\bf x } } } } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", ∂ is the projection of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\frac { \\partial \\mathcal { L } } { \\partial \\tilde { \\mathbf { x } } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "onto the tangent space of the unit ∂ ∂hypersphere at normal vector "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tilde { \\mathbf { x } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(see Figure 4). From Figure 4 left, it can be inferred that after update, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\| \\mathbf { x } \\| _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "always increases. In order to prevent "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\| \\mathbf { x } \\| _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "growing in\u001bnitely, weight decay is necessary on vector "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { x }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                674,
+                482,
+                777
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.3 Reformulating Softmax Loss "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                83,
+                791,
+                362,
+                806
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Using the normalization layer, we can directly optimize the cosine similarity, "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                809,
+                482,
+                835
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "d \\left(\\mathbf {f}, \\mathbf {W} _ {\\mathbf {i}}\\right) = \\frac {\\langle \\mathbf {f} , \\mathbf {W} _ {\\mathbf {i}} \\rangle}{\\| \\mathbf {f} \\| _ {2} \\| \\mathbf {W} _ {\\mathbf {i}} \\| _ {2}}, \\tag {5}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/e0ba69ea3c34e366d7f00d081931e0093d85cc33d2de40e2b343588d44f13ffa.jpg"
+                }
+            },
+            "bbox": [
+                209,
+                837,
+                480,
+                866
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where f is the feature and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { W _ { i } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "represents the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i \\cdot"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-th column of the iweight matrix of the inner-product layer before softmax loss layer. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                867,
+                483,
+                896
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "However, after normalization, the network fails to converge. The loss only decreases a little and then converges to a very big value within a few thousands of iterations. After that the loss does not decrease no matter how many iterations we train and how small the learning rate is. "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                106,
+                913,
+                175
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "This is mainly because the range of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d ( \\mathbf { f } , \\mathbf { W _ { i } } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is only "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "[ - 1 , 1 ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": "after d ,normalization, while it is usually between "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\left( - 2 0 , 2 0 \\right)"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\left( - 8 0 , 8 0 \\right)"
+                    },
+                    {
+                        "type": "text",
+                        "content": "when we use an inner-product layer and softmax loss. This low range problem may prevent the probability "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { P _ { \\boldsymbol { y _ { i } } } ( \\mathbf { f } ; \\mathbf { W } ) = \\frac { e ^ { \\mathbf { W } _ { \\mathbf { y _ { i } } } ^ { \\mathrm { T } } \\mathbf { f } } } { \\sum _ { j } ^ { n } e ^ { \\mathbf { W _ { j } ^ { \\mathrm { T } } f } } } } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "jis f’s label, from getting close to 1 even when the samples yiare well-separated. In the extreme case, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\frac { e ^ { 1 } } { e ^ { 1 } + ( n - 1 ) e ^ { - 1 } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is very small (0 45 when "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "n = 1 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "; 0 007 when "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "n = 1 0 0 0 \\mathrm { \\ : }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "n e), even though in this . n . ncondition the samples of all other classes are on the other side of the unit hypersphere. Since the gradient of softmax loss w.r.t. the ground truth label is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 - P _ { y _ { i } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the model will always try to give large Pyigradients to the well separated samples, while the harder samples may not get su\u001ccient gradients. "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                176,
+                913,
+                363
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To better understand this problem, we give a bound to clarify how small the softmax loss can be in the best case. "
+                    }
+                ]
+            },
+            "bbox": [
+                513,
+                364,
+                913,
+                390
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proposition 2. (Softmax Loss Bound After Normalization) Assume that every class has the same number of samples, and all the samples are well-separated, i.e. each sample’s feature is exactly same with its corresponding class’s weight. If we normalize both the features and every column of the weights to have a norm of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\ell"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the softmax loss will have a lower bound, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\log \\left( 1 + \\left( n - 1 \\right) e ^ { - { \\frac { n } { n - 1 } } \\ell ^ { 2 } } \\right)"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where  is the class number. "
+                    }
+                ]
+            },
+            "bbox": [
+                513,
+                398,
+                915,
+                500
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The proof is given in Appendix 8.2. Even though reading the proof need patience, we still encourage readers to read it because you may get better understanding about the hypersphere manifold from it. "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                508,
+                913,
+                561
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "This bound implies that if we just normalize the features and weights to 1, the softmax loss will be trapped at a very high value on training set, even if no regularization is applied. For a real example, if we train the model on the CASIA-Webface dataset "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( n = 1 0 5 7 5 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "), nthe loss will decrease from about 9 27 to about 8 50. The bound for . .this condition is 8 27, which is very close to the real value. This .suggests that our bound is very tight. To give an intuition for the bound, we also plot the curve of the bound as a function of the norm "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\ell"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in Figure 5. "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                564,
+                913,
+                688
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "`After we obtain the bound, the solution to the convergence problem is clear. By normalizing the features and columns of weight to a bigger value "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\ell"
+                    },
+                    {
+                        "type": "text",
+                        "content": "instead of 1, the softmax loss can continue to `decrease. In practice, we may implement this by directly appending a scale layer after the cosine layer. The scale layer has only one learnable parameter "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s = \\ell ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". We may also \u001bx it to a value that is large enough referring to Figure 5, say 20 or 30 for di\u001derent class number. However, we prefer to make the parameter automatically learned by back-propagation instead of introducing a new hyper-parameter for elegance. Finally, the softmax loss with cosine distance is de\u001bned as "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                688,
+                915,
+                837
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathcal {L} _ {\\mathcal {S},} = - \\frac {1}{m} \\sum_ {i = 1} ^ {m} \\log \\frac {e ^ {s \\bar {W} _ {y _ {i}} ^ {T} \\bar {\\mathbf {f}} _ {i}}}{\\sum_ {j = 1} ^ {n} e ^ {s \\bar {W} _ {j} ^ {T} \\bar {\\mathbf {f}} _ {i}}}, \\tag {6}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/d2c1ff6604bf8e09655e6113bfcbd13c5cdcbfebe36e2a3222c270ac62553402.jpg"
+                }
+            },
+            "bbox": [
+                614,
+                837,
+                911,
+                881
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tilde { \\mathbf { x } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the normalized x. "
+                    }
+                ]
+            },
+            "bbox": [
+                513,
+                882,
+                689,
+                893
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Session: Fast Forward 4 "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                45,
+                230,
+                56
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "MM’17, October 23-27, 2017, Mountain View, CA, USA "
+                    }
+                ]
+            },
+            "bbox": [
+                578,
+                45,
+                913,
+                56
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "1044 "
+                    }
+                ]
+            },
+            "bbox": [
+                483,
+                950,
+                514,
+                962
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/a4ef6e7f5a4e56e12d58f73a590b126cdae296034320db99f4d7799ccbd85c67.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 5: The softmax loss’ lower bound as a function of features and weights’ norm. Note that the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": "axis is the squared norm "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\ell ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "xbecause we add the scale parameter directly on the `cosine distance in practice. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                129,
+                113,
+                429,
+                303
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4 REFORMULATING METRIC LEARNING "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                81,
+                426,
+                444,
+                441
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Metric Learning, or speci\u001bcally deep metric learning in this work, usually takes pairs or triplets of samples as input, and outputs the distance between them. In deep metric models, it is a common strategy to normalize the \u001bnal features[22, 23, 28]. It seems that normalization does not cause any problems for metric learning loss functions. However, metric learning is more di\u001ccult to train than classi\u001bcation because the possible input pairs or triplets in metric learning models are very large, namely "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "O ( N ^ { 2 } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "combinations for pairs and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "O ( N ^ { 3 } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "Ncombinations for triplets, where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "N"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the amount N Nof training samples. It is almost impossible to deal with all possible combinations during training, so sampling and hard mining algorithms are usually necessary[28], which are tricky and timeconsuming. By contrast, in a classi\u001bcation task, we usually feed the data iteratively into the model, namely the input data is in order of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "O ( N )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". In this section, we attempt to reformulate some metric Nlearning loss functions to do the classi\u001bcation task, while keeping their compatibility with the normalized features. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                445,
+                482,
+                680
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The most widely used metric learning methods in the face veri\u001b- cation community are the contrastive loss[31, 40], "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                681,
+                482,
+                709
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathcal {L} _ {C} = \\left\\{ \\begin{array}{l l} \\| \\tilde {\\mathbf {f}} _ {i} - \\tilde {\\mathbf {f}} _ {j} \\| _ {2} ^ {2}, & c _ {i} = c _ {j} \\\\ \\max (0, m - \\| \\tilde {\\mathbf {f}} _ {i} - \\tilde {\\mathbf {f}} _ {j} \\| _ {2} ^ {2}), & c _ {i} \\neq c _ {j} \\end{array} \\right., \\tag {7}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/7d35dc025dede4cac0d3d01dd7655bc0f57ec3ba31c59fe8d2373c4c2bc9b0cf.jpg"
+                }
+            },
+            "bbox": [
+                147,
+                728,
+                480,
+                762
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "and the triplet loss[23, 28], "
+                    }
+                ]
+            },
+            "bbox": [
+                83,
+                779,
+                248,
+                792
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathcal {L} _ {\\mathcal {T}} = \\max  (0, m + \\| \\tilde {\\mathbf {f}} _ {i} - \\tilde {\\mathbf {f}} _ {j} \\| _ {2} ^ {2} - \\| \\tilde {\\mathbf {f}} _ {i} - \\tilde {\\mathbf {f}} _ {k} \\| _ {2} ^ {2}), \\quad c _ {i} = c _ {j}, c _ {i} \\neq c _ {k}, \\tag {8}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/21ca3710abf94bfd161199ecfcdaabb83052cfdeac9d47d0c369d40939859f29.jpg"
+                }
+            },
+            "bbox": [
+                91,
+                811,
+                482,
+                830
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where the two "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "m"
+                    },
+                    {
+                        "type": "text",
+                        "content": "’s are the margins. Both of the two loss functions moptimize the normalized Euclidean distance between feature pairs. Note that after normalization, the reformulated softmax loss can "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                849,
+                482,
+                891
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/3a88e0e974e2b3aab66add67f9fd9a648dd8eb78baed87422d39ae347705fba5.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": ": feature "
+                    },
+                    {
+                        "type": "text",
+                        "content": ": agent "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                526,
+                111,
+                705,
+                243
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/8797f5af79864d7831fbc21dc432424663c7b8e1c4e49d98b0546ad0139de779.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": ": class center "
+                    },
+                    {
+                        "type": "text",
+                        "content": ": gradient "
+                    },
+                    {
+                        "type": "text",
+                        "content": "Figure 6: Illustration of how the C-contrastive loss works with two classes on a 3-d sphere (projected on a 2-d plane). Le\u001e: The special case of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": " { m } =  { 0 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". In this case, the agents are only in\u001euenced by features from their own classes. The agents will \u001bnally converge to the centers of their corresponding classes. Right: Normal case of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "m = 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". In this case, mthe agents are in\u001euenced by all the features in the same classes and other classes’ features in the margin. Hence the agents are shifted away from the boundary of the two classes. The features will follow their agents through the intra-class term "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\| \\tilde { \\mathbf { f } } _ { i } - \\tilde { W } _ { j } \\| _ { 2 } ^ { 2 } , c _ { i } = j"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as the gradients shown in i Wj , cithe \u001bgure. Best viewed in color. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                722,
+                111,
+                898,
+                243
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "also be seen as optimizing the normalized Euclidean distance, "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                469,
+                888,
+                483
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} \\mathcal {L} _ {\\mathcal {S},} = - \\frac {1}{m} \\sum_ {i = 1} ^ {m} l o g \\frac {e ^ {s \\tilde {W} _ {y _ {i}} ^ {T} \\tilde {\\mathbf {f}} _ {i}}}{\\sum_ {j = 1} ^ {n} e ^ {s \\tilde {W} _ {j} ^ {T} \\tilde {\\mathbf {f}} _ {i}}} \\\\ = - \\frac {1}{m} \\sum_ {i = 1} ^ {m} l o g \\frac {e ^ {- \\frac {s}{2} \\| \\tilde {\\mathbf {f}} _ {i} - \\tilde {W} _ {y _ {i}} \\| _ {2} ^ {2}}}{\\sum_ {j = 1} ^ {n} e ^ {- \\frac {s}{2} \\| \\tilde {\\mathbf {f}} _ {i} - \\tilde {W} _ {j} \\| _ {2} ^ {2}}}, \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/b71d3189b33786801458f484cd241ef1832d5b13f800e34f92b5bcca730ab1fc.jpg"
+                }
+            },
+            "bbox": [
+                599,
+                486,
+                828,
+                575
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "because "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\| \\tilde { \\mathbf { x } } - \\tilde { \\mathbf { y } } \\| _ { 2 } ^ { 2 } = 2 - 2 \\tilde { \\mathbf { x } } ^ { T } \\tilde { \\mathbf { y } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Inspired by this formulation, we modify one of the features to be one column of a weight matrix "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "W \\in \\mathbb { R } ^ { d \\times n }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the dimension of the feature and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "n"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the W dclass number. We call column "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "W _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "nas the ‘agent’ of the -th class. Wi iThe weight matrix can be learned through back-propagation just as the inner-product layer. In this way, we can get a classi\u001bcation version of the contrastive loss, "
+                    }
+                ]
+            },
+            "bbox": [
+                513,
+                579,
+                913,
+                676
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathcal {L} _ {\\mathcal {C},} = \\left\\{ \\begin{array}{l l} \\| \\tilde {\\mathbf {f}} _ {i} - \\tilde {W} _ {j} \\| _ {2} ^ {2}, & c _ {i} = j \\\\ \\max  (0, m - \\| \\tilde {\\mathbf {f}} _ {i} - \\tilde {W} _ {j} \\| _ {2} ^ {2}), & c _ {i} \\neq j \\end{array} , \\right. \\tag {10}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/4a9c8ab6cd46a1253bfa740d4fd0a1092b86747522bb039a46a6deee5abfa5a3.jpg"
+                }
+            },
+            "bbox": [
+                576,
+                681,
+                911,
+                714
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "and the triplet loss, "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                717,
+                635,
+                731
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathcal {L} _ {\\mathcal {T} ^ {\\prime}} = \\max  (0, m + \\| \\tilde {\\mathbf {f}} _ {i} - \\tilde {W} _ {j} \\| _ {2} ^ {2} - \\| \\tilde {\\mathbf {f}} _ {i} - \\tilde {W} _ {k} \\| _ {2} ^ {2}), \\quad c _ {i} = j, c _ {i} \\neq k. \\tag {11}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/1f47cbe29a73672939b4319e31b25f091ccf8be38fb7d805fb515621e37bb97e.jpg"
+                }
+            },
+            "bbox": [
+                521,
+                734,
+                911,
+                753
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To distinguish these two loss functions from their metric learning versions, we call them "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-contrastive loss and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C \\mathrm { \\cdot }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-triplet loss respectively, denoting that these loss functions are designed for classi\u001bcation. "
+                    }
+                ]
+            },
+            "bbox": [
+                513,
+                756,
+                915,
+                810
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Intuitively, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "W _ { j }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "acts as a summarizer of the features in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "j \\cdot"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-th class. WjIf all classes are well-separated by the margin, the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "W _ { j }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "j’s will roughly jcorrespond to the means of features in each class (Figure 6 left). In more complicated tasks, features of di\u001derent classes may be overlapped with each other. Then the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "W _ { j }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "’s will be shifted away Wjfrom the boundaries. The marginal features (hard examples) are "
+                    }
+                ]
+            },
+            "bbox": [
+                513,
+                811,
+                913,
+                896
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Session: Fast Forward 4 "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                45,
+                230,
+                56
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "MM’17, October 23-27, 2017, Mountain View, CA, USA "
+                    }
+                ]
+            },
+            "bbox": [
+                578,
+                45,
+                913,
+                56
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "1045 "
+                    }
+                ]
+            },
+            "bbox": [
+                483,
+                950,
+                514,
+                962
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/37c7534c9240d8412c4aa32b0f57ba3521133959672ea3948b13294a20c95f6f.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 7: Classi\u001bcation version of contrastive loss (Left) and triplet loss (Right). The shadowed points are the marginal features that got omitted due to the ‘agent’ strategy. In the original version of the two losses, the shadowed points are also optimized. Best viewed in color. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                106,
+                104,
+                468,
+                213
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "guided to have bigger gradients in this case (Figure 6 right), which means they move further than easier samples during update. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                323,
+                480,
+                351
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "However, there are some side e\u001dect of the agent strategy. After reformulation, some of the marginal features may not be optimized if we still use the same margin as the original version (Figure 7). Thus, we need larger margins to make more features get optimized. Mathematically, the error caused by the agent approximation is given by the following proposition. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                351,
+                482,
+                434
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proposition 3. Using an agent for each class instead of a speci\u001bc sample would cause a distortion of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { \\frac { 1 } { n _ { C _ { i } } } \\sum _ { j \\in C _ { i } } \\big ( d ( f _ { 0 } , f _ { j } ) - d ( f _ { 0 } , W _ { i } ) \\big ) ^ { 2 } } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "W _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "n i j iis the agent of the th-class. The distortion is bounded by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { \\frac { 1 } { n _ { C _ { i } } } \\sum _ { j \\in C _ { i } } d ( f _ { j } , W _ { i } ) ^ { 2 } } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                83,
+                441,
+                483,
+                506
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The proof is given in Appendix 8.3. This bound gives us a theoretical guidance of setting the margins. We can compute it on-the-\u001ey feelings about the progress. Empirically, the bound 1C during training using moving-average and display it to get better "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { \\frac { 1 } { n _ { C _ { i } } } \\sum _ { j \\in C _ { i } } d ( f _ { j } , W _ { i } ) ^ { 2 } } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is usually "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "0 . 5 \\sim 0 . 6"
+                    },
+                    {
+                        "type": "text",
+                        "content": "n i j i. The recommendation value of the margins of . .the modi\u001bed contrastive loss and triplet loss is 1 and 0 8 respectively. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                511,
+                503,
+                609
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Note that setting the margin used to be complicated work[40]. Following their work, we have to suspend training and search for a new margin for every several epochs. However, we no longer need to perform such a searching algorithm after applying normalization. Through normalization, the scale of features’ magnitude is \u001bxed, which makes it possible to \u001bx the margin, too. In this strategy, we will not try to train models using the C-contrastive loss or the C-triplet loss without normalization because this is di\u001ccult. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                609,
+                482,
+                720
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5 EXPERIMENT "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                83,
+                734,
+                233,
+                748
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this section, we \u001brst describe the experiment settings in Section 5.1. Then we evaluate our method on two di\u001derent datasets with two di\u001derent models in Section 5.2 and 5.3. Codes and models are released at https://github.com/happynear/NormFace. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                752,
+                482,
+                808
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.1 Implementation Details "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                83,
+                821,
+                321,
+                835
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Baseline works. To verify our algorithm’s universality, we choose two works as our baseline, Wu et. al.’s model [38]2 (Wu’s model, "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                839,
+                482,
+                868
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "for short) and Wen et. al.’s model "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "[ 3 6 ] ^ { 3 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(Wen’s model, for short). Wu’s model is a 10-layer plain CNN with Maxout[6] activation unit. Wen’s model is a 28-layer ResNet[7] trained with both softmax loss and center loss. Neither of these two models apply feature normalization or weight normalization. We strictly follow all the experimental settings as their papers, including the datasets4, the image resolution, the pre-processing methods and the evaluation criteria. "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                104,
+                913,
+                215
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Training. The proposed loss functions are appended after the feature layer, i.e. the second last inner-product layer. The features and columns of weight matrix are normalized to make their "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "L _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "norm Lto be 1. Then the features and columns of the weight matrix are sent into a pairwise distance layer, i.e. inner-product layer to produce a cosine similarity or Euclidean distance layer to produce a normalized Euclidean distance. After calculating all the similarities or distances between each feature and each column, the proposed loss functions will give the \u001bnal loss and gradients to the distances. The whole network models are trained end to end. To speed up the training procedure, we \u001bne-tune the networks from the baseline models. Thus, a relatively small learning rate, say 1e-4 for Wu’s model and 1e-3 for Wen’s model, are applied to update the network through stochastic gradient descent (SGD) with momentum of 0 9. Evaluation. Two datasets are utilized to evaluate the performance, one is Labeled Face in the Wild (LFW)[10] and another is Youtube Face (YTF)[37]. 10-fold validation is used to evaluate the performance for both datasets. After the training models converge, we continue to train them for 5 000 iterations5, during which we save ,a snapshot for every 1 000 iterations. Then we run the evaluation ,codes on the \u001bve saved snapshots separately and calculate an average score to reduce disturbance. We extract features from both the frontal face and its mirror image and merge the two features by element-wise summation. Principle Component Analysis (PCA) is then applied on the training subset of the evaluation dataset to \u001bt the features to the target domain. Similarity score is computed by the cosine distance of two sample’s features after PCA. All the evaluations are based on the similarity scores of image pairs. "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                217,
+                913,
+                604
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.2 Experiments on LFW "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                514,
+                617,
+                732,
+                633
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The LFW dataset[10] contains 13 233 images from 5 749 identi-, ,ties, with large variations in pose, expression and illumination. All the images are collected from Internet. We evaluate our methods through two di\u001derent protocols on LFW, one is the standard unrestricted with labeled outside data [9], which is evaluated on 6 000 ,image pairs, and another is BLUFR [15] which utilize all 13 233 images. It is noteworthy that there are three same identities in CASIA-Webface[40] and LFW[10]. We delete them during training to build a complete open-set validation. "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                635,
+                913,
+                760
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We carefully test almost all combinations of the loss functions on the standard unrestricted with labeled outside data protocol. The results are listed in Table 2. Cosine similarity is used by softmax "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "^ +"
+                    },
+                    {
+                        "type": "text",
+                        "content": "any loss functions. The distance used by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-contrastive and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-triplet loss is the squared normalized Euclidean distance. The "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C \\mathrm { \\cdot }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-triplet "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                760,
+                913,
+                829
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Session: Fast Forward 4 "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                45,
+                230,
+                56
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "MM’17, October 23-27, 2017, Mountain View, CA, USA "
+                    }
+                ]
+            },
+            "bbox": [
+                578,
+                45,
+                913,
+                56
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "3https://github.com/ydwen/ca\u001de-face "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                840,
+                696,
+                852
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "4 Since the identity label of the Celebrity+[18] dataset is not publicly available, we follow Wen’s released model which is trained on CASIA-Webface [40] only. Wu’s model is also trained on CASIA-Webface [40] only. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                852,
+                913,
+                883
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "5In each iteration we train 256 samples, i.e. the batch size is 256. "
+                    }
+                ]
+            },
+            "bbox": [
+                516,
+                883,
+                818,
+                893
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "2https://github.com/AlfredXiangWu/face_veri\u001bcation_experiment "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                881,
+                395,
+                895
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "1046 "
+                    }
+                ]
+            },
+            "bbox": [
+                483,
+                950,
+                514,
+                962
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/a44e96b25b97df01848ccaf9542385e697cc015547635d04aa82776b0829010b.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 8: LFW accuracies as a function of the loss weight of C-contrastive loss or center loss with error bars. All these methods use the normalization strategy except for the baseline. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                117,
+                113,
+                433,
+                305
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/e025ce161f7ce2d2ade95bca61c56cc51e7020e83ebaf47f4f19894aa0dba478.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 2: Results on LFW 6,000 pairs using Wen’s model[36] "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>loss function</td><td>Normalization</td><td>Accuracy</td></tr><tr><td>softmax</td><td>No</td><td>98.28%</td></tr><tr><td>softmax + dropout</td><td>No</td><td>98.35%</td></tr><tr><td>softmax + center[36]</td><td>No</td><td>99.03%</td></tr><tr><td>softmax</td><td>feature only</td><td>98.72%</td></tr><tr><td>softmax</td><td>weight only</td><td>98.95%</td></tr><tr><td>softmax</td><td>Yes</td><td>99.16% ± 0.025%</td></tr><tr><td>softmax + center</td><td>Yes</td><td>99.17% ± 0.017%</td></tr><tr><td>C-contrasitve</td><td>Yes</td><td>99.15% ± 0.017%</td></tr><tr><td>C-triplet</td><td>Yes</td><td>99.11% ± 0.008%</td></tr><tr><td>C-triplet + center</td><td>Yes</td><td>99.13% ± 0.017%</td></tr><tr><td>softmax + C-contrastive</td><td>Yes</td><td>99.19% ± 0.008%</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                93,
+                421,
+                473,
+                604
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "equation_inline",
+                        "content": "^ +"
+                    },
+                    {
+                        "type": "text",
+                        "content": "center loss is implemented by forcing to optimize "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\| \\mathbf { x } _ { i } - W _ { j } \\| _ { 2 } ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "even if "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "m + \\| \\mathbf { x } _ { i } - W _ { j } \\| _ { 2 } ^ { 2 } - \\| \\mathbf { x } _ { i } - W _ { k } \\| _ { 2 } ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "i Wjis less than 0. From Table 2 m i Wj i Wkwe can conclude that the loss functions have minor in\u001euence on the accuracy, and the normalization is the key factor to promote the performance. When combining the softmax loss with the Ccontrastive loss or center loss, we need to add a hyper-parameter to make balance between the two losses. The highest accuracy, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "9 9 . 2 1 6 7 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", is obtained by softmax "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "+ \\ 0 . 0 1 * \\mathrm { C }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-contrastive. However, pure softmax with normalization already works reasonably well. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                628,
+                482,
+                755
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We have also designed two ablation experiments of normalizing the features only or normalizing the columns of weight matrix only. During experiments we \u001bnd that the scale parameter is necessary when normalizing the feature, while normalizing the weight does not need it. We cannot explain it so far. This is tricky but the network will collapse if the scale parameter is not properly added. From Table 2 we can conclude that normalizing the feature causes performance degradation, while normalizing the weight has little in\u001euence on the accuracy. Note that these two special cases of softmax loss are also \u001bne-tuned based on Wen’s model. When training from scratch, "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                756,
+                482,
+                893
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/72408794d81a0ff30f14f6db6af526253cbafe6322d2e298911b1ffff1177c13.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 9: (a): Illustration of how to generate a histogram feature for a pair of videos. We \u001brstly create a pairwise score matrix by computing the cosine similarity between two face images from di\u001derent video sequences. Then we accumulate all the scores in the matrix to create a histogram. (b): Visualization of histogram features extracted from 200 video pairs with both same identities and di\u001derent identities. After collecting all histogram features, support vector machine (SVM) using histogram intersection kernel(HIK) is utilized to make a binary classi\u001bcation. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                532,
+                103,
+                890,
+                392
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "normalizing the weights only will cause the network collapse, while normalizing the features only will lead to a worse accuracy, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "9 8 . 4 5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ".which is better than the conventional softmax loss, but much worse than state-of-the-art loss functions. "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                575,
+                913,
+                630
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In Figure 8, we show the e\u001dect of the loss weights when using two loss functions. As shown in the \u001bgure, the C-contrastive loss is more robust to the loss weight. This is not surprising because Ccontrastive loss can train a model by itself only, while the center loss, which only optimizes the intra-class variance, should be trained with other supervised losses together. "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                631,
+                913,
+                714
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To make our experiment more convincing, we also train some of the loss functions on Wu’s model[38]. The results are listed in Table 4. Note that in [38], Wu et. al. did not perform face mirroring when they evaluated their methods. In Table 4, we also present the result of their model after face mirroring and feature merging. As is shown in the table, the normalization operation still gives a signi\u001bcant boost to the performance. "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                714,
+                913,
+                811
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "On BLUFR protocol, the normalization technique works even better. Here we only compare some of the models with the baseline (Table 3). From Table 3 we can see that normalization could boost the performance signi\u001bcantly, which reveals that normalization technique could perform much better when the false alarm rate (FAR) is low. "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                811,
+                913,
+                893
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Session: Fast Forward 4 "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                45,
+                230,
+                56
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "MM’17, October 23-27, 2017, Mountain View, CA, USA "
+                    }
+                ]
+            },
+            "bbox": [
+                578,
+                44,
+                913,
+                56
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "1047 "
+                    }
+                ]
+            },
+            "bbox": [
+                483,
+                950,
+                514,
+                962
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/89d4e901f2f46a99fad7d65f033b3d20b1b79b5d9352d5826fb08214b170887e.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 3: Results on LFW BLUFR[15] protocol "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>model</td><td>loss function</td><td>Normalization</td><td>TPR@FAR=0.1%</td><td>DIR@FAR=1%</td></tr><tr><td>ResNet</td><td>softmax + center[36]</td><td>No</td><td>93.35%</td><td>67.86%</td></tr><tr><td>ResNet</td><td>softmax</td><td>Yes</td><td>95.77%</td><td>73.92%</td></tr><tr><td>ResNet</td><td>C-triplet + center</td><td>Yes</td><td>95.73%</td><td>76.12%</td></tr><tr><td>ResNet</td><td>softmax + C-contrastive</td><td>Yes</td><td>95.83%</td><td>77.18%</td></tr><tr><td>MaxOut</td><td>softmax[38]</td><td>No</td><td>89.12%</td><td>61.79%</td></tr><tr><td>MaxOut</td><td>softmax</td><td>Yes</td><td>90.64%</td><td>65.22%</td></tr><tr><td>MaxOut</td><td>C-contrastive</td><td>Yes</td><td>90.32%</td><td>68.14%</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                223,
+                130,
+                772,
+                265
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/f0794ef38db4ca7b7141f0177f116379b432151ef0a5af7f001f6a335d7799c8.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 4: Results on LFW 6,000 pairs using Wu’s model[38] "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>loss function</td><td>Normalization</td><td>Accuracy</td></tr><tr><td>softmax</td><td>No</td><td>98.13%</td></tr><tr><td>softmax + mirror</td><td>No</td><td>98.41%</td></tr><tr><td>softmax</td><td>Yes</td><td>98.75% ± 0.008%</td></tr><tr><td>C-contrastive</td><td>Yes</td><td>98.78% ± 0.017%</td></tr><tr><td>softmax + C-contrastive</td><td>Yes</td><td>98.71% ± 0.017%</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                93,
+                308,
+                473,
+                407
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/a4dda6879e55d905ac4c41cf71d5d67dc3670e8de3b18540d0f3835ddde9806b.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 5: Results on YTF with Wen’s model[36] "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>loss function</td><td>Normalization</td><td>Accuracy</td></tr><tr><td>softmax + center[36]</td><td>No</td><td>93.74%</td></tr><tr><td>softmax</td><td>Yes</td><td>94.24%</td></tr><tr><td>softmax + HIK-SVM</td><td>Yes</td><td>94.56%</td></tr><tr><td>C-triplet + center</td><td>Yes</td><td>94.3%</td></tr><tr><td>C-triplet + center + HIK-SVM</td><td>Yes</td><td>94.58%</td></tr><tr><td>softmax + C-contrastive</td><td>Yes</td><td>94.34%</td></tr><tr><td>softmax + C-contrastive + HIK-SVM</td><td>Yes</td><td>94.72%</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                84,
+                455,
+                496,
+                583
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.3 Experiments on YTF "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                83,
+                613,
+                294,
+                628
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The YTF dataset[37] consists of 3,425 videos of 1,595 di\u001derent people, with an average of 2.15 videos per person. We follow the unrestricted with labeled outside data protocol, which takes 5 000 video pairs to evaluate the performance. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                631,
+                482,
+                686
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Previous works usually extract face features from all frames or some selected frames in a video. Then two videos can construct a con\u001bdence matrix "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in which each element "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C _ { i j }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the cosine distance ijof face features extracted from the -th frame of the \u001brst video and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "j \\cdot"
+                    },
+                    {
+                        "type": "text",
+                        "content": "i-th frame of the second video. The \u001bnal score is computed by the javerage of all all elements in . The one dimension score is then Cused to train a classi\u001ber, say SVM, to get the threshold of same identity or di\u001derent identity. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                686,
+                482,
+                797
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Here we propose to use the histogram of elements in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as the Cfeature to train the classi\u001ber. The bin of the histogram is set to 100 (Figure 9(a)). Then SVM with histogram intersection kernel (HIK-SVM)[2] is utilized to make a two-class classi\u001bcation (Figure 9(b)). This method encodes more information compared to the one dimensional mean value, and leads to better performance on video face veri\u001bcation. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                797,
+                482,
+                893
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The results are listed in Table 5. The models that perform better on LFW also show superior performance on YTF. Moreover, the newly proposed score histogram technique (HIK-SVM in the table) can improve the accuracy further by a signi\u001bcant gap. "
+                    }
+                ]
+            },
+            "bbox": [
+                513,
+                282,
+                913,
+                340
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "6 CONCLUSION AND FUTURE WORK "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                514,
+                359,
+                846,
+                375
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this paper, we propose to apply "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "L _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "normalization operation on Lthe features and the weight of the last inner-product layer when training a classi\u001bcation model. We explain the necessity of the normalization operation from both analytic and geometric perspective. Two kinds of loss functions are proposed to e\u001dectively train the normalized feature. One is a reformulated softmax loss with a scale layer inserted between the cosine score and the loss. Another is designed inspired by metric learning. We introduce an agent strategy to avoid the need of hard sample mining, which is a tricky and time-consuming work. Experiments on two di\u001derent models both show superior performance over models without normalization. From three theoretical propositions, we also provide some guidance on the hyper-parameter setting, such as the bias term (Proposition 1), the scale parameter (Proposition 2) and the margin (Proposition 3). "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                378,
+                913,
+                585
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Currently we can only \u001bne-tune the network with normalization techniques based on other models. If we train a model with Ccontrastive loss function, the \u001bnal result is just as good as center loss[36]. But if we \u001bne-tune a model, either Wen’s model[36] or Wu’s model[38], the performance could be further improved as shown in Table 2 and Table 4. More e\u001dorts are needed to \u001bnd a way to train a model from scratch, while preserving at least a similar performance as \u001bne-tuning. "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                585,
+                913,
+                698
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our methods and analysis in this paper are general. They can be used in other metric learning tasks, such as person re-identi\u001bcation or image retrieval. We will apply the proposed methods on these tasks in the future. "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                696,
+                913,
+                752
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "7 ACKNOWLEDGEMENT "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                514,
+                773,
+                741,
+                789
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "This paper is funded by O\u001cce of Naval Research (N00014-15-1- 2356), National Science Foundation (CCF-1317376), the National Natural Science Foundation of China (61671125, 61201271, 61301269) and the State Key Laboratory of Synthetical Automation for Process Industries (NO. PAL-N201401). "
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                792,
+                913,
+                862
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We thank Chenxu Luo and Hao Zhu for their assistance in formula derivation. "
+                    }
+                ]
+            },
+            "bbox": [
+                513,
+                862,
+                913,
+                888
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Session: Fast Forward 4 "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                45,
+                230,
+                56
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "MM’17, October 23-27, 2017, Mountain View, CA, USA "
+                    }
+                ]
+            },
+            "bbox": [
+                578,
+                45,
+                913,
+                56
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "1048 "
+                    }
+                ]
+            },
+            "bbox": [
+                483,
+                950,
+                514,
+                962
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "REFERENCES "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                84,
+                104,
+                200,
+                119
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[1] Jimmy Lei Ba, Jamie Ryan Kiros, and Geo\u001drey E Hinton. 2016. Layer normalization. arXiv preprint arXiv:1607.06450 (2016). "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[2] Annalisa Barla, Francesca Odone, and Alessandro Verri. 2003. Histogram intersection kernel for image classi\u001bcation. In Image Processing, 2003. ICIP 2003. Proceedings. 2003 International Conference on, Vol. 3. IEEE, III–513. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[3] Xinyuan Cai, Chunheng Wang, Baihua Xiao, Xue Chen, and Ji Zhou. 2012. Deep nonlinear metric learning with independent subspace analysis for face veri\u001bcation. In ACM international conference on Multimedia. ACM, 749–752. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[4] Sumit Chopra, Raia Hadsell, and Yann LeCun. 2005. Learning a similarity metric discriminatively, with application to face veri\u001bcation. In IEEE Conference on Computer Vision and Pattern Recognition, Vol. 1. IEEE, 539–546. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[5] Ross Girshick, Je\u001d Donahue, Trevor Darrell, and Jagannath Malik. 2014. Rich feature hierarchies for accurate object detection and semantic segmentation. In IEEE Conference on Computer Vision and Pattern Recognition. 580–587. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[6] Ian J Goodfellow, David Warde-Farley, Mehdi Mirza, Aaron C Courville, and Yoshua Bengio. 2013. Maxout Networks. International Conference on Machine Learning 28 (2013), 1319–1327. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[7] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. 2016. Deep residual learning for image recognition. In IEEE Conference on Computer Vision and Pattern Recognition. 770–778. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[8] Chen Huang, Chen Change Loy, and Xiaoou Tang. 2016. Local similarity-aware deep feature embedding. In Advances in Neural Information Processing Systems. 1262–1270. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[9] Gary B Huang and Erik Learned-Miller. 2014. Labeled faces in the wild: Updates and new reporting procedures. Dept. Comput. Sci., Univ. Massachusetts Amherst, Amherst, MA, USA, Tech. Rep (2014), 14–003. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[10] Gary B Huang, Manu Ramesh, Tamara Berg, and Erik Learned-Miller. 2007. Labeled faces in the wild: A database for studying face recognition in unconstrained environments. Technical Report. Technical Report 07-49, University of Massachusetts, Amherst. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[11] Sergey Io\u001de and Christian Szegedy. 2015. Batch normalization: Accelerating deep network training by reducing internal covariate shift. arXiv preprint arXiv:1502.03167 (2015). "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[12] Alex Krizhevsky, Ilya Sutskever, and Geo\u001drey E Hinton. 2012. Imagenet classi\u001bcation with deep convolutional neural networks. In Advances in neural information processing systems. 1097–1105. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[13] Yann LeCun, Léon Bottou, Yoshua Bengio, and Patrick Ha\u001dner. 1998. Gradientbased learning applied to document recognition. Proc. IEEE 86, 11 (1998), 2278– 2324. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[14] Yann LeCun, Corinna Cortes, and Christopher Burges. 1998. The mnist database of handwritten digits. (1998). http://yann.lecun.com/exdb/mnist/ "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[15] Shengcai Liao, Zhen Lei, Dong Yi, and Stan Z Li. 2014. A benchmark study of large-scale unconstrained face recognition. In IEEE International Joint Conference on Biometrics. IEEE, 1–8. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[16] Weiyang Liu, Yandong Wen, Zhiding Yu, and Meng Yang. 2016. Large-Margin Softmax Loss for Convolutional Neural Networks. In International Conference on Machine Learning. 507–516. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[17] Yu Liu, Hongyang Li, and Xiaogang Wang. 2017. Learning Deep Features via Congenerous Cosine Loss for Person Recognition. arXiv preprint arXiv:1702.06890 (2017). "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[18] Ziwei Liu, Ping Luo, Xiaogang Wang, and Xiaoou Tang. 2015. Deep learning face attributes in the wild. In Proceedings of the IEEE International Conference on Computer Vision. 3730–3738. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[19] Jonathan Long, Evan Shelhamer, and Trevor Darrell. 2015. Fully convolutional networks for semantic segmentation. In IEEE Conference on Computer Vision and Pattern Recognition. 3431–3440. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                123,
+                482,
+                686
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[20] Chaochao Lu and Xiaoou Tang. 2014. Surpassing human-level face veri\u001bcation performance on LFW with GaussianFace. arXiv preprint arXiv:1404.3840 (2014). "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[21] Jonathan Milgram StÃľphane Gentric Liming Chen Md. Abul Hasnat, Julien BohnÃľ. 2017. von Mises-Fisher Mixture Model-based Deep learning: Application to Face Veri\u001bcation. arXiv preprint arXiv:1706.04264 (2017). "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[22] Hyun Oh Song, Yu Xiang, Stefanie Jegelka, and Silvio Savarese. 2016. Deep metric learning via lifted structured feature embedding. In IEEE Conference on Computer Vision and Pattern Recognition. 4004–4012. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[23] Omkar M Parkhi, Andrea Vedaldi, and Andrew Zisserman. 2015. Deep Face Recognition.. In BMVC, Vol. 1. 6. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[24] Rajeev Ranjan, Carlos D. Castillo, and Rama Chellappa. 2017. L2-constrained Softmax Loss for Discriminative Face Veri\u001bcation. arXiv preprint arXiv:1703.09507 (2017). "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[25] Sam Roweis, Geo\u001drey Hinton, and Ruslan Salakhutdinov. 2004. Neighbourhood component analysis. Advances in Neural Information Processing Systems 17 (2004), 513–520. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[26] Walter Rudin and others. 1964. Principles of mathematical analysis, Chapter 10. Vol. 3. McGraw-Hill New York. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[27] Tim Salimans and Diederik P Kingma. 2016. Weight normalization: A simple reparameterization to accelerate training of deep neural networks. In Advances in Neural Information Processing Systems. 901–901. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[28] Florian Schro\u001d, Dmitry Kalenichenko, and James Philbin. 2015. Facenet: A uni\u001bed embedding for face recognition and clustering. In IEEE Conference on Computer Vision and Pattern Recognition. 815–823. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[29] Karen Simonyan and Andrew Zisserman. 2014. Very Deep Convolutional Networks for Large-Scale Image Recognition. arXiv preprint arXiv:1409.1556 (2014). "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[30] Kihyuk Sohn. 2016. Improved deep metric learning with multi-class n-pair loss objective. In Advances in Neural Information Processing Systems. 1849–1857. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[31] Yi Sun, Yuheng Chen, Xiaogang Wang, and Xiaoou Tang. 2014. Deep learning face representation by joint identi\u001bcation-veri\u001bcation. In Advances in neural information processing systems. 1988–1996. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[32] Christian Szegedy, Wei Liu, Yangqing Jia, Pierre Sermanet, Scott Reed, Dragomir Anguelov, Dumitru Erhan, Vincent Vanhoucke, and Andrew Rabinovich. 2015. Going deeper with convolutions. In IEEE Conference on Computer Vision and Pattern Recognition. 1–9. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[33] Yaniv Taigman, Ming Yang, Marc’Aurelio Ranzato, and Lior Wolf. 2014. Deepface: Closing the gap to human-level performance in face veri\u001bcation. In IEEE Conference on Computer Vision and Pattern Recognition. 1701–1708. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[34] Kilian Q Weinberger and Lawrence K Saul. 2009. Distance metric learning for large margin nearest neighbor classi\u001bcation. Journal of Machine Learning Research 10, Feb (2009), 207–244. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[35] Zhiding Yu Ming Li Bhiksha Raj Weiyang Liu, Yandong Wen and Le Song. 2017. SphereFace: Deep Hypersphere Embedding for Face Recognition. In Proceedings of the IEEE conference on computer vision and pattern recognition. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[36] Yandong Wen, Kaipeng Zhang, Zhifeng Li, and Yu Qiao. 2016. A Discriminative Feature Learning Approach for Deep Face Recognition. In European Conference on Computer Vision. Springer, 499–515. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[37] Lior Wolf, Tal Hassner, and Itay Maoz. 2011. Face recognition in unconstrained videos with matched background similarity. In IEEE Conference on Computer Vision and Pattern Recognition. IEEE, 529–534. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[38] Xiang Wu, Ran He, and Zhenan Sun. 2015. A Lightened CNN for Deep Face Representation. arXiv preprint arXiv:1511.02683 (2015). "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[39] Xiang Xiang and Trac D Tran. 2016. Pose-Selective Max Pooling for Measuring Similarity. Lecture Notes in Computer Science 10165 (2016). "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[40] Dong Yi, Zhen Lei, Shengcai Liao, and Stan Z Li. 2014. Learning face representation from scratch. arXiv preprint arXiv:1411.7923 (2014). "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[41] Xiao Zhang, Zhiyuan Fang, Yandong Wen, Zhifeng Li, and Yu Qiao. 2016. Range Loss for Deep Face Recognition with Long-tail. arXiv preprint arXiv:1611.08976 (2016). "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                517,
+                109,
+                913,
+                700
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Session: Fast Forward 4 "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                45,
+                230,
+                56
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "MM’17, October 23-27, 2017, Mountain View, CA, USA "
+                    }
+                ]
+            },
+            "bbox": [
+                580,
+                45,
+                911,
+                56
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "1049 "
+                    }
+                ]
+            },
+            "bbox": [
+                485,
+                950,
+                513,
+                960
+            ]
+        }
+    ]
+]

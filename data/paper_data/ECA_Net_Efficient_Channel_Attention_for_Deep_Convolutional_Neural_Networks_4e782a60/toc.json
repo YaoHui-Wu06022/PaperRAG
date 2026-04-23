@@ -1,0 +1,677 @@
+{
+  "sections": [
+    {
+      "section_id": "sec_abstract",
+      "parent_id": null,
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 4,
+      "end_block_index": 4
+    },
+    {
+      "section_id": "sec_1",
+      "parent_id": null,
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 5,
+      "end_block_index": 21
+    },
+    {
+      "section_id": "sec_2",
+      "parent_id": null,
+      "number": "2",
+      "title": "Related Work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Related Work"
+      ],
+      "start_block_index": 22,
+      "end_block_index": 26
+    },
+    {
+      "section_id": "sec_3",
+      "parent_id": null,
+      "number": "3",
+      "title": "Proposed Method",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Proposed Method"
+      ],
+      "start_block_index": 27,
+      "end_block_index": 77
+    },
+    {
+      "section_id": "sec_3_1",
+      "parent_id": "sec_3",
+      "number": "3.1",
+      "title": "Revisiting Channel Attention in SE Block",
+      "region": "body",
+      "order": 4,
+      "level": 2,
+      "path": [
+        "3 Proposed Method",
+        "3.1 Revisiting Channel Attention in SE Block"
+      ],
+      "start_block_index": 29,
+      "end_block_index": 36
+    },
+    {
+      "section_id": "sec_3_2",
+      "parent_id": "sec_3",
+      "number": "3.2",
+      "title": "Efficient Channel Attention (ECA) Module",
+      "region": "body",
+      "order": 5,
+      "level": 2,
+      "path": [
+        "3 Proposed Method",
+        "3.2 Efficient Channel Attention (ECA) Module"
+      ],
+      "start_block_index": 37,
+      "end_block_index": 74
+    },
+    {
+      "section_id": "sec_3_2_1",
+      "parent_id": "sec_3_2",
+      "number": "3.2.1",
+      "title": "Avoiding Dimensionality Reduction",
+      "region": "body",
+      "order": 6,
+      "level": 3,
+      "path": [
+        "3 Proposed Method",
+        "3.2 Efficient Channel Attention (ECA) Module",
+        "3.2.1 Avoiding Dimensionality Reduction"
+      ],
+      "start_block_index": 39,
+      "end_block_index": 42
+    },
+    {
+      "section_id": "sec_3_2_2",
+      "parent_id": "sec_3_2",
+      "number": "3.2.2",
+      "title": "Local Cross-Channel Interaction",
+      "region": "body",
+      "order": 7,
+      "level": 3,
+      "path": [
+        "3 Proposed Method",
+        "3.2 Efficient Channel Attention (ECA) Module",
+        "3.2.2 Local Cross-Channel Interaction"
+      ],
+      "start_block_index": 43,
+      "end_block_index": 62
+    },
+    {
+      "section_id": "sec_3_2_3",
+      "parent_id": "sec_3_2",
+      "number": "3.2.3",
+      "title": "Coverage of Local Cross-Channel Interaction",
+      "region": "body",
+      "order": 8,
+      "level": 3,
+      "path": [
+        "3 Proposed Method",
+        "3.2 Efficient Channel Attention (ECA) Module",
+        "3.2.3 Coverage of Local Cross-Channel Interaction"
+      ],
+      "start_block_index": 63,
+      "end_block_index": 74
+    },
+    {
+      "section_id": "sec_3_3",
+      "parent_id": "sec_3",
+      "number": "3.3",
+      "title": "ECA Module for Deep CNNs",
+      "region": "body",
+      "order": 9,
+      "level": 2,
+      "path": [
+        "3 Proposed Method",
+        "3.3 ECA Module for Deep CNNs"
+      ],
+      "start_block_index": 75,
+      "end_block_index": 77
+    },
+    {
+      "section_id": "sec_4",
+      "parent_id": null,
+      "number": "4",
+      "title": "Experiments",
+      "region": "body",
+      "order": 10,
+      "level": 1,
+      "path": [
+        "4 Experiments"
+      ],
+      "start_block_index": 78,
+      "end_block_index": 116
+    },
+    {
+      "section_id": "sec_4_1",
+      "parent_id": "sec_4",
+      "number": "4.1",
+      "title": "Implementation Details",
+      "region": "body",
+      "order": 11,
+      "level": 2,
+      "path": [
+        "4 Experiments",
+        "4.1 Implementation Details"
+      ],
+      "start_block_index": 80,
+      "end_block_index": 86
+    },
+    {
+      "section_id": "sec_4_2",
+      "parent_id": "sec_4",
+      "number": "4.2",
+      "title": "Image Classification on ImageNet-1K",
+      "region": "body",
+      "order": 12,
+      "level": 2,
+      "path": [
+        "4 Experiments",
+        "4.2 Image Classification on ImageNet-1K"
+      ],
+      "start_block_index": 87,
+      "end_block_index": 102
+    },
+    {
+      "section_id": "sec_4_2_1",
+      "parent_id": "sec_4_2",
+      "number": "4.2.1",
+      "title": "Effect of Kernel Size ( k )on ECA Module",
+      "region": "body",
+      "order": 13,
+      "level": 3,
+      "path": [
+        "4 Experiments",
+        "4.2 Image Classification on ImageNet-1K",
+        "4.2.1 Effect of Kernel Size ( k )on ECA Module"
+      ],
+      "start_block_index": 89,
+      "end_block_index": 94
+    },
+    {
+      "section_id": "sec_4_2_2",
+      "parent_id": "sec_4_2",
+      "number": "4.2.2",
+      "title": "Comparisons Using Different Deep CNNs",
+      "region": "body",
+      "order": 14,
+      "level": 3,
+      "path": [
+        "4 Experiments",
+        "4.2 Image Classification on ImageNet-1K",
+        "4.2.2 Comparisons Using Different Deep CNNs"
+      ],
+      "start_block_index": 95,
+      "end_block_index": 100
+    },
+    {
+      "section_id": "sec_4_2_3",
+      "parent_id": "sec_4_2",
+      "number": "4.2.3",
+      "title": "Comparisons with Other CNN Models",
+      "region": "body",
+      "order": 15,
+      "level": 3,
+      "path": [
+        "4 Experiments",
+        "4.2 Image Classification on ImageNet-1K",
+        "4.2.3 Comparisons with Other CNN Models"
+      ],
+      "start_block_index": 101,
+      "end_block_index": 102
+    },
+    {
+      "section_id": "sec_4_3",
+      "parent_id": "sec_4",
+      "number": "4.3",
+      "title": "Object Detection on MS COCO",
+      "region": "body",
+      "order": 16,
+      "level": 2,
+      "path": [
+        "4 Experiments",
+        "4.3 Object Detection on MS COCO"
+      ],
+      "start_block_index": 103,
+      "end_block_index": 113
+    },
+    {
+      "section_id": "sec_4_3_1",
+      "parent_id": "sec_4_3",
+      "number": "4.3.1",
+      "title": "Comparisons Using Faster R-CNN",
+      "region": "body",
+      "order": 17,
+      "level": 3,
+      "path": [
+        "4 Experiments",
+        "4.3 Object Detection on MS COCO",
+        "4.3.1 Comparisons Using Faster R-CNN"
+      ],
+      "start_block_index": 105,
+      "end_block_index": 106
+    },
+    {
+      "section_id": "sec_4_3_2",
+      "parent_id": "sec_4_3",
+      "number": "4.3.2",
+      "title": "Comparisons Using Mask R-CNN",
+      "region": "body",
+      "order": 18,
+      "level": 3,
+      "path": [
+        "4 Experiments",
+        "4.3 Object Detection on MS COCO",
+        "4.3.2 Comparisons Using Mask R-CNN"
+      ],
+      "start_block_index": 107,
+      "end_block_index": 111
+    },
+    {
+      "section_id": "sec_4_3_3",
+      "parent_id": "sec_4_3",
+      "number": "4.3.3",
+      "title": "Comparisons Using RetinaNet",
+      "region": "body",
+      "order": 19,
+      "level": 3,
+      "path": [
+        "4 Experiments",
+        "4.3 Object Detection on MS COCO",
+        "4.3.3 Comparisons Using RetinaNet"
+      ],
+      "start_block_index": 112,
+      "end_block_index": 113
+    },
+    {
+      "section_id": "sec_4_4",
+      "parent_id": "sec_4",
+      "number": "4.4",
+      "title": "Instance Segmentation on MS COCO",
+      "region": "body",
+      "order": 20,
+      "level": 2,
+      "path": [
+        "4 Experiments",
+        "4.4 Instance Segmentation on MS COCO"
+      ],
+      "start_block_index": 114,
+      "end_block_index": 116
+    },
+    {
+      "section_id": "sec_5",
+      "parent_id": null,
+      "number": "5",
+      "title": "Conclusion",
+      "region": "body",
+      "order": 21,
+      "level": 1,
+      "path": [
+        "5 Conclusion"
+      ],
+      "start_block_index": 117,
+      "end_block_index": 119
+    }
+  ],
+  "tree": [
+    {
+      "section_id": "sec_abstract",
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 4,
+      "end_block_index": 4,
+      "children": []
+    },
+    {
+      "section_id": "sec_1",
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 5,
+      "end_block_index": 21,
+      "children": []
+    },
+    {
+      "section_id": "sec_2",
+      "number": "2",
+      "title": "Related Work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Related Work"
+      ],
+      "start_block_index": 22,
+      "end_block_index": 26,
+      "children": []
+    },
+    {
+      "section_id": "sec_3",
+      "number": "3",
+      "title": "Proposed Method",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Proposed Method"
+      ],
+      "start_block_index": 27,
+      "end_block_index": 77,
+      "children": [
+        {
+          "section_id": "sec_3_1",
+          "number": "3.1",
+          "title": "Revisiting Channel Attention in SE Block",
+          "region": "body",
+          "order": 4,
+          "level": 2,
+          "path": [
+            "3 Proposed Method",
+            "3.1 Revisiting Channel Attention in SE Block"
+          ],
+          "start_block_index": 29,
+          "end_block_index": 36,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_2",
+          "number": "3.2",
+          "title": "Efficient Channel Attention (ECA) Module",
+          "region": "body",
+          "order": 5,
+          "level": 2,
+          "path": [
+            "3 Proposed Method",
+            "3.2 Efficient Channel Attention (ECA) Module"
+          ],
+          "start_block_index": 37,
+          "end_block_index": 74,
+          "children": [
+            {
+              "section_id": "sec_3_2_1",
+              "number": "3.2.1",
+              "title": "Avoiding Dimensionality Reduction",
+              "region": "body",
+              "order": 6,
+              "level": 3,
+              "path": [
+                "3 Proposed Method",
+                "3.2 Efficient Channel Attention (ECA) Module",
+                "3.2.1 Avoiding Dimensionality Reduction"
+              ],
+              "start_block_index": 39,
+              "end_block_index": 42,
+              "children": []
+            },
+            {
+              "section_id": "sec_3_2_2",
+              "number": "3.2.2",
+              "title": "Local Cross-Channel Interaction",
+              "region": "body",
+              "order": 7,
+              "level": 3,
+              "path": [
+                "3 Proposed Method",
+                "3.2 Efficient Channel Attention (ECA) Module",
+                "3.2.2 Local Cross-Channel Interaction"
+              ],
+              "start_block_index": 43,
+              "end_block_index": 62,
+              "children": []
+            },
+            {
+              "section_id": "sec_3_2_3",
+              "number": "3.2.3",
+              "title": "Coverage of Local Cross-Channel Interaction",
+              "region": "body",
+              "order": 8,
+              "level": 3,
+              "path": [
+                "3 Proposed Method",
+                "3.2 Efficient Channel Attention (ECA) Module",
+                "3.2.3 Coverage of Local Cross-Channel Interaction"
+              ],
+              "start_block_index": 63,
+              "end_block_index": 74,
+              "children": []
+            }
+          ]
+        },
+        {
+          "section_id": "sec_3_3",
+          "number": "3.3",
+          "title": "ECA Module for Deep CNNs",
+          "region": "body",
+          "order": 9,
+          "level": 2,
+          "path": [
+            "3 Proposed Method",
+            "3.3 ECA Module for Deep CNNs"
+          ],
+          "start_block_index": 75,
+          "end_block_index": 77,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_4",
+      "number": "4",
+      "title": "Experiments",
+      "region": "body",
+      "order": 10,
+      "level": 1,
+      "path": [
+        "4 Experiments"
+      ],
+      "start_block_index": 78,
+      "end_block_index": 116,
+      "children": [
+        {
+          "section_id": "sec_4_1",
+          "number": "4.1",
+          "title": "Implementation Details",
+          "region": "body",
+          "order": 11,
+          "level": 2,
+          "path": [
+            "4 Experiments",
+            "4.1 Implementation Details"
+          ],
+          "start_block_index": 80,
+          "end_block_index": 86,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_2",
+          "number": "4.2",
+          "title": "Image Classification on ImageNet-1K",
+          "region": "body",
+          "order": 12,
+          "level": 2,
+          "path": [
+            "4 Experiments",
+            "4.2 Image Classification on ImageNet-1K"
+          ],
+          "start_block_index": 87,
+          "end_block_index": 102,
+          "children": [
+            {
+              "section_id": "sec_4_2_1",
+              "number": "4.2.1",
+              "title": "Effect of Kernel Size ( k )on ECA Module",
+              "region": "body",
+              "order": 13,
+              "level": 3,
+              "path": [
+                "4 Experiments",
+                "4.2 Image Classification on ImageNet-1K",
+                "4.2.1 Effect of Kernel Size ( k )on ECA Module"
+              ],
+              "start_block_index": 89,
+              "end_block_index": 94,
+              "children": []
+            },
+            {
+              "section_id": "sec_4_2_2",
+              "number": "4.2.2",
+              "title": "Comparisons Using Different Deep CNNs",
+              "region": "body",
+              "order": 14,
+              "level": 3,
+              "path": [
+                "4 Experiments",
+                "4.2 Image Classification on ImageNet-1K",
+                "4.2.2 Comparisons Using Different Deep CNNs"
+              ],
+              "start_block_index": 95,
+              "end_block_index": 100,
+              "children": []
+            },
+            {
+              "section_id": "sec_4_2_3",
+              "number": "4.2.3",
+              "title": "Comparisons with Other CNN Models",
+              "region": "body",
+              "order": 15,
+              "level": 3,
+              "path": [
+                "4 Experiments",
+                "4.2 Image Classification on ImageNet-1K",
+                "4.2.3 Comparisons with Other CNN Models"
+              ],
+              "start_block_index": 101,
+              "end_block_index": 102,
+              "children": []
+            }
+          ]
+        },
+        {
+          "section_id": "sec_4_3",
+          "number": "4.3",
+          "title": "Object Detection on MS COCO",
+          "region": "body",
+          "order": 16,
+          "level": 2,
+          "path": [
+            "4 Experiments",
+            "4.3 Object Detection on MS COCO"
+          ],
+          "start_block_index": 103,
+          "end_block_index": 113,
+          "children": [
+            {
+              "section_id": "sec_4_3_1",
+              "number": "4.3.1",
+              "title": "Comparisons Using Faster R-CNN",
+              "region": "body",
+              "order": 17,
+              "level": 3,
+              "path": [
+                "4 Experiments",
+                "4.3 Object Detection on MS COCO",
+                "4.3.1 Comparisons Using Faster R-CNN"
+              ],
+              "start_block_index": 105,
+              "end_block_index": 106,
+              "children": []
+            },
+            {
+              "section_id": "sec_4_3_2",
+              "number": "4.3.2",
+              "title": "Comparisons Using Mask R-CNN",
+              "region": "body",
+              "order": 18,
+              "level": 3,
+              "path": [
+                "4 Experiments",
+                "4.3 Object Detection on MS COCO",
+                "4.3.2 Comparisons Using Mask R-CNN"
+              ],
+              "start_block_index": 107,
+              "end_block_index": 111,
+              "children": []
+            },
+            {
+              "section_id": "sec_4_3_3",
+              "number": "4.3.3",
+              "title": "Comparisons Using RetinaNet",
+              "region": "body",
+              "order": 19,
+              "level": 3,
+              "path": [
+                "4 Experiments",
+                "4.3 Object Detection on MS COCO",
+                "4.3.3 Comparisons Using RetinaNet"
+              ],
+              "start_block_index": 112,
+              "end_block_index": 113,
+              "children": []
+            }
+          ]
+        },
+        {
+          "section_id": "sec_4_4",
+          "number": "4.4",
+          "title": "Instance Segmentation on MS COCO",
+          "region": "body",
+          "order": 20,
+          "level": 2,
+          "path": [
+            "4 Experiments",
+            "4.4 Instance Segmentation on MS COCO"
+          ],
+          "start_block_index": 114,
+          "end_block_index": 116,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_5",
+      "number": "5",
+      "title": "Conclusion",
+      "region": "body",
+      "order": 21,
+      "level": 1,
+      "path": [
+        "5 Conclusion"
+      ],
+      "start_block_index": 117,
+      "end_block_index": 119,
+      "children": []
+    }
+  ]
+}

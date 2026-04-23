@@ -1,0 +1,386 @@
+{
+  "sections": [
+    {
+      "section_id": "sec_abstract",
+      "parent_id": null,
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 6,
+      "end_block_index": 6
+    },
+    {
+      "section_id": "sec_1",
+      "parent_id": null,
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 8,
+      "end_block_index": 22
+    },
+    {
+      "section_id": "sec_2",
+      "parent_id": null,
+      "number": "2",
+      "title": "Related work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Related work"
+      ],
+      "start_block_index": 23,
+      "end_block_index": 27
+    },
+    {
+      "section_id": "sec_3",
+      "parent_id": null,
+      "number": "3",
+      "title": "The Proposed Approach",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 The Proposed Approach"
+      ],
+      "start_block_index": 28,
+      "end_block_index": 67
+    },
+    {
+      "section_id": "sec_3_1",
+      "parent_id": "sec_3",
+      "number": "3.1",
+      "title": "A toy example",
+      "region": "body",
+      "order": 4,
+      "level": 2,
+      "path": [
+        "3 The Proposed Approach",
+        "3.1 A toy example"
+      ],
+      "start_block_index": 32,
+      "end_block_index": 40
+    },
+    {
+      "section_id": "sec_3_2",
+      "parent_id": "sec_3",
+      "number": "3.2",
+      "title": "The center loss",
+      "region": "body",
+      "order": 5,
+      "level": 2,
+      "path": [
+        "3 The Proposed Approach",
+        "3.2 The center loss"
+      ],
+      "start_block_index": 41,
+      "end_block_index": 57
+    },
+    {
+      "section_id": "sec_3_3",
+      "parent_id": "sec_3",
+      "number": "3.3",
+      "title": "Discussion",
+      "region": "body",
+      "order": 6,
+      "level": 2,
+      "path": [
+        "3 The Proposed Approach",
+        "3.3 Discussion"
+      ],
+      "start_block_index": 58,
+      "end_block_index": 67
+    },
+    {
+      "section_id": "sec_4",
+      "parent_id": null,
+      "number": "4",
+      "title": "Experiments",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "4 Experiments"
+      ],
+      "start_block_index": 68,
+      "end_block_index": 123
+    },
+    {
+      "section_id": "sec_4_1",
+      "parent_id": "sec_4",
+      "number": "4.1",
+      "title": "Implementation Details",
+      "region": "body",
+      "order": 8,
+      "level": 2,
+      "path": [
+        "4 Experiments",
+        "4.1 Implementation Details"
+      ],
+      "start_block_index": 74,
+      "end_block_index": 81
+    },
+    {
+      "section_id": "sec_4_2",
+      "parent_id": "sec_4",
+      "number": "4.2",
+      "title": "Experiments on the parameter λ and \\pmb { \\alpha }",
+      "region": "body",
+      "order": 9,
+      "level": 2,
+      "path": [
+        "4 Experiments",
+        "4.2 Experiments on the parameter λ and \\pmb { \\alpha }"
+      ],
+      "start_block_index": 82,
+      "end_block_index": 91
+    },
+    {
+      "section_id": "sec_4_3",
+      "parent_id": "sec_4",
+      "number": "4.3",
+      "title": "Experiments on the LFW and YTF datasets",
+      "region": "body",
+      "order": 10,
+      "level": 2,
+      "path": [
+        "4 Experiments",
+        "4.3 Experiments on the LFW and YTF datasets"
+      ],
+      "start_block_index": 92,
+      "end_block_index": 100
+    },
+    {
+      "section_id": "sec_4_4",
+      "parent_id": "sec_4",
+      "number": "4.4",
+      "title": "Experiments on the dataset of MegaFace Challenge",
+      "region": "body",
+      "order": 11,
+      "level": 2,
+      "path": [
+        "4 Experiments",
+        "4.4 Experiments on the dataset of MegaFace Challenge"
+      ],
+      "start_block_index": 101,
+      "end_block_index": 123
+    },
+    {
+      "section_id": "sec_5",
+      "parent_id": null,
+      "number": "5",
+      "title": "Conclusions",
+      "region": "body",
+      "order": 12,
+      "level": 1,
+      "path": [
+        "5 Conclusions"
+      ],
+      "start_block_index": 124,
+      "end_block_index": 125
+    }
+  ],
+  "tree": [
+    {
+      "section_id": "sec_abstract",
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 6,
+      "end_block_index": 6,
+      "children": []
+    },
+    {
+      "section_id": "sec_1",
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 8,
+      "end_block_index": 22,
+      "children": []
+    },
+    {
+      "section_id": "sec_2",
+      "number": "2",
+      "title": "Related work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Related work"
+      ],
+      "start_block_index": 23,
+      "end_block_index": 27,
+      "children": []
+    },
+    {
+      "section_id": "sec_3",
+      "number": "3",
+      "title": "The Proposed Approach",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 The Proposed Approach"
+      ],
+      "start_block_index": 28,
+      "end_block_index": 67,
+      "children": [
+        {
+          "section_id": "sec_3_1",
+          "number": "3.1",
+          "title": "A toy example",
+          "region": "body",
+          "order": 4,
+          "level": 2,
+          "path": [
+            "3 The Proposed Approach",
+            "3.1 A toy example"
+          ],
+          "start_block_index": 32,
+          "end_block_index": 40,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_2",
+          "number": "3.2",
+          "title": "The center loss",
+          "region": "body",
+          "order": 5,
+          "level": 2,
+          "path": [
+            "3 The Proposed Approach",
+            "3.2 The center loss"
+          ],
+          "start_block_index": 41,
+          "end_block_index": 57,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_3",
+          "number": "3.3",
+          "title": "Discussion",
+          "region": "body",
+          "order": 6,
+          "level": 2,
+          "path": [
+            "3 The Proposed Approach",
+            "3.3 Discussion"
+          ],
+          "start_block_index": 58,
+          "end_block_index": 67,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_4",
+      "number": "4",
+      "title": "Experiments",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "4 Experiments"
+      ],
+      "start_block_index": 68,
+      "end_block_index": 123,
+      "children": [
+        {
+          "section_id": "sec_4_1",
+          "number": "4.1",
+          "title": "Implementation Details",
+          "region": "body",
+          "order": 8,
+          "level": 2,
+          "path": [
+            "4 Experiments",
+            "4.1 Implementation Details"
+          ],
+          "start_block_index": 74,
+          "end_block_index": 81,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_2",
+          "number": "4.2",
+          "title": "Experiments on the parameter λ and \\pmb { \\alpha }",
+          "region": "body",
+          "order": 9,
+          "level": 2,
+          "path": [
+            "4 Experiments",
+            "4.2 Experiments on the parameter λ and \\pmb { \\alpha }"
+          ],
+          "start_block_index": 82,
+          "end_block_index": 91,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_3",
+          "number": "4.3",
+          "title": "Experiments on the LFW and YTF datasets",
+          "region": "body",
+          "order": 10,
+          "level": 2,
+          "path": [
+            "4 Experiments",
+            "4.3 Experiments on the LFW and YTF datasets"
+          ],
+          "start_block_index": 92,
+          "end_block_index": 100,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_4",
+          "number": "4.4",
+          "title": "Experiments on the dataset of MegaFace Challenge",
+          "region": "body",
+          "order": 11,
+          "level": 2,
+          "path": [
+            "4 Experiments",
+            "4.4 Experiments on the dataset of MegaFace Challenge"
+          ],
+          "start_block_index": 101,
+          "end_block_index": 123,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_5",
+      "number": "5",
+      "title": "Conclusions",
+      "region": "body",
+      "order": 12,
+      "level": 1,
+      "path": [
+        "5 Conclusions"
+      ],
+      "start_block_index": 124,
+      "end_block_index": 125,
+      "children": []
+    }
+  ]
+}

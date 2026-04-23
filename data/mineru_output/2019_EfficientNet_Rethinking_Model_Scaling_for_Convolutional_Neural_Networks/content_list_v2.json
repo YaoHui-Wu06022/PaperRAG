@@ -1,0 +1,3579 @@
+[
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Mingxing Tan 1 Quoc V. Le 1 "
+                    }
+                ]
+            },
+            "bbox": [
+                380,
+                176,
+                589,
+                193
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Abstract "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                241,
+                220,
+                320,
+                234
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Convolutional Neural Networks (ConvNets) are commonly developed at a fixed resource budget, and then scaled up for better accuracy if more resources are available. In this paper, we systematically study model scaling and identify that carefully balancing network depth, width, and resolution can lead to better performance. Based on this observation, we propose a new scaling method that uniformly scales all dimensions of depth/width/resolution using a simple yet highly effective compound coefficient. We demonstrate the effectiveness of this method on scaling up MobileNets and ResNet. "
+                    }
+                ]
+            },
+            "bbox": [
+                117,
+                244,
+                444,
+                441
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To go even further, we use neural architecture search to design a new baseline network and scale it up to obtain a family of models, called EfficientNets, which achieve much better accuracy and efficiency than previous ConvNets. In particular, our EfficientNet-B7 achieves state-of-the-art "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "8 4 . 3 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "top-1 accuracy on ImageNet, while being 8.4x smaller and 6.1x faster on inference than the best existing ConvNet. Our EfficientNets also transfer well and achieve state-of-the-art accuracy on CIFAR-100 "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( 9 1 . 7 \\% )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", Flowers "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( 9 8 . 8 \\% )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and 3 other transfer learning datasets, with an order of magnitude fewer parameters. Source code is at https: //github.com/tensorflow/tpu/tree/ master/models/official/efficientnet. "
+                    }
+                ]
+            },
+            "bbox": [
+                116,
+                446,
+                444,
+                686
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "1. Introduction "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                86,
+                729,
+                217,
+                744
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Scaling up ConvNets is widely used to achieve better accuracy. For example, ResNet (He et al., 2016) can be scaled up from ResNet-18 to ResNet-200 by using more layers; Recently, GPipe (Huang et al., 2018) achieved "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "8 4 . 3 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "ImageNet top-1 accuracy by scaling up a baseline model four "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                755,
+                475,
+                832
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "1Google Research, Brain Team, Mountain View, CA. Correspondence to: Mingxing Tan <tanmingxing@google.com>. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                840,
+                477,
+                869
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proceedings of the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ 3 6 } ^ { t h }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "International Conference on Machine Learning, Long Beach, California, PMLR 97, 2019. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                878,
+                473,
+                905
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/c7945183858178fd28ba0f05dd0c07109bd5fb613ae7ab4f634f23c3dbf7a999.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 1. Model Size vs. ImageNet Accuracy. All numbers are for single-crop, single-model. Our EfficientNets significantly outperform other ConvNets. In particular, EfficientNet-B7 achieves new state-of-the-art "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "8 4 . 3 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "top-1 accuracy but being "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "8 . 4 \\mathbf { x }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "smaller and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "6 . 1 \\mathrm { x }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "faster than GPipe. EfficientNet-B1 is 7.6x smaller and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "5 . 7 \\mathbf { x }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "faster than ResNet-152. Details are in Table 2 and 4. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                501,
+                220,
+                875,
+                450
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "time larger. However, the process of scaling up ConvNets has never been well understood and there are currently many ways to do it. The most common way is to scale up ConvNets by their depth (He et al., 2016) or width (Zagoruyko & Komodakis, 2016). Another less common, but increasingly popular, method is to scale up models by image resolution (Huang et al., 2018). In previous work, it is common to scale only one of the three dimensions – depth, width, and image size. Though it is possible to scale two or three dimensions arbitrarily, arbitrary scaling requires tedious manual tuning and still often yields sub-optimal accuracy and efficiency. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                565,
+                885,
+                733
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this paper, we want to study and rethink the process of scaling up ConvNets. In particular, we investigate the central question: is there a principled method to scale up ConvNets that can achieve better accuracy and efficiency? Our empirical study shows that it is critical to balance all dimensions of network width/depth/resolution, and surprisingly such balance can be achieved by simply scaling each of them with constant ratio. Based on this observation, we propose a simple yet effective compound scaling method. Unlike conventional practice that arbitrary scales these factors, our method uniformly scales network width, depth, "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                739,
+                888,
+                905
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks "
+                    }
+                ]
+            },
+            "bbox": [
+                106,
+                109,
+                867,
+                131
+            ]
+        },
+        {
+            "type": "page_aside_text",
+            "content": {
+                "page_aside_text_content": [
+                    {
+                        "type": "text",
+                        "content": "arXiv:1905.11946v5 [cs.LG] 11 Sep 2020 "
+                    }
+                ]
+            },
+            "bbox": [
+                22,
+                263,
+                60,
+                708
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/c41a5c8885fd7f5aff3fb1e716e67ff7a416c1ef995301c42cae95e9ba8f3799.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                106,
+                146,
+                240,
+                320
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/451bb3fcceade976bfe6185176c6fca8d8f4570482508f400d84291a95b38a41.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                236,
+                152,
+                383,
+                320
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/1ca746548e667aada53323904f49d80c6fa85373ace1b4331ecf78ea7b8ee187.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                401,
+                85,
+                517,
+                321
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/5adfe4df51968b0e2b13ff70c483ef72af8ad2564c9ef2ae8aab2e7a3e72c1e0.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                539,
+                137,
+                661,
+                321
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/172317d45a9d80f6c26f85739905a4220eb1e556fe0600beea307f39b75fbc99.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 2. Model Scaling. (a) is a baseline network example; (b)-(d) are conventional scaling that only increases one dimension of network width, depth, or resolution. (e) is our proposed compound scaling method that uniformly scales all three dimensions with a fixed ratio. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                689,
+                101,
+                846,
+                321
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "and resolution with a set of fixed scaling coefficients. For example, if we want to use "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 ^ { N }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "times more computational resources, then we can simply increase the network depth by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha ^ { N }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", width by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\beta ^ { N }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and image size by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\gamma ^ { N }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha , \\beta , \\gamma"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are constant coefficients determined by a small grid search on the original small model. Figure 2 illustrates the difference between our scaling method and conventional methods. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                390,
+                473,
+                494
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Intuitively, the compound scaling method makes sense because if the input image is bigger, then the network needs more layers to increase the receptive field and more channels to capture more fine-grained patterns on the bigger image. In fact, previous theoretical (Raghu et al., 2017; Lu et al., 2018) and empirical results (Zagoruyko & Komodakis, 2016) both show that there exists certain relationship between network width and depth, but to our best knowledge, we are the first to empirically quantify the relationship among all three dimensions of network width, depth, and resolution. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                503,
+                473,
+                654
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We demonstrate that our scaling method work well on existing MobileNets (Howard et al., 2017; Sandler et al., 2018) and ResNet (He et al., 2016). Notably, the effectiveness of model scaling heavily depends on the baseline network; to go even further, we use neural architecture search (Zoph & Le, 2017; Tan et al., 2019) to develop a new baseline network, and scale it up to obtain a family of models, called EfficientNets. Figure 1 summarizes the ImageNet performance, where our EfficientNets significantly outperform other ConvNets. In particular, our EfficientNet-B7 surpasses the best existing GPipe accuracy (Huang et al., 2018), but using 8.4x fewer parameters and running 6.1x faster on inference. Compared to the widely used ResNet-50 (He et al., 2016), our EfficientNet-B4 improves the top-1 accuracy from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "7 6 . 3 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "8 3 . 0 \\%"
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( + 6 . 7 \\% )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "with similar FLOPS. Besides ImageNet, EfficientNets also transfer well and achieve state-"
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                662,
+                475,
+                902
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "of-the-art accuracy on 5 out of 8 widely used datasets, while reducing parameters by up to 21x than existing ConvNets. "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                390,
+                883,
+                421
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2. Related Work "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                496,
+                440,
+                638,
+                455
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "ConvNet Accuracy: Since AlexNet (Krizhevsky et al., 2012) won the 2012 ImageNet competition, ConvNets have become increasingly more accurate by going bigger: while the 2014 ImageNet winner GoogleNet (Szegedy et al., 2015) achieves "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "7 4 . 8 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "top-1 accuracy with about 6.8M parameters, the 2017 ImageNet winner SENet (Hu et al., 2018) achieves "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "8 2 . 7 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "top-1 accuracy with 145M parameters. Recently, GPipe (Huang et al., 2018) further pushes the state-of-the-art ImageNet top-1 validation accuracy to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "8 4 . 3 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "using 557M parameters: it is so big that it can only be trained with a specialized pipeline parallelism library by partitioning the network and spreading each part to a different accelerator. While these models are mainly designed for ImageNet, recent studies have shown better ImageNet models also perform better across a variety of transfer learning datasets (Kornblith et al., 2019), and other computer vision tasks such as object detection (He et al., 2016; Tan et al., 2019). Although higher accuracy is critical for many applications, we have already hit the hardware memory limit, and thus further accuracy gain needs better efficiency. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                465,
+                887,
+                768
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "ConvNet Efficiency: Deep ConvNets are often overparameterized. Model compression (Han et al., 2016; He et al., 2018; Yang et al., 2018) is a common way to reduce model size by trading accuracy for efficiency. As mobile phones become ubiquitous, it is also common to handcraft efficient mobile-size ConvNets, such as SqueezeNets (Iandola et al., 2016; Gholami et al., 2018), MobileNets (Howard et al., 2017; Sandler et al., 2018), and ShuffleNets "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                785,
+                888,
+                904
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks "
+                    }
+                ]
+            },
+            "bbox": [
+                248,
+                56,
+                723,
+                70
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "(Zhang et al., 2018; Ma et al., 2018). Recently, neural architecture search becomes increasingly popular in designing efficient mobile-size ConvNets (Tan et al., 2019; Cai et al., 2019), and achieves even better efficiency than hand-crafted mobile ConvNets by extensively tuning the network width, depth, convolution kernel types and sizes. However, it is unclear how to apply these techniques for larger models that have much larger design space and much more expensive tuning cost. In this paper, we aim to study model efficiency for super large ConvNets that surpass state-of-the-art accuracy. To achieve this goal, we resort to model scaling. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                84,
+                475,
+                251
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Model Scaling: There are many ways to scale a ConvNet for different resource constraints: ResNet (He et al., 2016) can be scaled down (e.g., ResNet-18) or up (e.g., ResNet-200) by adjusting network depth (#layers), while WideResNet (Zagoruyko & Komodakis, 2016) and MobileNets (Howard et al., 2017) can be scaled by network width (#channels). It is also well-recognized that bigger input image size will help accuracy with the overhead of more FLOPS. Although prior studies (Raghu et al., 2017; Lin & Jegelka, 2018; Sharir & Shashua, 2018; Lu et al., 2018) have shown that network depth and width are both important for ConvNets’ expressive power, it still remains an open question of how to effectively scale a ConvNet to achieve better efficiency and accuracy. Our work systematically and empirically studies ConvNet scaling for all three dimensions of network width, depth, and resolutions. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                263,
+                477,
+                505
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3. Compound Model Scaling "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                84,
+                523,
+                328,
+                542
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this section, we will formulate the scaling problem, study different approaches, and propose our new scaling method. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                550,
+                475,
+                580
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.1. Problem Formulation "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                84,
+                597,
+                269,
+                612
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "A ConvNet Layer "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can be defined as a function: "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y _ { i } ~ ="
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { F } _ { i } ( X _ { i } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\mathcal { F } } _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the operator, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is output tensor, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is input tensor, with tensor shape "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\langle H _ { i } , W _ { i } , C _ { i } \\rangle ^ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "H _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "W _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are spatial dimension and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the channel dimension. A ConvNet "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { N }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can be represented by a list of composed layers: "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { N } = \\mathcal { F } _ { k } \\odot . . . \\odot \\mathcal { F } _ { 2 } \\odot \\mathcal { F } _ { 1 } ( X _ { 1 } ) = \\bigodot _ { j = 1 . . . k } \\mathcal { F } _ { j } ( X _ { 1 } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". In practice, ConvNet layers are often partitioned into multiple stages and all layers in each stage share the same architecture: for example, ResNet (He et al., 2016) has five stages, and all layers in each stage has the same convolutional type except the first layer performs down-sampling. Therefore, we can define a ConvNet as: "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                619,
+                475,
+                801
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathcal {N} = \\bigodot_ {i = 1 \\dots s} \\mathcal {F} _ {i} ^ {L _ {i}} \\left(X _ {\\langle H _ {i}, W _ {i}, C _ {i} \\rangle}\\right) \\tag {1}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/33d3d1214cf69f8e3f2b05c364e59072fe00e4f072306691d8977118053e2c24.jpg"
+                }
+            },
+            "bbox": [
+                174,
+                811,
+                473,
+                844
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { F } _ { i } ^ { L _ { i } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "denotes layer "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "F _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is repeated "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "L _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "times in stage "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\langle H _ { i } , W _ { i } , C _ { i } \\rangle"
+                    },
+                    {
+                        "type": "text",
+                        "content": "denotes the shape of input tensor "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of layer "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                849,
+                475,
+                882
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "i. Figure 2(a) illustrate a representative ConvNet, where the spatial dimension is gradually shrunk but the channel dimension is expanded over layers, for example, from initial input shape "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\langle 2 2 4 , 2 2 4 , 3 \\rangle"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to final output shape "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\langle 7 , 7 , 5 1 2 \\rangle"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                84,
+                885,
+                147
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Unlike regular ConvNet designs that mostly focus on finding the best layer architecture "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\mathcal { F } } _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", model scaling tries to expand the network length "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( L _ { i } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", width "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( C _ { i } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and/or resolution "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( H _ { i } , W _ { i } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "without changing "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\mathcal { F } } _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "predefined in the baseline network. By fixing "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\mathcal { F } } _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", model scaling simplifies the design problem for new resource constraints, but it still remains a large design space to explore different "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "L _ { i } , C _ { i } , H _ { i } , W _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for each layer. In order to further reduce the design space, we restrict that all layers must be scaled uniformly with constant ratio. Our target is to maximize the model accuracy for any given resource constraints, which can be formulated as an optimization problem: "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                152,
+                887,
+                334
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} \\max  _ {d, w, r} \\quad A c c u r a c y \\big (\\mathcal {N} (d, w, r) \\big) \\\\ s. t. \\qquad \\mathcal {N} (d, w, r) = \\bigodot_ {i = 1 \\dots s} \\hat {\\mathcal {F}} _ {i} ^ {d \\cdot \\hat {L} _ {i}} \\left(X _ {\\langle r \\cdot \\hat {H} _ {i}, r \\cdot \\hat {W} _ {i}, w \\cdot \\hat {C} _ {i} \\rangle}\\right) \\\\ \\operatorname {M e m o r y} (\\mathcal {N}) \\leq \\text {t a r g e t - m e m o r y} \\\\ \\operatorname {F L O P S} (\\mathcal {N}) \\leq \\text {t a r g e t} _ {\\text {f l o p s}} \\tag {2} \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/d9c9e9b605a7a3b88f5de8a5dfa38ced32ce4cc62335c62149c10c1128445480.jpg"
+                }
+            },
+            "bbox": [
+                516,
+                348,
+                883,
+                460
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w , d , r"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are coefficients for scaling network width, depth, and resolution; "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { \\mathcal { F } } _ { i } , \\hat { L } _ { i } , \\hat { H } _ { i } , \\hat { W } _ { i } , \\hat { C } _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are predefined parameters in baseline network (see Table 1 as an example). "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                465,
+                887,
+                510
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.2. Scaling Dimensions "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                496,
+                526,
+                668,
+                542
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The main difficulty of problem 2 is that the optimal "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d , w , r"
+                    },
+                    {
+                        "type": "text",
+                        "content": "depend on each other and the values change under different resource constraints. Due to this difficulty, conventional methods mostly scale ConvNets in one of these dimensions: "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                550,
+                885,
+                611
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Depth (d): Scaling network depth is the most common way used by many ConvNets (He et al., 2016; Huang et al., 2017; Szegedy et al., 2015; 2016). The intuition is that deeper ConvNet can capture richer and more complex features, and generalize well on new tasks. However, deeper networks are also more difficult to train due to the vanishing gradient problem (Zagoruyko & Komodakis, 2016). Although several techniques, such as skip connections (He et al., 2016) and batch normalization (Ioffe & Szegedy, 2015), alleviate the training problem, the accuracy gain of very deep network diminishes: for example, ResNet-1000 has similar accuracy as ResNet-101 even though it has much more layers. Figure 3 (middle) shows our empirical study on scaling a baseline model with different depth coefficient "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", further suggesting the diminishing accuracy return for very deep ConvNets. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                628,
+                887,
+                857
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Width (w): Scaling network width is commonly used for small size models (Howard et al., 2017; Sandler et al., 2018; "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                875,
+                887,
+                905
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks "
+                    }
+                ]
+            },
+            "bbox": [
+                248,
+                56,
+                723,
+                70
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "1For the sake of simplicity, we omit batch dimension. "
+                    }
+                ]
+            },
+            "bbox": [
+                106,
+                890,
+                423,
+                905
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/2fb837b0979ebf8b727a989bb7df3e2e064ee701245c0c55115c256c283b467c.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                99,
+                87,
+                359,
+                261
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/4d32b57197a6ca6766c3b68392d59f750687ded0957f0f4a00069642064a4a37.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                372,
+                87,
+                612,
+                261
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/6013a5e537ff31ffa4058af7be22c31f168649eafa33d26f2b0e5348534f53bf.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 3. Scaling Up a Baseline Model with Different Network Width (w), Depth "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( d )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and Resolution (r) Coefficients. Bigger networks with larger width, depth, or resolution tend to achieve higher accuracy, but the accuracy gain quickly saturate after reaching "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "80 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", demonstrating the limitation of single dimension scaling. Baseline network is described in Table 1. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                625,
+                88,
+                867,
+                261
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Tan et al., 2019)2. As discussed in (Zagoruyko & Komodakis, 2016), wider networks tend to be able to capture more fine-grained features and are easier to train. However, extremely wide but shallow networks tend to have difficulties in capturing higher level features. Our empirical results in Figure 3 (left) show that the accuracy quickly saturates when networks become much wider with larger "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                83,
+                339,
+                475,
+                445
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Resolution (r): With higher resolution input images, ConvNets can potentially capture more fine-grained patterns. Starting from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 2 4 \\mathbf { x } 2 2 4"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in early ConvNets, modern ConvNets tend to use "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 9 9 \\mathrm { x } 2 9 9"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(Szegedy et al., 2016) or 331x331 (Zoph et al., 2018) for better accuracy. Recently, GPipe (Huang et al., 2018) achieves state-of-the-art ImageNet accuracy with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "4 8 0 { \\bf x } 4 8 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "resolution. Higher resolutions, such as "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "6 0 0 \\times 6 0 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", are also widely used in object detection ConvNets (He et al., 2017; Lin et al., 2017). Figure 3 (right) shows the results of scaling network resolutions, where indeed higher resolutions improve accuracy, but the accuracy gain diminishes for very high resolutions "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathit { r } = 1 . 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "denotes resolution "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 2 4 \\mathbf { x } 2 2 4"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r = 2 . 5"
+                    },
+                    {
+                        "type": "text",
+                        "content": "denotes resolution 560x560). "
+                    }
+                ]
+            },
+            "bbox": [
+                83,
+                458,
+                475,
+                654
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The above analyses lead us to the first observation: "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                662,
+                421,
+                678
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Observation 1 – Scaling up any dimension of network width, depth, or resolution improves accuracy, but the accuracy gain diminishes for bigger models. "
+                    }
+                ]
+            },
+            "bbox": [
+                83,
+                691,
+                475,
+                738
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.3. Compound Scaling "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                84,
+                753,
+                253,
+                768
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We empirically observe that different scaling dimensions are not independent. Intuitively, for higher resolution images, we should increase network depth, such that the larger receptive fields can help capture similar features that include more pixels in bigger images. Correspondingly, we should also increase network width when resolution is higher, in "
+                    }
+                ]
+            },
+            "bbox": [
+                83,
+                777,
+                475,
+                869
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/80b375aa335c298763bab5b52cbad00cf1758f7fd285c9e7bbd5a9d65c7c990b.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 4. Scaling Network Width for Different Baseline Networks. Each dot in a line denotes a model with different width coefficient (w). All baseline networks are from Table 1. The first baseline network "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\scriptstyle \\cdot d = 1 . 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r { = } 1 . 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": ") has 18 convolutional layers with resolution "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 2 4 \\mathbf { x } 2 2 4"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", while the last baseline "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\scriptstyle ( d = 2 . 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r { = } 1 . 3"
+                    },
+                    {
+                        "type": "text",
+                        "content": ") has 36 layers with resolution "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 9 9 \\mathbf { x } 2 9 9"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                513,
+                342,
+                867,
+                551
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "order to capture more fine-grained patterns with more pixels in high resolution images. These intuitions suggest that we need to coordinate and balance different scaling dimensions rather than conventional single-dimension scaling. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                671,
+                885,
+                733
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To validate our intuitions, we compare width scaling under different network depths and resolutions, as shown in Figure 4. If we only scale network width "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w"
+                    },
+                    {
+                        "type": "text",
+                        "content": "without changing depth "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( d { = } 1 . 0 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and resolution "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( r { = } 1 . 0 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the accuracy saturates quickly. With deeper "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( d { = } 2 . 0 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and higher resolution "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( r { = } 2 . 0 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", width scaling achieves much better accuracy under the same FLOPS cost. These results lead us to the second observation: "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                739,
+                885,
+                844
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Observation 2 – In order to pursue better accuracy and efficiency, it is critical to balance all dimensions of network width, depth, and resolution during ConvNet scaling. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                859,
+                885,
+                905
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks "
+                    }
+                ]
+            },
+            "bbox": [
+                248,
+                56,
+                723,
+                70
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "2In some literature, scaling number of channels is called “depth multiplier”, which means the same as our width coefficient "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                877,
+                473,
+                905
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In fact, a few prior work (Zoph et al., 2018; Real et al., 2019) have already tried to arbitrarily balance network width and depth, but they all require tedious manual tuning. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                84,
+                473,
+                130
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this paper, we propose a new compound scaling method, which use a compound coefficient "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\phi"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to uniformly scales network width, depth, and resolution in a principled way: "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                137,
+                475,
+                184
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\text {d e p t h}: d = \\alpha^ {\\phi}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/620700033f7494d9b9caa12dca2a55207528c57fbad449e50eabb73f68bfe2f6.jpg"
+                }
+            },
+            "bbox": [
+                205,
+                196,
+                303,
+                213
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\text {w i d t h}: w = \\beta^ {\\phi}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/2dca5c43db5e61606aa75a546e7b10d2f389fa32d42d65a275cd8811b6a371c2.jpg"
+                }
+            },
+            "bbox": [
+                204,
+                218,
+                305,
+                233
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\text {r e s o l u t i o n}: r = \\gamma^ {\\phi} \\tag {3}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/40a72f763fdec05f6a69b52c6e547597d8423b0fe90f2e3d5890af348a4f7175.jpg"
+                }
+            },
+            "bbox": [
+                174,
+                239,
+                472,
+                253
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathrm {s . t .} \\alpha \\cdot \\beta^ {2} \\cdot \\gamma^ {2} \\approx 2",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/d09078faaeb45e7e15ff8108eda8de0d9f8bbde512ce1bfde379b7e7d5ed2a20.jpg"
+                }
+            },
+            "bbox": [
+                227,
+                258,
+                351,
+                275
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\alpha \\geq 1, \\beta \\geq 1, \\gamma \\geq 1",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/47a0c18b53d97a62e3fa57e0d6e94349808a66981739f1519320537b974eaa9d.jpg"
+                }
+            },
+            "bbox": [
+                251,
+                280,
+                385,
+                294
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha , \\beta , \\gamma"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are constants that can be determined by a small grid search. Intuitively, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\phi"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a user-specified coefficient that controls how many more resources are available for model scaling, while "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha , \\beta , \\gamma"
+                    },
+                    {
+                        "type": "text",
+                        "content": "specify how to assign these extra resources to network width, depth, and resolution respectively. Notably, the FLOPS of a regular convolution op is proportional to d, w2, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", i.e., doubling network depth will double FLOPS, but doubling network width or resolution will increase FLOPS by four times. Since convolution ops usually dominate the computation cost in ConvNets, scaling a ConvNet with equation 3 will approximately increase total FLOPS by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\left( \\alpha \\cdot \\beta ^ { 2 } \\cdot \\gamma ^ { 2 } \\right) ^ { \\phi }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". In this paper, we constraint "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha \\cdot \\beta ^ { 2 } \\cdot \\gamma ^ { 2 } \\approx 2"
+                    },
+                    {
+                        "type": "text",
+                        "content": "such that for any new "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\phi"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the total FLOPS will approximately3 increase by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 ^ { \\phi }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                313,
+                475,
+                527
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4. EfficientNet Architecture "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                84,
+                546,
+                320,
+                561
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Since model scaling does not change layer operators "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { \\mathcal { F } } _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in baseline network, having a good baseline network is also critical. We will evaluate our scaling method using existing ConvNets, but in order to better demonstrate the effectiveness of our scaling method, we have also developed a new mobile-size baseline, called EfficientNet. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                571,
+                473,
+                662
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Inspired by (Tan et al., 2019), we develop our baseline network by leveraging a multi-objective neural architecture search that optimizes both accuracy and FLOPS. Specifically, we use the same search space as (Tan et al., 2019), and use "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A C C ( m ) \\times [ F L O P S ( m ) / T ] ^ { w }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as the optimization goal, where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A C C ( m )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "F L O P S ( m )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "denote the accuracy and FLOPS of model "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "m"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "T"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the target FLOPS and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w { = } { - } 0 . 0 7"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a hyperparameter for controlling the trade-off between accuracy and FLOPS. Unlike (Tan et al., 2019; Cai et al., 2019), here we optimize FLOPS rather than latency since we are not targeting any specific hardware device. Our search produces an efficient network, which we name EfficientNet-B0. Since we use the same search space as (Tan et al., 2019), the architecture is similar to Mnas-"
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                670,
+                475,
+                882
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/f86096c82dfccb081671d2316df48af68d83e319ebece397430add727a9cb87b.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 1. EfficientNet-B0 baseline network – Each row describes a stage "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i"
+                    },
+                    {
+                        "type": "text",
+                        "content": "with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { L } _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "layers, with input resolution "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\langle \\hat { H } _ { i } , \\hat { W } _ { i } \\rangle"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and output channels "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { C } _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Notations are adopted from equation 2. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>Stage i</td><td>Operator \\(\\mathcal{F}_i\\)</td><td>Resolution \\(\\tilde{H}_i \\times \\tilde{W}_i\\)</td><td>#Channels \\(\\hat{C}_i\\)</td><td>#Layers \\(\\tilde{L}_i\\)</td></tr><tr><td>1</td><td>Conv3x3</td><td>224 × 224</td><td>32</td><td>1</td></tr><tr><td>2</td><td>MBConv1, k3x3</td><td>112 × 112</td><td>16</td><td>1</td></tr><tr><td>3</td><td>MBConv6, k3x3</td><td>112 × 112</td><td>24</td><td>2</td></tr><tr><td>4</td><td>MBConv6, k5x5</td><td>56 × 56</td><td>40</td><td>2</td></tr><tr><td>5</td><td>MBConv6, k3x3</td><td>28 × 28</td><td>80</td><td>3</td></tr><tr><td>6</td><td>MBConv6, k5x5</td><td>14 × 14</td><td>112</td><td>3</td></tr><tr><td>7</td><td>MBConv6, k5x5</td><td>14 × 14</td><td>192</td><td>4</td></tr><tr><td>8</td><td>MBConv6, k3x3</td><td>7 × 7</td><td>320</td><td>1</td></tr><tr><td>9</td><td>Conv1x1 &amp; Pooling &amp; FC</td><td>7 × 7</td><td>1280</td><td>1</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                501,
+                128,
+                883,
+                271
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Net, except our EfficientNet-B0 is slightly bigger due to the larger FLOPS target (our FLOPS target is 400M). Table 1 shows the architecture of EfficientNet-B0. Its main building block is mobile inverted bottleneck MBConv (Sandler et al., 2018; Tan et al., 2019), to which we also add squeeze-and-excitation optimization (Hu et al., 2018). "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                292,
+                885,
+                383
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Starting from the baseline EfficientNet-B0, we apply our compound scaling method to scale it up with two steps: "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                391,
+                885,
+                422
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• STEP 1: we first fix "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\phi = 1"
+                            },
+                            {
+                                "type": "text",
+                                "content": ", assuming twice more resources available, and do a small grid search of "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\alpha , \\beta , \\gamma"
+                            },
+                            {
+                                "type": "text",
+                                "content": "based on Equation 2 and 3. In particular, we find the best values for EfficientNet-B0 are "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\alpha = 1 . 2 , \\beta ="
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "1 . 1 , \\gamma = 1 . 1 5"
+                            },
+                            {
+                                "type": "text",
+                                "content": ", under constraint of "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\alpha \\cdot \\beta ^ { 2 } \\cdot \\gamma ^ { 2 } \\approx 2"
+                            },
+                            {
+                                "type": "text",
+                                "content": ". "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• STEP 2: we then fix "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\alpha , \\beta , \\gamma"
+                            },
+                            {
+                                "type": "text",
+                                "content": "as constants and scale up baseline network with different "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\phi"
+                            },
+                            {
+                                "type": "text",
+                                "content": "using Equation 3, to obtain EfficientNet-B1 to B7 (Details in Table 2). "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                436,
+                885,
+                561
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Notably, it is possible to achieve even better performance by searching for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha , \\beta , \\gamma"
+                    },
+                    {
+                        "type": "text",
+                        "content": "directly around a large model, but the search cost becomes prohibitively more expensive on larger models. Our method solves this issue by only doing search once on the small baseline network (step 1), and then use the same scaling coefficients for all other models (step 2). "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                578,
+                885,
+                669
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5. Experiments "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                496,
+                688,
+                629,
+                705
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this section, we will first evaluate our scaling method on existing ConvNets and the new proposed EfficientNets. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                714,
+                883,
+                744
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.1. Scaling Up MobileNets and ResNets "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                496,
+                761,
+                781,
+                776
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "As a proof of concept, we first apply our scaling method to the widely-used MobileNets (Howard et al., 2017; Sandler et al., 2018) and ResNet (He et al., 2016). Table 3 shows the ImageNet results of scaling them in different ways. Compared to other single-dimension scaling methods, our compound scaling method improves the accuracy on all these models, suggesting the effectiveness of our proposed scaling method for general existing ConvNets. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                784,
+                885,
+                905
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks "
+                    }
+                ]
+            },
+            "bbox": [
+                246,
+                56,
+                723,
+                70
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "3FLOPS may differ from theoretical value due to rounding. "
+                    }
+                ]
+            },
+            "bbox": [
+                104,
+                890,
+                457,
+                905
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/71c0e6d3684ec4538bde4fefb85c64fe586d06a20f0f02d244ab3eeb4a33a651.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 2. EfficientNet Performance Results on ImageNet (Russakovsky et al., 2015). All EfficientNet models are scaled from our baseline EfficientNet-B0 using different compound coefficient "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\phi"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in Equation 3. ConvNets with similar top-1/top-5 accuracy are grouped together for efficiency comparison. Our scaled EfficientNet models consistently reduce parameters and FLOPS by an order of magnitude (up to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "8 . 4 \\mathrm { x }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "parameter reduction and up to 16x FLOPS reduction) than existing ConvNets. "
+                    }
+                ],
+                "table_footnote": [
+                    {
+                        "type": "text",
+                        "content": "We omit ensemble and multi-crop models (Hu et al., 2018), or models pretrained on 3.5B Instagram images (Mahajan et al., 2018). "
+                    }
+                ],
+                "html": "<table><tr><td>Model</td><td>Top-1 Acc.</td><td>Top-5 Acc.</td><td>#Params</td><td>Ratio-to-EfficientNet</td><td>#FLOPs</td><td>Ratio-to-EfficientNet</td></tr><tr><td>EfficientNet-B0</td><td>77.1%</td><td>93.3%</td><td>5.3M</td><td>1x</td><td>0.39B</td><td>1x</td></tr><tr><td>ResNet-50 (He et al., 2016)</td><td>76.0%</td><td>93.0%</td><td>26M</td><td>4.9x</td><td>4.1B</td><td>11x</td></tr><tr><td>DenseNet-169 (Huang et al., 2017)</td><td>76.2%</td><td>93.2%</td><td>14M</td><td>2.6x</td><td>3.5B</td><td>8.9x</td></tr><tr><td>EfficientNet-B1</td><td>79.1%</td><td>94.4%</td><td>7.8M</td><td>1x</td><td>0.70B</td><td>1x</td></tr><tr><td>ResNet-152 (He et al., 2016)</td><td>77.8%</td><td>93.8%</td><td>60M</td><td>7.6x</td><td>11B</td><td>16x</td></tr><tr><td>DenseNet-264 (Huang et al., 2017)</td><td>77.9%</td><td>93.9%</td><td>34M</td><td>4.3x</td><td>6.0B</td><td>8.6x</td></tr><tr><td>Inception-v3 (Szegedy et al., 2016)</td><td>78.8%</td><td>94.4%</td><td>24M</td><td>3.0x</td><td>5.7B</td><td>8.1x</td></tr><tr><td>Xception (Chollet, 2017)</td><td>79.0%</td><td>94.5%</td><td>23M</td><td>3.0x</td><td>8.4B</td><td>12x</td></tr><tr><td>EfficientNet-B2</td><td>80.1%</td><td>94.9%</td><td>9.2M</td><td>1x</td><td>1.0B</td><td>1x</td></tr><tr><td>Inception-v4 (Szegedy et al., 2017)</td><td>80.0%</td><td>95.0%</td><td>48M</td><td>5.2x</td><td>13B</td><td>13x</td></tr><tr><td>Inception-resnet-v2 (Szegedy et al., 2017)</td><td>80.1%</td><td>95.1%</td><td>56M</td><td>6.1x</td><td>13B</td><td>13x</td></tr><tr><td>EfficientNet-B3</td><td>81.6%</td><td>95.7%</td><td>12M</td><td>1x</td><td>1.8B</td><td>1x</td></tr><tr><td>ResNeXt-101 (Xie et al., 2017)</td><td>80.9%</td><td>95.6%</td><td>84M</td><td>7.0x</td><td>32B</td><td>18x</td></tr><tr><td>PolyNet (Zhang et al., 2017)</td><td>81.3%</td><td>95.8%</td><td>92M</td><td>7.7x</td><td>35B</td><td>19x</td></tr><tr><td>EfficientNet-B4</td><td>82.9%</td><td>96.4%</td><td>19M</td><td>1x</td><td>4.2B</td><td>1x</td></tr><tr><td>SENet (Hu et al., 2018)</td><td>82.7%</td><td>96.2%</td><td>146M</td><td>7.7x</td><td>42B</td><td>10x</td></tr><tr><td>NASNet-A (Zoph et al., 2018)</td><td>82.7%</td><td>96.2%</td><td>89M</td><td>4.7x</td><td>24B</td><td>5.7x</td></tr><tr><td>AmoebaNet-A (Real et al., 2019)</td><td>82.8%</td><td>96.1%</td><td>87M</td><td>4.6x</td><td>23B</td><td>5.5x</td></tr><tr><td>PNASNet (Liu et al., 2018)</td><td>82.9%</td><td>96.2%</td><td>86M</td><td>4.5x</td><td>23B</td><td>6.0x</td></tr><tr><td>EfficientNet-B5</td><td>83.6%</td><td>96.7%</td><td>30M</td><td>1x</td><td>9.9B</td><td>1x</td></tr><tr><td>AmoebaNet-C (Cubuk et al., 2019)</td><td>83.5%</td><td>96.5%</td><td>155M</td><td>5.2x</td><td>41B</td><td>4.1x</td></tr><tr><td>EfficientNet-B6</td><td>84.0%</td><td>96.8%</td><td>43M</td><td>1x</td><td>19B</td><td>1x</td></tr><tr><td>EfficientNet-B7</td><td>84.3%</td><td>97.0%</td><td>66M</td><td>1x</td><td>37B</td><td>1x</td></tr><tr><td>GPipe (Huang et al., 2018)</td><td>84.3%</td><td>97.0%</td><td>557M</td><td>8.4x</td><td>-</td><td>-</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                89,
+                157,
+                883,
+                522
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/74be1c0b2a50be5f2eee511c8cbe1b3dad1cec97868b75aac1fd329473095a43.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 3. Scaling Up MobileNets and ResNet. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>Model</td><td>FLOPS</td><td>Top-1 Acc.</td></tr><tr><td>Baseline MobileNetV1 (Howard et al., 2017)</td><td>0.6B</td><td>70.6%</td></tr><tr><td>Scale MobileNetV1 by width (w=2)</td><td>2.2B</td><td>74.2%</td></tr><tr><td>Scale MobileNetV1 by resolution (r=2)</td><td>2.2B</td><td>72.7%</td></tr><tr><td>compound scale (d=1.4, w=1.2, r=1.3)</td><td>2.3B</td><td>75.6%</td></tr><tr><td>Baseline MobileNetV2 (Sandler et al., 2018)</td><td>0.3B</td><td>72.0%</td></tr><tr><td>Scale MobileNetV2 by depth (d=4)</td><td>1.2B</td><td>76.8%</td></tr><tr><td>Scale MobileNetV2 by width (w=2)</td><td>1.1B</td><td>76.4%</td></tr><tr><td>Scale MobileNetV2 by resolution (r=2)</td><td>1.2B</td><td>74.8%</td></tr><tr><td>MobileNetV2 compound scale</td><td>1.3B</td><td>77.4%</td></tr><tr><td>Baseline ResNet-50 (He et al., 2016)</td><td>4.1B</td><td>76.0%</td></tr><tr><td>Scale ResNet-50 by depth (d=4)</td><td>16.2B</td><td>78.1%</td></tr><tr><td>Scale ResNet-50 by width (w=2)</td><td>14.7B</td><td>77.7%</td></tr><tr><td>Scale ResNet-50 by resolution (r=2)</td><td>16.4B</td><td>77.5%</td></tr><tr><td>ResNet-50 compound scale</td><td>16.7B</td><td>78.8%</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                91,
+                575,
+                467,
+                792
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/2b489c9af247930ced0e267217bed17d63f37e36011d29442b7bd599b46877ad.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 4. Inference Latency Comparison – Latency is measured with batch size 1 on a single core of Intel Xeon CPU E5-2690. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td></td><td colspan=\"2\">Acc. @ Latency |</td><td>Acc. @ Latency</td></tr><tr><td>ResNet-152</td><td>77.8% @ 0.554s</td><td>GPipe</td><td>84.3% @ 19.0s</td></tr><tr><td>EfficientNet-B1</td><td>78.8% @ 0.098s</td><td>EfficientNet-B7</td><td>84.4% @ 3.1s</td></tr><tr><td>Speedup</td><td>5.7x</td><td>Speedup</td><td>6.1x</td></tr></table>",
+                "table_type": "complex_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                91,
+                847,
+                468,
+                907
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/0b31997ea490b7b50fee9c2f390d30504c3bfbd84a49664f03de796697128ae3.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 5. FLOPS vs. ImageNet Accuracy – Similar to Figure 1 except it compares FLOPS rather than model size. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                501,
+                561,
+                866,
+                786
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.2. ImageNet Results for EfficientNet "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                496,
+                835,
+                766,
+                851
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We train our EfficientNet models on ImageNet using similar settings as (Tan et al., 2019): RMSProp optimizer with decay 0.9 and momentum 0.9; batch norm momentum 0.99; "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                859,
+                887,
+                905
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks "
+                    }
+                ]
+            },
+            "bbox": [
+                248,
+                56,
+                723,
+                70
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/301189c5ae7190000fcc242f038bdbb238909344ad65c390389df0f5ea523a15.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 5. EfficientNet Performance Results on Transfer Learning Datasets. Our scaled EfficientNet models achieve new state-of-theart accuracy for 5 out of 8 datasets, with 9.6x fewer parameters on average. "
+                    }
+                ],
+                "table_footnote": [
+                    {
+                        "type": "text",
+                        "content": "†GPipe (Huang et al., 2018) trains giant models with specialized pipeline parallelism library. "
+                    },
+                    {
+                        "type": "text",
+                        "content": "‡DAT denotes domain adaptive transfer learning (Ngiam et al., 2018). Here we only compare ImageNet-based transfer learning results. "
+                    },
+                    {
+                        "type": "text",
+                        "content": "Transfer accuracy and #params for NASNet (Zoph et al., 2018), Inception-v4 (Szegedy et al., 2017), ResNet-152 (He et al., 2016) are from (Kornblith et al., 2019). "
+                    }
+                ],
+                "html": "<table><tr><td rowspan=\"2\"></td><td colspan=\"7\">Comparison to best public-available results</td><td colspan=\"6\">Comparison to best reported results</td></tr><tr><td>Model</td><td>Acc.</td><td>#Param</td><td>Our Model</td><td>Acc.</td><td>#Param(ratio)</td><td>Model</td><td>Acc.</td><td>#Param</td><td>Our Model</td><td>Acc.</td><td>#Param(ratio)</td><td></td></tr><tr><td>CIFAR-10</td><td>NASNet-A</td><td>98.0%</td><td>85M</td><td>EfficientNet-B0</td><td>98.1%</td><td>4M (21x)</td><td>†Gpipe</td><td>99.0%</td><td>556M</td><td>EfficientNet-B7</td><td>98.9%</td><td>64M (8.7x)</td><td></td></tr><tr><td>CIFAR-100</td><td>NASNet-A</td><td>87.5%</td><td>85M</td><td>EfficientNet-B0</td><td>88.1%</td><td>4M (21x)</td><td>Gpipe</td><td>91.3%</td><td>556M</td><td>EfficientNet-B7</td><td>91.7%</td><td>64M (8.7x)</td><td></td></tr><tr><td>Birdsnap</td><td>Inception-v4</td><td>81.8%</td><td>41M</td><td>EfficientNet-B5</td><td>82.0%</td><td>28M (1.5x)</td><td>GPipe</td><td>83.6%</td><td>556M</td><td>EfficientNet-B7</td><td>84.3%</td><td>64M (8.7x)</td><td></td></tr><tr><td>Stanford Cars</td><td>Inception-v4</td><td>93.4%</td><td>41M</td><td>EfficientNet-B3</td><td>93.6%</td><td>10M (4.1x)</td><td>‡DAT</td><td>94.8%</td><td>-</td><td>EfficientNet-B7</td><td>94.7%</td><td>-</td><td></td></tr><tr><td>Flowers</td><td>Inception-v4</td><td>98.5%</td><td>41M</td><td>EfficientNet-B5</td><td>98.5%</td><td>28M (1.5x)</td><td>DAT</td><td>97.7%</td><td>-</td><td>EfficientNet-B7</td><td>98.8%</td><td>-</td><td></td></tr><tr><td>FGVC Aircraft</td><td>Inception-v4</td><td>90.9%</td><td>41M</td><td>EfficientNet-B3</td><td>90.7%</td><td>10M (4.1x)</td><td>DAT</td><td>92.9%</td><td>-</td><td>EfficientNet-B7</td><td>92.9%</td><td>-</td><td></td></tr><tr><td>Oxford-IIT Pets</td><td>ResNet-152</td><td>94.5%</td><td>58M</td><td>EfficientNet-B4</td><td>94.8%</td><td>17M (5.6x)</td><td>GPipe</td><td>95.9%</td><td>556M</td><td>EfficientNet-B6</td><td>95.4%</td><td>41M (14x)</td><td></td></tr><tr><td>Food-101</td><td>Inception-v4</td><td>90.8%</td><td>41M</td><td>EfficientNet-B4</td><td>91.5%</td><td>17M (2.4x)</td><td>GPipe</td><td>93.0%</td><td>556M</td><td>EfficientNet-B7</td><td>93.0%</td><td>64M (8.7x)</td><td></td></tr><tr><td>Geo-Mean</td><td colspan=\"11\">(4.7x)</td><td>(9.6x)</td><td></td></tr></table>",
+                "table_type": "complex_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                89,
+                128,
+                885,
+                258
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/d6976cc714920ea478e2d3287708e6843a6935dde26a9bd201966584aaed14e7.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 6. Model Parameters vs. Transfer Learning Accuracy – All models are pretrained on ImageNet and finetuned on new datasets. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                174,
+                306,
+                800,
+                569
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "weight decay 1e-5; initial learning rate 0.256 that decays by 0.97 every 2.4 epochs. We also use SiLU (Swish-1) activation (Ramachandran et al., 2018; Elfwing et al., 2018; Hendrycks & Gimpel, 2016), AutoAugment (Cubuk et al., 2019), and stochastic depth (Huang et al., 2016) with survival probability 0.8. As commonly known that bigger models need more regularization, we linearly increase dropout (Srivastava et al., 2014) ratio from 0.2 for EfficientNet-B0 to 0.5 for B7. We reserve 25K randomly picked images from the training set as a minival set, and perform early stopping on this minival; we then evaluate the earlystopped checkpoint on the original validation set to report the final validation accuracy. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                602,
+                475,
+                797
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Table 2 shows the performance of all EfficientNet models that are scaled from the same baseline EfficientNet-B0. Our EfficientNet models generally use an order of magnitude fewer parameters and FLOPS than other ConvNets with similar accuracy. In particular, our EfficientNet-B7 achieves "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "8 4 . 3 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "top1 accuracy with 66M parameters and 37B FLOPS, "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                805,
+                475,
+                896
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "being more accurate but 8.4x smaller than the previous best GPipe (Huang et al., 2018). These gains come from both better architectures, better scaling, and better training settings that are customized for EfficientNet. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                602,
+                885,
+                662
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Figure 1 and Figure 5 illustrates the parameters-accuracy and FLOPS-accuracy curve for representative ConvNets, where our scaled EfficientNet models achieve better accuracy with much fewer parameters and FLOPS than other ConvNets. Notably, our EfficientNet models are not only small, but also computational cheaper. For example, our EfficientNet-B3 achieves higher accuracy than ResNeXt-101 (Xie et al., 2017) using 18x fewer FLOPS. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                669,
+                887,
+                790
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To validate the latency, we have also measured the inference latency for a few representative CovNets on a real CPU as shown in Table 4, where we report average latency over 20 runs. Our EfficientNet-B1 runs "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\bf 5 . 7 x }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "faster than the widely used ResNet-152, while EfficientNet-B7 runs about 6.1x faster than GPipe (Huang et al., 2018), suggesting our EfficientNets are indeed fast on real hardware. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                797,
+                885,
+                902
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks "
+                    }
+                ]
+            },
+            "bbox": [
+                248,
+                56,
+                723,
+                70
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/db6383ee7acc9c00a2e0c74b3f1db315cb3d9717f7dee7cc5f81134a99bef9bc.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 7. Class Activation Map (CAM) (Zhou et al., 2016) for Models with different scaling methods- Our compound scaling method allows the scaled model (last column) to focus on more relevant regions with more object details. Model details are in Table 7. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                135,
+                87,
+                839,
+                256
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/ebb5c21447a04cef63b22f59a91e76bebab3d92c7ea06428c95d51352a2ea513.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 6. Transfer Learning Datasets. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>Dataset</td><td>Train Size</td><td>Test Size</td><td>#Classes</td></tr><tr><td>CIFAR-10 (Krizhevsky &amp; Hinton, 2009)</td><td>50,000</td><td>10,000</td><td>10</td></tr><tr><td>CIFAR-100 (Krizhevsky &amp; Hinton, 2009)</td><td>50,000</td><td>10,000</td><td>100</td></tr><tr><td>Birdsnap (Berg et al., 2014)</td><td>47,386</td><td>2,443</td><td>500</td></tr><tr><td>Stanford Cars (Krause et al., 2013)</td><td>8,144</td><td>8,041</td><td>196</td></tr><tr><td>Flowers (Nilsback &amp; Zisserman, 2008)</td><td>2,040</td><td>6,149</td><td>102</td></tr><tr><td>FGVC Aircraft (Maji et al., 2013)</td><td>6,667</td><td>3,333</td><td>100</td></tr><tr><td>Oxford-IIT Pets (Parkhi et al., 2012)</td><td>3,680</td><td>3,369</td><td>37</td></tr><tr><td>Food-101 (Bossard et al., 2014)</td><td>75,750</td><td>25,250</td><td>101</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                89,
+                335,
+                470,
+                446
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.3. Transfer Learning Results for EfficientNet "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                84,
+                459,
+                413,
+                474
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We have also evaluated our EfficientNet on a list of commonly used transfer learning datasets, as shown in Table 6. We borrow the same training settings from (Kornblith et al., 2019) and (Huang et al., 2018), which take ImageNet pretrained checkpoints and finetune on new datasets. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                482,
+                475,
+                559
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Table 5 shows the transfer learning performance: (1) Compared to public available models, such as NASNet-A (Zoph et al., 2018) and Inception-v4 (Szegedy et al., 2017), our EfficientNet models achieve better accuracy with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "4 . 7 \\mathrm { x }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "average (up to 21x) parameter reduction. (2) Compared to stateof-the-art models, including DAT (Ngiam et al., 2018) that dynamically synthesizes training data and GPipe (Huang et al., 2018) that is trained with specialized pipeline parallelism, our EfficientNet models still surpass their accuracy in 5 out of 8 datasets, but using 9.6x fewer parameters "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                565,
+                473,
+                717
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Figure 6 compares the accuracy-parameters curve for a variety of models. In general, our EfficientNets consistently achieve better accuracy with an order of magnitude fewer parameters than existing models, including ResNet (He et al., 2016), DenseNet (Huang et al., 2017), Inception (Szegedy et al., 2017), and NASNet (Zoph et al., 2018). "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                724,
+                475,
+                814
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "6. Discussion "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                84,
+                834,
+                197,
+                849
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To disentangle the contribution of our proposed scaling method from the EfficientNet architecture, Figure 8 compares the ImageNet performance of different scaling meth-"
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                859,
+                475,
+                906
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/b96f62b3fac4fa911b8508a0993b93e606d26770574137130c0e2fe3255bfdab.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 8. Scaling Up EfficientNet-B0 with Different Methods. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                532,
+                309,
+                849,
+                487
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/bd3946562e18654c19f7dd5804ea24f3144c1bcd71407cf779335c1bf2e6a710.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 7. Scaled Models Used in Figure 7. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>Model</td><td>FLOPS</td><td>Top-1 Acc.</td></tr><tr><td>Baseline model (EfficientNet-B0)</td><td>0.4B</td><td>77.3%</td></tr><tr><td>Scale model by depth (d=4)</td><td>1.8B</td><td>79.0%</td></tr><tr><td>Scale model by width (w=2)</td><td>1.8B</td><td>78.9%</td></tr><tr><td>Scale model by resolution (r=2)</td><td>1.9B</td><td>79.1%</td></tr><tr><td>Compound Scale (d=1.4, w=1.2, r=1.3)</td><td>1.8B</td><td>81.1%</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                509,
+                542,
+                870,
+                636
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "ods for the same EfficientNet-B0 baseline network. In general, all scaling methods improve accuracy with the cost of more FLOPS, but our compound scaling method can further improve accuracy, by up to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 . 5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", than other singledimension scaling methods, suggesting the importance of our proposed compound scaling. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                656,
+                887,
+                748
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In order to further understand why our compound scaling method is better than others, Figure 7 compares the class activation map (Zhou et al., 2016) for a few representative models with different scaling methods. All these models are scaled from the same baseline, and their statistics are shown in Table 7. Images are randomly picked from ImageNet validation set. As shown in the figure, the model with compound scaling tends to focus on more relevant regions with more object details, while other models are either lack of object details or unable to capture all objects in the images. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                753,
+                888,
+                906
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks "
+                    }
+                ]
+            },
+            "bbox": [
+                248,
+                56,
+                723,
+                70
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "7. Conclusion "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                84,
+                83,
+                204,
+                99
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this paper, we systematically study ConvNet scaling and identify that carefully balancing network width, depth, and resolution is an important but missing piece, preventing us from better accuracy and efficiency. To address this issue, we propose a simple and highly effective compound scaling method, which enables us to easily scale up a baseline ConvNet to any target resource constraints in a more principled way, while maintaining model efficiency. Powered by this compound scaling method, we demonstrate that a mobilesize EfficientNet model can be scaled up very effectively, surpassing state-of-the-art accuracy with an order of magnitude fewer parameters and FLOPS, on both ImageNet and five commonly used transfer learning datasets. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                109,
+                475,
+                305
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Acknowledgements "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                84,
+                325,
+                253,
+                343
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We thank Ruoming Pang, Vijay Vasudevan, Alok Aggarwal, Barret Zoph, Hongkun Yu, Jonathon Shlens, Raphael Gontijo Lopes, Yifeng Lu, Daiyi Peng, Xiaodan Song, Samy Bengio, Jeff Dean, and the Google Brain team for their help. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                349,
+                477,
+                412
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Appendix "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                86,
+                430,
+                171,
+                448
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Since 2017, most research papers only report and compare ImageNet validation accuracy; this paper also follows this convention for better comparison. In addition, we have also verified the test accuracy by submitting our predictions on the 100k test set images to http://image-net.org; results are in Table 8. As expected, the test accuracy is very close to the validation accuracy. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                455,
+                475,
+                561
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/188359d6013fb756ac0bd953f29a4f517cfec4372e589b83a6519c56685998e5.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 8. ImageNet Validation vs. Test Top-1/5 Accuracy. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td></td><td>B0</td><td>B1</td><td>B2</td><td>B3</td><td>B4</td><td>B5</td><td>B6</td><td>B7</td></tr><tr><td>Val top1</td><td>77.11</td><td>79.13</td><td>80.07</td><td>81.59</td><td>82.89</td><td>83.60</td><td>83.95</td><td>84.26</td></tr><tr><td>Test top1</td><td>77.23</td><td>79.17</td><td>80.16</td><td>81.72</td><td>82.94</td><td>83.69</td><td>84.04</td><td>84.33</td></tr><tr><td>Val top5</td><td>93.35</td><td>94.47</td><td>94.90</td><td>95.67</td><td>96.37</td><td>96.71</td><td>96.76</td><td>96.97</td></tr><tr><td>Test top5</td><td>93.45</td><td>94.43</td><td>94.98</td><td>95.70</td><td>96.27</td><td>96.64</td><td>96.86</td><td>96.94</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                91,
+                589,
+                468,
+                660
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "References "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                86,
+                675,
+                181,
+                691
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Berg, T., Liu, J., Woo Lee, S., Alexander, M. L., Jacobs, D. W., and Belhumeur, P. N. Birdsnap: Large-scale fine-grained visual categorization of birds. CVPR, pp. 2011–2018, 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Bossard, L., Guillaumin, M., and Van Gool, L. Food-101– mining discriminative components with random forests. ECCV, pp. 446–461, 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Cai, H., Zhu, L., and Han, S. Proxylessnas: Direct neural architecture search on target task and hardware. ICLR, 2019. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Chollet, F. Xception: Deep learning with depthwise separable convolutions. CVPR, pp. 1610–02357, 2017. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                699,
+                477,
+                906
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Cubuk, E. D., Zoph, B., Mane, D., Vasudevan, V., and Le, Q. V. Autoaugment: Learning augmentation policies from data. CVPR, 2019. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Elfwing, S., Uchibe, E., and Doya, K. Sigmoid-weighted linear units for neural network function approximation in reinforcement learning. Neural Networks, 107:3–11, 2018. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Gholami, A., Kwon, K., Wu, B., Tai, Z., Yue, X., Jin, P., Zhao, S., and Keutzer, K. Squeezenext: Hardware-aware neural network design. ECV Workshop at CVPR’18, 2018. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Han, S., Mao, H., and Dally, W. J. Deep compression: Compressing deep neural networks with pruning, trained quantization and huffman coding. ICLR, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "He, K., Zhang, X., Ren, S., and Sun, J. Deep residual learning for image recognition. CVPR, pp. 770–778, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "He, K., Gkioxari, G., Dollar, P., and Girshick, R. Mask ´ r-cnn. ICCV, pp. 2980–2988, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "He, Y., Lin, J., Liu, Z., Wang, H., Li, L.-J., and Han, S. Amc: Automl for model compression and acceleration on mobile devices. ECCV, 2018. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Hendrycks, D. and Gimpel, K. Gaussian error linear units (gelus). arXiv preprint arXiv:1606.08415, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Howard, A. G., Zhu, M., Chen, B., Kalenichenko, D., Wang, W., Weyand, T., Andreetto, M., and Adam, H. Mobilenets: Efficient convolutional neural networks for mobile vision applications. arXiv preprint arXiv:1704.04861, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Hu, J., Shen, L., and Sun, G. Squeeze-and-excitation networks. CVPR, 2018. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Huang, G., Sun, Y., Liu, Z., Sedra, D., and Weinberger, K. Q. Deep networks with stochastic depth. ECCV, pp. 646–661, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Huang, G., Liu, Z., Van Der Maaten, L., and Weinberger, K. Q. Densely connected convolutional networks. CVPR, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Huang, Y., Cheng, Y., Chen, D., Lee, H., Ngiam, J., Le, Q. V., and Chen, Z. Gpipe: Efficient training of giant neural networks using pipeline parallelism. arXiv preprint arXiv:1808.07233, 2018. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Iandola, F. N., Han, S., Moskewicz, M. W., Ashraf, K., Dally, W. J., and Keutzer, K. Squeezenet: Alexnet-level accuracy with 50x fewer parameters and "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "< 0 . 5 \\mathrm { m b }"
+                            },
+                            {
+                                "type": "text",
+                                "content": "model size. arXiv preprint arXiv:1602.07360, 2016. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                498,
+                84,
+                887,
+                906
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks "
+                    }
+                ]
+            },
+            "bbox": [
+                248,
+                56,
+                723,
+                70
+            ]
+        }
+    ],
+    [
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Ioffe, S. and Szegedy, C. Batch normalization: Accelerating deep network training by reducing internal covariate shift. ICML, pp. 448–456, 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Kornblith, S., Shlens, J., and Le, Q. V. Do better imagenet models transfer better? CVPR, 2019. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Krause, J., Deng, J., Stark, M., and Fei-Fei, L. Collecting a large-scale dataset of fine-grained cars. Second Workshop on Fine-Grained Visual Categorizatio, 2013. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Krizhevsky, A. and Hinton, G. Learning multiple layers of features from tiny images. Technical Report, 2009. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Krizhevsky, A., Sutskever, I., and Hinton, G. E. Imagenet classification with deep convolutional neural networks. In NIPS, pp. 1097–1105, 2012. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Lin, H. and Jegelka, S. Resnet with one-neuron hidden layers is a universal approximator. NeurIPS, pp. 6172– 6181, 2018. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Lin, T.-Y., Dollar, P., Girshick, R., He, K., Hariharan, B., ´ and Belongie, S. Feature pyramid networks for object detection. CVPR, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Liu, C., Zoph, B., Shlens, J., Hua, W., Li, L.-J., Fei-Fei, L., Yuille, A., Huang, J., and Murphy, K. Progressive neural architecture search. ECCV, 2018. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Lu, Z., Pu, H., Wang, F., Hu, Z., and Wang, L. The expressive power of neural networks: A view from the width. NeurIPS, 2018. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Ma, N., Zhang, X., Zheng, H.-T., and Sun, J. Shufflenet v2: Practical guidelines for efficient cnn architecture design. ECCV, 2018. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Mahajan, D., Girshick, R., Ramanathan, V., He, K., Paluri, M., Li, Y., Bharambe, A., and van der Maaten, L. Exploring the limits of weakly supervised pretraining. arXiv preprint arXiv:1805.00932, 2018. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Maji, S., Rahtu, E., Kannala, J., Blaschko, M., and Vedaldi, A. Fine-grained visual classification of aircraft. arXiv preprint arXiv:1306.5151, 2013. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Ngiam, J., Peng, D., Vasudevan, V., Kornblith, S., Le, Q. V., and Pang, R. Domain adaptive transfer learning with specialist models. arXiv preprint arXiv:1811.07056, 2018. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Nilsback, M.-E. and Zisserman, A. Automated flower classification over a large number of classes. ICVGIP, pp. 722–729, 2008. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Parkhi, O. M., Vedaldi, A., Zisserman, A., and Jawahar, C. Cats and dogs. CVPR, pp. 3498–3505, 2012. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                84,
+                475,
+                905
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Raghu, M., Poole, B., Kleinberg, J., Ganguli, S., and Sohl-Dickstein, J. On the expressive power of deep neural networks. ICML, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Ramachandran, P., Zoph, B., and Le, Q. V. Searching for activation functions. arXiv preprint arXiv:1710.05941, 2018. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Real, E., Aggarwal, A., Huang, Y., and Le, Q. V. Regularized evolution for image classifier architecture search. AAAI, 2019. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Russakovsky, O., Deng, J., Su, H., Krause, J., Satheesh, S., Ma, S., Huang, Z., Karpathy, A., Khosla, A., Bernstein, M., et al. Imagenet large scale visual recognition challenge. International Journal of Computer Vision, 115(3): 211–252, 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Sandler, M., Howard, A., Zhu, M., Zhmoginov, A., and Chen, L.-C. Mobilenetv2: Inverted residuals and linear bottlenecks. CVPR, 2018. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Sharir, O. and Shashua, A. On the expressive power of overlapping architectures of deep learning. ICLR, 2018. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Srivastava, N., Hinton, G., Krizhevsky, A., Sutskever, I., and Salakhutdinov, R. Dropout: a simple way to prevent neural networks from overfitting. The Journal of Machine Learning Research, 15(1):1929–1958, 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Szegedy, C., Liu, W., Jia, Y., Sermanet, P., Reed, S., Anguelov, D., Erhan, D., Vanhoucke, V., and Rabinovich, A. Going deeper with convolutions. CVPR, pp. 1–9, 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Szegedy, C., Vanhoucke, V., Ioffe, S., Shlens, J., and Wojna, Z. Rethinking the inception architecture for computer vision. CVPR, pp. 2818–2826, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Szegedy, C., Ioffe, S., Vanhoucke, V., and Alemi, A. A. Inception-v4, inception-resnet and the impact of residual connections on learning. AAAI, 4:12, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Tan, M., Chen, B., Pang, R., Vasudevan, V., Sandler, M., Howard, A., and Le, Q. V. MnasNet: Platform-aware neural architecture search for mobile. CVPR, 2019. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Xie, S., Girshick, R., Dollar, P., Tu, Z., and He, K. Aggre- ´ gated residual transformations for deep neural networks. CVPR, pp. 5987–5995, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Yang, T.-J., Howard, A., Chen, B., Zhang, X., Go, A., Sze, V., and Adam, H. Netadapt: Platform-aware neural network adaptation for mobile applications. ECCV, 2018. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Zagoruyko, S. and Komodakis, N. Wide residual networks. BMVC, 2016. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                500,
+                84,
+                885,
+                904
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks "
+                    }
+                ]
+            },
+            "bbox": [
+                248,
+                56,
+                723,
+                69
+            ]
+        }
+    ],
+    [
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Zhang, X., Li, Z., Loy, C. C., and Lin, D. Polynet: A pursuit of structural diversity in very deep networks. CVPR, pp. 3900–3908, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Zhang, X., Zhou, X., Lin, M., and Sun, J. Shufflenet: An extremely efficient convolutional neural network for mobile devices. CVPR, 2018. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Zhou, B., Khosla, A., Lapedriza, A., Oliva, A., and Torralba, A. Learning deep features for discriminative localization. CVPR, pp. 2921–2929, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Zoph, B. and Le, Q. V. Neural architecture search with reinforcement learning. ICLR, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Zoph, B., Vasudevan, V., Shlens, J., and Le, Q. V. Learning transferable architectures for scalable image recognition. CVPR, 2018. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                84,
+                475,
+                335
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks "
+                    }
+                ]
+            },
+            "bbox": [
+                248,
+                56,
+                723,
+                70
+            ]
+        }
+    ]
+]

@@ -1,0 +1,4030 @@
+[
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Aggregated Residual Transformations for Deep Neural Networks "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                156,
+                130,
+                816,
+                152
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Saining Xie1 "
+                    }
+                ]
+            },
+            "bbox": [
+                127,
+                179,
+                233,
+                199
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Ross Girshick2 "
+                    }
+                ]
+            },
+            "bbox": [
+                274,
+                180,
+                395,
+                196
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "1UC San Diego "
+                    }
+                ]
+            },
+            "bbox": [
+                305,
+                198,
+                433,
+                217
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "{s9xie,ztu}@ucsd.edu "
+                    }
+                ]
+            },
+            "bbox": [
+                233,
+                218,
+                411,
+                234
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Piotr Dollar´ 2 "
+                    }
+                ]
+            },
+            "bbox": [
+                436,
+                180,
+                542,
+                196
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Zhuowen Tu1 "
+                    }
+                ]
+            },
+            "bbox": [
+                578,
+                180,
+                691,
+                196
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "2Facebook AI Research "
+                    }
+                ]
+            },
+            "bbox": [
+                472,
+                198,
+                663,
+                215
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "{rbg,pdollar,kaiminghe}@fb.com "
+                    }
+                ]
+            },
+            "bbox": [
+                470,
+                218,
+                736,
+                234
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Kaiming He2 "
+                    }
+                ]
+            },
+            "bbox": [
+                730,
+                180,
+                839,
+                198
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Abstract "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                233,
+                268,
+                313,
+                284
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We present a simple, highly modularized network architecture for image classification. Our network is constructed by repeating a building block that aggregates a set of transformations with the same topology. Our simple design results in a homogeneous, multi-branch architecture that has only a few hyper-parameters to set. This strategy exposes a new dimension, which we call “cardinality” (the size of the set of transformations), as an essential factor in addition to the dimensions of depth and width. On the ImageNet-1K dataset, we empirically show that even under the restricted condition of maintaining complexity, increasing cardinality is able to improve classification accuracy. Moreover, increasing cardinality is more effective than going deeper or wider when we increase the capacity. Our models, named ResNeXt, are the foundations of our entry to the ILSVRC 2016 classification task in which we secured 2nd place. We further investigate ResNeXt on an ImageNet-5K set and the COCO detection set, also showing better results than its ResNet counterpart. The code and models are publicly available online1. "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                294,
+                473,
+                597
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "1. Introduction "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                76,
+                626,
+                209,
+                642
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Research on visual recognition is undergoing a transition from “feature engineering” to “network engineering” [25, 24, 44, 34, 36, 38, 14]. In contrast to traditional handdesigned features (e.g., SIFT [29] and HOG [5]), features learned by neural networks from large-scale data [33] require minimal human involvement during training, and can be transferred to a variety of recognition tasks [7, 10, 28]. Nevertheless, human effort has been shifted to designing better network architectures for learning representations. "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                652,
+                468,
+                787
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Designing architectures becomes increasingly difficult with the growing number of hyper-parameters (width2, filter sizes, strides, etc.), especially when there are many layers. The VGG-nets [36] exhibit a simple yet effective strategy of constructing very deep networks: stacking build-"
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                787,
+                470,
+                864
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/5244f60501e1b8efe3557cbccd0a0a1f24665fbcb74532b179ab7497b84cc41e.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                501,
+                268,
+                612,
+                382
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/57394759da92ef00bbb5ff22353bc7c4aac8760e89d6ce403bb608390b59102a.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 1. Left: A block of ResNet [14]. Right: A block of ResNeXt with cardinality "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "= 3 2"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", with roughly the same complexity. A layer is shown as (# in channels, filter size, # out channels). "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                619,
+                268,
+                890,
+                401
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "ing blocks of the same shape. This strategy is inherited by ResNets [14] which stack modules of the same topology. This simple rule reduces the free choices of hyperparameters, and depth is exposed as an essential dimension in neural networks. Moreover, we argue that the simplicity of this rule may reduce the risk of over-adapting the hyperparameters to a specific dataset. The robustness of VGGnets and ResNets has been proven by various visual recognition tasks [7, 10, 9, 28, 31, 14] and by non-visual tasks involving speech [42, 30] and language [4, 41, 20]. "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                474,
+                892,
+                626
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Unlike VGG-nets, the family of Inception models [38, 17, 39, 37] have demonstrated that carefully designed topologies are able to achieve compelling accuracy with low theoretical complexity. The Inception models have evolved over time [38, 39], but an important common property is a split-transform-merge strategy. In an Inception module, the input is split into a few lower-dimensional embeddings (by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 \\times 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "convolutions), transformed by a set of specialized filters ( "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 { \\times } 3"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", 5×5, etc.), and merged by concatenation. It can be shown that the solution space of this architecture is a strict subspace of the solution space of a single large layer (e.g., "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "5 \\times 5"
+                    },
+                    {
+                        "type": "text",
+                        "content": ") operating on a high-dimensional embedding. The split-transform-merge behavior of Inception modules is expected to approach the representational power of large and dense layers, but at a considerably lower computational complexity. "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                627,
+                893,
+                869
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Despite good accuracy, the realization of Inception models has been accompanied with a series of complicating fac-"
+                    }
+                ]
+            },
+            "bbox": [
+                498,
+                869,
+                893,
+                901
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": []
+            },
+            "bbox": [
+                106,
+                18,
+                184,
+                58
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": []
+            },
+            "bbox": [
+                212,
+                21,
+                785,
+                37
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": []
+            },
+            "bbox": [
+                246,
+                37,
+                750,
+                51
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "1https://github.com/facebookresearch/ResNeXt "
+                    }
+                ]
+            },
+            "bbox": [
+                94,
+                875,
+                346,
+                887
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "2Width refers to the number of channels in a layer. "
+                    }
+                ]
+            },
+            "bbox": [
+                94,
+                887,
+                362,
+                898
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "11492 "
+                    }
+                ]
+            },
+            "bbox": [
+                483,
+                926,
+                514,
+                936
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "tors — the filter numbers and sizes are tailored for each individual transformation, and the modules are customized stage-by-stage. Although careful combinations of these components yield excellent neural network recipes, it is in general unclear how to adapt the Inception architectures to new datasets/tasks, especially when there are many factors and hyper-parameters to be designed. "
+                    }
+                ]
+            },
+            "bbox": [
+                78,
+                90,
+                467,
+                196
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this paper, we present a simple architecture which adopts VGG/ResNets’ strategy of repeating layers, while exploiting the split-transform-merge strategy in an easy, extensible way. A module in our network performs a set of transformations, each on a low-dimensional embedding, whose outputs are aggregated by summation. We pursuit a simple realization of this idea — the transformations to be aggregated are all of the same topology (e.g., Fig. 1 (right)). This design allows us to extend to any large number of transformations without specialized designs. "
+                    }
+                ]
+            },
+            "bbox": [
+                78,
+                199,
+                467,
+                349
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Interestingly, under this simplified situation we show that our model has two other equivalent forms (Fig. 3). The reformulation in Fig. 3(b) appears similar to the Inception-ResNet module [37] in that it concatenates multiple paths; but our module differs from all existing Inception modules in that all our paths share the same topology and thus the number of paths can be easily isolated as a factor to be investigated. In a more succinct reformulation, our module can be reshaped by Krizhevsky et al.’s grouped convolutions [24] (Fig. 3(c)), which, however, had been developed as an engineering compromise. "
+                    }
+                ]
+            },
+            "bbox": [
+                78,
+                351,
+                467,
+                517
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We empirically demonstrate that our aggregated transformations outperform the original ResNet module, even under the restricted condition of maintaining computational complexity and model size — e.g., Fig. 1(right) is designed to keep the FLOPs complexity and number of parameters of Fig. 1(left). We emphasize that while it is relatively easy to increase accuracy by increasing capacity (going deeper or wider), methods that increase accuracy while maintaining (or reducing) complexity are rare in the literature. "
+                    }
+                ]
+            },
+            "bbox": [
+                78,
+                518,
+                467,
+                654
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our method indicates that cardinality (the size of the set of transformations) is a concrete, measurable dimension that is of central importance, in addition to the dimensions of width and depth. Experiments demonstrate that increasing cardinality is a more effective way of gaining accuracy than going deeper or wider, especially when depth and width starts to give diminishing returns for existing models. "
+                    }
+                ]
+            },
+            "bbox": [
+                78,
+                657,
+                467,
+                762
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our neural networks, named ResNeXt (suggesting the next dimension), outperform ResNet-101/152 [14], ResNet-200 [15], Inception-v3 [39], and Inception-ResNet-v2 [37] on the ImageNet classification dataset. In particular, a 101-layer ResNeXt is able to achieve better accuracy than ResNet-200 [15] but has only "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "50 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "complexity. Moreover, ResNeXt exhibits considerably simpler designs than all Inception models. ResNeXt was the foundation of our submission to the ILSVRC 2016 classification task, in which "
+                    }
+                ]
+            },
+            "bbox": [
+                78,
+                763,
+                467,
+                898
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "we secured second place. This paper further evaluates ResNeXt on a larger ImageNet-5K set and the COCO object detection dataset [27], showing consistently better accuracy than its ResNet counterparts. We expect that ResNeXt will also generalize well to other visual (and non-visual) recognition tasks. "
+                    }
+                ]
+            },
+            "bbox": [
+                503,
+                90,
+                888,
+                179
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2. Related Work "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                503,
+                193,
+                638,
+                208
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Multi-branch convolutional networks. The Inception models [38, 17, 39, 37] are successful multi-branch architectures where each branch is carefully customized. ResNets [14] can be thought of as two-branch networks where one branch is the identity mapping. Deep neural decision forests [22] are tree-patterned multi-branch networks with learned splitting functions. "
+                    }
+                ]
+            },
+            "bbox": [
+                503,
+                218,
+                888,
+                323
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Grouped convolutions. The use of grouped convolutions dates back to the AlexNet paper [24], if not earlier. The motivation given by Krizhevsky et al. [24] is for distributing the model over two GPUs. Grouped convolutions are supported by Caffe [19], Torch [3], and other libraries, mainly for compatibility of AlexNet. To the best of our knowledge, there has been little evidence on exploiting grouped convolutions to improve accuracy. A special case of grouped convolutions is channel-wise convolutions in which the number of groups is equal to the number of channels. Channel-wise convolutions are part of the separable convolutions in [35]. "
+                    }
+                ]
+            },
+            "bbox": [
+                503,
+                330,
+                888,
+                494
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Compressing convolutional networks. Decomposition (at spatial [6, 18] and/or channel [6, 21, 16] level) is a widely adopted technique to reduce redundancy of deep convolutional networks and accelerate/compress them. Ioannou et al. [16] present a “root”-patterned network for reducing computation, and branches in the root are realized by grouped convolutions. These methods [6, 18, 21, 16] have shown elegant compromise of accuracy with lower complexity and smaller model sizes. Instead of compression, our method is an architecture that empirically shows stronger representational power. "
+                    }
+                ]
+            },
+            "bbox": [
+                503,
+                502,
+                888,
+                667
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Ensembling. Averaging a set of independently trained networks is an effective solution to improving accuracy [24], widely adopted in recognition competitions [33]. Veit et al. [40] interpret a single ResNet as an ensemble of shallower networks, which results from ResNet’s additive behaviors [15]. Our method harnesses additions to aggregate a set of transformations. But we argue that it is imprecise to view our method as ensembling, because the members to be aggregated are trained jointly, not independently. "
+                    }
+                ]
+            },
+            "bbox": [
+                503,
+                674,
+                888,
+                810
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3. Method "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                503,
+                821,
+                588,
+                835
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.1. Template "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                503,
+                847,
+                606,
+                862
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We adopt a highly modularized design following VGG/ResNets. Our network consists of a stack of resid-"
+                    }
+                ]
+            },
+            "bbox": [
+                503,
+                869,
+                888,
+                898
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": []
+            },
+            "bbox": [
+                485,
+                926,
+                513,
+                936
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/d01280d91ba57728451a4a4cde68e1df0880fd6df108814ab9d8861a063b663a.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 1. (Left) ResNet-50. (Right) ResNeXt-50 with a "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 2 \\times 4 \\mathrm { d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "template (using the reformulation in Fig. 3(c)). Inside the brackets are the shape of a residual block, and outside the brackets is the number of stacked blocks on a stage. “ "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C { = } 3 2 ^ { \\circ }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "suggests grouped convolutions [24] with 32 groups. The numbers of parameters and FLOPs are similar between these two models. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>stage</td><td>output</td><td colspan=\"2\">ResNet-50</td><td colspan=\"2\">ResNeXt-50 (32×4d)</td></tr><tr><td>conv1</td><td>112×112</td><td colspan=\"2\">7×7, 64, stride 2</td><td colspan=\"2\">7×7, 64, stride 2</td></tr><tr><td rowspan=\"2\">conv2</td><td rowspan=\"2\">56×56</td><td colspan=\"2\">3×3 max pool, stride 2</td><td colspan=\"2\">3×3 max pool, stride 2</td></tr><tr><td>[1×1, 643×3, 641×1, 256]</td><td>×3</td><td>[1×1, 1283×3, 128, C=321×1, 256]</td><td>×3</td></tr><tr><td>conv3</td><td>28×28</td><td>[1×1, 1283×3, 1281×1, 512]</td><td>×4</td><td>[1×1, 2563×3, 256, C=321×1, 512]</td><td>×4</td></tr><tr><td>conv4</td><td>14×14</td><td>[1×1, 2563×3, 2561×1, 1024]</td><td>×6</td><td>[1×1, 5123×3, 512, C=321×1, 1024]</td><td>×6</td></tr><tr><td>conv5</td><td>7×7</td><td>[1×1, 5123×3, 5121×1, 2048]</td><td>×3</td><td>[1×1, 10243×3, 1024, C=321×1, 2048]</td><td>×3</td></tr><tr><td></td><td>1×1</td><td colspan=\"2\">global average pool1000-d fc, softmax</td><td colspan=\"2\">global average pool1000-d fc, softmax</td></tr><tr><td colspan=\"2\"># params.</td><td colspan=\"2\">25.5×10^6</td><td colspan=\"2\">25.0×10^6</td></tr><tr><td colspan=\"2\">FLOPs</td><td colspan=\"2\">4.1×10^9</td><td colspan=\"2\">4.2×10^9</td></tr></table>",
+                "table_type": "complex_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                83,
+                88,
+                464,
+                378
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "ual blocks. These blocks have the same topology, and are subject to two simple rules inspired by VGG/ResNets: (i) if producing spatial maps of the same size, the blocks share the same hyper-parameters (width and filter sizes), and (ii) each time when the spatial map is downsampled by a factor of 2, the width of the blocks is multiplied by a factor of 2. The second rule ensures that the computational complexity, in terms of FLOPs (floating-point operations, in # of multiply-adds), is roughly the same for all blocks. "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                491,
+                468,
+                627
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "With these two rules, we only need to design a template module, and all modules in a network can be determined accordingly. So these two rules greatly narrow down the design space and allow us to focus on a few key factors. The networks constructed by these rules are in Table 1. "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                628,
+                468,
+                703
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.2. Revisiting Simple Neurons "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                76,
+                715,
+                316,
+                732
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The simplest neurons in artificial neural networks perform inner product (weighted sum), which is the elementary transformation done by fully-connected and convolutional layers. Inner product can be thought of as a form of aggregating transformation: "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                739,
+                468,
+                816
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\sum_ {i = 1} ^ {D} w _ {i} x _ {i}, \\tag {1}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/c58d5d0cc8e5854b940ab2ffa80bc3f6488d534a7193b688368dc286d6e0004f.jpg"
+                }
+            },
+            "bbox": [
+                238,
+                823,
+                468,
+                863
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { x } = [ x _ { 1 } , x _ { 2 } , . . . , x _ { D } ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-channel input vector to the neuron and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a filter’s weight for the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-th chan-"
+                    }
+                ]
+            },
+            "bbox": [
+                76,
+                869,
+                468,
+                900
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/cd2a1634d38efa9365014403f687082e7460036b455069674f72f96bb229915d.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 2. A simple neuron that performs inner product. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                566,
+                87,
+                816,
+                172
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "nel. This operation (usually including some output nonlinearity) is referred to as a “neuron”. See Fig. 2. "
+                    }
+                ]
+            },
+            "bbox": [
+                498,
+                217,
+                888,
+                247
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The above operation can be recast as a combination of splitting, transforming, and aggregating. (i) Splitting: the vector x is sliced as a low-dimensional embedding, and in the above, it is a single-dimension subspace "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". (ii) Transforming: the low-dimensional representation is transformed, and in the above, it is simply scaled: "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w _ { i } x _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". (iii) Aggregating: the transformations in all embeddings are aggregated by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\Sigma _ { i = 1 } ^ { D }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                248,
+                890,
+                369
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.3. Aggregated Transformations "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                500,
+                381,
+                756,
+                397
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Given the above analysis of a simple neuron, we consider replacing the elementary transformation "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( w _ { i } x _ { i } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "with a more generic function, which in itself can also be a network. In contrast to “Network-in-Network” [26] that turns out to increase the dimension of depth, we show that our “Network-in-Neuron” expands along a new dimension. "
+                    }
+                ]
+            },
+            "bbox": [
+                498,
+                405,
+                890,
+                496
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Formally, we present aggregated transformations as: "
+                    }
+                ]
+            },
+            "bbox": [
+                517,
+                496,
+                864,
+                512
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathcal {F} (\\mathbf {x}) = \\sum_ {i = 1} ^ {C} \\mathcal {T} _ {i} (\\mathbf {x}), \\tag {2}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/f016285ffd15e2bfdfb84d4dd4c75244665d6fd4f4f814535bd9d5620b12e710.jpg"
+                }
+            },
+            "bbox": [
+                630,
+                518,
+                890,
+                559
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { T } _ { i } ( \\mathbf { x } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can be an arbitrary function. Analogous to a simple neuron, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { T } _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "should project x into an (optionally lowdimensional) embedding and then transform it. "
+                    }
+                ]
+            },
+            "bbox": [
+                498,
+                566,
+                890,
+                611
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In Eqn.(2), "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the size of the set of transformations to be aggregated. We refer to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as cardinality [2]. In Eqn.(2) "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is in a position similar to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in Eqn.(1), but "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "need not equal "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and can be an arbitrary number. While the dimension of width is related to the number of simple transformations (inner product), we argue that the dimension of cardinality controls the number of more complex transformations. We show by experiments that cardinality is an essential dimension and can be more effective than the dimensions of width and depth. "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                612,
+                890,
+                763
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this paper, we consider a simple way of designing the transformation functions: all "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { T } _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "’s have the same topology. This extends the VGG-style strategy of repeating layers of the same shape, which is helpful for isolating a few factors and extending to any large number of transformations. We set the individual transformation "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { T } _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to be the bottleneckshaped architecture [14], as illustrated in Fig. 1 (right). In this case, the first "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 \\times 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "layer in each "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { T } _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "produces the lowdimensional embedding. "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                763,
+                890,
+                900
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "1494 "
+                    }
+                ]
+            },
+            "bbox": [
+                483,
+                926,
+                514,
+                936
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/da194a80152ece79a2e0aed6492b9c138626f0cd637f609b37f68526441990e0.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "equivalent "
+                    },
+                    {
+                        "type": "text",
+                        "content": "(a) "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                127,
+                95,
+                406,
+                231
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/a338a8eec7d3dadc89074beeadac2c51f814bf6e09a50813cdf5cdbb3a41d069.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(b) "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                413,
+                95,
+                684,
+                231
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/1b49b36c4bde983ce7ab920f69fbc5b9a58eddc918511b3762547d4feb4942ee.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(c) "
+                    },
+                    {
+                        "type": "text",
+                        "content": "Figure 3. Equivalent building blocks of ResNeXt. (a): Aggregated residual transformations, the same as Fig. 1 right. (b): A block equivalent to (a), implemented as early concatenation. (c): A block equivalent to (a,b), implemented as grouped convolutions [24]. Notations in bold text highlight the reformulation changes. A layer is denoted as (# input channels, filter size, # output channels). "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                700,
+                95,
+                839,
+                231
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The aggregated transformation in Eqn.(2) serves as the residual function [14] (Fig. 1 right): "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                327,
+                468,
+                357
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathbf {y} = \\mathbf {x} + \\sum_ {i = 1} ^ {C} \\mathcal {T} _ {i} (\\mathbf {x}), \\tag {3}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/30090ebd2b7723d6f5cc8459deaf0c493e59cee6160263e00a628c01adb7a2a2.jpg"
+                }
+            },
+            "bbox": [
+                202,
+                364,
+                468,
+                406
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where y is the output. "
+                    }
+                ]
+            },
+            "bbox": [
+                76,
+                412,
+                225,
+                429
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Relation to Inception-ResNet. Some tensor manipulations show that the module in Fig. 1(right) (also shown in Fig. 3(a)) is equivalent to Fig. 3(b).3 Fig. 3(b) appears similar to the Inception-ResNet [37] block in that it involves branching and concatenating in the residual function. But unlike all Inception or Inception-ResNet modules, we share the same topology among the multiple paths. Our module requires minimal extra effort designing each path. "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                436,
+                468,
+                556
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Relation to Grouped Convolutions. The above module becomes more succinct using the notation of grouped convolutions [24].4 This reformulation is illustrated in Fig. 3(c). All the low-dimensional embeddings (the first "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 \\times 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "layers) can be replaced by a single, wider layer (e.g., "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 \\times 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", 128-d in Fig 3(c)). Splitting is essentially done by the grouped convolutional layer when it divides its input channels into groups. The grouped convolutional layer in Fig. 3(c) performs 32 groups of convolutions whose input and output channels are 4-dimensional. The grouped convolutional layer concatenates them as the outputs of the layer. The block in Fig. 3(c) looks like the original bottleneck residual block in Fig. 1(left), except that Fig. 3(c) is a wider but sparsely connected module. "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                564,
+                470,
+                777
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/0dd840c627c01483a8c89b52d7a7e29a27be7ada6c3bfabd7d06b5e3d7c428cd.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 4. (Left): Aggregating transformations of depth = 2. (Right): An equivalent block, which is trivially wider. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                506,
+                327,
+                888,
+                435
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We note that the reformulations produce nontrivial topologies only when the block has depth "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\ge } 3"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". If the block has depth "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "= 2"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(e.g., the basic block in [14]), the reformulations lead to trivially a wide, dense module. See the illustration in Fig. 4. "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                496,
+                890,
+                571
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Discussion. We note that although we present reformulations that exhibit concatenation (Fig. 3(b)) or grouped convolutions (Fig. 3(c)), such reformulations are not always applicable for the general form of Eqn.(3), e.g., if the transformation "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { T } _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "takes arbitrary forms and are heterogenous. We choose to use homogenous forms in this paper because they are simpler and extensible. Under this simplified case, grouped convolutions in the form of Fig. 3(c) are helpful for easing implementation. "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                579,
+                890,
+                715
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.4. Model Capacity "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                500,
+                724,
+                658,
+                742
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our experiments in the next section will show that our models improve accuracy when maintaining the model complexity and number of parameters. This is not only interesting in practice, but more importantly, the complexity and number of parameters represent inherent capacity of models and thus are often investigated as fundamental properties of deep networks [8]. "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                750,
+                890,
+                853
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "When we evaluate different cardinalities "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "while preserving complexity, we want to minimize the modification of other hyper-parameters. We choose to adjust the width of "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                854,
+                893,
+                900
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "3An informal but descriptive proof is as follows. Note the equality: "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A _ { 1 } B _ { 1 } + A _ { 2 } B _ { 2 } = [ A _ { 1 } , A _ { 2 } ] [ B _ { 1 } ; B _ { 2 } ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "[ , ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is horizontal concatenation and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "[ ; ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is vertical concatenation. Let "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "be the weight of the last layer and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "B _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "be the output response of the second-last layer in the block. In the case of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C = 2"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the element-wise addition in Fig. 3(a) is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A _ { 1 } B _ { 1 } + A _ { 2 } B _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the weight of the last layer in Fig. 3(b) is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "[ A _ { 1 } , A _ { 2 } ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and the concatenation of outputs of second-last layers in Fig. 3(b) is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "[ B _ { 1 } ; B _ { 2 } ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                790,
+                467,
+                875
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "4In a group conv layer [24], input and output channels are divided into "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "groups, and convolutions are separately performed within each group. "
+                    }
+                ]
+            },
+            "bbox": [
+                76,
+                875,
+                467,
+                898
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "1495 "
+                    }
+                ]
+            },
+            "bbox": [
+                483,
+                926,
+                514,
+                936
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/b3152ff7ea673255a3e9afb0c2e0e768676e4df52d9b08c3057c35cf481f0b37.jpg"
+                },
+                "table_caption": [],
+                "table_footnote": [
+                    {
+                        "type": "text",
+                        "content": "Table 2. Relations between cardinality and width (for the template of conv2), with roughly preserved complexity on a residual block. The number of parameters is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathrm { \\sim } 7 0 \\mathrm { k }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for the template of conv2. The number of FLOPs is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\sim } 0 . 2 2"
+                    },
+                    {
+                        "type": "text",
+                        "content": "billion (# params "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\times 5 6 \\times 5 6"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for conv2). "
+                    }
+                ],
+                "html": "<table><tr><td>cardinality C</td><td>1</td><td>2</td><td>4</td><td>8</td><td>32</td></tr><tr><td>width of bottleneck d</td><td>64</td><td>40</td><td>24</td><td>14</td><td>4</td></tr><tr><td>width of group conv.</td><td>64</td><td>80</td><td>96</td><td>112</td><td>128</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                117,
+                88,
+                429,
+                128
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "the bottleneck (e.g., 4-d in Fig 1(right)), because it can be isolated from the input and output of the block. This strategy introduces no change to other hyper-parameters (depth or input/output width of blocks), so is helpful for us to focus on the impact of cardinality. "
+                    }
+                ]
+            },
+            "bbox": [
+                76,
+                217,
+                467,
+                292
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In Fig. 1(left), the original ResNet bottleneck block [14] has "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 5 6 \\cdot 6 4 + 3 \\cdot 3 \\cdot 6 4 \\cdot 6 4 + 6 4 \\cdot 2 5 6 \\approx 7 0 \\mathrm { k }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "parameters and proportional FLOPs (on the same feature map size). With bottleneck width "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", our template in Fig. 1(right) has: "
+                    }
+                ]
+            },
+            "bbox": [
+                76,
+                292,
+                467,
+                354
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "C \\cdot (2 5 6 \\cdot d + 3 \\cdot 3 \\cdot d \\cdot d + d \\cdot 2 5 6) \\tag {4}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/16352e8df4c57cfaaaeb9791673373570141077a837e6978fccfd404b646d00f.jpg"
+                }
+            },
+            "bbox": [
+                151,
+                364,
+                467,
+                380
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "parameters and proportional FLOPs. When "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C = 3 2"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d = 4"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", Eqn.(4) ≈ 70k. Table 2 shows the relationship between cardinality "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and bottleneck width "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                76,
+                390,
+                467,
+                434
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Because we adopt the two rules in Sec. 3.1, the above approximate equality is valid between a ResNet bottleneck block and our ResNeXt on all stages (except for the subsampling layers where the feature maps size changes). Table 1 compares the original ResNet-50 and our ResNeXt-50 that is of similar capacity.5 We note that the complexity can only be preserved approximately, but the difference of the complexity is minor and does not bias our results. "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                436,
+                467,
+                555
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4. Implementation details "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                76,
+                569,
+                294,
+                585
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our implementation follows [14] and the publicly available code of fb.resnet.torch [11]. On the ImageNet dataset, the input image is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 2 4 \\times 2 2 4"
+                    },
+                    {
+                        "type": "text",
+                        "content": "randomly cropped from a resized image using the scale and aspect ratio augmentation of [38] implemented by [11]. The shortcuts are identity connections except for those increasing dimensions which are projections (type B in [14]). Downsampling of conv3, 4, and 5 is done by stride-2 convolutions in the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 \\times 3"
+                    },
+                    {
+                        "type": "text",
+                        "content": "layer of the first block in each stage, as suggested in [11]. We use SGD with a mini-batch size of 256 on 8 GPUs (32 per GPU). The weight decay is 0.0001 and the momentum is 0.9. We start from a learning rate of 0.1, and divide it by 10 for three times using the schedule in [11]. We adopt the weight initialization of [13]. In all ablation comparisons, we evaluate the error on the single "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 2 4 \\times 2 2 4"
+                    },
+                    {
+                        "type": "text",
+                        "content": "center crop from an image whose shorter side is 256. "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                594,
+                467,
+                835
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our models are realized by the form of Fig. 3(c). We perform batch normalization (BN) [17] right after the con-"
+                    }
+                ]
+            },
+            "bbox": [
+                76,
+                835,
+                467,
+                866
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "volutions in Fig. 3(c).6 ReLU is performed right after each BN, expect for the output of the block where ReLU is performed after the adding to the shortcut, following [14]. "
+                    }
+                ]
+            },
+            "bbox": [
+                500,
+                90,
+                890,
+                136
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We note that the three forms in Fig. 3 are strictly equivalent, when BN and ReLU are appropriately addressed as mentioned above. We have trained all three forms and obtained the same results. We choose to implement by Fig. 3(c) because it is more succinct and faster than the other two forms. "
+                    }
+                ]
+            },
+            "bbox": [
+                500,
+                136,
+                890,
+                226
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5. Experiments "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                500,
+                242,
+                630,
+                258
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.1. Experiments on ImageNet-1K "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                500,
+                267,
+                764,
+                282
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We conduct ablation experiments on the 1000-class ImageNet classification task [33]. We follow [14] to construct 50-layer and 101-layer residual networks. We simply replace all blocks in ResNet-50/101 with our blocks. "
+                    }
+                ]
+            },
+            "bbox": [
+                500,
+                291,
+                890,
+                351
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Notations. Because we adopt the two rules in Sec. 3.1, it is sufficient for us to refer to an architecture by the template. For example, Table 1 shows a ResNeXt-50 constructed by a template with cardinality "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "= 3 2"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and bottleneck width "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "= 4 \\mathrm { d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(Fig. 3). This network is denoted as ResNeXt-50 "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( 3 2 \\times 4 \\mathbf { d } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for simplicity. We note that the input/output width of the template is fixed as 256-d (Fig. 3), and all widths are doubled each time when the feature map is subsampled (see Table 1). "
+                    }
+                ]
+            },
+            "bbox": [
+                500,
+                358,
+                890,
+                493
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Cardinality vs. Width. We first evaluate the trade-off between cardinality "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and bottleneck width, under preserved complexity as listed in Table 2. Table 3 shows the results and Fig. 5 shows the curves of error vs. epochs. Comparing with ResNet-50 (Table 3 top and Fig. 5 left), the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 2 \\times 4 \\mathrm { d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "ResNeXt-50 has a validation error of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 2 . 2 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", which is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 . 7 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "lower than the ResNet baseline’s "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 3 . 9 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". With cardinality "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "increasing from 1 to 32 while keeping complexity, the error rate keeps reducing. Furthermore, the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 2 \\times 4 \\mathrm { d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "ResNeXt also has a much lower training error than the ResNet counterpart, suggesting that the gains are not from regularization but from stronger representations. "
+                    }
+                ]
+            },
+            "bbox": [
+                500,
+                500,
+                890,
+                681
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Similar trends are observed in the case of ResNet-101 (Fig. 5 right, Table 3 bottom), where the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 2 \\times 4 \\mathrm { d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "ResNeXt-101 outperforms the ResNet-101 counterpart by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "0 . 8 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Although this improvement of validation error is smaller than that of the 50-layer case, the improvement of training error is still big "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "20 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for ResNet-101 and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "16 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 2 \\times 4 \\mathrm { d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "ResNeXt-101, Fig. 5 right). In fact, more training data will enlarge the gap of validation error, as we show on an ImageNet-5K set in the next subsection. "
+                    }
+                ]
+            },
+            "bbox": [
+                500,
+                681,
+                890,
+                816
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Table 3 also suggests that with complexity preserved, increasing cardinality at the price of reducing width starts to show saturating accuracy when the bottleneck width is "
+                    }
+                ]
+            },
+            "bbox": [
+                500,
+                818,
+                890,
+                864
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "5The marginally smaller number of parameters and marginally higher FLOPs are mainly caused by the blocks where the map sizes change. "
+                    }
+                ]
+            },
+            "bbox": [
+                76,
+                875,
+                467,
+                900
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "6With BN, for the equivalent form in Fig. 3(a), BN is employed after aggregating the transformations and before adding to the shortcut. "
+                    }
+                ]
+            },
+            "bbox": [
+                500,
+                875,
+                890,
+                900
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "1496 "
+                    }
+                ]
+            },
+            "bbox": [
+                483,
+                926,
+                514,
+                936
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/6bce64b0dfcd81457ab6d1479a5375426cf1368113833fe3bfc69b5506a998b7.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                94,
+                66,
+                478,
+                313
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/460f1aa097375e77bc4ed4920b0be822ffcbfc802dc55891f7fe149cff8a3395.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 5. Training curves on ImageNet-1K. (Left): ResNet/ResNeXt-50 with preserved complexity "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\sim } 4 . 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "billion FLOPs, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\sim } 2 5 "
+                    },
+                    {
+                        "type": "text",
+                        "content": "million parameters); (Right): ResNet/ResNeXt-101 with preserved complexity "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\sim } 7 . 8"
+                    },
+                    {
+                        "type": "text",
+                        "content": "billion FLOPs, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\sim } 4 4"
+                    },
+                    {
+                        "type": "text",
+                        "content": "million parameters). "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                486,
+                66,
+                870,
+                313
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/a8d5ab2cd314d00f900e2e8327f08c62367423efd116a1022ce2b07115fe9c7e.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 3. Ablation experiments on ImageNet-1K. (Top): ResNet-50 with preserved complexity "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\sim } 4 . 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "billion FLOPs); (Bottom): ResNet-101 with preserved complexity "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\sim } 7 . 8"
+                    },
+                    {
+                        "type": "text",
+                        "content": "billion FLOPs). The error rate is evaluated on the single crop of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 2 4 \\times 2 2 4"
+                    },
+                    {
+                        "type": "text",
+                        "content": "pixels. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td></td><td>setting</td><td>top-1 error (%)</td></tr><tr><td>ResNet-50</td><td>1 × 64d</td><td>23.9</td></tr><tr><td>ResNeXt-50</td><td>2 × 40d</td><td>23.0</td></tr><tr><td>ResNeXt-50</td><td>4 × 24d</td><td>22.6</td></tr><tr><td>ResNeXt-50</td><td>8 × 14d</td><td>22.3</td></tr><tr><td>ResNeXt-50</td><td>32 × 4d</td><td>22.2</td></tr><tr><td>ResNet-101</td><td>1 × 64d</td><td>22.0</td></tr><tr><td>ResNeXt-101</td><td>2 × 40d</td><td>21.7</td></tr><tr><td>ResNeXt-101</td><td>4 × 24d</td><td>21.4</td></tr><tr><td>ResNeXt-101</td><td>8 × 14d</td><td>21.3</td></tr><tr><td>ResNeXt-101</td><td>32 × 4d</td><td>21.2</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                107,
+                371,
+                439,
+                542
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "small. We argue that it is not worthwhile to keep reducing width in such a trade-off. So we adopt a bottleneck width no smaller than 4d in the following. "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                635,
+                468,
+                681
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Increasing Cardinality vs. Deeper/Wider. Next we investigate increasing complexity by increasing cardinality "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "or increasing depth or width. The following comparison can also be viewed as with reference to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 \\times"
+                    },
+                    {
+                        "type": "text",
+                        "content": "FLOPs of the ResNet-101 baseline. We compare the following variants that have "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\sim } 1 5"
+                    },
+                    {
+                        "type": "text",
+                        "content": "billion FLOPs. (i) Going deeper to 200 layers. We adopt the ResNet-200 [15] implemented in [11]. (ii) Going wider by increasing the bottleneck width. (iii) Increasing cardinality by doubling "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                686,
+                468,
+                823
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Table 4 shows that increasing complexity by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 \\times"
+                    },
+                    {
+                        "type": "text",
+                        "content": "consistently reduces error vs. the ResNet-101 baseline "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( 2 2 . 0 \\% )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". But the improvement is small when going deeper (ResNet-200, by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "0 . 3 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ") or wider (wider ResNet-101, by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "0 . 7 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "). "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                824,
+                468,
+                883
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "On the contrary, increasing cardinality "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "shows much "
+                    }
+                ]
+            },
+            "bbox": [
+                96,
+                885,
+                468,
+                900
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/dfa1982f492a62372913e6d4384d746c285871e19a0d93d4f6c701d77e58cc7d.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 4. Comparisons on ImageNet-1K when the number of FLOPs is increased to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 \\times"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of ResNet-101’s. The error rate is evaluated on the single crop of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 2 4 \\times 2 2 4"
+                    },
+                    {
+                        "type": "text",
+                        "content": "pixels. The highlighted factors are the factors that increase complexity. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td></td><td>setting</td><td>top-1 err (%)</td><td>top-5 err (%)</td></tr><tr><td colspan=\"4\">1× complexity references:</td></tr><tr><td>ResNet-101</td><td>1 × 64d</td><td>22.0</td><td>6.0</td></tr><tr><td>ResNeXt-101</td><td>32 × 4d</td><td>21.2</td><td>5.6</td></tr><tr><td colspan=\"4\">2× complexity models follow:</td></tr><tr><td>ResNet-200 [15]</td><td>1 × 64d</td><td>21.7</td><td>5.8</td></tr><tr><td>ResNet-101, wider</td><td>1 × 100d</td><td>21.3</td><td>5.7</td></tr><tr><td>ResNeXt-101</td><td>2 × 64d</td><td>20.7</td><td>5.5</td></tr><tr><td>ResNeXt-101</td><td>64 × 4d</td><td>20.4</td><td>5.3</td></tr></table>",
+                "table_type": "complex_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                516,
+                371,
+                877,
+                513
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "better results than going deeper or wider. The "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 \\times 6 4 \\mathrm { d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "ResNeXt-101 (i.e., doubling "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 \\times 6 4 \\mathrm { d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "ResNet-101 baseline and keeping the width) reduces the top-1 error by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 . 3 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 0 . 7 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "6 4 \\times 4 \\mathrm { d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "ResNeXt-101 (i.e., doubling "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 2 \\times 4 \\mathrm { d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "ResNeXt-101 and keeping the width) reduces the top-1 error to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 0 . 4 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                604,
+                890,
+                695
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We also note that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 2 \\times 4 \\mathrm { d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "ResNet-101 "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( 2 1 . 2 \\% )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "performs better than the deeper ResNet-200 and the wider ResNet-101, even though it has only "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\sim } 5 0 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "complexity. This again shows that cardinality is a more effective dimension than the dimensions of depth and width. "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                696,
+                890,
+                771
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Residual connections. The following table shows the effects of the residual (shortcut) connections: "
+                    }
+                ]
+            },
+            "bbox": [
+                498,
+                777,
+                890,
+                808
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/149b36680455308b8b355356c0ef33c822c50e5d4a37e5806e540af300577a1d.jpg"
+                },
+                "table_caption": [],
+                "table_footnote": [],
+                "html": "<table><tr><td></td><td>setting</td><td>w/ residual</td><td>w/o residual</td></tr><tr><td>ResNet-50</td><td>1 × 64d</td><td>23.9</td><td>31.2</td></tr><tr><td>ResNeXt-50</td><td>32 × 4d</td><td>22.2</td><td>26.1</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                544,
+                814,
+                846,
+                863
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Removing shortcuts from the ResNeXt-50 increases the error by 3.9 points to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 6 . 1 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Removing shortcuts from its "
+                    }
+                ]
+            },
+            "bbox": [
+                498,
+                869,
+                890,
+                900
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "1497 "
+                    }
+                ]
+            },
+            "bbox": [
+                483,
+                925,
+                514,
+                936
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "ResNet-50 counterpart is much worse "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( 3 1 . 2 \\% )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". These comparisons suggest that the residual connections are helpful for optimization, whereas aggregated transformations are stronger representations, as shown by the fact that they perform consistently better than their counterparts with or without residual connections. "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                90,
+                470,
+                181
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Performance. For simplicity we use Torch’s built-in grouped convolution implementation, without special optimization. We note that this implementation was brute-force and not parallelization-friendly. On 8 GPUs of NVIDIA M40, training "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 2 \\times 4 \\mathrm { d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "ResNeXt-101 in Table 3 takes 0.95s per mini-batch, vs. 0.70s of ResNet-101 baseline that has similar FLOPs. We argue that this is a reasonable overhead. We expect carefully engineered lower-level implementation (e.g., in CUDA) will reduce this overhead. We also expect that the inference time on CPUs will present less overhead. Training the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 \\times"
+                    },
+                    {
+                        "type": "text",
+                        "content": "complexity model "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "6 4 \\times 4 \\mathrm { d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "ResNeXt-101) takes 1.7s per mini-batch and 10 days total on 8 GPUs. "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                188,
+                468,
+                369
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Comparisons with state-of-the-art results. Table 5 shows more results of single-crop testing on the ImageNet validation set. In addition to testing a "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 2 4 \\times 2 2 4"
+                    },
+                    {
+                        "type": "text",
+                        "content": "crop, we also evaluate a "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 2 0 \\times 3 2 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "crop following [15]. Our results compare favorably with ResNet, Inception- "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { \\nabla } \\cdot \\mathbf { V } 3 / \\mathbf { v } 4"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and Inception-ResNet-v2, achieving a single-crop top-5 error rate of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "4 . 4 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". In addition, our architecture design is much simpler than all Inception models, and requires considerably fewer hyper-parameters to be set by hand. "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                376,
+                468,
+                511
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "ResNeXt is the foundation of our entries to the ILSVRC 2016 classification task, in which we achieved "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 ^ { \\mathrm { n d } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "place. We note that many models (including ours) start to get saturated on this dataset after using multi-scale and/or multicrop testing. We had a single-model top-1/top-5 error rates of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 7 . 7 \\% / 3 . 7 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "using the multi-scale dense testing in [14], on par with Inception-ResNet-v2’s single-model results of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 7 . 8 \\% / 3 . 7 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that adopts multi-scale, multi-crop testing. We had an ensemble result of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 . 0 3 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "top-5 error on the test set, on par with the winner’s "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 . 9 9 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and Inception-v4/Inception-ResNet-v2’s "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 . 0 8 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "[37]. "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                512,
+                470,
+                679
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/e65e3bea032d6c39c96506e9ca4beabc19cec2023290b8b26028d969e5473e08.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 5. State-of-the-art models on the ImageNet-1K validation set (single-crop testing). The test size of ResNet/ResNeXt is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 2 4 \\times 2 2 4"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 2 0 \\times 3 2 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as in [15] and of the Inception models is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 9 9 \\times 2 9 9"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td rowspan=\"2\"></td><td colspan=\"2\">224×224</td><td colspan=\"2\">320×320 / 299×299</td></tr><tr><td>top-1 err</td><td>top-5 err</td><td>top-1 err</td><td>top-5 err</td></tr><tr><td>ResNet-101 [14]</td><td>22.0</td><td>6.0</td><td>-</td><td>-</td></tr><tr><td>ResNet-200 [15]</td><td>21.7</td><td>5.8</td><td>20.1</td><td>4.8</td></tr><tr><td>Inception-v3 [39]</td><td>-</td><td>-</td><td>21.2</td><td>5.6</td></tr><tr><td>Inception-v4 [37]</td><td>-</td><td>-</td><td>20.0</td><td>5.0</td></tr><tr><td>Inception-ResNet-v2 [37]</td><td>-</td><td>-</td><td>19.9</td><td>4.9</td></tr><tr><td>ResNeXt-101 (64 × 4d)</td><td>20.4</td><td>5.3</td><td>19.1</td><td>4.4</td></tr></table>",
+                "table_type": "complex_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                81,
+                690,
+                467,
+                819
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/8d4abb332aeceb71cb74fe1f397ad99fdbeef678bd086e227a4789485c6cb0e6.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 6. ImageNet-5K experiments. Models are trained on the 5K set and evaluated on the original 1K validation set, plotted as a 1K-way classification task. ResNeXt and its ResNet counterpart have similar complexity. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                504,
+                78,
+                883,
+                325
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/55e60260bf32478827a031921126d22e7431e45932ba1fe91cf0edc04a0eece0.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 6. Error "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( \\% )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "on ImageNet-5K. The models are trained on ImageNet-5K and tested on the ImageNet-1K val set, treated as a 5K-way classification task or a 1K-way classification task at test time. ResNeXt and its ResNet counterpart have similar complexity. The error is evaluated on the single crop of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 2 4 \\times 2 2 4"
+                    },
+                    {
+                        "type": "text",
+                        "content": "pixels. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td rowspan=\"2\"></td><td rowspan=\"2\">setting</td><td colspan=\"2\">5K-way classification</td><td colspan=\"2\">1K-way classification</td></tr><tr><td>top-1</td><td>top-5</td><td>top-1</td><td>top-5</td></tr><tr><td>ResNet-50</td><td>1 × 64d</td><td>45.5</td><td>19.4</td><td>27.1</td><td>8.2</td></tr><tr><td>ResNeXt-50</td><td>32 × 4d</td><td>42.3</td><td>16.8</td><td>24.4</td><td>6.6</td></tr><tr><td>ResNet-101</td><td>1 × 64d</td><td>42.4</td><td>16.9</td><td>24.2</td><td>6.8</td></tr><tr><td>ResNeXt-101</td><td>32 × 4d</td><td>40.1</td><td>15.1</td><td>22.2</td><td>5.7</td></tr></table>",
+                "table_type": "complex_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                501,
+                401,
+                890,
+                500
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.2. Experiments on ImageNet-5K "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                500,
+                603,
+                764,
+                619
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The performance on ImageNet-1K appears to saturate. But we argue that this is not because of the capability of the models but because of the complexity of the dataset. Next we evaluate our models on a larger ImageNet subset that has 5000 categories. "
+                    }
+                ]
+            },
+            "bbox": [
+                498,
+                627,
+                890,
+                702
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our 5K dataset is a subset of the full ImageNet-22K set [33]. The 5000 categories consist of the original ImageNet-1K categories and additional 4000 categories that have the largest number of images in the full ImageNet set. The 5K set has 6.8 million images, about "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "5 \\times"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of the 1K set. There is no official train/val split available, so we opt to evaluate on the original ImageNet-1K validation set. On this 1K-class val set, the models can be evaluated as a 5K-way classification task (all labels predicted to be the other 4K classes are automatically erroneous) or as a 1K-way classification task (softmax is applied only on the 1K classes) at test time. "
+                    }
+                ]
+            },
+            "bbox": [
+                498,
+                703,
+                890,
+                869
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The implementation details are the same as in Sec. 4. The 5K-training models are all trained from scratch, and "
+                    }
+                ]
+            },
+            "bbox": [
+                500,
+                869,
+                890,
+                900
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "1498 "
+                    }
+                ]
+            },
+            "bbox": [
+                483,
+                926,
+                514,
+                936
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/5a4a5e79d1fe1d70eb2a60f70819ca4def11c19ad2e6b4c9f1dec25a875a81d3.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 7. Test error "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( \\% )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and model size on CIFAR. Our results are the average of 10 runs. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td></td><td># params</td><td>CIFAR-10</td><td>CIFAR-100</td></tr><tr><td>Wide ResNet [43]</td><td>36.5M</td><td>4.17</td><td>20.50</td></tr><tr><td>ResNeXt-29, 8×64d</td><td>34.4M</td><td>3.65</td><td>17.77</td></tr><tr><td>ResNeXt-29, 16×64d</td><td>68.1M</td><td>3.58</td><td>17.31</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                98,
+                88,
+                447,
+                151
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "are trained for the same number of mini-batches as the 1Ktraining models (so "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 / 5 \\times"
+                    },
+                    {
+                        "type": "text",
+                        "content": "epochs). Table 6 and Fig. 6 show the comparisons under preserved complexity. ResNeXt-50 reduces the 5K-way top-1 error by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 . 2 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "comparing with ResNet-50, and ResNetXt-101 reduces the 5K-way top-1 error by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 . 3 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "comparing with ResNet-101. Similar gaps are observed on the 1K-way error. These demonstrate the stronger representational power of ResNeXt. "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                215,
+                467,
+                335
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Moreover, we find that the models trained on the 5K set (with 1K-way error "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 2 . 2 \\% / 5 . 7 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in Table 6) perform competitively comparing with those trained on the 1K set "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( 2 1 . 2 \\% / 5 . 6 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in Table 3), evaluated on the same 1K-way classification task on the validation set. This result is achieved without increasing the training time (due to the same number of mini-batches) and without fine-tuning. We argue that this is a promising result, given that the training task of classifying 5K categories is a more challenging one. "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                335,
+                467,
+                473
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.3. Experiments on CIFAR "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                76,
+                483,
+                294,
+                500
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We conduct more experiments on CIFAR-10 and 100 datasets [23]. We use the architectures as in [14] and replace the basic residual block by the bottleneck template of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\left\\lceil \\begin{array} { c } { 1 \\times 1 , 6 4 } \\\\ { 3 \\times 3 , 6 4 } \\\\ { 1 \\times 1 , 2 5 6 } \\end{array} \\right\\rceil"
+                    },
+                    {
+                        "type": "text",
+                        "content": "Our networks start with a single "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 \\times 3"
+                    },
+                    {
+                        "type": "text",
+                        "content": "conv 1×1, 256 layer, followed by 3 stages each having 3 residual blocks, and end with average pooling and a fully-connected classifier (total 29-layer deep), following [14]. We adopt the same translation and flipping data augmentation as [14]. Implementation details are in the appendix. "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                507,
+                467,
+                657
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We compare two cases of increasing complexity based on the above baseline: (i) increase cardinality and fix all widths, or (ii) increase width of the bottleneck and fix cardinality "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "= ~ 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". We train and evaluate a series of networks under these changes. Fig. 7 shows the comparisons of test error rates vs. model sizes. We find that increasing cardinality is more effective than increasing width, consistent to what we have observed on ImageNet-1K. Table 7 shows the results and model sizes, comparing with the Wide ResNet [43] which is the best published record. Our model with a similar model size (34.4M) shows results better than Wide ResNet. Our larger method achieves "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 . 5 8 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "test error (average of 10 runs) on CIFAR-10 and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 7 . 3 1 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "on CIFAR-100. To the best of our knowledge, these are the state-of-the-art results (with similar data augmentation) in the literature including unpublished technical reports. "
+                    }
+                ]
+            },
+            "bbox": [
+                75,
+                659,
+                467,
+                900
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/3376f1dbd36bfa386171c31e3f50c999e4bc514e72de5ac0a77c31621eed8a97.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 7. Test error vs. model size on CIFAR-10. The results are computed with 10 runs, shown with standard error bars. The labels show the settings of the templates. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                506,
+                80,
+                875,
+                306
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/cd6f2813e1261f129180302c493953261be76713a2dff85ade50cd35b5b859c0.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 8. Object detection results on the COCO minival set. ResNeXt and its ResNet counterpart have similar complexity. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td></td><td>setting</td><td>AP@0.5</td><td>AP</td></tr><tr><td>ResNet-50</td><td>1 × 64d</td><td>47.6</td><td>26.5</td></tr><tr><td>ResNeXt-50</td><td>32 × 4d</td><td>49.7</td><td>27.5</td></tr><tr><td>ResNet-101</td><td>1 × 64d</td><td>51.1</td><td>29.8</td></tr><tr><td>ResNeXt-101</td><td>32 × 4d</td><td>51.9</td><td>30.0</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                540,
+                368,
+                849,
+                446
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.4. Experiments on COCO object detection "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                500,
+                508,
+                841,
+                526
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Next we evaluate the generalizability on the COCO object detection set [27]. We train the models on the 80k training set plus a "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 5 \\mathrm { k }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "val subset and evaluate on a 5k val subset (called minival), following [1]. We evaluate the COCOstyle Average Precision (AP) as well as "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathrm { A P } @ \\mathrm { I o U } = 0 . 5"
+                    },
+                    {
+                        "type": "text",
+                        "content": "[27]. We adopt the basic Faster R-CNN [32] and follow [14] to plug ResNet/ResNeXt into it. The models are pre-trained on ImageNet-1K and fine-tuned on the detection set. Implementation details are in the appendix. "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                532,
+                890,
+                669
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Table 8 shows the comparisons. On the 50-layer baseline, ResNeXt improves "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathrm { A P } @ 0 . 5"
+                    },
+                    {
+                        "type": "text",
+                        "content": "by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 . 1 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and AP by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 . 0 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", without increasing complexity. ResNeXt shows smaller improvements on the 101-layer baseline. We conjecture that more training data will lead to a larger gap, as observed on the ImageNet-5K set. "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                669,
+                890,
+                760
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "It is also worth noting that recently ResNeXt has been adopted in Mask R-CNN [12] that achieves state-of-the-art results on COCO instance segmentation and object detection tasks. "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                760,
+                890,
+                819
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Acknowledgment "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                500,
+                832,
+                638,
+                848
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "S.X. and Z.T.’s research was partly supported by NSF IIS-1618477. The authors would like to thank Tsung-Yi Lin and Priya Goyal for valuable discussions. "
+                    }
+                ]
+            },
+            "bbox": [
+                498,
+                854,
+                890,
+                900
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "1499 "
+                    }
+                ]
+            },
+            "bbox": [
+                483,
+                926,
+                514,
+                936
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "References "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                80,
+                90,
+                171,
+                104
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[1] S. Bell, C. L. Zitnick, K. Bala, and R. Girshick. Insideoutside net: Detecting objects in context with skip pooling and recurrent neural networks. In CVPR, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[2] G. Cantor. Uber unendliche, lineare punktmannich-¨ faltigkeiten, arbeiten zur mengenlehre aus den jahren 1872-1884. 1884. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[3] R. Collobert, S. Bengio, and J. Mariethoz. Torch: a mod- ´ ular machine learning software library. Technical report, Idiap, 2002. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[4] A. Conneau, H. Schwenk, L. Barrault, and Y. Lecun. Very deep convolutional networks for natural language processing. arXiv:1606.01781, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[5] N. Dalal and B. Triggs. Histograms of oriented gradients for human detection. In CVPR, 2005. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[6] E. Denton, W. Zaremba, J. Bruna, Y. LeCun, and R. Fergus. Exploiting linear structure within convolutional networks for efficient evaluation. In NIPS, 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[7] J. Donahue, Y. Jia, O. Vinyals, J. Hoffman, N. Zhang, E. Tzeng, and T. Darrell. Decaf: A deep convolutional activation feature for generic visual recognition. In ICML, 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[8] D. Eigen, J. Rolfe, R. Fergus, and Y. LeCun. Understanding deep architectures using a recursive convolutional network. arXiv:1312.1847, 2013. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[9] R. Girshick. Fast R-CNN. In ICCV, 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[10] R. Girshick, J. Donahue, T. Darrell, and J. Malik. Rich feature hierarchies for accurate object detection and semantic segmentation. In CVPR, 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[11] S. Gross and M. Wilber. Training and investigating Residual Nets. https://github.com/ facebook/fb.resnet.torch, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[12] K. He, G. Gkioxari, P. Dollar, and R. Girshick. Mask´ R-CNN. arXiv:1703.06870, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[13] K. He, X. Zhang, S. Ren, and J. Sun. Delving deep into rectifiers: Surpassing human-level performance on imagenet classification. In ICCV, 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[14] K. He, X. Zhang, S. Ren, and J. Sun. Deep residual learning for image recognition. In CVPR, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[15] K. He, X. Zhang, S. Ren, and J. Sun. Identity mappings in deep residual networks. In ECCV, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[16] Y. Ioannou, D. Robertson, R. Cipolla, and A. Criminisi. Deep roots: Improving cnn efficiency with hierarchical filter groups. arXiv:1605.06489, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[17] S. Ioffe and C. Szegedy. Batch normalization: Accelerating deep network training by reducing internal covariate shift. In ICML, 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[18] M. Jaderberg, A. Vedaldi, and A. Zisserman. Speeding up convolutional neural networks with low rank expansions. In BMVC, 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[19] Y. Jia, E. Shelhamer, J. Donahue, S. Karayev, J. Long, R. Girshick, S. Guadarrama, and T. Darrell. Caffe: Convolutional architecture for fast feature embedding. arXiv:1408.5093, 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[20] N. Kalchbrenner, L. Espeholt, K. Simonyan, A. v. d. Oord, A. Graves, and K. Kavukcuoglu. Neural machine translation in linear time. arXiv:1610.10099, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[21] Y.-D. Kim, E. Park, S. Yoo, T. Choi, L. Yang, and D. Shin. Compression of deep convolutional neural networks for fast and low power mobile applications. In ICLR, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[22] P. Kontschieder, M. Fiterau, A. Criminisi, and S. R. Bulo. ` Deep convolutional neural decision forests. In ICCV, 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[23] A. Krizhevsky. Learning multiple layers of features from tiny images. Tech Report, 2009. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                80,
+                109,
+                467,
+                900
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[24] A. Krizhevsky, I. Sutskever, and G. Hinton. Imagenet classification with deep convolutional neural networks. In NIPS, 2012. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[25] Y. LeCun, B. Boser, J. S. Denker, D. Henderson, R. E. Howard, W. Hubbard, and L. D. Jackel. Backpropagation applied to handwritten zip code recognition. Neural computation, 1989. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[26] M. Lin, Q. Chen, and S. Yan. Network in network. In ICLR, 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[27] T.-Y. Lin, M. Maire, S. Belongie, J. Hays, P. Perona, D. Ramanan, P. Dollar, and C. L. Zitnick. Microsoft´ COCO: Common objects in context. In ECCV. 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[28] J. Long, E. Shelhamer, and T. Darrell. Fully convolutional networks for semantic segmentation. In CVPR, 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[29] D. G. Lowe. Distinctive image features from scaleinvariant keypoints. IJCV, 2004. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[30] A. Oord, S. Dieleman, H. Zen, K. Simonyan, O. Vinyals, A. Graves, N. Kalchbrenner, A. Senior, and K. Kavukcuoglu. Wavenet: A generative model for raw audio. arXiv:1609.03499, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[31] P. O. Pinheiro, R. Collobert, and P. Dollar. Learning to segment object candidates. In NIPS, 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[32] S. Ren, K. He, R. Girshick, and J. Sun. Faster R-CNN: Towards real-time object detection with region proposal networks. In NIPS, 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[33] O. Russakovsky, J. Deng, H. Su, J. Krause, S. Satheesh, S. Ma, Z. Huang, A. Karpathy, A. Khosla, M. Bernstein, A. C. Berg, and L. Fei-Fei. ImageNet Large Scale Visual Recognition Challenge. IJCV, 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[34] P. Sermanet, D. Eigen, X. Zhang, M. Mathieu, R. Fergus, and Y. LeCun. Overfeat: Integrated recognition, localization and detection using convolutional networks. In ICLR, 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[35] L. Sifre and S. Mallat. Rigid-motion scattering for texture classification. arXiv:1403.1687, 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[36] K. Simonyan and A. Zisserman. Very deep convolutional networks for large-scale image recognition. In ICLR, 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[37] C. Szegedy, S. Ioffe, and V. Vanhoucke. Inception-v4, inception-resnet and the impact of residual connections on learning. In ICLR Workshop, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[38] C. Szegedy, W. Liu, Y. Jia, P. Sermanet, S. Reed, D. Anguelov, D. Erhan, V. Vanhoucke, and A. Rabinovich. Going deeper with convolutions. In CVPR, 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[39] C. Szegedy, V. Vanhoucke, S. Ioffe, J. Shlens, and Z. Wojna. Rethinking the inception architecture for computer vision. In CVPR, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[40] A. Veit, M. Wilber, and S. Belongie. Residual networks behave like ensembles of relatively shallow network. In NIPS, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[41] Y. Wu, M. Schuster, Z. Chen, Q. V. Le, M. Norouzi, W. Macherey, M. Krikun, Y. Cao, Q. Gao, K. Macherey, et al. Google’s neural machine translation system: Bridging the gap between human and machine translation. arXiv:1609.08144, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[42] W. Xiong, J. Droppo, X. Huang, F. Seide, M. Seltzer, A. Stolcke, D. Yu, and G. Zweig. The Microsoft 2016 Conversational Speech Recognition System. arXiv:1609.03528, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[43] S. Zagoruyko and N. Komodakis. Wide residual networks. In BMVC, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[44] M. D. Zeiler and R. Fergus. Visualizing and understanding convolutional neural networks. In ECCV, 2014. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                501,
+                92,
+                890,
+                868
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "1500 "
+                    }
+                ]
+            },
+            "bbox": [
+                483,
+                926,
+                514,
+                936
+            ]
+        }
+    ]
+]

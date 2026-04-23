@@ -1,0 +1,286 @@
+{
+  "sections": [
+    {
+      "section_id": "sec_abstract",
+      "parent_id": null,
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 5,
+      "end_block_index": 5
+    },
+    {
+      "section_id": "sec_1",
+      "parent_id": null,
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 6,
+      "end_block_index": 10
+    },
+    {
+      "section_id": "sec_2",
+      "parent_id": null,
+      "number": "2",
+      "title": "Related Work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Related Work"
+      ],
+      "start_block_index": 11,
+      "end_block_index": 20
+    },
+    {
+      "section_id": "sec_3",
+      "parent_id": null,
+      "number": "3",
+      "title": "Motivation and High Level Considerations",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Motivation and High Level Considerations"
+      ],
+      "start_block_index": 21,
+      "end_block_index": 34
+    },
+    {
+      "section_id": "sec_4",
+      "parent_id": null,
+      "number": "4",
+      "title": "Architectural Details",
+      "region": "body",
+      "order": 4,
+      "level": 1,
+      "path": [
+        "4 Architectural Details"
+      ],
+      "start_block_index": 35,
+      "end_block_index": 47
+    },
+    {
+      "section_id": "sec_5",
+      "parent_id": null,
+      "number": "5",
+      "title": "GoogLeNet",
+      "region": "body",
+      "order": 5,
+      "level": 1,
+      "path": [
+        "5 GoogLeNet"
+      ],
+      "start_block_index": 48,
+      "end_block_index": 61
+    },
+    {
+      "section_id": "sec_6",
+      "parent_id": null,
+      "number": "6",
+      "title": "Training Methodology",
+      "region": "body",
+      "order": 6,
+      "level": 1,
+      "path": [
+        "6 Training Methodology"
+      ],
+      "start_block_index": 62,
+      "end_block_index": 64
+    },
+    {
+      "section_id": "sec_7",
+      "parent_id": null,
+      "number": "7",
+      "title": "ILSVRC 2014 Classification Challenge Setup and Results",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "7 ILSVRC 2014 Classification Challenge Setup and Results"
+      ],
+      "start_block_index": 65,
+      "end_block_index": 76
+    },
+    {
+      "section_id": "sec_8",
+      "parent_id": null,
+      "number": "8",
+      "title": "ILSVRC 2014 Detection Challenge Setup and Results",
+      "region": "body",
+      "order": 8,
+      "level": 1,
+      "path": [
+        "8 ILSVRC 2014 Detection Challenge Setup and Results"
+      ],
+      "start_block_index": 77,
+      "end_block_index": 83
+    },
+    {
+      "section_id": "sec_9",
+      "parent_id": null,
+      "number": "9",
+      "title": "Conclusions",
+      "region": "body",
+      "order": 9,
+      "level": 1,
+      "path": [
+        "9 Conclusions"
+      ],
+      "start_block_index": 84,
+      "end_block_index": 89
+    }
+  ],
+  "tree": [
+    {
+      "section_id": "sec_abstract",
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 5,
+      "end_block_index": 5,
+      "children": []
+    },
+    {
+      "section_id": "sec_1",
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 6,
+      "end_block_index": 10,
+      "children": []
+    },
+    {
+      "section_id": "sec_2",
+      "number": "2",
+      "title": "Related Work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Related Work"
+      ],
+      "start_block_index": 11,
+      "end_block_index": 20,
+      "children": []
+    },
+    {
+      "section_id": "sec_3",
+      "number": "3",
+      "title": "Motivation and High Level Considerations",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Motivation and High Level Considerations"
+      ],
+      "start_block_index": 21,
+      "end_block_index": 34,
+      "children": []
+    },
+    {
+      "section_id": "sec_4",
+      "number": "4",
+      "title": "Architectural Details",
+      "region": "body",
+      "order": 4,
+      "level": 1,
+      "path": [
+        "4 Architectural Details"
+      ],
+      "start_block_index": 35,
+      "end_block_index": 47,
+      "children": []
+    },
+    {
+      "section_id": "sec_5",
+      "number": "5",
+      "title": "GoogLeNet",
+      "region": "body",
+      "order": 5,
+      "level": 1,
+      "path": [
+        "5 GoogLeNet"
+      ],
+      "start_block_index": 48,
+      "end_block_index": 61,
+      "children": []
+    },
+    {
+      "section_id": "sec_6",
+      "number": "6",
+      "title": "Training Methodology",
+      "region": "body",
+      "order": 6,
+      "level": 1,
+      "path": [
+        "6 Training Methodology"
+      ],
+      "start_block_index": 62,
+      "end_block_index": 64,
+      "children": []
+    },
+    {
+      "section_id": "sec_7",
+      "number": "7",
+      "title": "ILSVRC 2014 Classification Challenge Setup and Results",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "7 ILSVRC 2014 Classification Challenge Setup and Results"
+      ],
+      "start_block_index": 65,
+      "end_block_index": 76,
+      "children": []
+    },
+    {
+      "section_id": "sec_8",
+      "number": "8",
+      "title": "ILSVRC 2014 Detection Challenge Setup and Results",
+      "region": "body",
+      "order": 8,
+      "level": 1,
+      "path": [
+        "8 ILSVRC 2014 Detection Challenge Setup and Results"
+      ],
+      "start_block_index": 77,
+      "end_block_index": 83,
+      "children": []
+    },
+    {
+      "section_id": "sec_9",
+      "number": "9",
+      "title": "Conclusions",
+      "region": "body",
+      "order": 9,
+      "level": 1,
+      "path": [
+        "9 Conclusions"
+      ],
+      "start_block_index": 84,
+      "end_block_index": 89,
+      "children": []
+    }
+  ]
+}

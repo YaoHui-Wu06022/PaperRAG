@@ -1,0 +1,530 @@
+{
+  "sections": [
+    {
+      "section_id": "sec_abstract",
+      "parent_id": null,
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 15,
+      "end_block_index": 15
+    },
+    {
+      "section_id": "sec_1",
+      "parent_id": null,
+      "number": "1",
+      "title": "INTRODUCTION",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 INTRODUCTION"
+      ],
+      "start_block_index": 16,
+      "end_block_index": 22
+    },
+    {
+      "section_id": "sec_2",
+      "parent_id": null,
+      "number": "2",
+      "title": "PREVIOUS WORK",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 PREVIOUS WORK"
+      ],
+      "start_block_index": 23,
+      "end_block_index": 35
+    },
+    {
+      "section_id": "sec_3",
+      "parent_id": null,
+      "number": "3",
+      "title": "CONSTANT ERROR BACKPROP",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 CONSTANT ERROR BACKPROP"
+      ],
+      "start_block_index": 36,
+      "end_block_index": 100
+    },
+    {
+      "section_id": "sec_3_1",
+      "parent_id": "sec_3",
+      "number": "3.1",
+      "title": "EXPONENTIALLY DECAYING ERROR",
+      "region": "body",
+      "order": 4,
+      "level": 2,
+      "path": [
+        "3 CONSTANT ERROR BACKPROP",
+        "3.1 EXPONENTIALLY DECAYING ERROR"
+      ],
+      "start_block_index": 37,
+      "end_block_index": 86
+    },
+    {
+      "section_id": "sec_3_2",
+      "parent_id": "sec_3",
+      "number": "3.2",
+      "title": "CONSTANT ERROR FLOW: NAIVE APPROACH",
+      "region": "body",
+      "order": 5,
+      "level": 2,
+      "path": [
+        "3 CONSTANT ERROR BACKPROP",
+        "3.2 CONSTANT ERROR FLOW: NAIVE APPROACH"
+      ],
+      "start_block_index": 87,
+      "end_block_index": 100
+    },
+    {
+      "section_id": "sec_4",
+      "parent_id": null,
+      "number": "4",
+      "title": "LONG SHORT-TERM MEMORY",
+      "region": "body",
+      "order": 6,
+      "level": 1,
+      "path": [
+        "4 LONG SHORT-TERM MEMORY"
+      ],
+      "start_block_index": 101,
+      "end_block_index": 133
+    },
+    {
+      "section_id": "sec_5",
+      "parent_id": null,
+      "number": "5",
+      "title": "EXPERIMENTS",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "5 EXPERIMENTS"
+      ],
+      "start_block_index": 134,
+      "end_block_index": 251
+    },
+    {
+      "section_id": "sec_5_1",
+      "parent_id": "sec_5",
+      "number": "5.1",
+      "title": "EXPERIMENT 1 : EMBEDDED REBER GRAMMAR",
+      "region": "body",
+      "order": 8,
+      "level": 2,
+      "path": [
+        "5 EXPERIMENTS",
+        "5.1 EXPERIMENT 1 : EMBEDDED REBER GRAMMAR"
+      ],
+      "start_block_index": 150,
+      "end_block_index": 160
+    },
+    {
+      "section_id": "sec_5_2",
+      "parent_id": "sec_5",
+      "number": "5.2",
+      "title": "EXPERIMENT 2: NOISE-FREE AND NOISY SEQUENCES",
+      "region": "body",
+      "order": 9,
+      "level": 2,
+      "path": [
+        "5 EXPERIMENTS",
+        "5.2 EXPERIMENT 2: NOISE-FREE AND NOISY SEQUENCES"
+      ],
+      "start_block_index": 161,
+      "end_block_index": 186
+    },
+    {
+      "section_id": "sec_5_3",
+      "parent_id": "sec_5",
+      "number": "5.3",
+      "title": "EXPERIMENT 3: NOISE AND SIGNAL ON SAME CHANNEL",
+      "region": "body",
+      "order": 10,
+      "level": 2,
+      "path": [
+        "5 EXPERIMENTS",
+        "5.3 EXPERIMENT 3: NOISE AND SIGNAL ON SAME CHANNEL"
+      ],
+      "start_block_index": 187,
+      "end_block_index": 207
+    },
+    {
+      "section_id": "sec_5_4",
+      "parent_id": "sec_5",
+      "number": "5.4",
+      "title": "EXPERIMENT 4: ADDING PROBLEM",
+      "region": "body",
+      "order": 11,
+      "level": 2,
+      "path": [
+        "5 EXPERIMENTS",
+        "5.4 EXPERIMENT 4: ADDING PROBLEM"
+      ],
+      "start_block_index": 208,
+      "end_block_index": 218
+    },
+    {
+      "section_id": "sec_5_5",
+      "parent_id": "sec_5",
+      "number": "5.5",
+      "title": "EXPERIMENT 5: MULTIPLICATION PROBLEM",
+      "region": "body",
+      "order": 12,
+      "level": 2,
+      "path": [
+        "5 EXPERIMENTS",
+        "5.5 EXPERIMENT 5: MULTIPLICATION PROBLEM"
+      ],
+      "start_block_index": 219,
+      "end_block_index": 228
+    },
+    {
+      "section_id": "sec_5_6",
+      "parent_id": "sec_5",
+      "number": "5.6",
+      "title": "EXPERIMENT 6: TEMPORAL ORDER",
+      "region": "body",
+      "order": 13,
+      "level": 2,
+      "path": [
+        "5 EXPERIMENTS",
+        "5.6 EXPERIMENT 6: TEMPORAL ORDER"
+      ],
+      "start_block_index": 229,
+      "end_block_index": 242
+    },
+    {
+      "section_id": "sec_5_7",
+      "parent_id": "sec_5",
+      "number": "5.7",
+      "title": "SUMMARY OF EXPERIMENTAL CONDITIONS",
+      "region": "body",
+      "order": 14,
+      "level": 2,
+      "path": [
+        "5 EXPERIMENTS",
+        "5.7 SUMMARY OF EXPERIMENTAL CONDITIONS"
+      ],
+      "start_block_index": 243,
+      "end_block_index": 251
+    },
+    {
+      "section_id": "sec_6",
+      "parent_id": null,
+      "number": "6",
+      "title": "DIS CUSSION",
+      "region": "body",
+      "order": 15,
+      "level": 1,
+      "path": [
+        "6 DIS CUSSION"
+      ],
+      "start_block_index": 252,
+      "end_block_index": 257
+    },
+    {
+      "section_id": "sec_7",
+      "parent_id": null,
+      "number": "7",
+      "title": "CONCLUSION",
+      "region": "body",
+      "order": 16,
+      "level": 1,
+      "path": [
+        "7 CONCLUSION"
+      ],
+      "start_block_index": 258,
+      "end_block_index": 260
+    },
+    {
+      "section_id": "sec_appendix",
+      "parent_id": null,
+      "number": null,
+      "title": "Appendix",
+      "region": "appendix",
+      "order": 17,
+      "level": 1,
+      "path": [
+        "Appendix"
+      ],
+      "start_block_index": 263,
+      "end_block_index": 398
+    }
+  ],
+  "tree": [
+    {
+      "section_id": "sec_abstract",
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 15,
+      "end_block_index": 15,
+      "children": []
+    },
+    {
+      "section_id": "sec_1",
+      "number": "1",
+      "title": "INTRODUCTION",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 INTRODUCTION"
+      ],
+      "start_block_index": 16,
+      "end_block_index": 22,
+      "children": []
+    },
+    {
+      "section_id": "sec_2",
+      "number": "2",
+      "title": "PREVIOUS WORK",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 PREVIOUS WORK"
+      ],
+      "start_block_index": 23,
+      "end_block_index": 35,
+      "children": []
+    },
+    {
+      "section_id": "sec_3",
+      "number": "3",
+      "title": "CONSTANT ERROR BACKPROP",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 CONSTANT ERROR BACKPROP"
+      ],
+      "start_block_index": 36,
+      "end_block_index": 100,
+      "children": [
+        {
+          "section_id": "sec_3_1",
+          "number": "3.1",
+          "title": "EXPONENTIALLY DECAYING ERROR",
+          "region": "body",
+          "order": 4,
+          "level": 2,
+          "path": [
+            "3 CONSTANT ERROR BACKPROP",
+            "3.1 EXPONENTIALLY DECAYING ERROR"
+          ],
+          "start_block_index": 37,
+          "end_block_index": 86,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_2",
+          "number": "3.2",
+          "title": "CONSTANT ERROR FLOW: NAIVE APPROACH",
+          "region": "body",
+          "order": 5,
+          "level": 2,
+          "path": [
+            "3 CONSTANT ERROR BACKPROP",
+            "3.2 CONSTANT ERROR FLOW: NAIVE APPROACH"
+          ],
+          "start_block_index": 87,
+          "end_block_index": 100,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_4",
+      "number": "4",
+      "title": "LONG SHORT-TERM MEMORY",
+      "region": "body",
+      "order": 6,
+      "level": 1,
+      "path": [
+        "4 LONG SHORT-TERM MEMORY"
+      ],
+      "start_block_index": 101,
+      "end_block_index": 133,
+      "children": []
+    },
+    {
+      "section_id": "sec_5",
+      "number": "5",
+      "title": "EXPERIMENTS",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "5 EXPERIMENTS"
+      ],
+      "start_block_index": 134,
+      "end_block_index": 251,
+      "children": [
+        {
+          "section_id": "sec_5_1",
+          "number": "5.1",
+          "title": "EXPERIMENT 1 : EMBEDDED REBER GRAMMAR",
+          "region": "body",
+          "order": 8,
+          "level": 2,
+          "path": [
+            "5 EXPERIMENTS",
+            "5.1 EXPERIMENT 1 : EMBEDDED REBER GRAMMAR"
+          ],
+          "start_block_index": 150,
+          "end_block_index": 160,
+          "children": []
+        },
+        {
+          "section_id": "sec_5_2",
+          "number": "5.2",
+          "title": "EXPERIMENT 2: NOISE-FREE AND NOISY SEQUENCES",
+          "region": "body",
+          "order": 9,
+          "level": 2,
+          "path": [
+            "5 EXPERIMENTS",
+            "5.2 EXPERIMENT 2: NOISE-FREE AND NOISY SEQUENCES"
+          ],
+          "start_block_index": 161,
+          "end_block_index": 186,
+          "children": []
+        },
+        {
+          "section_id": "sec_5_3",
+          "number": "5.3",
+          "title": "EXPERIMENT 3: NOISE AND SIGNAL ON SAME CHANNEL",
+          "region": "body",
+          "order": 10,
+          "level": 2,
+          "path": [
+            "5 EXPERIMENTS",
+            "5.3 EXPERIMENT 3: NOISE AND SIGNAL ON SAME CHANNEL"
+          ],
+          "start_block_index": 187,
+          "end_block_index": 207,
+          "children": []
+        },
+        {
+          "section_id": "sec_5_4",
+          "number": "5.4",
+          "title": "EXPERIMENT 4: ADDING PROBLEM",
+          "region": "body",
+          "order": 11,
+          "level": 2,
+          "path": [
+            "5 EXPERIMENTS",
+            "5.4 EXPERIMENT 4: ADDING PROBLEM"
+          ],
+          "start_block_index": 208,
+          "end_block_index": 218,
+          "children": []
+        },
+        {
+          "section_id": "sec_5_5",
+          "number": "5.5",
+          "title": "EXPERIMENT 5: MULTIPLICATION PROBLEM",
+          "region": "body",
+          "order": 12,
+          "level": 2,
+          "path": [
+            "5 EXPERIMENTS",
+            "5.5 EXPERIMENT 5: MULTIPLICATION PROBLEM"
+          ],
+          "start_block_index": 219,
+          "end_block_index": 228,
+          "children": []
+        },
+        {
+          "section_id": "sec_5_6",
+          "number": "5.6",
+          "title": "EXPERIMENT 6: TEMPORAL ORDER",
+          "region": "body",
+          "order": 13,
+          "level": 2,
+          "path": [
+            "5 EXPERIMENTS",
+            "5.6 EXPERIMENT 6: TEMPORAL ORDER"
+          ],
+          "start_block_index": 229,
+          "end_block_index": 242,
+          "children": []
+        },
+        {
+          "section_id": "sec_5_7",
+          "number": "5.7",
+          "title": "SUMMARY OF EXPERIMENTAL CONDITIONS",
+          "region": "body",
+          "order": 14,
+          "level": 2,
+          "path": [
+            "5 EXPERIMENTS",
+            "5.7 SUMMARY OF EXPERIMENTAL CONDITIONS"
+          ],
+          "start_block_index": 243,
+          "end_block_index": 251,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_6",
+      "number": "6",
+      "title": "DIS CUSSION",
+      "region": "body",
+      "order": 15,
+      "level": 1,
+      "path": [
+        "6 DIS CUSSION"
+      ],
+      "start_block_index": 252,
+      "end_block_index": 257,
+      "children": []
+    },
+    {
+      "section_id": "sec_7",
+      "number": "7",
+      "title": "CONCLUSION",
+      "region": "body",
+      "order": 16,
+      "level": 1,
+      "path": [
+        "7 CONCLUSION"
+      ],
+      "start_block_index": 258,
+      "end_block_index": 260,
+      "children": []
+    },
+    {
+      "section_id": "sec_appendix",
+      "number": null,
+      "title": "Appendix",
+      "region": "appendix",
+      "order": 17,
+      "level": 1,
+      "path": [
+        "Appendix"
+      ],
+      "start_block_index": 263,
+      "end_block_index": 398,
+      "children": []
+    }
+  ]
+}

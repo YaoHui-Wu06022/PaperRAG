@@ -1,0 +1,440 @@
+{
+  "sections": [
+    {
+      "section_id": "sec_abstract",
+      "parent_id": null,
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 2,
+      "end_block_index": 3
+    },
+    {
+      "section_id": "sec_1",
+      "parent_id": null,
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 4,
+      "end_block_index": 21
+    },
+    {
+      "section_id": "sec_2",
+      "parent_id": null,
+      "number": "2",
+      "title": "Related Work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Related Work"
+      ],
+      "start_block_index": 22,
+      "end_block_index": 27
+    },
+    {
+      "section_id": "sec_3",
+      "parent_id": null,
+      "number": "3",
+      "title": "Compound Model Scaling",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Compound Model Scaling"
+      ],
+      "start_block_index": 28,
+      "end_block_index": 66
+    },
+    {
+      "section_id": "sec_3_1",
+      "parent_id": "sec_3",
+      "number": "3.1",
+      "title": "Problem Formulation",
+      "region": "body",
+      "order": 4,
+      "level": 2,
+      "path": [
+        "3 Compound Model Scaling",
+        "3.1 Problem Formulation"
+      ],
+      "start_block_index": 30,
+      "end_block_index": 37
+    },
+    {
+      "section_id": "sec_3_2",
+      "parent_id": "sec_3",
+      "number": "3.2",
+      "title": "Scaling Dimensions",
+      "region": "body",
+      "order": 5,
+      "level": 2,
+      "path": [
+        "3 Compound Model Scaling",
+        "3.2 Scaling Dimensions"
+      ],
+      "start_block_index": 38,
+      "end_block_index": 50
+    },
+    {
+      "section_id": "sec_3_3",
+      "parent_id": "sec_3",
+      "number": "3.3",
+      "title": "Compound Scaling",
+      "region": "body",
+      "order": 6,
+      "level": 2,
+      "path": [
+        "3 Compound Model Scaling",
+        "3.3 Compound Scaling"
+      ],
+      "start_block_index": 51,
+      "end_block_index": 66
+    },
+    {
+      "section_id": "sec_4",
+      "parent_id": null,
+      "number": "4",
+      "title": "EfficientNet Architecture",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "4 EfficientNet Architecture"
+      ],
+      "start_block_index": 67,
+      "end_block_index": 74
+    },
+    {
+      "section_id": "sec_5",
+      "parent_id": null,
+      "number": "5",
+      "title": "Experiments",
+      "region": "body",
+      "order": 8,
+      "level": 1,
+      "path": [
+        "5 Experiments"
+      ],
+      "start_block_index": 75,
+      "end_block_index": 101
+    },
+    {
+      "section_id": "sec_5_1",
+      "parent_id": "sec_5",
+      "number": "5.1",
+      "title": "Scaling Up MobileNets and ResNets",
+      "region": "body",
+      "order": 9,
+      "level": 2,
+      "path": [
+        "5 Experiments",
+        "5.1 Scaling Up MobileNets and ResNets"
+      ],
+      "start_block_index": 77,
+      "end_block_index": 84
+    },
+    {
+      "section_id": "sec_5_2",
+      "parent_id": "sec_5",
+      "number": "5.2",
+      "title": "ImageNet Results for EfficientNet",
+      "region": "body",
+      "order": 10,
+      "level": 2,
+      "path": [
+        "5 Experiments",
+        "5.2 ImageNet Results for EfficientNet"
+      ],
+      "start_block_index": 85,
+      "end_block_index": 97
+    },
+    {
+      "section_id": "sec_5_3",
+      "parent_id": "sec_5",
+      "number": "5.3",
+      "title": "Transfer Learning Results for EfficientNet",
+      "region": "body",
+      "order": 11,
+      "level": 2,
+      "path": [
+        "5 Experiments",
+        "5.3 Transfer Learning Results for EfficientNet"
+      ],
+      "start_block_index": 98,
+      "end_block_index": 101
+    },
+    {
+      "section_id": "sec_6",
+      "parent_id": null,
+      "number": "6",
+      "title": "Discussion",
+      "region": "body",
+      "order": 12,
+      "level": 1,
+      "path": [
+        "6 Discussion"
+      ],
+      "start_block_index": 102,
+      "end_block_index": 108
+    },
+    {
+      "section_id": "sec_7",
+      "parent_id": null,
+      "number": "7",
+      "title": "Conclusion",
+      "region": "body",
+      "order": 13,
+      "level": 1,
+      "path": [
+        "7 Conclusion"
+      ],
+      "start_block_index": 109,
+      "end_block_index": 110
+    },
+    {
+      "section_id": "sec_appendix",
+      "parent_id": null,
+      "number": null,
+      "title": "Appendix",
+      "region": "appendix",
+      "order": 14,
+      "level": 1,
+      "path": [
+        "Appendix"
+      ],
+      "start_block_index": 113,
+      "end_block_index": 115
+    }
+  ],
+  "tree": [
+    {
+      "section_id": "sec_abstract",
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 2,
+      "end_block_index": 3,
+      "children": []
+    },
+    {
+      "section_id": "sec_1",
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 4,
+      "end_block_index": 21,
+      "children": []
+    },
+    {
+      "section_id": "sec_2",
+      "number": "2",
+      "title": "Related Work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Related Work"
+      ],
+      "start_block_index": 22,
+      "end_block_index": 27,
+      "children": []
+    },
+    {
+      "section_id": "sec_3",
+      "number": "3",
+      "title": "Compound Model Scaling",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Compound Model Scaling"
+      ],
+      "start_block_index": 28,
+      "end_block_index": 66,
+      "children": [
+        {
+          "section_id": "sec_3_1",
+          "number": "3.1",
+          "title": "Problem Formulation",
+          "region": "body",
+          "order": 4,
+          "level": 2,
+          "path": [
+            "3 Compound Model Scaling",
+            "3.1 Problem Formulation"
+          ],
+          "start_block_index": 30,
+          "end_block_index": 37,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_2",
+          "number": "3.2",
+          "title": "Scaling Dimensions",
+          "region": "body",
+          "order": 5,
+          "level": 2,
+          "path": [
+            "3 Compound Model Scaling",
+            "3.2 Scaling Dimensions"
+          ],
+          "start_block_index": 38,
+          "end_block_index": 50,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_3",
+          "number": "3.3",
+          "title": "Compound Scaling",
+          "region": "body",
+          "order": 6,
+          "level": 2,
+          "path": [
+            "3 Compound Model Scaling",
+            "3.3 Compound Scaling"
+          ],
+          "start_block_index": 51,
+          "end_block_index": 66,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_4",
+      "number": "4",
+      "title": "EfficientNet Architecture",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "4 EfficientNet Architecture"
+      ],
+      "start_block_index": 67,
+      "end_block_index": 74,
+      "children": []
+    },
+    {
+      "section_id": "sec_5",
+      "number": "5",
+      "title": "Experiments",
+      "region": "body",
+      "order": 8,
+      "level": 1,
+      "path": [
+        "5 Experiments"
+      ],
+      "start_block_index": 75,
+      "end_block_index": 101,
+      "children": [
+        {
+          "section_id": "sec_5_1",
+          "number": "5.1",
+          "title": "Scaling Up MobileNets and ResNets",
+          "region": "body",
+          "order": 9,
+          "level": 2,
+          "path": [
+            "5 Experiments",
+            "5.1 Scaling Up MobileNets and ResNets"
+          ],
+          "start_block_index": 77,
+          "end_block_index": 84,
+          "children": []
+        },
+        {
+          "section_id": "sec_5_2",
+          "number": "5.2",
+          "title": "ImageNet Results for EfficientNet",
+          "region": "body",
+          "order": 10,
+          "level": 2,
+          "path": [
+            "5 Experiments",
+            "5.2 ImageNet Results for EfficientNet"
+          ],
+          "start_block_index": 85,
+          "end_block_index": 97,
+          "children": []
+        },
+        {
+          "section_id": "sec_5_3",
+          "number": "5.3",
+          "title": "Transfer Learning Results for EfficientNet",
+          "region": "body",
+          "order": 11,
+          "level": 2,
+          "path": [
+            "5 Experiments",
+            "5.3 Transfer Learning Results for EfficientNet"
+          ],
+          "start_block_index": 98,
+          "end_block_index": 101,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_6",
+      "number": "6",
+      "title": "Discussion",
+      "region": "body",
+      "order": 12,
+      "level": 1,
+      "path": [
+        "6 Discussion"
+      ],
+      "start_block_index": 102,
+      "end_block_index": 108,
+      "children": []
+    },
+    {
+      "section_id": "sec_7",
+      "number": "7",
+      "title": "Conclusion",
+      "region": "body",
+      "order": 13,
+      "level": 1,
+      "path": [
+        "7 Conclusion"
+      ],
+      "start_block_index": 109,
+      "end_block_index": 110,
+      "children": []
+    },
+    {
+      "section_id": "sec_appendix",
+      "number": null,
+      "title": "Appendix",
+      "region": "appendix",
+      "order": 14,
+      "level": 1,
+      "path": [
+        "Appendix"
+      ],
+      "start_block_index": 113,
+      "end_block_index": 115,
+      "children": []
+    }
+  ]
+}

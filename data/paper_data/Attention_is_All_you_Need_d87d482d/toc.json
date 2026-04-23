@@ -1,0 +1,660 @@
+{
+  "sections": [
+    {
+      "section_id": "sec_abstract",
+      "parent_id": null,
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 25,
+      "end_block_index": 25
+    },
+    {
+      "section_id": "sec_1",
+      "parent_id": null,
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 26,
+      "end_block_index": 33
+    },
+    {
+      "section_id": "sec_2",
+      "parent_id": null,
+      "number": "2",
+      "title": "Background",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Background"
+      ],
+      "start_block_index": 34,
+      "end_block_index": 38
+    },
+    {
+      "section_id": "sec_3",
+      "parent_id": null,
+      "number": "3",
+      "title": "Model Architecture",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Model Architecture"
+      ],
+      "start_block_index": 39,
+      "end_block_index": 87
+    },
+    {
+      "section_id": "sec_3_1",
+      "parent_id": "sec_3",
+      "number": "3.1",
+      "title": "Encoder and Decoder Stacks",
+      "region": "body",
+      "order": 4,
+      "level": 2,
+      "path": [
+        "3 Model Architecture",
+        "3.1 Encoder and Decoder Stacks"
+      ],
+      "start_block_index": 42,
+      "end_block_index": 47
+    },
+    {
+      "section_id": "sec_3_2",
+      "parent_id": "sec_3",
+      "number": "3.2",
+      "title": "Attention",
+      "region": "body",
+      "order": 5,
+      "level": 2,
+      "path": [
+        "3 Model Architecture",
+        "3.2 Attention"
+      ],
+      "start_block_index": 48,
+      "end_block_index": 71
+    },
+    {
+      "section_id": "sec_3_2_1",
+      "parent_id": "sec_3_2",
+      "number": "3.2.1",
+      "title": "Scaled Dot-Product Attention",
+      "region": "body",
+      "order": 6,
+      "level": 3,
+      "path": [
+        "3 Model Architecture",
+        "3.2 Attention",
+        "3.2.1 Scaled Dot-Product Attention"
+      ],
+      "start_block_index": 50,
+      "end_block_index": 59
+    },
+    {
+      "section_id": "sec_3_2_2",
+      "parent_id": "sec_3_2",
+      "number": "3.2.2",
+      "title": "Multi-Head Attention",
+      "region": "body",
+      "order": 7,
+      "level": 3,
+      "path": [
+        "3 Model Architecture",
+        "3.2 Attention",
+        "3.2.2 Multi-Head Attention"
+      ],
+      "start_block_index": 60,
+      "end_block_index": 68
+    },
+    {
+      "section_id": "sec_3_2_3",
+      "parent_id": "sec_3_2",
+      "number": "3.2.3",
+      "title": "Applications of Attention in our Model",
+      "region": "body",
+      "order": 8,
+      "level": 3,
+      "path": [
+        "3 Model Architecture",
+        "3.2 Attention",
+        "3.2.3 Applications of Attention in our Model"
+      ],
+      "start_block_index": 69,
+      "end_block_index": 71
+    },
+    {
+      "section_id": "sec_3_3",
+      "parent_id": "sec_3",
+      "number": "3.3",
+      "title": "Position-wise Feed-Forward Networks",
+      "region": "body",
+      "order": 9,
+      "level": 2,
+      "path": [
+        "3 Model Architecture",
+        "3.3 Position-wise Feed-Forward Networks"
+      ],
+      "start_block_index": 72,
+      "end_block_index": 75
+    },
+    {
+      "section_id": "sec_3_4",
+      "parent_id": "sec_3",
+      "number": "3.4",
+      "title": "Embeddings and Softmax",
+      "region": "body",
+      "order": 10,
+      "level": 2,
+      "path": [
+        "3 Model Architecture",
+        "3.4 Embeddings and Softmax"
+      ],
+      "start_block_index": 76,
+      "end_block_index": 77
+    },
+    {
+      "section_id": "sec_3_5",
+      "parent_id": "sec_3",
+      "number": "3.5",
+      "title": "Positional Encoding",
+      "region": "body",
+      "order": 11,
+      "level": 2,
+      "path": [
+        "3 Model Architecture",
+        "3.5 Positional Encoding"
+      ],
+      "start_block_index": 78,
+      "end_block_index": 87
+    },
+    {
+      "section_id": "sec_4",
+      "parent_id": null,
+      "number": "4",
+      "title": "Why Self-Attention",
+      "region": "body",
+      "order": 12,
+      "level": 1,
+      "path": [
+        "4 Why Self-Attention"
+      ],
+      "start_block_index": 88,
+      "end_block_index": 96
+    },
+    {
+      "section_id": "sec_5",
+      "parent_id": null,
+      "number": "5",
+      "title": "Training",
+      "region": "body",
+      "order": 13,
+      "level": 1,
+      "path": [
+        "5 Training"
+      ],
+      "start_block_index": 97,
+      "end_block_index": 112
+    },
+    {
+      "section_id": "sec_5_1",
+      "parent_id": "sec_5",
+      "number": "5.1",
+      "title": "Training Data and Batching",
+      "region": "body",
+      "order": 14,
+      "level": 2,
+      "path": [
+        "5 Training",
+        "5.1 Training Data and Batching"
+      ],
+      "start_block_index": 99,
+      "end_block_index": 100
+    },
+    {
+      "section_id": "sec_5_2",
+      "parent_id": "sec_5",
+      "number": "5.2",
+      "title": "Hardware and Schedule",
+      "region": "body",
+      "order": 15,
+      "level": 2,
+      "path": [
+        "5 Training",
+        "5.2 Hardware and Schedule"
+      ],
+      "start_block_index": 101,
+      "end_block_index": 102
+    },
+    {
+      "section_id": "sec_5_3",
+      "parent_id": "sec_5",
+      "number": "5.3",
+      "title": "Optimizer",
+      "region": "body",
+      "order": 16,
+      "level": 2,
+      "path": [
+        "5 Training",
+        "5.3 Optimizer"
+      ],
+      "start_block_index": 103,
+      "end_block_index": 106
+    },
+    {
+      "section_id": "sec_5_4",
+      "parent_id": "sec_5",
+      "number": "5.4",
+      "title": "Regularization",
+      "region": "body",
+      "order": 17,
+      "level": 2,
+      "path": [
+        "5 Training",
+        "5.4 Regularization"
+      ],
+      "start_block_index": 107,
+      "end_block_index": 112
+    },
+    {
+      "section_id": "sec_6",
+      "parent_id": null,
+      "number": "6",
+      "title": "Results",
+      "region": "body",
+      "order": 18,
+      "level": 1,
+      "path": [
+        "6 Results"
+      ],
+      "start_block_index": 113,
+      "end_block_index": 124
+    },
+    {
+      "section_id": "sec_6_1",
+      "parent_id": "sec_6",
+      "number": "6.1",
+      "title": "Machine Translation",
+      "region": "body",
+      "order": 19,
+      "level": 2,
+      "path": [
+        "6 Results",
+        "6.1 Machine Translation"
+      ],
+      "start_block_index": 114,
+      "end_block_index": 118
+    },
+    {
+      "section_id": "sec_6_2",
+      "parent_id": "sec_6",
+      "number": "6.2",
+      "title": "Model Variations",
+      "region": "body",
+      "order": 20,
+      "level": 2,
+      "path": [
+        "6 Results",
+        "6.2 Model Variations"
+      ],
+      "start_block_index": 119,
+      "end_block_index": 124
+    },
+    {
+      "section_id": "sec_7",
+      "parent_id": null,
+      "number": "7",
+      "title": "Conclusion",
+      "region": "body",
+      "order": 21,
+      "level": 1,
+      "path": [
+        "7 Conclusion"
+      ],
+      "start_block_index": 125,
+      "end_block_index": 131
+    }
+  ],
+  "tree": [
+    {
+      "section_id": "sec_abstract",
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 25,
+      "end_block_index": 25,
+      "children": []
+    },
+    {
+      "section_id": "sec_1",
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 26,
+      "end_block_index": 33,
+      "children": []
+    },
+    {
+      "section_id": "sec_2",
+      "number": "2",
+      "title": "Background",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Background"
+      ],
+      "start_block_index": 34,
+      "end_block_index": 38,
+      "children": []
+    },
+    {
+      "section_id": "sec_3",
+      "number": "3",
+      "title": "Model Architecture",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Model Architecture"
+      ],
+      "start_block_index": 39,
+      "end_block_index": 87,
+      "children": [
+        {
+          "section_id": "sec_3_1",
+          "number": "3.1",
+          "title": "Encoder and Decoder Stacks",
+          "region": "body",
+          "order": 4,
+          "level": 2,
+          "path": [
+            "3 Model Architecture",
+            "3.1 Encoder and Decoder Stacks"
+          ],
+          "start_block_index": 42,
+          "end_block_index": 47,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_2",
+          "number": "3.2",
+          "title": "Attention",
+          "region": "body",
+          "order": 5,
+          "level": 2,
+          "path": [
+            "3 Model Architecture",
+            "3.2 Attention"
+          ],
+          "start_block_index": 48,
+          "end_block_index": 71,
+          "children": [
+            {
+              "section_id": "sec_3_2_1",
+              "number": "3.2.1",
+              "title": "Scaled Dot-Product Attention",
+              "region": "body",
+              "order": 6,
+              "level": 3,
+              "path": [
+                "3 Model Architecture",
+                "3.2 Attention",
+                "3.2.1 Scaled Dot-Product Attention"
+              ],
+              "start_block_index": 50,
+              "end_block_index": 59,
+              "children": []
+            },
+            {
+              "section_id": "sec_3_2_2",
+              "number": "3.2.2",
+              "title": "Multi-Head Attention",
+              "region": "body",
+              "order": 7,
+              "level": 3,
+              "path": [
+                "3 Model Architecture",
+                "3.2 Attention",
+                "3.2.2 Multi-Head Attention"
+              ],
+              "start_block_index": 60,
+              "end_block_index": 68,
+              "children": []
+            },
+            {
+              "section_id": "sec_3_2_3",
+              "number": "3.2.3",
+              "title": "Applications of Attention in our Model",
+              "region": "body",
+              "order": 8,
+              "level": 3,
+              "path": [
+                "3 Model Architecture",
+                "3.2 Attention",
+                "3.2.3 Applications of Attention in our Model"
+              ],
+              "start_block_index": 69,
+              "end_block_index": 71,
+              "children": []
+            }
+          ]
+        },
+        {
+          "section_id": "sec_3_3",
+          "number": "3.3",
+          "title": "Position-wise Feed-Forward Networks",
+          "region": "body",
+          "order": 9,
+          "level": 2,
+          "path": [
+            "3 Model Architecture",
+            "3.3 Position-wise Feed-Forward Networks"
+          ],
+          "start_block_index": 72,
+          "end_block_index": 75,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_4",
+          "number": "3.4",
+          "title": "Embeddings and Softmax",
+          "region": "body",
+          "order": 10,
+          "level": 2,
+          "path": [
+            "3 Model Architecture",
+            "3.4 Embeddings and Softmax"
+          ],
+          "start_block_index": 76,
+          "end_block_index": 77,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_5",
+          "number": "3.5",
+          "title": "Positional Encoding",
+          "region": "body",
+          "order": 11,
+          "level": 2,
+          "path": [
+            "3 Model Architecture",
+            "3.5 Positional Encoding"
+          ],
+          "start_block_index": 78,
+          "end_block_index": 87,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_4",
+      "number": "4",
+      "title": "Why Self-Attention",
+      "region": "body",
+      "order": 12,
+      "level": 1,
+      "path": [
+        "4 Why Self-Attention"
+      ],
+      "start_block_index": 88,
+      "end_block_index": 96,
+      "children": []
+    },
+    {
+      "section_id": "sec_5",
+      "number": "5",
+      "title": "Training",
+      "region": "body",
+      "order": 13,
+      "level": 1,
+      "path": [
+        "5 Training"
+      ],
+      "start_block_index": 97,
+      "end_block_index": 112,
+      "children": [
+        {
+          "section_id": "sec_5_1",
+          "number": "5.1",
+          "title": "Training Data and Batching",
+          "region": "body",
+          "order": 14,
+          "level": 2,
+          "path": [
+            "5 Training",
+            "5.1 Training Data and Batching"
+          ],
+          "start_block_index": 99,
+          "end_block_index": 100,
+          "children": []
+        },
+        {
+          "section_id": "sec_5_2",
+          "number": "5.2",
+          "title": "Hardware and Schedule",
+          "region": "body",
+          "order": 15,
+          "level": 2,
+          "path": [
+            "5 Training",
+            "5.2 Hardware and Schedule"
+          ],
+          "start_block_index": 101,
+          "end_block_index": 102,
+          "children": []
+        },
+        {
+          "section_id": "sec_5_3",
+          "number": "5.3",
+          "title": "Optimizer",
+          "region": "body",
+          "order": 16,
+          "level": 2,
+          "path": [
+            "5 Training",
+            "5.3 Optimizer"
+          ],
+          "start_block_index": 103,
+          "end_block_index": 106,
+          "children": []
+        },
+        {
+          "section_id": "sec_5_4",
+          "number": "5.4",
+          "title": "Regularization",
+          "region": "body",
+          "order": 17,
+          "level": 2,
+          "path": [
+            "5 Training",
+            "5.4 Regularization"
+          ],
+          "start_block_index": 107,
+          "end_block_index": 112,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_6",
+      "number": "6",
+      "title": "Results",
+      "region": "body",
+      "order": 18,
+      "level": 1,
+      "path": [
+        "6 Results"
+      ],
+      "start_block_index": 113,
+      "end_block_index": 124,
+      "children": [
+        {
+          "section_id": "sec_6_1",
+          "number": "6.1",
+          "title": "Machine Translation",
+          "region": "body",
+          "order": 19,
+          "level": 2,
+          "path": [
+            "6 Results",
+            "6.1 Machine Translation"
+          ],
+          "start_block_index": 114,
+          "end_block_index": 118,
+          "children": []
+        },
+        {
+          "section_id": "sec_6_2",
+          "number": "6.2",
+          "title": "Model Variations",
+          "region": "body",
+          "order": 20,
+          "level": 2,
+          "path": [
+            "6 Results",
+            "6.2 Model Variations"
+          ],
+          "start_block_index": 119,
+          "end_block_index": 124,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_7",
+      "number": "7",
+      "title": "Conclusion",
+      "region": "body",
+      "order": 21,
+      "level": 1,
+      "path": [
+        "7 Conclusion"
+      ],
+      "start_block_index": 125,
+      "end_block_index": 131,
+      "children": []
+    }
+  ]
+}

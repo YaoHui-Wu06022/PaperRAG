@@ -1,0 +1,384 @@
+{
+  "sections": [
+    {
+      "section_id": "sec_abstract",
+      "parent_id": null,
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 39,
+      "end_block_index": 39
+    },
+    {
+      "section_id": "sec_1",
+      "parent_id": null,
+      "number": "1",
+      "title": "INTRODUCTION",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 INTRODUCTION"
+      ],
+      "start_block_index": 44,
+      "end_block_index": 78
+    },
+    {
+      "section_id": "sec_2",
+      "parent_id": null,
+      "number": "2",
+      "title": "RELATED WORKS",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 RELATED WORKS"
+      ],
+      "start_block_index": 79,
+      "end_block_index": 89
+    },
+    {
+      "section_id": "sec_3",
+      "parent_id": null,
+      "number": "3",
+      "title": "L _ { 2 }NORMALIZATION LAYER",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 L _ { 2 }NORMALIZATION LAYER"
+      ],
+      "start_block_index": 90,
+      "end_block_index": 132
+    },
+    {
+      "section_id": "sec_3_1",
+      "parent_id": "sec_3",
+      "number": "3.1",
+      "title": "Necessity of Normalization",
+      "region": "body",
+      "order": 4,
+      "level": 2,
+      "path": [
+        "3 L _ { 2 }NORMALIZATION LAYER",
+        "3.1 Necessity of Normalization"
+      ],
+      "start_block_index": 92,
+      "end_block_index": 104
+    },
+    {
+      "section_id": "sec_3_2",
+      "parent_id": "sec_3",
+      "number": "3.2",
+      "title": "Layer De\u001bnition",
+      "region": "body",
+      "order": 5,
+      "level": 2,
+      "path": [
+        "3 L _ { 2 }NORMALIZATION LAYER",
+        "3.2 Layer De\u001bnition"
+      ],
+      "start_block_index": 105,
+      "end_block_index": 115
+    },
+    {
+      "section_id": "sec_3_3",
+      "parent_id": "sec_3",
+      "number": "3.3",
+      "title": "Reformulating Softmax Loss",
+      "region": "body",
+      "order": 6,
+      "level": 2,
+      "path": [
+        "3 L _ { 2 }NORMALIZATION LAYER",
+        "3.3 Reformulating Softmax Loss"
+      ],
+      "start_block_index": 116,
+      "end_block_index": 132
+    },
+    {
+      "section_id": "sec_4",
+      "parent_id": null,
+      "number": "4",
+      "title": "REFORMULATING METRIC LEARNING",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "4 REFORMULATING METRIC LEARNING"
+      ],
+      "start_block_index": 133,
+      "end_block_index": 158
+    },
+    {
+      "section_id": "sec_5",
+      "parent_id": null,
+      "number": "5",
+      "title": "EXPERIMENT",
+      "region": "body",
+      "order": 8,
+      "level": 1,
+      "path": [
+        "5 EXPERIMENT"
+      ],
+      "start_block_index": 159,
+      "end_block_index": 194
+    },
+    {
+      "section_id": "sec_5_1",
+      "parent_id": "sec_5",
+      "number": "5.1",
+      "title": "Implementation Details",
+      "region": "body",
+      "order": 9,
+      "level": 2,
+      "path": [
+        "5 EXPERIMENT",
+        "5.1 Implementation Details"
+      ],
+      "start_block_index": 161,
+      "end_block_index": 164
+    },
+    {
+      "section_id": "sec_5_2",
+      "parent_id": "sec_5",
+      "number": "5.2",
+      "title": "Experiments on LFW",
+      "region": "body",
+      "order": 10,
+      "level": 2,
+      "path": [
+        "5 EXPERIMENT",
+        "5.2 Experiments on LFW"
+      ],
+      "start_block_index": 165,
+      "end_block_index": 189
+    },
+    {
+      "section_id": "sec_5_3",
+      "parent_id": "sec_5",
+      "number": "5.3",
+      "title": "Experiments on YTF",
+      "region": "body",
+      "order": 11,
+      "level": 2,
+      "path": [
+        "5 EXPERIMENT",
+        "5.3 Experiments on YTF"
+      ],
+      "start_block_index": 190,
+      "end_block_index": 194
+    },
+    {
+      "section_id": "sec_6",
+      "parent_id": null,
+      "number": "6",
+      "title": "CONCLUSION AND FUTURE WORK",
+      "region": "body",
+      "order": 12,
+      "level": 1,
+      "path": [
+        "6 CONCLUSION AND FUTURE WORK"
+      ],
+      "start_block_index": 195,
+      "end_block_index": 198
+    }
+  ],
+  "tree": [
+    {
+      "section_id": "sec_abstract",
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 39,
+      "end_block_index": 39,
+      "children": []
+    },
+    {
+      "section_id": "sec_1",
+      "number": "1",
+      "title": "INTRODUCTION",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 INTRODUCTION"
+      ],
+      "start_block_index": 44,
+      "end_block_index": 78,
+      "children": []
+    },
+    {
+      "section_id": "sec_2",
+      "number": "2",
+      "title": "RELATED WORKS",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 RELATED WORKS"
+      ],
+      "start_block_index": 79,
+      "end_block_index": 89,
+      "children": []
+    },
+    {
+      "section_id": "sec_3",
+      "number": "3",
+      "title": "L _ { 2 }NORMALIZATION LAYER",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 L _ { 2 }NORMALIZATION LAYER"
+      ],
+      "start_block_index": 90,
+      "end_block_index": 132,
+      "children": [
+        {
+          "section_id": "sec_3_1",
+          "number": "3.1",
+          "title": "Necessity of Normalization",
+          "region": "body",
+          "order": 4,
+          "level": 2,
+          "path": [
+            "3 L _ { 2 }NORMALIZATION LAYER",
+            "3.1 Necessity of Normalization"
+          ],
+          "start_block_index": 92,
+          "end_block_index": 104,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_2",
+          "number": "3.2",
+          "title": "Layer De\u001bnition",
+          "region": "body",
+          "order": 5,
+          "level": 2,
+          "path": [
+            "3 L _ { 2 }NORMALIZATION LAYER",
+            "3.2 Layer De\u001bnition"
+          ],
+          "start_block_index": 105,
+          "end_block_index": 115,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_3",
+          "number": "3.3",
+          "title": "Reformulating Softmax Loss",
+          "region": "body",
+          "order": 6,
+          "level": 2,
+          "path": [
+            "3 L _ { 2 }NORMALIZATION LAYER",
+            "3.3 Reformulating Softmax Loss"
+          ],
+          "start_block_index": 116,
+          "end_block_index": 132,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_4",
+      "number": "4",
+      "title": "REFORMULATING METRIC LEARNING",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "4 REFORMULATING METRIC LEARNING"
+      ],
+      "start_block_index": 133,
+      "end_block_index": 158,
+      "children": []
+    },
+    {
+      "section_id": "sec_5",
+      "number": "5",
+      "title": "EXPERIMENT",
+      "region": "body",
+      "order": 8,
+      "level": 1,
+      "path": [
+        "5 EXPERIMENT"
+      ],
+      "start_block_index": 159,
+      "end_block_index": 194,
+      "children": [
+        {
+          "section_id": "sec_5_1",
+          "number": "5.1",
+          "title": "Implementation Details",
+          "region": "body",
+          "order": 9,
+          "level": 2,
+          "path": [
+            "5 EXPERIMENT",
+            "5.1 Implementation Details"
+          ],
+          "start_block_index": 161,
+          "end_block_index": 164,
+          "children": []
+        },
+        {
+          "section_id": "sec_5_2",
+          "number": "5.2",
+          "title": "Experiments on LFW",
+          "region": "body",
+          "order": 10,
+          "level": 2,
+          "path": [
+            "5 EXPERIMENT",
+            "5.2 Experiments on LFW"
+          ],
+          "start_block_index": 165,
+          "end_block_index": 189,
+          "children": []
+        },
+        {
+          "section_id": "sec_5_3",
+          "number": "5.3",
+          "title": "Experiments on YTF",
+          "region": "body",
+          "order": 11,
+          "level": 2,
+          "path": [
+            "5 EXPERIMENT",
+            "5.3 Experiments on YTF"
+          ],
+          "start_block_index": 190,
+          "end_block_index": 194,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_6",
+      "number": "6",
+      "title": "CONCLUSION AND FUTURE WORK",
+      "region": "body",
+      "order": 12,
+      "level": 1,
+      "path": [
+        "6 CONCLUSION AND FUTURE WORK"
+      ],
+      "start_block_index": 195,
+      "end_block_index": 198,
+      "children": []
+    }
+  ]
+}

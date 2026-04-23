@@ -1,0 +1,16 @@
+{
+  "title": "Attention is All you Need",
+  "author": [
+    "Ashish Vaswani",
+    "Noam Shazeer",
+    "Niki Parmar",
+    "Jakob Uszkoreit",
+    "Llion Jones",
+    "Aidan N. Gomez",
+    "Lukasz Kaiser",
+    "I. Polosukhin"
+  ],
+  "year": 2017,
+  "venue": "Neural Information Processing Systems",
+  "pdf_path": "E:\\Pythonproject\\RAG_project_new\\data\\pdf\\2017_Attention_Is_All_You_Need.pdf"
+}

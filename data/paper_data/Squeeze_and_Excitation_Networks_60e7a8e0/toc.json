@@ -1,0 +1,440 @@
+{
+  "sections": [
+    {
+      "section_id": "sec_abstract",
+      "parent_id": null,
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 11,
+      "end_block_index": 11
+    },
+    {
+      "section_id": "sec_1",
+      "parent_id": null,
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 12,
+      "end_block_index": 24
+    },
+    {
+      "section_id": "sec_2",
+      "parent_id": null,
+      "number": "2",
+      "title": "Related Work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Related Work"
+      ],
+      "start_block_index": 25,
+      "end_block_index": 32
+    },
+    {
+      "section_id": "sec_3",
+      "parent_id": null,
+      "number": "3",
+      "title": "Squeeze-and-Excitation Blocks",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Squeeze-and-Excitation Blocks"
+      ],
+      "start_block_index": 33,
+      "end_block_index": 56
+    },
+    {
+      "section_id": "sec_3_1",
+      "parent_id": "sec_3",
+      "number": "3.1",
+      "title": "Squeeze: Global Information Embedding",
+      "region": "body",
+      "order": 4,
+      "level": 2,
+      "path": [
+        "3 Squeeze-and-Excitation Blocks",
+        "3.1 Squeeze: Global Information Embedding"
+      ],
+      "start_block_index": 37,
+      "end_block_index": 42
+    },
+    {
+      "section_id": "sec_3_2",
+      "parent_id": "sec_3",
+      "number": "3.2",
+      "title": "Excitation: Adaptive Recalibration",
+      "region": "body",
+      "order": 5,
+      "level": 2,
+      "path": [
+        "3 Squeeze-and-Excitation Blocks",
+        "3.2 Excitation: Adaptive Recalibration"
+      ],
+      "start_block_index": 43,
+      "end_block_index": 52
+    },
+    {
+      "section_id": "sec_3_3",
+      "parent_id": "sec_3",
+      "number": "3.3",
+      "title": "Exemplars: SE-Inception and SE-ResNet",
+      "region": "body",
+      "order": 6,
+      "level": 2,
+      "path": [
+        "3 Squeeze-and-Excitation Blocks",
+        "3.3 Exemplars: SE-Inception and SE-ResNet"
+      ],
+      "start_block_index": 53,
+      "end_block_index": 56
+    },
+    {
+      "section_id": "sec_4",
+      "parent_id": null,
+      "number": "4",
+      "title": "Model and Computational Complexity",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "4 Model and Computational Complexity"
+      ],
+      "start_block_index": 57,
+      "end_block_index": 67
+    },
+    {
+      "section_id": "sec_5",
+      "parent_id": null,
+      "number": "5",
+      "title": "Implementation",
+      "region": "body",
+      "order": 8,
+      "level": 1,
+      "path": [
+        "5 Implementation"
+      ],
+      "start_block_index": 68,
+      "end_block_index": 75
+    },
+    {
+      "section_id": "sec_6",
+      "parent_id": null,
+      "number": "6",
+      "title": "Experiments",
+      "region": "body",
+      "order": 9,
+      "level": 1,
+      "path": [
+        "6 Experiments"
+      ],
+      "start_block_index": 76,
+      "end_block_index": 109
+    },
+    {
+      "section_id": "sec_6_1",
+      "parent_id": "sec_6",
+      "number": "6.1",
+      "title": "ImageNet Classification",
+      "region": "body",
+      "order": 10,
+      "level": 2,
+      "path": [
+        "6 Experiments",
+        "6.1 ImageNet Classification"
+      ],
+      "start_block_index": 78,
+      "end_block_index": 94
+    },
+    {
+      "section_id": "sec_6_2",
+      "parent_id": "sec_6",
+      "number": "6.2",
+      "title": "Scene Classification",
+      "region": "body",
+      "order": 11,
+      "level": 2,
+      "path": [
+        "6 Experiments",
+        "6.2 Scene Classification"
+      ],
+      "start_block_index": 95,
+      "end_block_index": 98
+    },
+    {
+      "section_id": "sec_6_3",
+      "parent_id": "sec_6",
+      "number": "6.3",
+      "title": "Analysis and Discussion",
+      "region": "body",
+      "order": 12,
+      "level": 2,
+      "path": [
+        "6 Experiments",
+        "6.3 Analysis and Discussion"
+      ],
+      "start_block_index": 99,
+      "end_block_index": 109
+    },
+    {
+      "section_id": "sec_7",
+      "parent_id": null,
+      "number": "7",
+      "title": "Conclusion",
+      "region": "body",
+      "order": 13,
+      "level": 1,
+      "path": [
+        "7 Conclusion"
+      ],
+      "start_block_index": 110,
+      "end_block_index": 112
+    },
+    {
+      "section_id": "sec_appendix",
+      "parent_id": null,
+      "number": null,
+      "title": "Appendix",
+      "region": "appendix",
+      "order": 14,
+      "level": 1,
+      "path": [
+        "Appendix"
+      ],
+      "start_block_index": 127,
+      "end_block_index": 129
+    }
+  ],
+  "tree": [
+    {
+      "section_id": "sec_abstract",
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 11,
+      "end_block_index": 11,
+      "children": []
+    },
+    {
+      "section_id": "sec_1",
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 12,
+      "end_block_index": 24,
+      "children": []
+    },
+    {
+      "section_id": "sec_2",
+      "number": "2",
+      "title": "Related Work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Related Work"
+      ],
+      "start_block_index": 25,
+      "end_block_index": 32,
+      "children": []
+    },
+    {
+      "section_id": "sec_3",
+      "number": "3",
+      "title": "Squeeze-and-Excitation Blocks",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Squeeze-and-Excitation Blocks"
+      ],
+      "start_block_index": 33,
+      "end_block_index": 56,
+      "children": [
+        {
+          "section_id": "sec_3_1",
+          "number": "3.1",
+          "title": "Squeeze: Global Information Embedding",
+          "region": "body",
+          "order": 4,
+          "level": 2,
+          "path": [
+            "3 Squeeze-and-Excitation Blocks",
+            "3.1 Squeeze: Global Information Embedding"
+          ],
+          "start_block_index": 37,
+          "end_block_index": 42,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_2",
+          "number": "3.2",
+          "title": "Excitation: Adaptive Recalibration",
+          "region": "body",
+          "order": 5,
+          "level": 2,
+          "path": [
+            "3 Squeeze-and-Excitation Blocks",
+            "3.2 Excitation: Adaptive Recalibration"
+          ],
+          "start_block_index": 43,
+          "end_block_index": 52,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_3",
+          "number": "3.3",
+          "title": "Exemplars: SE-Inception and SE-ResNet",
+          "region": "body",
+          "order": 6,
+          "level": 2,
+          "path": [
+            "3 Squeeze-and-Excitation Blocks",
+            "3.3 Exemplars: SE-Inception and SE-ResNet"
+          ],
+          "start_block_index": 53,
+          "end_block_index": 56,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_4",
+      "number": "4",
+      "title": "Model and Computational Complexity",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "4 Model and Computational Complexity"
+      ],
+      "start_block_index": 57,
+      "end_block_index": 67,
+      "children": []
+    },
+    {
+      "section_id": "sec_5",
+      "number": "5",
+      "title": "Implementation",
+      "region": "body",
+      "order": 8,
+      "level": 1,
+      "path": [
+        "5 Implementation"
+      ],
+      "start_block_index": 68,
+      "end_block_index": 75,
+      "children": []
+    },
+    {
+      "section_id": "sec_6",
+      "number": "6",
+      "title": "Experiments",
+      "region": "body",
+      "order": 9,
+      "level": 1,
+      "path": [
+        "6 Experiments"
+      ],
+      "start_block_index": 76,
+      "end_block_index": 109,
+      "children": [
+        {
+          "section_id": "sec_6_1",
+          "number": "6.1",
+          "title": "ImageNet Classification",
+          "region": "body",
+          "order": 10,
+          "level": 2,
+          "path": [
+            "6 Experiments",
+            "6.1 ImageNet Classification"
+          ],
+          "start_block_index": 78,
+          "end_block_index": 94,
+          "children": []
+        },
+        {
+          "section_id": "sec_6_2",
+          "number": "6.2",
+          "title": "Scene Classification",
+          "region": "body",
+          "order": 11,
+          "level": 2,
+          "path": [
+            "6 Experiments",
+            "6.2 Scene Classification"
+          ],
+          "start_block_index": 95,
+          "end_block_index": 98,
+          "children": []
+        },
+        {
+          "section_id": "sec_6_3",
+          "number": "6.3",
+          "title": "Analysis and Discussion",
+          "region": "body",
+          "order": 12,
+          "level": 2,
+          "path": [
+            "6 Experiments",
+            "6.3 Analysis and Discussion"
+          ],
+          "start_block_index": 99,
+          "end_block_index": 109,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_7",
+      "number": "7",
+      "title": "Conclusion",
+      "region": "body",
+      "order": 13,
+      "level": 1,
+      "path": [
+        "7 Conclusion"
+      ],
+      "start_block_index": 110,
+      "end_block_index": 112,
+      "children": []
+    },
+    {
+      "section_id": "sec_appendix",
+      "number": null,
+      "title": "Appendix",
+      "region": "appendix",
+      "order": 14,
+      "level": 1,
+      "path": [
+        "Appendix"
+      ],
+      "start_block_index": 127,
+      "end_block_index": 129,
+      "children": []
+    }
+  ]
+}

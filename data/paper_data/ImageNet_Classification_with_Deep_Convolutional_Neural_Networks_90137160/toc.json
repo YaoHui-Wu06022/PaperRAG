@@ -1,0 +1,473 @@
+{
+  "sections": [
+    {
+      "section_id": "sec_abstract",
+      "parent_id": null,
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 8,
+      "end_block_index": 8
+    },
+    {
+      "section_id": "sec_1",
+      "parent_id": null,
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 9,
+      "end_block_index": 15
+    },
+    {
+      "section_id": "sec_2",
+      "parent_id": null,
+      "number": "2",
+      "title": "The Dataset",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 The Dataset"
+      ],
+      "start_block_index": 16,
+      "end_block_index": 19
+    },
+    {
+      "section_id": "sec_3",
+      "parent_id": null,
+      "number": "3",
+      "title": "The Architecture",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 The Architecture"
+      ],
+      "start_block_index": 20,
+      "end_block_index": 47
+    },
+    {
+      "section_id": "sec_3_1",
+      "parent_id": "sec_3",
+      "number": "3.1",
+      "title": "ReLU Nonlinearity",
+      "region": "body",
+      "order": 4,
+      "level": 2,
+      "path": [
+        "3 The Architecture",
+        "3.1 ReLU Nonlinearity"
+      ],
+      "start_block_index": 24,
+      "end_block_index": 27
+    },
+    {
+      "section_id": "sec_3_2",
+      "parent_id": "sec_3",
+      "number": "3.2",
+      "title": "Training on Multiple GPUs",
+      "region": "body",
+      "order": 5,
+      "level": 2,
+      "path": [
+        "3 The Architecture",
+        "3.2 Training on Multiple GPUs"
+      ],
+      "start_block_index": 28,
+      "end_block_index": 32
+    },
+    {
+      "section_id": "sec_3_3",
+      "parent_id": "sec_3",
+      "number": "3.3",
+      "title": "Local Response Normalization",
+      "region": "body",
+      "order": 6,
+      "level": 2,
+      "path": [
+        "3 The Architecture",
+        "3.3 Local Response Normalization"
+      ],
+      "start_block_index": 33,
+      "end_block_index": 37
+    },
+    {
+      "section_id": "sec_3_4",
+      "parent_id": "sec_3",
+      "number": "3.4",
+      "title": "Overlapping Pooling",
+      "region": "body",
+      "order": 7,
+      "level": 2,
+      "path": [
+        "3 The Architecture",
+        "3.4 Overlapping Pooling"
+      ],
+      "start_block_index": 38,
+      "end_block_index": 39
+    },
+    {
+      "section_id": "sec_3_5",
+      "parent_id": "sec_3",
+      "number": "3.5",
+      "title": "Overall Architecture",
+      "region": "body",
+      "order": 8,
+      "level": 2,
+      "path": [
+        "3 The Architecture",
+        "3.5 Overall Architecture"
+      ],
+      "start_block_index": 40,
+      "end_block_index": 47
+    },
+    {
+      "section_id": "sec_4",
+      "parent_id": null,
+      "number": "4",
+      "title": "Reducing Overfitting",
+      "region": "body",
+      "order": 9,
+      "level": 1,
+      "path": [
+        "4 Reducing Overfitting"
+      ],
+      "start_block_index": 48,
+      "end_block_index": 61
+    },
+    {
+      "section_id": "sec_4_1",
+      "parent_id": "sec_4",
+      "number": "4.1",
+      "title": "Data Augmentation",
+      "region": "body",
+      "order": 10,
+      "level": 2,
+      "path": [
+        "4 Reducing Overfitting",
+        "4.1 Data Augmentation"
+      ],
+      "start_block_index": 50,
+      "end_block_index": 58
+    },
+    {
+      "section_id": "sec_4_2",
+      "parent_id": "sec_4",
+      "number": "4.2",
+      "title": "Dropout",
+      "region": "body",
+      "order": 11,
+      "level": 2,
+      "path": [
+        "4 Reducing Overfitting",
+        "4.2 Dropout"
+      ],
+      "start_block_index": 59,
+      "end_block_index": 61
+    },
+    {
+      "section_id": "sec_5",
+      "parent_id": null,
+      "number": "5",
+      "title": "Details of learning",
+      "region": "body",
+      "order": 12,
+      "level": 1,
+      "path": [
+        "5 Details of learning"
+      ],
+      "start_block_index": 62,
+      "end_block_index": 71
+    },
+    {
+      "section_id": "sec_6",
+      "parent_id": null,
+      "number": "6",
+      "title": "Results",
+      "region": "body",
+      "order": 13,
+      "level": 1,
+      "path": [
+        "6 Results"
+      ],
+      "start_block_index": 72,
+      "end_block_index": 88
+    },
+    {
+      "section_id": "sec_6_1",
+      "parent_id": "sec_6",
+      "number": "6.1",
+      "title": "Qualitative Evaluations",
+      "region": "body",
+      "order": 14,
+      "level": 2,
+      "path": [
+        "6 Results",
+        "6.1 Qualitative Evaluations"
+      ],
+      "start_block_index": 80,
+      "end_block_index": 88
+    },
+    {
+      "section_id": "sec_7",
+      "parent_id": null,
+      "number": "7",
+      "title": "Discussion",
+      "region": "body",
+      "order": 15,
+      "level": 1,
+      "path": [
+        "7 Discussion"
+      ],
+      "start_block_index": 89,
+      "end_block_index": 92
+    }
+  ],
+  "tree": [
+    {
+      "section_id": "sec_abstract",
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 8,
+      "end_block_index": 8,
+      "children": []
+    },
+    {
+      "section_id": "sec_1",
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 9,
+      "end_block_index": 15,
+      "children": []
+    },
+    {
+      "section_id": "sec_2",
+      "number": "2",
+      "title": "The Dataset",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 The Dataset"
+      ],
+      "start_block_index": 16,
+      "end_block_index": 19,
+      "children": []
+    },
+    {
+      "section_id": "sec_3",
+      "number": "3",
+      "title": "The Architecture",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 The Architecture"
+      ],
+      "start_block_index": 20,
+      "end_block_index": 47,
+      "children": [
+        {
+          "section_id": "sec_3_1",
+          "number": "3.1",
+          "title": "ReLU Nonlinearity",
+          "region": "body",
+          "order": 4,
+          "level": 2,
+          "path": [
+            "3 The Architecture",
+            "3.1 ReLU Nonlinearity"
+          ],
+          "start_block_index": 24,
+          "end_block_index": 27,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_2",
+          "number": "3.2",
+          "title": "Training on Multiple GPUs",
+          "region": "body",
+          "order": 5,
+          "level": 2,
+          "path": [
+            "3 The Architecture",
+            "3.2 Training on Multiple GPUs"
+          ],
+          "start_block_index": 28,
+          "end_block_index": 32,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_3",
+          "number": "3.3",
+          "title": "Local Response Normalization",
+          "region": "body",
+          "order": 6,
+          "level": 2,
+          "path": [
+            "3 The Architecture",
+            "3.3 Local Response Normalization"
+          ],
+          "start_block_index": 33,
+          "end_block_index": 37,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_4",
+          "number": "3.4",
+          "title": "Overlapping Pooling",
+          "region": "body",
+          "order": 7,
+          "level": 2,
+          "path": [
+            "3 The Architecture",
+            "3.4 Overlapping Pooling"
+          ],
+          "start_block_index": 38,
+          "end_block_index": 39,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_5",
+          "number": "3.5",
+          "title": "Overall Architecture",
+          "region": "body",
+          "order": 8,
+          "level": 2,
+          "path": [
+            "3 The Architecture",
+            "3.5 Overall Architecture"
+          ],
+          "start_block_index": 40,
+          "end_block_index": 47,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_4",
+      "number": "4",
+      "title": "Reducing Overfitting",
+      "region": "body",
+      "order": 9,
+      "level": 1,
+      "path": [
+        "4 Reducing Overfitting"
+      ],
+      "start_block_index": 48,
+      "end_block_index": 61,
+      "children": [
+        {
+          "section_id": "sec_4_1",
+          "number": "4.1",
+          "title": "Data Augmentation",
+          "region": "body",
+          "order": 10,
+          "level": 2,
+          "path": [
+            "4 Reducing Overfitting",
+            "4.1 Data Augmentation"
+          ],
+          "start_block_index": 50,
+          "end_block_index": 58,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_2",
+          "number": "4.2",
+          "title": "Dropout",
+          "region": "body",
+          "order": 11,
+          "level": 2,
+          "path": [
+            "4 Reducing Overfitting",
+            "4.2 Dropout"
+          ],
+          "start_block_index": 59,
+          "end_block_index": 61,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_5",
+      "number": "5",
+      "title": "Details of learning",
+      "region": "body",
+      "order": 12,
+      "level": 1,
+      "path": [
+        "5 Details of learning"
+      ],
+      "start_block_index": 62,
+      "end_block_index": 71,
+      "children": []
+    },
+    {
+      "section_id": "sec_6",
+      "number": "6",
+      "title": "Results",
+      "region": "body",
+      "order": 13,
+      "level": 1,
+      "path": [
+        "6 Results"
+      ],
+      "start_block_index": 72,
+      "end_block_index": 88,
+      "children": [
+        {
+          "section_id": "sec_6_1",
+          "number": "6.1",
+          "title": "Qualitative Evaluations",
+          "region": "body",
+          "order": 14,
+          "level": 2,
+          "path": [
+            "6 Results",
+            "6.1 Qualitative Evaluations"
+          ],
+          "start_block_index": 80,
+          "end_block_index": 88,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_7",
+      "number": "7",
+      "title": "Discussion",
+      "region": "body",
+      "order": 15,
+      "level": 1,
+      "path": [
+        "7 Discussion"
+      ],
+      "start_block_index": 89,
+      "end_block_index": 92,
+      "children": []
+    }
+  ]
+}

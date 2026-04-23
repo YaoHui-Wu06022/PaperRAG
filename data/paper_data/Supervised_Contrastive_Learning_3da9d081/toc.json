@@ -1,0 +1,455 @@
+{
+  "sections": [
+    {
+      "section_id": "sec_abstract",
+      "parent_id": null,
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 11,
+      "end_block_index": 11
+    },
+    {
+      "section_id": "sec_1",
+      "parent_id": null,
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 12,
+      "end_block_index": 28
+    },
+    {
+      "section_id": "sec_2",
+      "parent_id": null,
+      "number": "2",
+      "title": "Related Work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Related Work"
+      ],
+      "start_block_index": 29,
+      "end_block_index": 35
+    },
+    {
+      "section_id": "sec_3",
+      "parent_id": null,
+      "number": "3",
+      "title": "Method",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Method"
+      ],
+      "start_block_index": 36,
+      "end_block_index": 68
+    },
+    {
+      "section_id": "sec_3_1",
+      "parent_id": "sec_3",
+      "number": "3.1",
+      "title": "Representation Learning Framework",
+      "region": "body",
+      "order": 4,
+      "level": 2,
+      "path": [
+        "3 Method",
+        "3.1 Representation Learning Framework"
+      ],
+      "start_block_index": 38,
+      "end_block_index": 40
+    },
+    {
+      "section_id": "sec_3_2",
+      "parent_id": "sec_3",
+      "number": "3.2",
+      "title": "Contrastive Loss Functions",
+      "region": "body",
+      "order": 5,
+      "level": 2,
+      "path": [
+        "3 Method",
+        "3.2 Contrastive Loss Functions"
+      ],
+      "start_block_index": 41,
+      "end_block_index": 68
+    },
+    {
+      "section_id": "sec_3_2_1",
+      "parent_id": "sec_3_2",
+      "number": "3.2.1",
+      "title": "Self-Supervised Contrastive Loss",
+      "region": "body",
+      "order": 6,
+      "level": 3,
+      "path": [
+        "3 Method",
+        "3.2 Contrastive Loss Functions",
+        "3.2.1 Self-Supervised Contrastive Loss"
+      ],
+      "start_block_index": 43,
+      "end_block_index": 48
+    },
+    {
+      "section_id": "sec_3_2_2",
+      "parent_id": "sec_3_2",
+      "number": "3.2.2",
+      "title": "Supervised Contrastive Losses",
+      "region": "body",
+      "order": 7,
+      "level": 3,
+      "path": [
+        "3 Method",
+        "3.2 Contrastive Loss Functions",
+        "3.2.2 Supervised Contrastive Losses"
+      ],
+      "start_block_index": 49,
+      "end_block_index": 66
+    },
+    {
+      "section_id": "sec_3_2_3",
+      "parent_id": "sec_3_2",
+      "number": "3.2.3",
+      "title": "Connection to Triplet Loss and N-pairs Loss",
+      "region": "body",
+      "order": 8,
+      "level": 3,
+      "path": [
+        "3 Method",
+        "3.2 Contrastive Loss Functions",
+        "3.2.3 Connection to Triplet Loss and N-pairs Loss"
+      ],
+      "start_block_index": 67,
+      "end_block_index": 68
+    },
+    {
+      "section_id": "sec_4",
+      "parent_id": null,
+      "number": "4",
+      "title": "Experiments",
+      "region": "body",
+      "order": 9,
+      "level": 1,
+      "path": [
+        "4 Experiments"
+      ],
+      "start_block_index": 69,
+      "end_block_index": 105
+    },
+    {
+      "section_id": "sec_4_1",
+      "parent_id": "sec_4",
+      "number": "4.1",
+      "title": "Classification Accuracy",
+      "region": "body",
+      "order": 10,
+      "level": 2,
+      "path": [
+        "4 Experiments",
+        "4.1 Classification Accuracy"
+      ],
+      "start_block_index": 71,
+      "end_block_index": 79
+    },
+    {
+      "section_id": "sec_4_2",
+      "parent_id": "sec_4",
+      "number": "4.2",
+      "title": "Robustness to Image Corruptions and Reduced Training Data",
+      "region": "body",
+      "order": 11,
+      "level": 2,
+      "path": [
+        "4 Experiments",
+        "4.2 Robustness to Image Corruptions and Reduced Training Data"
+      ],
+      "start_block_index": 80,
+      "end_block_index": 89
+    },
+    {
+      "section_id": "sec_4_3",
+      "parent_id": "sec_4",
+      "number": "4.3",
+      "title": "Hyperparameter Stability",
+      "region": "body",
+      "order": 12,
+      "level": 2,
+      "path": [
+        "4 Experiments",
+        "4.3 Hyperparameter Stability"
+      ],
+      "start_block_index": 90,
+      "end_block_index": 91
+    },
+    {
+      "section_id": "sec_4_4",
+      "parent_id": "sec_4",
+      "number": "4.4",
+      "title": "Transfer Learning",
+      "region": "body",
+      "order": 13,
+      "level": 2,
+      "path": [
+        "4 Experiments",
+        "4.4 Transfer Learning"
+      ],
+      "start_block_index": 92,
+      "end_block_index": 94
+    },
+    {
+      "section_id": "sec_4_5",
+      "parent_id": "sec_4",
+      "number": "4.5",
+      "title": "Training Details",
+      "region": "body",
+      "order": 14,
+      "level": 2,
+      "path": [
+        "4 Experiments",
+        "4.5 Training Details"
+      ],
+      "start_block_index": 95,
+      "end_block_index": 105
+    }
+  ],
+  "tree": [
+    {
+      "section_id": "sec_abstract",
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 11,
+      "end_block_index": 11,
+      "children": []
+    },
+    {
+      "section_id": "sec_1",
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 12,
+      "end_block_index": 28,
+      "children": []
+    },
+    {
+      "section_id": "sec_2",
+      "number": "2",
+      "title": "Related Work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Related Work"
+      ],
+      "start_block_index": 29,
+      "end_block_index": 35,
+      "children": []
+    },
+    {
+      "section_id": "sec_3",
+      "number": "3",
+      "title": "Method",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Method"
+      ],
+      "start_block_index": 36,
+      "end_block_index": 68,
+      "children": [
+        {
+          "section_id": "sec_3_1",
+          "number": "3.1",
+          "title": "Representation Learning Framework",
+          "region": "body",
+          "order": 4,
+          "level": 2,
+          "path": [
+            "3 Method",
+            "3.1 Representation Learning Framework"
+          ],
+          "start_block_index": 38,
+          "end_block_index": 40,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_2",
+          "number": "3.2",
+          "title": "Contrastive Loss Functions",
+          "region": "body",
+          "order": 5,
+          "level": 2,
+          "path": [
+            "3 Method",
+            "3.2 Contrastive Loss Functions"
+          ],
+          "start_block_index": 41,
+          "end_block_index": 68,
+          "children": [
+            {
+              "section_id": "sec_3_2_1",
+              "number": "3.2.1",
+              "title": "Self-Supervised Contrastive Loss",
+              "region": "body",
+              "order": 6,
+              "level": 3,
+              "path": [
+                "3 Method",
+                "3.2 Contrastive Loss Functions",
+                "3.2.1 Self-Supervised Contrastive Loss"
+              ],
+              "start_block_index": 43,
+              "end_block_index": 48,
+              "children": []
+            },
+            {
+              "section_id": "sec_3_2_2",
+              "number": "3.2.2",
+              "title": "Supervised Contrastive Losses",
+              "region": "body",
+              "order": 7,
+              "level": 3,
+              "path": [
+                "3 Method",
+                "3.2 Contrastive Loss Functions",
+                "3.2.2 Supervised Contrastive Losses"
+              ],
+              "start_block_index": 49,
+              "end_block_index": 66,
+              "children": []
+            },
+            {
+              "section_id": "sec_3_2_3",
+              "number": "3.2.3",
+              "title": "Connection to Triplet Loss and N-pairs Loss",
+              "region": "body",
+              "order": 8,
+              "level": 3,
+              "path": [
+                "3 Method",
+                "3.2 Contrastive Loss Functions",
+                "3.2.3 Connection to Triplet Loss and N-pairs Loss"
+              ],
+              "start_block_index": 67,
+              "end_block_index": 68,
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section_id": "sec_4",
+      "number": "4",
+      "title": "Experiments",
+      "region": "body",
+      "order": 9,
+      "level": 1,
+      "path": [
+        "4 Experiments"
+      ],
+      "start_block_index": 69,
+      "end_block_index": 105,
+      "children": [
+        {
+          "section_id": "sec_4_1",
+          "number": "4.1",
+          "title": "Classification Accuracy",
+          "region": "body",
+          "order": 10,
+          "level": 2,
+          "path": [
+            "4 Experiments",
+            "4.1 Classification Accuracy"
+          ],
+          "start_block_index": 71,
+          "end_block_index": 79,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_2",
+          "number": "4.2",
+          "title": "Robustness to Image Corruptions and Reduced Training Data",
+          "region": "body",
+          "order": 11,
+          "level": 2,
+          "path": [
+            "4 Experiments",
+            "4.2 Robustness to Image Corruptions and Reduced Training Data"
+          ],
+          "start_block_index": 80,
+          "end_block_index": 89,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_3",
+          "number": "4.3",
+          "title": "Hyperparameter Stability",
+          "region": "body",
+          "order": 12,
+          "level": 2,
+          "path": [
+            "4 Experiments",
+            "4.3 Hyperparameter Stability"
+          ],
+          "start_block_index": 90,
+          "end_block_index": 91,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_4",
+          "number": "4.4",
+          "title": "Transfer Learning",
+          "region": "body",
+          "order": 13,
+          "level": 2,
+          "path": [
+            "4 Experiments",
+            "4.4 Transfer Learning"
+          ],
+          "start_block_index": 92,
+          "end_block_index": 94,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_5",
+          "number": "4.5",
+          "title": "Training Details",
+          "region": "body",
+          "order": 14,
+          "level": 2,
+          "path": [
+            "4 Experiments",
+            "4.5 Training Details"
+          ],
+          "start_block_index": 95,
+          "end_block_index": 105,
+          "children": []
+        }
+      ]
+    }
+  ]
+}

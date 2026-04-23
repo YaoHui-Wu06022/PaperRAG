@@ -1,0 +1,504 @@
+{
+  "sections": [
+    {
+      "section_id": "sec_abstract",
+      "parent_id": null,
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 8,
+      "end_block_index": 8
+    },
+    {
+      "section_id": "sec_1",
+      "parent_id": null,
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 9,
+      "end_block_index": 23
+    },
+    {
+      "section_id": "sec_2",
+      "parent_id": null,
+      "number": "2",
+      "title": "Related Work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Related Work"
+      ],
+      "start_block_index": 24,
+      "end_block_index": 36
+    },
+    {
+      "section_id": "sec_3",
+      "parent_id": null,
+      "number": "3",
+      "title": "Insights on Weight Averaging during Training",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Insights on Weight Averaging during Training"
+      ],
+      "start_block_index": 37,
+      "end_block_index": 59
+    },
+    {
+      "section_id": "sec_3_1",
+      "parent_id": "sec_3",
+      "number": "3.1",
+      "title": "Training with EMA",
+      "region": "body",
+      "order": 4,
+      "level": 2,
+      "path": [
+        "3 Insights on Weight Averaging during Training",
+        "3.1 Training with EMA"
+      ],
+      "start_block_index": 39,
+      "end_block_index": 41
+    },
+    {
+      "section_id": "sec_3_2",
+      "parent_id": "sec_3",
+      "number": "3.2",
+      "title": "Implicit Regularization with SGD Noise and Learning Rate Schedule",
+      "region": "body",
+      "order": 5,
+      "level": 2,
+      "path": [
+        "3 Insights on Weight Averaging during Training",
+        "3.2 Implicit Regularization with SGD Noise and Learning Rate Schedule"
+      ],
+      "start_block_index": 42,
+      "end_block_index": 47
+    },
+    {
+      "section_id": "sec_3_3",
+      "parent_id": "sec_3",
+      "number": "3.3",
+      "title": "EMA in early training",
+      "region": "body",
+      "order": 6,
+      "level": 2,
+      "path": [
+        "3 Insights on Weight Averaging during Training",
+        "3.3 EMA in early training"
+      ],
+      "start_block_index": 48,
+      "end_block_index": 50
+    },
+    {
+      "section_id": "sec_3_4",
+      "parent_id": "sec_3",
+      "number": "3.4",
+      "title": "Batch Norm Statistics and EMA decay",
+      "region": "body",
+      "order": 7,
+      "level": 2,
+      "path": [
+        "3 Insights on Weight Averaging during Training",
+        "3.4 Batch Norm Statistics and EMA decay"
+      ],
+      "start_block_index": 51,
+      "end_block_index": 59
+    },
+    {
+      "section_id": "sec_4",
+      "parent_id": null,
+      "number": "4",
+      "title": "Results",
+      "region": "body",
+      "order": 8,
+      "level": 1,
+      "path": [
+        "4 Results"
+      ],
+      "start_block_index": 60,
+      "end_block_index": 102
+    },
+    {
+      "section_id": "sec_4_1",
+      "parent_id": "sec_4",
+      "number": "4.1",
+      "title": "Experimental Setup",
+      "region": "body",
+      "order": 9,
+      "level": 2,
+      "path": [
+        "4 Results",
+        "4.1 Experimental Setup"
+      ],
+      "start_block_index": 61,
+      "end_block_index": 68
+    },
+    {
+      "section_id": "sec_4_2",
+      "parent_id": "sec_4",
+      "number": "4.2",
+      "title": "Generalization",
+      "region": "body",
+      "order": 10,
+      "level": 2,
+      "path": [
+        "4 Results",
+        "4.2 Generalization"
+      ],
+      "start_block_index": 69,
+      "end_block_index": 71
+    },
+    {
+      "section_id": "sec_4_3",
+      "parent_id": "sec_4",
+      "number": "4.3",
+      "title": "Label Noise",
+      "region": "body",
+      "order": 11,
+      "level": 2,
+      "path": [
+        "4 Results",
+        "4.3 Label Noise"
+      ],
+      "start_block_index": 72,
+      "end_block_index": 80
+    },
+    {
+      "section_id": "sec_4_4",
+      "parent_id": "sec_4",
+      "number": "4.4",
+      "title": "Prediction consistency",
+      "region": "body",
+      "order": 12,
+      "level": 2,
+      "path": [
+        "4 Results",
+        "4.4 Prediction consistency"
+      ],
+      "start_block_index": 81,
+      "end_block_index": 87
+    },
+    {
+      "section_id": "sec_4_5",
+      "parent_id": "sec_4",
+      "number": "4.5",
+      "title": "Transfer Learning",
+      "region": "body",
+      "order": 13,
+      "level": 2,
+      "path": [
+        "4 Results",
+        "4.5 Transfer Learning"
+      ],
+      "start_block_index": 88,
+      "end_block_index": 92
+    },
+    {
+      "section_id": "sec_4_6",
+      "parent_id": "sec_4",
+      "number": "4.6",
+      "title": "Calibration",
+      "region": "body",
+      "order": 14,
+      "level": 2,
+      "path": [
+        "4 Results",
+        "4.6 Calibration"
+      ],
+      "start_block_index": 93,
+      "end_block_index": 102
+    },
+    {
+      "section_id": "sec_5",
+      "parent_id": null,
+      "number": "5",
+      "title": "Conclusion",
+      "region": "body",
+      "order": 15,
+      "level": 1,
+      "path": [
+        "5 Conclusion"
+      ],
+      "start_block_index": 103,
+      "end_block_index": 110
+    },
+    {
+      "section_id": "sec_appendix",
+      "parent_id": null,
+      "number": null,
+      "title": "Appendix",
+      "region": "appendix",
+      "order": 16,
+      "level": 1,
+      "path": [
+        "Appendix"
+      ],
+      "start_block_index": 124,
+      "end_block_index": 207
+    }
+  ],
+  "tree": [
+    {
+      "section_id": "sec_abstract",
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 8,
+      "end_block_index": 8,
+      "children": []
+    },
+    {
+      "section_id": "sec_1",
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 9,
+      "end_block_index": 23,
+      "children": []
+    },
+    {
+      "section_id": "sec_2",
+      "number": "2",
+      "title": "Related Work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Related Work"
+      ],
+      "start_block_index": 24,
+      "end_block_index": 36,
+      "children": []
+    },
+    {
+      "section_id": "sec_3",
+      "number": "3",
+      "title": "Insights on Weight Averaging during Training",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Insights on Weight Averaging during Training"
+      ],
+      "start_block_index": 37,
+      "end_block_index": 59,
+      "children": [
+        {
+          "section_id": "sec_3_1",
+          "number": "3.1",
+          "title": "Training with EMA",
+          "region": "body",
+          "order": 4,
+          "level": 2,
+          "path": [
+            "3 Insights on Weight Averaging during Training",
+            "3.1 Training with EMA"
+          ],
+          "start_block_index": 39,
+          "end_block_index": 41,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_2",
+          "number": "3.2",
+          "title": "Implicit Regularization with SGD Noise and Learning Rate Schedule",
+          "region": "body",
+          "order": 5,
+          "level": 2,
+          "path": [
+            "3 Insights on Weight Averaging during Training",
+            "3.2 Implicit Regularization with SGD Noise and Learning Rate Schedule"
+          ],
+          "start_block_index": 42,
+          "end_block_index": 47,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_3",
+          "number": "3.3",
+          "title": "EMA in early training",
+          "region": "body",
+          "order": 6,
+          "level": 2,
+          "path": [
+            "3 Insights on Weight Averaging during Training",
+            "3.3 EMA in early training"
+          ],
+          "start_block_index": 48,
+          "end_block_index": 50,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_4",
+          "number": "3.4",
+          "title": "Batch Norm Statistics and EMA decay",
+          "region": "body",
+          "order": 7,
+          "level": 2,
+          "path": [
+            "3 Insights on Weight Averaging during Training",
+            "3.4 Batch Norm Statistics and EMA decay"
+          ],
+          "start_block_index": 51,
+          "end_block_index": 59,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_4",
+      "number": "4",
+      "title": "Results",
+      "region": "body",
+      "order": 8,
+      "level": 1,
+      "path": [
+        "4 Results"
+      ],
+      "start_block_index": 60,
+      "end_block_index": 102,
+      "children": [
+        {
+          "section_id": "sec_4_1",
+          "number": "4.1",
+          "title": "Experimental Setup",
+          "region": "body",
+          "order": 9,
+          "level": 2,
+          "path": [
+            "4 Results",
+            "4.1 Experimental Setup"
+          ],
+          "start_block_index": 61,
+          "end_block_index": 68,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_2",
+          "number": "4.2",
+          "title": "Generalization",
+          "region": "body",
+          "order": 10,
+          "level": 2,
+          "path": [
+            "4 Results",
+            "4.2 Generalization"
+          ],
+          "start_block_index": 69,
+          "end_block_index": 71,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_3",
+          "number": "4.3",
+          "title": "Label Noise",
+          "region": "body",
+          "order": 11,
+          "level": 2,
+          "path": [
+            "4 Results",
+            "4.3 Label Noise"
+          ],
+          "start_block_index": 72,
+          "end_block_index": 80,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_4",
+          "number": "4.4",
+          "title": "Prediction consistency",
+          "region": "body",
+          "order": 12,
+          "level": 2,
+          "path": [
+            "4 Results",
+            "4.4 Prediction consistency"
+          ],
+          "start_block_index": 81,
+          "end_block_index": 87,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_5",
+          "number": "4.5",
+          "title": "Transfer Learning",
+          "region": "body",
+          "order": 13,
+          "level": 2,
+          "path": [
+            "4 Results",
+            "4.5 Transfer Learning"
+          ],
+          "start_block_index": 88,
+          "end_block_index": 92,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_6",
+          "number": "4.6",
+          "title": "Calibration",
+          "region": "body",
+          "order": 14,
+          "level": 2,
+          "path": [
+            "4 Results",
+            "4.6 Calibration"
+          ],
+          "start_block_index": 93,
+          "end_block_index": 102,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_5",
+      "number": "5",
+      "title": "Conclusion",
+      "region": "body",
+      "order": 15,
+      "level": 1,
+      "path": [
+        "5 Conclusion"
+      ],
+      "start_block_index": 103,
+      "end_block_index": 110,
+      "children": []
+    },
+    {
+      "section_id": "sec_appendix",
+      "number": null,
+      "title": "Appendix",
+      "region": "appendix",
+      "order": 16,
+      "level": 1,
+      "path": [
+        "Appendix"
+      ],
+      "start_block_index": 124,
+      "end_block_index": 207,
+      "children": []
+    }
+  ]
+}

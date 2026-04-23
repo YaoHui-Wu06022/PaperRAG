@@ -1,0 +1,416 @@
+{
+  "sections": [
+    {
+      "section_id": "sec_abstract",
+      "parent_id": null,
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 11,
+      "end_block_index": 11
+    },
+    {
+      "section_id": "sec_1",
+      "parent_id": null,
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 12,
+      "end_block_index": 32
+    },
+    {
+      "section_id": "sec_2",
+      "parent_id": null,
+      "number": "2",
+      "title": "Related Work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Related Work"
+      ],
+      "start_block_index": 33,
+      "end_block_index": 37
+    },
+    {
+      "section_id": "sec_3",
+      "parent_id": null,
+      "number": "3",
+      "title": "Method",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Method"
+      ],
+      "start_block_index": 38,
+      "end_block_index": 82
+    },
+    {
+      "section_id": "sec_3_1",
+      "parent_id": "sec_3",
+      "number": "3.1",
+      "title": "Template",
+      "region": "body",
+      "order": 4,
+      "level": 2,
+      "path": [
+        "3 Method",
+        "3.1 Template"
+      ],
+      "start_block_index": 39,
+      "end_block_index": 44
+    },
+    {
+      "section_id": "sec_3_2",
+      "parent_id": "sec_3",
+      "number": "3.2",
+      "title": "Revisiting Simple Neurons",
+      "region": "body",
+      "order": 5,
+      "level": 2,
+      "path": [
+        "3 Method",
+        "3.2 Revisiting Simple Neurons"
+      ],
+      "start_block_index": 45,
+      "end_block_index": 51
+    },
+    {
+      "section_id": "sec_3_3",
+      "parent_id": "sec_3",
+      "number": "3.3",
+      "title": "Aggregated Transformations",
+      "region": "body",
+      "order": 6,
+      "level": 2,
+      "path": [
+        "3 Method",
+        "3.3 Aggregated Transformations"
+      ],
+      "start_block_index": 52,
+      "end_block_index": 70
+    },
+    {
+      "section_id": "sec_3_4",
+      "parent_id": "sec_3",
+      "number": "3.4",
+      "title": "Model Capacity",
+      "region": "body",
+      "order": 7,
+      "level": 2,
+      "path": [
+        "3 Method",
+        "3.4 Model Capacity"
+      ],
+      "start_block_index": 71,
+      "end_block_index": 82
+    },
+    {
+      "section_id": "sec_4",
+      "parent_id": null,
+      "number": "4",
+      "title": "Implementation details",
+      "region": "body",
+      "order": 8,
+      "level": 1,
+      "path": [
+        "4 Implementation details"
+      ],
+      "start_block_index": 83,
+      "end_block_index": 87
+    },
+    {
+      "section_id": "sec_5",
+      "parent_id": null,
+      "number": "5",
+      "title": "Experiments",
+      "region": "body",
+      "order": 9,
+      "level": 1,
+      "path": [
+        "5 Experiments"
+      ],
+      "start_block_index": 88,
+      "end_block_index": 135
+    },
+    {
+      "section_id": "sec_5_1",
+      "parent_id": "sec_5",
+      "number": "5.1",
+      "title": "Experiments on ImageNet-1K",
+      "region": "body",
+      "order": 10,
+      "level": 2,
+      "path": [
+        "5 Experiments",
+        "5.1 Experiments on ImageNet-1K"
+      ],
+      "start_block_index": 89,
+      "end_block_index": 118
+    },
+    {
+      "section_id": "sec_5_2",
+      "parent_id": "sec_5",
+      "number": "5.2",
+      "title": "Experiments on ImageNet-5K",
+      "region": "body",
+      "order": 11,
+      "level": 2,
+      "path": [
+        "5 Experiments",
+        "5.2 Experiments on ImageNet-5K"
+      ],
+      "start_block_index": 119,
+      "end_block_index": 126
+    },
+    {
+      "section_id": "sec_5_3",
+      "parent_id": "sec_5",
+      "number": "5.3",
+      "title": "Experiments on CIFAR",
+      "region": "body",
+      "order": 12,
+      "level": 2,
+      "path": [
+        "5 Experiments",
+        "5.3 Experiments on CIFAR"
+      ],
+      "start_block_index": 127,
+      "end_block_index": 131
+    },
+    {
+      "section_id": "sec_5_4",
+      "parent_id": "sec_5",
+      "number": "5.4",
+      "title": "Experiments on COCO object detection",
+      "region": "body",
+      "order": 13,
+      "level": 2,
+      "path": [
+        "5 Experiments",
+        "5.4 Experiments on COCO object detection"
+      ],
+      "start_block_index": 132,
+      "end_block_index": 135
+    }
+  ],
+  "tree": [
+    {
+      "section_id": "sec_abstract",
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 11,
+      "end_block_index": 11,
+      "children": []
+    },
+    {
+      "section_id": "sec_1",
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 12,
+      "end_block_index": 32,
+      "children": []
+    },
+    {
+      "section_id": "sec_2",
+      "number": "2",
+      "title": "Related Work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Related Work"
+      ],
+      "start_block_index": 33,
+      "end_block_index": 37,
+      "children": []
+    },
+    {
+      "section_id": "sec_3",
+      "number": "3",
+      "title": "Method",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Method"
+      ],
+      "start_block_index": 38,
+      "end_block_index": 82,
+      "children": [
+        {
+          "section_id": "sec_3_1",
+          "number": "3.1",
+          "title": "Template",
+          "region": "body",
+          "order": 4,
+          "level": 2,
+          "path": [
+            "3 Method",
+            "3.1 Template"
+          ],
+          "start_block_index": 39,
+          "end_block_index": 44,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_2",
+          "number": "3.2",
+          "title": "Revisiting Simple Neurons",
+          "region": "body",
+          "order": 5,
+          "level": 2,
+          "path": [
+            "3 Method",
+            "3.2 Revisiting Simple Neurons"
+          ],
+          "start_block_index": 45,
+          "end_block_index": 51,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_3",
+          "number": "3.3",
+          "title": "Aggregated Transformations",
+          "region": "body",
+          "order": 6,
+          "level": 2,
+          "path": [
+            "3 Method",
+            "3.3 Aggregated Transformations"
+          ],
+          "start_block_index": 52,
+          "end_block_index": 70,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_4",
+          "number": "3.4",
+          "title": "Model Capacity",
+          "region": "body",
+          "order": 7,
+          "level": 2,
+          "path": [
+            "3 Method",
+            "3.4 Model Capacity"
+          ],
+          "start_block_index": 71,
+          "end_block_index": 82,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_4",
+      "number": "4",
+      "title": "Implementation details",
+      "region": "body",
+      "order": 8,
+      "level": 1,
+      "path": [
+        "4 Implementation details"
+      ],
+      "start_block_index": 83,
+      "end_block_index": 87,
+      "children": []
+    },
+    {
+      "section_id": "sec_5",
+      "number": "5",
+      "title": "Experiments",
+      "region": "body",
+      "order": 9,
+      "level": 1,
+      "path": [
+        "5 Experiments"
+      ],
+      "start_block_index": 88,
+      "end_block_index": 135,
+      "children": [
+        {
+          "section_id": "sec_5_1",
+          "number": "5.1",
+          "title": "Experiments on ImageNet-1K",
+          "region": "body",
+          "order": 10,
+          "level": 2,
+          "path": [
+            "5 Experiments",
+            "5.1 Experiments on ImageNet-1K"
+          ],
+          "start_block_index": 89,
+          "end_block_index": 118,
+          "children": []
+        },
+        {
+          "section_id": "sec_5_2",
+          "number": "5.2",
+          "title": "Experiments on ImageNet-5K",
+          "region": "body",
+          "order": 11,
+          "level": 2,
+          "path": [
+            "5 Experiments",
+            "5.2 Experiments on ImageNet-5K"
+          ],
+          "start_block_index": 119,
+          "end_block_index": 126,
+          "children": []
+        },
+        {
+          "section_id": "sec_5_3",
+          "number": "5.3",
+          "title": "Experiments on CIFAR",
+          "region": "body",
+          "order": 12,
+          "level": 2,
+          "path": [
+            "5 Experiments",
+            "5.3 Experiments on CIFAR"
+          ],
+          "start_block_index": 127,
+          "end_block_index": 131,
+          "children": []
+        },
+        {
+          "section_id": "sec_5_4",
+          "number": "5.4",
+          "title": "Experiments on COCO object detection",
+          "region": "body",
+          "order": 13,
+          "level": 2,
+          "path": [
+            "5 Experiments",
+            "5.4 Experiments on COCO object detection"
+          ],
+          "start_block_index": 132,
+          "end_block_index": 135,
+          "children": []
+        }
+      ]
+    }
+  ]
+}

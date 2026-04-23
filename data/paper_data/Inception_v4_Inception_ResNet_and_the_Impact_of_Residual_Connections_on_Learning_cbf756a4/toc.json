@@ -1,0 +1,286 @@
+{
+  "sections": [
+    {
+      "section_id": "sec_abstract",
+      "parent_id": null,
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 6,
+      "end_block_index": 6
+    },
+    {
+      "section_id": "sec_introduction",
+      "parent_id": null,
+      "number": null,
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "Introduction"
+      ],
+      "start_block_index": 7,
+      "end_block_index": 19
+    },
+    {
+      "section_id": "sec_related_work",
+      "parent_id": null,
+      "number": null,
+      "title": "Related Work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "Related Work"
+      ],
+      "start_block_index": 20,
+      "end_block_index": 26
+    },
+    {
+      "section_id": "sec_architectural_choices",
+      "parent_id": null,
+      "number": null,
+      "title": "Architectural Choices",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "Architectural Choices"
+      ],
+      "start_block_index": 27,
+      "end_block_index": 27
+    },
+    {
+      "section_id": "sec_pure_inception_blocks",
+      "parent_id": null,
+      "number": null,
+      "title": "Pure Inception blocks",
+      "region": "body",
+      "order": 4,
+      "level": 1,
+      "path": [
+        "Pure Inception blocks"
+      ],
+      "start_block_index": 28,
+      "end_block_index": 30
+    },
+    {
+      "section_id": "sec_residual_inception_blocks",
+      "parent_id": null,
+      "number": null,
+      "title": "Residual Inception Blocks",
+      "region": "body",
+      "order": 5,
+      "level": 1,
+      "path": [
+        "Residual Inception Blocks"
+      ],
+      "start_block_index": 31,
+      "end_block_index": 39
+    },
+    {
+      "section_id": "sec_scaling_of_the_residuals",
+      "parent_id": null,
+      "number": null,
+      "title": "Scaling of the Residuals",
+      "region": "body",
+      "order": 6,
+      "level": 1,
+      "path": [
+        "Scaling of the Residuals"
+      ],
+      "start_block_index": 40,
+      "end_block_index": 44
+    },
+    {
+      "section_id": "sec_training_methodology",
+      "parent_id": null,
+      "number": null,
+      "title": "Training Methodology",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "Training Methodology"
+      ],
+      "start_block_index": 45,
+      "end_block_index": 46
+    },
+    {
+      "section_id": "sec_experimental_results",
+      "parent_id": null,
+      "number": null,
+      "title": "Experimental Results",
+      "region": "body",
+      "order": 8,
+      "level": 1,
+      "path": [
+        "Experimental Results"
+      ],
+      "start_block_index": 47,
+      "end_block_index": 79
+    },
+    {
+      "section_id": "sec_conclusions",
+      "parent_id": null,
+      "number": null,
+      "title": "Conclusions",
+      "region": "body",
+      "order": 9,
+      "level": 1,
+      "path": [
+        "Conclusions"
+      ],
+      "start_block_index": 80,
+      "end_block_index": 86
+    }
+  ],
+  "tree": [
+    {
+      "section_id": "sec_abstract",
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 6,
+      "end_block_index": 6,
+      "children": []
+    },
+    {
+      "section_id": "sec_introduction",
+      "number": null,
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "Introduction"
+      ],
+      "start_block_index": 7,
+      "end_block_index": 19,
+      "children": []
+    },
+    {
+      "section_id": "sec_related_work",
+      "number": null,
+      "title": "Related Work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "Related Work"
+      ],
+      "start_block_index": 20,
+      "end_block_index": 26,
+      "children": []
+    },
+    {
+      "section_id": "sec_architectural_choices",
+      "number": null,
+      "title": "Architectural Choices",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "Architectural Choices"
+      ],
+      "start_block_index": 27,
+      "end_block_index": 27,
+      "children": []
+    },
+    {
+      "section_id": "sec_pure_inception_blocks",
+      "number": null,
+      "title": "Pure Inception blocks",
+      "region": "body",
+      "order": 4,
+      "level": 1,
+      "path": [
+        "Pure Inception blocks"
+      ],
+      "start_block_index": 28,
+      "end_block_index": 30,
+      "children": []
+    },
+    {
+      "section_id": "sec_residual_inception_blocks",
+      "number": null,
+      "title": "Residual Inception Blocks",
+      "region": "body",
+      "order": 5,
+      "level": 1,
+      "path": [
+        "Residual Inception Blocks"
+      ],
+      "start_block_index": 31,
+      "end_block_index": 39,
+      "children": []
+    },
+    {
+      "section_id": "sec_scaling_of_the_residuals",
+      "number": null,
+      "title": "Scaling of the Residuals",
+      "region": "body",
+      "order": 6,
+      "level": 1,
+      "path": [
+        "Scaling of the Residuals"
+      ],
+      "start_block_index": 40,
+      "end_block_index": 44,
+      "children": []
+    },
+    {
+      "section_id": "sec_training_methodology",
+      "number": null,
+      "title": "Training Methodology",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "Training Methodology"
+      ],
+      "start_block_index": 45,
+      "end_block_index": 46,
+      "children": []
+    },
+    {
+      "section_id": "sec_experimental_results",
+      "number": null,
+      "title": "Experimental Results",
+      "region": "body",
+      "order": 8,
+      "level": 1,
+      "path": [
+        "Experimental Results"
+      ],
+      "start_block_index": 47,
+      "end_block_index": 79,
+      "children": []
+    },
+    {
+      "section_id": "sec_conclusions",
+      "number": null,
+      "title": "Conclusions",
+      "region": "body",
+      "order": 9,
+      "level": 1,
+      "path": [
+        "Conclusions"
+      ],
+      "start_block_index": 80,
+      "end_block_index": 86,
+      "children": []
+    }
+  ]
+}
