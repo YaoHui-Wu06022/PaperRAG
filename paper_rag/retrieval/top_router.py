@@ -4,8 +4,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-from ...config import Settings
-from ..data.aliases import AliasMatch
+from ..config import Settings
+from .data.aliases import AliasMatch
 
 
 @dataclass(frozen=True)
@@ -23,7 +23,7 @@ class RouteDecision:
     return_field: str | None = None
     filters: list[dict[str, Any]] = field(default_factory=list)
     direction: str | None = None
-    anchors: list[dict[str, Any]] = field(default_factory=list)
+    anchors: list[str] = field(default_factory=list)
     anchor_mode: str | None = None
 
 

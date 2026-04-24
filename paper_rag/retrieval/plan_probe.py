@@ -19,11 +19,12 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from paper_rag.config import Settings
-from paper_rag.retrieval.plan.planner import run_plan
+from paper_rag.retrieval.planner import run_plan
 
 
 DEFAULT_QUERIES = [
-    "2015到2020年不在CVPR发表的论文有哪些",
+    # "Resnet之后在CVPR发表论文有哪些",
+    "ResNet或transformer引用了哪些论文",
 ]
 
 

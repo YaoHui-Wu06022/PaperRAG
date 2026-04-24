@@ -5,7 +5,7 @@ import json
 
 from ..config import Settings
 from ..retrieval.dense.service import run_index, run_search
-from ..retrieval.plan.planner import run_plan
+from ..retrieval.planner import run_plan
 
 
 def add_retrieval_parsers(subparsers: argparse._SubParsersAction) -> None:

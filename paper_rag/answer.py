@@ -3,11 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from ..config import Settings
-from ..dataprocess.manifest import effective_year
-from .data.venues import canonicalize_venue
-from .plan.planner import run_plan
-from .plan.translation import contains_chinese
+from .config import Settings
+from .dataprocess.manifest import effective_year
+from .retrieval.data.venues import canonicalize_venue
+from .retrieval.planner import run_plan
+from .retrieval.translation import contains_chinese
 
 MAX_DISPLAY_ITEMS = 10
 
@@ -123,7 +123,7 @@ def render_reference_answer(plan_pack: dict[str, Any], evidence: dict[str, Any],
 
 
 def reference_results_for_answer(evidence: dict[str, Any]) -> list[dict[str, Any]]:
-    if evidence.get("direction") == "incoming":
+    if evidence.get("direction") == "cited_by":
         return list(evidence.get("citing_papers") or [])
     return list(evidence.get("reference_items") or [])
 
@@ -134,7 +134,7 @@ def reference_summary(reference: dict[str, Any]) -> str:
     raw_text = str(ref.get("raw_text") or "").strip()
     if len(raw_text) > 220:
         raw_text = f"{raw_text[:217]}..."
-    if direction == "incoming":
+    if direction == "cited_by":
         paper = reference.get("citing_paper") or {}
         title = str(paper.get("title") or "Unknown paper")
         return title if not raw_text else f"{title} -> {raw_text}"

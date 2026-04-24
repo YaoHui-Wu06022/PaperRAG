@@ -6,15 +6,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from ...config import Settings
-from ...dataprocess.manifest import effective_year
-from ..data.aliases import alias_match_to_dict, expand_query_with_aliases, resolve_target_papers
-from ..data.chunks import ChunkDocument, load_chunk_documents
-from ..data.manifest_lookup import load_active_manifest_records, manifest_record_to_evidence, match_manifest_records
-from ..data.venues import canonicalize_venue, expand_venue_query_terms
-from ..dense.milvus_store import SearchResult
-from ..dense.service import build_embedder, build_store
-from ..sparse.bm25 import BM25Document, BM25Index
+from ..config import Settings
+from ..dataprocess.manifest import effective_year
+from .data.aliases import alias_match_to_dict, expand_query_with_aliases, resolve_target_papers
+from .data.chunks import ChunkDocument, load_chunk_documents
+from .data.manifest_lookup import load_active_manifest_records, manifest_record_to_evidence, match_manifest_records
+from .data.venues import canonicalize_venue, expand_venue_query_terms
+from .dense.milvus_store import SearchResult
+from .dense.service import build_embedder, build_store
+from .sparse.bm25 import BM25Document, BM25Index
 from .context import context_unit
 from .top_router import RouteDecision, build_route_decision, flatten_filter_value, route_tokens
 
@@ -98,6 +98,26 @@ def base_evidence(route: RouteDecision, *, public_papers: bool = False) -> dict[
     }
 
 
+def reference_base_evidence(route: RouteDecision) -> dict[str, Any]:
+    return {
+        "direction": route.direction,
+        "anchors": route.anchors,
+        "anchor_mode": route.anchor_mode,
+        "filters": route.filters,
+        "alias_matches": [alias_match_to_dict(match) for match in route.alias_matches],
+    }
+
+
+def metadata_base_evidence(route: RouteDecision) -> dict[str, Any]:
+    return {
+        "intent": route.intent,
+        "return_field": route.return_field,
+        "anchors": public_paper_list(route.target_papers),
+        "filters": route.filters,
+        "alias_matches": [alias_match_to_dict(match) for match in route.alias_matches],
+    }
+
+
 def public_paper_list(papers: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [public_paper(paper) for paper in papers]
 
@@ -119,7 +139,6 @@ def public_paper(paper: dict[str, Any] | None) -> dict[str, Any] | None:
 
 def public_reference_entry(entry: dict[str, Any]) -> dict[str, Any]:
     result = {
-        "direction": entry.get("direction"),
         "anchor_query": entry.get("anchor_query"),
     }
     if entry.get("reference") is not None:
@@ -136,18 +155,11 @@ def public_reference_entry(entry: dict[str, Any]) -> dict[str, Any]:
 
 
 def public_anchor_result(result: dict[str, Any]) -> dict[str, Any]:
-    output = {
+    return {
         "anchor_query": result.get("anchor_query"),
         "target_papers": public_paper_list(result.get("target_papers") or []),
         "count": result.get("count"),
     }
-    direction = result.get("direction")
-    entries = [public_reference_entry(entry) for entry in result.get("references") or []]
-    if direction == "incoming":
-        output["citing_papers"] = entries
-    else:
-        output["reference_items"] = entries
-    return output
 
 
 def plan_metadata(
@@ -157,17 +169,9 @@ def plan_metadata(
 ) -> dict[str, Any]:
     if route.parse_status == "parse_failed":
         return {
-            **base_evidence(route, public_papers=True),
+            **metadata_base_evidence(route),
             "parse_status": "parse_failed",
             "parser_error": route.parser_error,
-            "parser_result": None,
-            "records": [],
-        }
-    if route.intent == "unknown":
-        return {
-            **base_evidence(route),
-            "parse_status": "unknown",
-            "parser_result": route.parser_result,
             "records": [],
         }
     records: list[dict[str, Any]]
@@ -178,10 +182,8 @@ def plan_metadata(
     if not records:
         warnings.append("metadata route found no matching manifest records")
     evidence = {
-        **base_evidence(route),
-        "query": route.target_query,
+        **metadata_base_evidence(route),
         "parse_status": "ok",
-        "parser_result": route.parser_result,
         "records": records,
     }
     if route.intent == "count":
@@ -192,34 +194,28 @@ def plan_metadata(
 def plan_reference(settings: Settings, route: RouteDecision, warnings: list[str]) -> dict[str, Any]:
     if route.parse_status == "parse_failed":
         return {
-            **base_evidence(route),
+            **reference_base_evidence(route),
             "parse_status": "parse_failed",
             "parser_error": route.parser_error,
-            "parser_result": None,
-            "direction": route.direction,
-            "anchors": route.anchors,
-            "anchor_mode": route.anchor_mode,
             "reference_items": [],
             "citing_papers": [],
+            "anchor_results": [],
         }
     if route.parse_status == "unknown_direction":
         return {
-            **base_evidence(route, public_papers=True),
+            **reference_base_evidence(route),
             "parse_status": "unknown_direction",
-            "parser_result": route.parser_result,
-            "direction": route.direction,
-            "anchors": route.anchors,
-            "anchor_mode": route.anchor_mode,
             "reference_items": [],
             "citing_papers": [],
+            "anchor_results": [],
         }
     if not route.anchors:
         warnings.append("reference route missing anchor")
         return reference_evidence(route, [], [], parse_status="missing_anchor")
-    if route.direction == "outgoing":
-        references, anchor_results = reference_outgoing_results(settings, route, warnings)
-    elif route.direction == "incoming":
-        references, anchor_results = reference_incoming_results(settings, route)
+    if route.direction == "cites":
+        references, anchor_results = reference_cites_results(settings, route, warnings)
+    elif route.direction == "cited_by":
+        references, anchor_results = reference_cited_by_results(settings, route)
     else:
         warnings.append("reference route direction is unsupported")
         return reference_evidence(route, [], [], parse_status="unknown_direction")
@@ -238,18 +234,14 @@ def reference_evidence(
     count: int | None = None,
 ) -> dict[str, Any]:
     evidence = {
-        **base_evidence(route, public_papers=True),
+        **reference_base_evidence(route),
         "parse_status": parse_status,
-        "parser_result": route.parser_result,
-        "direction": route.direction,
-        "anchors": route.anchors,
-        "anchor_mode": route.anchor_mode,
         "reference_items": [],
         "citing_papers": [],
         "anchor_results": [public_anchor_result(result) for result in anchor_results],
     }
     public_entries = [public_reference_entry(entry) for entry in references]
-    if route.direction == "incoming":
+    if route.direction == "cited_by":
         evidence["citing_papers"] = public_entries
     else:
         evidence["reference_items"] = public_entries
@@ -288,7 +280,7 @@ def plan_body(
     }
 
 
-def reference_outgoing_results(
+def reference_cites_results(
     settings: Settings,
     route: RouteDecision,
     warnings: list[str],
@@ -296,14 +288,14 @@ def reference_outgoing_results(
     references: list[dict[str, Any]] = []
     anchor_results: list[dict[str, Any]] = []
     for anchor in route.anchors:
-        anchor_value = str(anchor.get("value") or "").strip()
+        anchor_value = str(anchor or "").strip()
         target_papers, _ = resolve_target_papers(settings, [anchor_value])
         anchor_refs: list[dict[str, Any]] = []
         for target in target_papers:
             for ref in load_reference_rows(target):
                 if reference_raw_matches_filters(ref, route.filters, warnings):
                     entry = {
-                        "direction": "outgoing",
+                        "direction": "cites",
                         "anchor_query": anchor,
                         "anchor_paper": target,
                         "target_paper": None,
@@ -315,7 +307,7 @@ def reference_outgoing_results(
             warnings.append(f"reference anchor not found locally: {anchor_value}")
         anchor_results.append({
             "anchor_query": anchor,
-            "direction": "outgoing",
+            "direction": "cites",
             "target_papers": target_papers,
             "references": anchor_refs,
             "count": len(anchor_refs),
@@ -323,12 +315,12 @@ def reference_outgoing_results(
     return references, anchor_results
 
 
-def reference_incoming_results(settings: Settings, route: RouteDecision) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def reference_cited_by_results(settings: Settings, route: RouteDecision) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     references: list[dict[str, Any]] = []
     anchor_results: list[dict[str, Any]] = []
     records = load_active_manifest_records(settings)
     for anchor in route.anchors:
-        anchor_value = str(anchor.get("value") or "").strip()
+        anchor_value = str(anchor or "").strip()
         target_papers, _ = resolve_target_papers(settings, [anchor_value])
         anchor_terms = [str(target.get("title") or "").strip() for target in target_papers if target.get("title")]
         target_keys = {paper_identity_key(target) for target in target_papers}
@@ -347,7 +339,7 @@ def reference_incoming_results(settings: Settings, route: RouteDecision) -> tupl
             for ref in load_reference_rows(paper):
                 if reference_raw_matches_terms(ref.get("raw_text"), anchor_terms):
                     entry = {
-                        "direction": "incoming",
+                        "direction": "cited_by",
                         "anchor_query": anchor,
                         "citing_paper": paper,
                     }
@@ -357,7 +349,7 @@ def reference_incoming_results(settings: Settings, route: RouteDecision) -> tupl
                     break
         anchor_results.append({
             "anchor_query": anchor,
-            "direction": "incoming",
+            "direction": "cited_by",
             "target_papers": target_papers,
             "references": anchor_refs,
             "count": len(anchor_refs),
@@ -473,12 +465,12 @@ def combine_reference_results(
     if anchor_mode == "or":
         return [items[0] for _, items in sorted(grouped.items())]
     if anchor_mode == "and":
-        return [items[0] for _, items in sorted(grouped.items()) if len({str(item.get("anchor_query", {}).get("value") or "") for item in items}) >= anchor_count]
+        return [items[0] for _, items in sorted(grouped.items()) if len({str(item.get("anchor_query") or "") for item in items}) >= anchor_count]
     return references
 
 
 def reference_result_key(entry: dict[str, Any], direction: str | None) -> str:
-    if direction == "incoming":
+    if direction == "cited_by":
         paper = entry.get("citing_paper") or {}
         return str(paper.get("paper_id") or paper.get("title") or "")
     ref = entry.get("reference") or {}

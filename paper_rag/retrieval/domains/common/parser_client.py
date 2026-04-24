@@ -6,12 +6,8 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
-from .....config import Settings
-from .prompt import metadata_parser_system_prompt
-from .schema import (
-    PlanParseError,
-    validate_metadata_parse,
-)
+from ....config import Settings
+from .errors import PlanParseError
 
 
 @dataclass(frozen=True)
@@ -30,13 +26,13 @@ class PlanParserClient:
             timeout_seconds=settings.plan_parser_timeout_seconds,
         )
 
-    def parse_metadata(self, query: str) -> dict[str, Any]:
+    def complete_json(self, system_prompt: str, query: str) -> str:
         if not self.base_url or not self.api_key or not self.model:
             raise PlanParseError("PLAN_PARSER_BASE_URL, PLAN_PARSER_API_KEY or PLAN_PARSER_MODEL is missing")
         payload = {
             "model": self.model,
             "messages": [
-                {"role": "system", "content": metadata_parser_system_prompt()},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": query},
             ],
             "temperature": 0,
@@ -50,7 +46,7 @@ class PlanParserClient:
             fallback_payload = dict(payload)
             fallback_payload.pop("response_format", None)
             data = self.chat_completion(fallback_payload)
-        return validate_metadata_parse(chat_completion_content(data), query)
+        return chat_completion_content(data)
 
     def chat_completion(self, payload: dict[str, Any]) -> dict[str, Any]:
         request = urllib.request.Request(

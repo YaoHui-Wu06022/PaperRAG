@@ -19,25 +19,24 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from paper_rag.config import Settings
-from paper_rag.retrieval.plan.domains.metadata.parser import PlanParserClient, chat_completion_content
-from paper_rag.retrieval.plan.domains.metadata.prompt import metadata_parser_system_prompt
+from paper_rag.retrieval.domains.common.parser_client import PlanParserClient
+from paper_rag.retrieval.domains.reference.prompt import reference_parser_prompt
 
 
 DEFAULT_QUERIES = [
-    "在2016-2025年不在ACM发表的论文有哪些"
+    # "哪些论文引用了ResNet",
+    # "ResNet引用了哪些论文",
+    # "哪些论文同时引用了ResNet和EfficientNet",
+    # "哪些2019年之后的论文引用了BERT",
+    # "ResNet引用的论文里哪些和ImageNet有关",
+    # "ResNet 和 Resnxt 的参考文献分别有多少"
+    "哪些论文被Resnet或Transformer引用"
 ]
-# DEFAULT_QUERIES = [
-#     "Attention is All You Need之后有哪些不在2019年以前的论文",
-#     "ResNet 是哪一年发表的",
-#     "找一下标题里包含 Transformer 的论文",
-#     "Word2Vec 之后、BERT 之前有哪些论文",
-#     "哪些论文不是 He Kaiming 写的"
-# ]
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Probe metadata parser prompt outputs for anchored year queries.")
-    parser.add_argument("queries", nargs="*", help="Optional queries. Defaults to anchored year-range examples.")
+    parser = argparse.ArgumentParser(description="Probe reference parser prompt outputs.")
+    parser.add_argument("queries", nargs="*", help="Optional queries. Defaults to representative reference examples.")
     parser.add_argument("--project-root", type=Path, default=find_project_root(), help="Project root containing .env")
     args = parser.parse_args()
 
@@ -57,16 +56,7 @@ def main() -> int:
 
 
 def parse_once(client: PlanParserClient, query: str) -> str:
-    payload = {
-        "model": client.model,
-        "messages": [
-            {"role": "system", "content": metadata_parser_system_prompt()},
-            {"role": "user", "content": query},
-        ],
-        "temperature": 0,
-        "response_format": {"type": "json_object"},
-    }
-    return chat_completion_content(client.chat_completion(payload))
+    return client.complete_json(reference_parser_prompt(), query)
 
 
 def pretty_json_or_raw(content: str) -> str:
@@ -74,6 +64,7 @@ def pretty_json_or_raw(content: str) -> str:
         return json.dumps(json.loads(content), ensure_ascii=False, indent=2)
     except json.JSONDecodeError:
         return content
+
 
 if __name__ == "__main__":
     sys.exit(main())

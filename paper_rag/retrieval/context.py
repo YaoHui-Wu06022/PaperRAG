@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...config import Settings
-from ..data.chunks import ChunkDocument, read_jsonl
+from ..config import Settings
+from .data.chunks import ChunkDocument, read_jsonl
 
 
 def context_unit(settings: Settings, candidate: Any, block_window: int) -> dict[str, Any]:

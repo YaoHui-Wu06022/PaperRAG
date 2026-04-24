@@ -4,7 +4,7 @@ import argparse
 import json
 
 from ..config import Settings
-from ..retrieval.answer import run_ask
+from ..answer import run_ask
 
 
 def add_ask_parser(subparsers: argparse._SubParsersAction) -> None:
