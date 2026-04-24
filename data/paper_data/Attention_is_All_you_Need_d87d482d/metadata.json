@@ -10,7 +10,10 @@
     "Lukasz Kaiser",
     "I. Polosukhin"
   ],
-  "year": 2017,
+  "year": {
+    "preprint_year": 2017,
+    "publish_year": 2017
+  },
   "venue": "Neural Information Processing Systems",
   "pdf_path": "E:\\Pythonproject\\RAG_project_new\\data\\pdf\\2017_Attention_Is_All_You_Need.pdf"
 }

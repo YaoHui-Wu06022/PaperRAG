@@ -1,0 +1,68 @@
+[
+  {
+    "canonical": "CVPR",
+    "aliases": [
+      "IEEE/CVF Conference on Computer Vision and Pattern Recognition",
+      "IEEE Conference on Computer Vision and Pattern Recognition",
+      "Computer Vision and Pattern Recognition"
+    ]
+  },
+  {
+    "canonical": "NeurIPS",
+    "aliases": [
+      "Neural Information Processing Systems",
+      "NIPS"
+    ]
+  },
+  {
+    "canonical": "ICML",
+    "aliases": [
+      "International Conference on Machine Learning"
+    ]
+  },
+  {
+    "canonical": "ICLR",
+    "aliases": [
+      "International Conference on Learning Representations"
+    ]
+  },
+  {
+    "canonical": "ICCV",
+    "aliases": [
+      "International Conference on Computer Vision"
+    ]
+  },
+  {
+    "canonical": "ECCV",
+    "aliases": [
+      "European Conference on Computer Vision"
+    ]
+  },
+  {
+    "canonical": "AAAI",
+    "aliases": [
+      "AAAI Conference on Artificial Intelligence"
+    ]
+  },
+  {
+    "canonical": "NAACL-HLT",
+    "aliases": [
+      "North American Chapter of the Association for Computational Linguistics",
+      "Human Language Technologies"
+    ]
+  },
+  {
+    "canonical": "ACM Multimedia",
+    "aliases": [
+      "ACM MM",
+      "MM"
+    ]
+  },
+  {
+    "canonical": "TMLR",
+    "aliases": [
+      "Trans. Mach. Learn. Res.",
+      "Transactions on Machine Learning Research"
+    ]
+  }
+]

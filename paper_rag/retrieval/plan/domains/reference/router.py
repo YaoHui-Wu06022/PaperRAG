@@ -18,14 +18,36 @@ REFERENCE_TERMS = {
     "cited",
     "cites",
     "citing",
+    "quote",
+    "quoted",
+    "quotes",
+    "quoting",
     "reference",
     "referenced",
     "references",
     "referencing",
 }
+REFERENCE_CHINESE_TERMS = {
+    "引用",
+    "引用了",
+    "被引用",
+    "参考",
+    "参考了",
+    "参考文献",
+    "列进参考文献",
+    "作为参考文献",
+}
 
 
 def reference_route(query: str, tokens: list[str] | None = None) -> RouteDecision | None:
+    chinese_term = first_chinese_reference_term(query)
+    if chinese_term:
+        return RouteDecision(
+            route="reference",
+            reason=f"matched reference Chinese term: {chinese_term}",
+            intent=None,
+            target_query=query,
+        )
     tokens = tokens or route_tokens(query)
     reference_term = first_matching_term(tokens, REFERENCE_TERMS)
     if not reference_term:
@@ -39,7 +61,14 @@ def reference_route(query: str, tokens: list[str] | None = None) -> RouteDecisio
 
 
 def has_reference_term(query: str) -> bool:
-    return first_matching_term(route_tokens(query), REFERENCE_TERMS) is not None
+    return first_chinese_reference_term(query) is not None or first_matching_term(route_tokens(query), REFERENCE_TERMS) is not None
+
+
+def first_chinese_reference_term(query: str) -> str | None:
+    for term in sorted(REFERENCE_CHINESE_TERMS, key=len, reverse=True):
+        if term in query:
+            return term
+    return None
 
 
 def build_reference_decision(
@@ -62,7 +91,7 @@ def build_reference_decision(
             parse_status="parse_failed",
             parser_error=str(exc),
         )
-    anchor_queries = [item["value"] for item in parser_result["anchor"]]
+    anchor_queries = [item["value"] for item in parser_result["anchors"]]
     target_papers, alias_matches = resolve_target_papers(settings, anchor_queries)
     alias_matches.extend(alias_matches_for_unresolved_anchors(settings, anchor_queries))
     parse_status = "ok" if parser_result["direction"] else "unknown_direction"
@@ -80,7 +109,7 @@ def build_reference_decision(
         parse_status=parse_status,
         filters=parser_result["filters"],
         direction=parser_result["direction"],
-        anchor=parser_result["anchor"],
+        anchors=parser_result["anchors"],
         anchor_mode=parser_result["anchor_mode"],
     )
 

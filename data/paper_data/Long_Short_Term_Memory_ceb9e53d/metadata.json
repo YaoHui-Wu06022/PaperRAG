@@ -4,7 +4,10 @@
     "Sepp Hochreiter",
     "J. Schmidhuber"
   ],
-  "year": 1997,
+  "year": {
+    "preprint_year": null,
+    "publish_year": 1997
+  },
   "venue": "Neural Computation",
   "pdf_path": "E:\\Pythonproject\\RAG_project_new\\data\\pdf\\1997_Long_Short_Term_Memory.pdf"
 }

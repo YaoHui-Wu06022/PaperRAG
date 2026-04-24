@@ -6,6 +6,31 @@ from pathlib import Path
 from typing import Any
 
 
+def normalize_year(value: Any) -> dict[str, int | None]:
+    if isinstance(value, dict):
+        return {
+            "preprint_year": parse_year_value(value.get("preprint_year")),
+            "publish_year": parse_year_value(value.get("publish_year")),
+        }
+    return {
+        "preprint_year": None,
+        "publish_year": parse_year_value(value),
+    }
+
+
+def parse_year_value(value: Any) -> int | None:
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and value.isdigit():
+        return int(value)
+    return None
+
+
+def effective_year(value: Any) -> int | None:
+    year = normalize_year(value)
+    return year.get("preprint_year") or year.get("publish_year")
+
+
 @dataclass
 class ManifestRecord:
     file_hash: str
@@ -13,7 +38,7 @@ class ManifestRecord:
     pdf_path: str | None = None
     title: str | None = None
     author: list[str] = field(default_factory=list)
-    year: int | None = None
+    year: dict[str, int | None] = field(default_factory=lambda: {"preprint_year": None, "publish_year": None})
     venue: str | None = None
     mineru_output_path: str | None = None
     archived_mineru_output_path: str | None = None
@@ -23,7 +48,9 @@ class ManifestRecord:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ManifestRecord":
         known = {field.name for field in cls.__dataclass_fields__.values()}
-        return cls(**{k: v for k, v in data.items() if k in known})
+        values = {k: v for k, v in data.items() if k in known}
+        values["year"] = normalize_year(values.get("year"))
+        return cls(**values)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -32,7 +59,7 @@ class ManifestRecord:
             "pdf_path": self.pdf_path,
             "title": self.title,
             "author": self.author,
-            "year": self.year,
+            "year": normalize_year(self.year),
             "venue": self.venue,
             "mineru_output_path": self.mineru_output_path,
             "archived_mineru_output_path": self.archived_mineru_output_path,

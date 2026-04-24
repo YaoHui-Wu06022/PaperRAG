@@ -26,8 +26,7 @@ class ArxivSelectionTests(unittest.TestCase):
             feed(entry("Attention Is All You Need", authors=["Ashish Vaswani", "Noam Shazeer"])),
         )
         self.assertIsNotNone(match)
-        self.assertEqual(match.year, 2017)
-        self.assertEqual(match.venue, "ArXiv")
+        self.assertEqual(match.preprint_year, 2017)
         self.assertEqual(match.authors[:2], ["Ashish Vaswani", "Noam Shazeer"])
 
     def test_rejects_non_exact_title(self) -> None:
@@ -43,7 +42,7 @@ class ArxivSelectionTests(unittest.TestCase):
             feed("<entry><title>Some Paper</title><updated>2024-01-02T00:00:00Z</updated></entry>"),
         )
         self.assertIsNotNone(match)
-        self.assertEqual(match.year, 2024)
+        self.assertEqual(match.preprint_year, 2024)
 
 
 if __name__ == "__main__":

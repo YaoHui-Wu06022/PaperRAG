@@ -18,14 +18,13 @@ ATOM_NS = {"atom": "http://www.w3.org/2005/Atom"}
 class ArxivMatch:
     title: str
     authors: list[str]
-    year: int
-    venue: str = "ArXiv"
+    preprint_year: int
 
 
 class ArxivClient:
     endpoint = "https://export.arxiv.org/api/query"
 
-    def lookup_exact_title(self, title: str, timeout: int = 30) -> ArxivMatch | None:
+    def lookup_exact_title(self, title: str, timeout: int = 30, retry_delay_seconds: float = 1.0) -> ArxivMatch | None:
         query = urllib.parse.urlencode(
             {
                 "search_query": f'ti:"{title}"',
@@ -37,7 +36,7 @@ class ArxivClient:
             f"{self.endpoint}?{query}",
             headers={"User-Agent": "Paper_RAG/0.1 (local research library ingestion)"},
         )
-        with urlopen_with_retry(request, timeout=timeout) as response:
+        with urlopen_with_retry(request, timeout=timeout, delay_seconds=retry_delay_seconds) as response:
             xml_text = response.read().decode("utf-8")
         return select_exact_match(title, xml_text)
 
@@ -60,7 +59,7 @@ def select_exact_match(title: str, xml_text: str) -> ArxivMatch | None:
         return ArxivMatch(
             title=candidate_title.rstrip(".").strip(),
             authors=[author for author in authors if author],
-            year=year,
+            preprint_year=year,
         )
     return None
 

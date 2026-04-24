@@ -27,14 +27,19 @@ class SemanticScholarClient:
     def __init__(self, api_key: str | None = None):
         self.api_key = api_key
 
-    def lookup_exact_title(self, title: str, timeout: int = 30) -> SemanticScholarMatch | None:
+    def lookup_exact_title(
+        self,
+        title: str,
+        timeout: int = 30,
+        retry_delay_seconds: float = 1.0,
+    ) -> SemanticScholarMatch | None:
         query = urllib.parse.urlencode({"query": title, "fields": self.fields})
         headers = {"User-Agent": "Paper_RAG/0.1 (local research library ingestion)"}
         if self.api_key:
             headers["x-api-key"] = self.api_key
         request = urllib.request.Request(f"{self.endpoint}?{query}", headers=headers)
         try:
-            with urlopen_with_retry(request, timeout=timeout) as response:
+            with urlopen_with_retry(request, timeout=timeout, delay_seconds=retry_delay_seconds) as response:
                 data = json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace").strip()

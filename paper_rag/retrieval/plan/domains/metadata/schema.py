@@ -29,26 +29,48 @@ def validate_metadata_parse(content: str | dict[str, Any], fallback_query: str =
     intent = payload.get("intent")
     if intent not in METADATA_INTENTS:
         raise PlanParseError(f"Invalid metadata intent: {intent}")
+    if "return_field" not in payload:
+        raise PlanParseError("Metadata parser missing return_field")
     return_field = payload.get("return_field")
-    if return_field is None and "target_field" in payload:
-        return_field = payload.get("target_field")
     if return_field == "null":
         return_field = None
     if return_field not in METADATA_RETURN_FIELDS:
         raise PlanParseError(f"Invalid metadata return_field: {return_field}")
-    filters = payload.get("filters")
+    filters = payload.get("filters", [])
+    if filters is None:
+        filters = []
     if not isinstance(filters, list):
         raise PlanParseError("Metadata filters must be a list")
     normalized_filters = [validate_metadata_filter(filter_item) for filter_item in filters]
-    raw_query = payload.get("raw_query")
-    if not isinstance(raw_query, str) or not raw_query.strip():
-        raw_query = fallback_query
+    anchors = payload.get("anchors") or []
+    if not isinstance(anchors, list):
+        raise PlanParseError("Metadata anchors must be a list")
+    normalized_anchors = []
+    for anchor in anchors:
+        normalized_anchor = validate_metadata_anchor(anchor)
+        if normalized_anchor is not None:
+            normalized_anchors.append(normalized_anchor)
     return {
         "router": "metadata",
         "intent": intent,
         "return_field": return_field,
+        "anchors": normalized_anchors,
         "filters": normalized_filters,
-        "raw_query": raw_query,
+    }
+
+
+def validate_metadata_anchor(value: Any) -> dict[str, str] | None:
+    if not isinstance(value, dict):
+        raise PlanParseError("Metadata anchor must be an object")
+    field = value.get("field")
+    if field != "title":
+        raise PlanParseError(f"Invalid metadata anchor field: {field}")
+    anchor_value = str(value.get("value") or "").strip()
+    if not anchor_value:
+        return None
+    return {
+        "field": "title",
+        "value": anchor_value,
     }
 
 
@@ -92,6 +114,8 @@ def _normalize_interval_bound(value: Any) -> int | str:
             return "-inf"
         if normalized in {"inf", "+inf", "infinity", "+infinity"}:
             return "inf"
+        if normalized == "anchor":
+            return "anchor"
         try:
             return int(normalized)
         except ValueError as exc:

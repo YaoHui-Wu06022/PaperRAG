@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -33,6 +34,7 @@ class ExtractPaperDataTests(unittest.TestCase):
         if not sample_dir.exists():
             parts = folder.split("_-_")
             title_slug = parts[2].split("__", 1)[0] if len(parts) >= 3 else folder.split("__", 1)[0]
+            title_slug = re.sub(r"^(?:19|20)\d{2}_", "", title_slug)
             title_norm = normalize_text(title_slug)
             matches = [
                 path for path in sorted(MINERU.iterdir())

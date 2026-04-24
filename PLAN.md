@@ -11,16 +11,19 @@
 - 先构建项目框架，再执行具体功能实现
 - 协作边界：除非用户明确要求拓展功能，否则不主动新增功能链路；默认只做问题分析、边界记录、bug 修正和已达成共识的实现。
 - 论文原始文件统一放在 `data/pdf/`，当前只考虑 PDF 输入。
+- 问题输入和问题输出都
 - 论文解析采用 MinerU 官方 API 实现。
 - 唯一入口为 `paper-rag ingest`，每次运行执行一次全量同步。
 - PDF 身份使用完整 SHA256 `file_hash`，避免重命名后被误判为未处理。
 - PDF 的移动或重命名不会改变 `file_hash`；只要文件内容不变，就应复用同一份 MinerU 解析结果。
 - 目录和文件名使用标题 slug、hash 短码或确认后的 `年份_标题`。
-- 作者、年份和 venue 优先通过 DBLP 标题精确匹配自动确认；DBLP 未命中后查 Semantic Scholar，再未命中后查 ArXiv。
-- Semantic Scholar 只作为 DBLP 后的补充召回源，命中后仍必须通过本地 normalized title 完全一致校验。
-- ArXiv 命中时 `venue` 统一保存为 `ArXiv`。
-- DBLP、Semantic Scholar 和 ArXiv 都未命中时，只提示 unresolved，不再通过 `metadata_overrides.json` 自动硬补。
-- venue 命名暂时接受不同来源的原始形式；DBLP/Semantic Scholar venue 统一不是当前首要目标，后续如要处理再单独讨论 DBLP direct record 和 CoRR 降级边界。
+- 作者、年份和 venue 通过 `ArXiv -> DBLP -> Semantic Scholar` 自动确认；ArXiv 用于确认预印本年份，DBLP/Semantic Scholar 用于确认正式发表信息。
+- `year` 不再是单个整数，而是对象：`{"preprint_year": int|null, "publish_year": int|null}`。
+- ArXiv 命中时只写入 `preprint_year`，不再把 `venue` 写成 `ArXiv`。
+- DBLP/Semantic Scholar 命中 `CoRR` 或 `ArXiv` 时，不采用为正式 `publish_year/venue`，继续寻找正式发表记录。
+- canonical title 优先级为正式 DBLP/Semantic Scholar 标题 > ArXiv 标题 > MinerU 标题；authors 优先级为正式 DBLP/Semantic Scholar authors > ArXiv authors > 旧 manifest authors > 空列表。
+- ArXiv、DBLP 和 Semantic Scholar 都未命中时，只提示 unresolved，不再通过 `metadata_overrides.json` 自动硬补。
+- `effective_year = preprint_year || publish_year` 是文件命名、排序和年份筛选的默认口径。
 - `metadata.json` 不保存 abstract 正文；abstract 作为独立论文内容区域参与后续普通索引。
 - MinerU 解析结果至少保留四类结构化文件：
   - `content_list.json`：可读内容块按阅读顺序展平后的 flat list。
@@ -28,11 +31,12 @@
   - `layout.json`：中间结构化文件。
   - `model.json`：模型原始推理结果。
 - 下游 metadata 构建以 `content_list_v2.json` 为主。
-- 因为英文检索更好区分，所以先翻译再路由
+- 用户输入固定为中文；metadata/reference 不再先翻译成英文，而是直接由中文 parser 输出结构化 JSON。
+- content 也先输出结构化 JSON，再用固定模板生成英文检索文本，供 BM25 和 embedding 召回使用。
 - 代码里的注释用中文
 - 写在PLAN.md里的数学公式以math形式写入
-- router.py 产出完整的“计划路由决策对象”，包括 route / intent / return_field / filters / target_papers；planner.py 不再解析 metadata、不再决定二级语义，只按这个对象执行取证。
-- 当前只有 metadata 链路完整可用；reference 和 content 先保留顶层 route 入口，reference 暂不做方向识别和 evidence 检索。
+- top_router.py 产出顶层“计划路由决策对象”，metadata/reference 的二级语义由各自 domain parser 解析，planner.py 只按决策对象执行取证。
+- 当前 metadata 和 reference 链路可用；content 先保留顶层 route 入口和 dense/BM25 取证，最终生成后续再完善。
 
 ## 3. 架构草案
 
@@ -57,9 +61,9 @@
 - Manifest 管理：维护 `data/manifest.jsonl`，记录 `file_hash`、当前 PDF 路径、title、status、MinerU 输出路径、paper_data 路径。
 - manifest 中的 `message` 是 ingest 诊断字段，只用于记录错误、标题缺失、元数据未解析等状态说明；正常 active 记录可以为空或不写，不进入 `paper_data/metadata.json`。
 - MinerU 客户端：封装 MinerU 官方 API 调用、任务轮询、结果下载和解压。
-- DBLP 查询：用论文标题做 normalized exact match，命中后返回 author/year/venue。
-- Semantic Scholar 查询：作为 DBLP 未命中后的补充召回，只接受 normalized title 完全一致；命中后返回 author/year/venue。
-- ArXiv 查询：作为 Semantic Scholar 未命中后的兜底，只用标题精确匹配；命中后返回 author/year，`venue` 固定为 `ArXiv`。
+- ArXiv 查询：用论文标题做 normalized exact match，命中后返回 author、title 和 `preprint_year`。
+- DBLP 查询：用论文标题做 normalized exact match，命中正式 venue 后返回 author、title、`publish_year` 和 `venue`；`CoRR/ArXiv` 记录不作为正式发表信息。
+- Semantic Scholar 查询：作为 DBLP 未命中正式发表后的补充召回，只接受 normalized title 完全一致；命中正式 venue 后返回 author、title、`publish_year` 和 `venue`。
 - 内容抽取：从 `content_list_v2.json` 抽取标题、TOC、区域、正文 blocks、reference blocks。
 - 数据落盘：维护 `data/mineru_output/`、`data/paper_data/` 和 `data/archive/`。
 
@@ -96,7 +100,6 @@ paper_rag/
     plan/
       top_router.py
       planner.py
-      translation.py
       context.py
       domains/
         __init__.py
@@ -138,9 +141,9 @@ paper_rag/
 - `dataprocess/metadata/`：外部论文元数据查询客户端，不参与用户问题检索。
 - `retrieval/plan/top_router.py`：顶层规则路由与通用 route 决策对象，只负责 `reference / metadata / content` 的第一层分流。
 - `retrieval/plan/domains/metadata/`：metadata 路由入口、metadata parser prompt、metadata schema 和解析客户端。
-- `retrieval/plan/domains/reference/`：reference 路由入口、reference parser prompt、schema 校验和解析客户端；负责把引用类问题解析为 `intent / direction / anchor / anchor_mode / filters`。
+- `retrieval/plan/domains/reference/`：reference 路由入口、reference parser prompt、schema 校验和解析客户端；负责把引用类问题解析为 `intent / direction / anchors / anchor_mode / filters`。
 - `retrieval/plan/domains/content/`：content 路由入口与正文链路的独立承载目录，当前先只放入口和骨架。
-- `retrieval/plan/planner.py`：接入最终回答 LLM 前的证据链路编排层；负责翻译、调用顶层路由，并把 route decision 展开成 evidence pack。
+- `retrieval/plan/planner.py`：接入最终回答 LLM 前的证据链路编排层；负责调用顶层路由和各 domain parser，并把 route decision 展开成 evidence pack。
 - `retrieval/dense/`：向量侧能力；包含 DashScope embedding、embedding cache、Milvus/Zilliz 存储和 `index/search` 服务。
 - `retrieval/sparse/`：本地稀疏检索算法；第一版只包含 BM25 和 tokenizer。
 - `retrieval/data/`：本地检索数据适配层；读取 `chunks.jsonl`、`references.jsonl` 和 `manifest.jsonl`。
@@ -165,14 +168,13 @@ paper_rag/
    - 如果 hash 从未处理过，才调用 MinerU。
 7. 从 MinerU 返回的 `content_list_v2.json` 中提取论文标题。
 8. 生成标题 slug 和 8 位 hash 短码，派生数据落到 `data/paper_data/<title_slug>_<hash8>/`。
-9. 使用标题查询 DBLP，要求 normalized title 精确匹配：
-   - 命中：写入 author/year/venue，PDF 重命名为 `年份_标题.pdf`，MinerU 输出目录最终命名为 `年份_标题`。
-   - DBLP 多个精确候选时，优先非 `CoRR` 记录；如果只有 `CoRR` 精确候选，也接受 `CoRR`。
-   - 未命中或查询失败：继续查 Semantic Scholar。
-   - Semantic Scholar 命中：写入 author/year/venue，PDF 重命名为 `年份_标题.pdf`，MinerU 输出目录最终命名为 `年份_标题`。
-   - Semantic Scholar 未命中或查询失败：继续查 ArXiv。
-   - ArXiv 命中：写入 author/year，并设置 `venue="ArXiv"`，PDF 重命名为 `年份_标题.pdf`，MinerU 输出目录最终命名为 `年份_标题`。
-   - DBLP、Semantic Scholar 和 ArXiv 都未命中：保留解析结果，不重命名 PDF，CLI 汇总提示，退出码仍为 0。
+9. 使用标题查询外部元数据，要求 normalized title 精确匹配：
+   - 先查 ArXiv：命中后写入 `preprint_year`、ArXiv title 和 ArXiv authors，但不写 `venue="ArXiv"`。
+   - 再查 DBLP：命中正式 venue 后写入 `publish_year/venue`，并优先采用 DBLP title/authors；如果命中 `CoRR/ArXiv`，只记录为非正式命中并继续查 Semantic Scholar。
+   - 再查 Semantic Scholar：命中正式 venue 后写入 `publish_year/venue`，并采用 Semantic Scholar title/authors；如果命中 `CoRR/ArXiv`，不采用为正式发表信息。
+   - 只有 ArXiv 命中时，论文仍可 active，`publish_year=null`、`venue=null`，命名使用 `preprint_year_标题`。
+   - `effective_year = preprint_year || publish_year`；PDF 重命名为 `effective_year_标题.pdf`，MinerU 输出目录最终命名为 `effective_year_标题`。
+   - ArXiv、DBLP 和 Semantic Scholar 都未命中：保留解析结果，不重命名 PDF，CLI 汇总提示，退出码仍为 0。
 10. 从 `content_list_v2.json` 构建 `metadata.json`、`toc.json`、`blocks.jsonl`、`references.jsonl`。
 
 异常规则：
@@ -196,20 +198,19 @@ conda 下 RAG_project 环境运行
   - `# Chunk配置`
   - `# Milvus配置`
   - `# Embedding配置`
-  - `# 翻译配置`
   - `# Plan配置`
   - `# Plan语义解析配置`
 - `.env` 至少包含 MinerU API Key，例如 `MINERU_API_KEY`。
 - MinerU API base URL 后续也通过 `.env` 配置，避免在代码中写死。
 - MinerU 默认使用 `model_version=vlm`。
 - MinerU 默认使用 `language=en`。
-- DBLP/Semantic Scholar/ArXiv 查询默认一篇篇顺序执行，并在查询之间保持延迟，避免触发限流。
-- DBLP/Semantic Scholar/ArXiv 的网络请求对临时失败重试一次：timeout、临时 `URLError`、HTTP `429/500/502/503/504`；明确失败如 `403/404` 不重试，正常返回但标题未命中也不重试。
+- ArXiv/DBLP/Semantic Scholar 查询默认一篇篇顺序执行，并在查询之间保持延迟，避免触发限流。
+- ArXiv/DBLP/Semantic Scholar 的网络请求对临时失败重试一次：timeout、临时 `URLError`、HTTP `429/500/502/503/504`；明确失败如 `403/404` 不重试，正常返回但标题未命中也不重试。
 - `DBLP_DELAY_SECONDS` 控制连续 DBLP 查询之间的间隔，默认 1 秒。
 - `DBLP_CANDIDATE_LIMIT` 控制 DBLP publication search 返回候选数，默认 20。
-- `SEMANTIC_SCHOLAR_DELAY_SECONDS` 控制连续 Semantic Scholar 查询之间的间隔，默认 5 秒；Semantic Scholar 只在 DBLP 未命中后查询。
+- `SEMANTIC_SCHOLAR_DELAY_SECONDS` 控制连续 Semantic Scholar 查询之间的间隔，默认 5 秒；Semantic Scholar 只在 DBLP 未命中正式发表信息后查询。
 - `SEMANTIC_SCHOLAR_API_KEY` 为可选配置，存在时通过 `x-api-key` 请求头访问 Semantic Scholar；为空时使用公开限流接口。
-- `ARXIV_DELAY_SECONDS` 控制连续 ArXiv 查询之间的间隔，默认 3 秒；ArXiv 只在 Semantic Scholar 未命中后查询。
+- `ARXIV_DELAY_SECONDS` 控制连续 ArXiv 查询之间的间隔，默认 3 秒；ArXiv 是 metadata 查询链路第一步，用于确认 `preprint_year`。
 - 输入目录通过 `.env` 的 `PDF_DIR` 配置，默认 `data/pdf`。
 - MinerU 原始输出目录通过 `.env` 的 `MINERU_DIR` 配置，默认 `data/mineru_output`。
 - 论文派生数据目录通过 `.env` 的 `PAPER_DIR` 配置，默认 `data/paper_data`。
@@ -227,12 +228,6 @@ conda 下 RAG_project 环境运行
   - `EMBEDDING_DIM=1024`
   - `EMBEDDING_BATCH_SIZE=10`
   - `EMBEDDING_CACHE_PATH=data/index/embedding_cache.jsonl`
-- 百度翻译通过 `.env` 配置，用于将中文问题转成英文检索 query：
-  - `BAIDU_TRANSLATE_APP_ID`
-  - `BAIDU_TRANSLATE_SECRET_KEY`
-  - `BAIDU_TRANSLATE_ENDPOINT=https://fanyi-api.baidu.com/api/trans/vip/fieldtranslate`
-  - `BAIDU_TRANSLATE_DOMAIN=academic`
-  - 第一版使用百度领域文本翻译的 academic 领域；签名按领域翻译规则拼接 `appid + q + salt + domain + secret_key`。
 - `paper-rag plan` 证据链路参数通过 `.env` 配置：
   - `PLAN_DENSE_TOP_K=20`
   - `PLAN_BM25_TOP_K=20`
@@ -248,13 +243,13 @@ conda 下 RAG_project 环境运行
 
 CLI 行为：
 
-- `paper-rag ingest`：执行全量同步；已有 author/year/venue 时不查外部元数据源，缺失时尝试 DBLP -> Semantic Scholar -> ArXiv。
+- `paper-rag ingest`：执行全量同步；已有 authors 且 `year.preprint_year` 或 `year.publish_year` 至少一个存在时可复用已有 metadata，缺失时尝试 ArXiv -> DBLP -> Semantic Scholar。
 - 默认 `ingest` 复用已有完整 metadata 时，应同时复用 manifest 中的规范 title，避免被 MinerU 原始标题大小写覆盖。
-- `paper-rag ingest --refresh`：强制忽略 manifest 中已有元数据，对全库重新执行 DBLP -> Semantic Scholar -> ArXiv 元数据刷新。
+- `paper-rag ingest --refresh`：强制忽略 manifest 中已有元数据，对全库重新执行 ArXiv -> DBLP -> Semantic Scholar 元数据刷新。
 - `paper-rag index`：消费现有 `data/paper_data/*/chunks.jsonl`，调用 embedding 并重建 Milvus collection；不会自动运行 `ingest`，避免意外触发 MinerU 或外部元数据请求。
 - `paper-rag search "query" --top-k 5`：对 query 做 embedding，在 Milvus 中进行 chunk 级向量召回，输出 score、title、section、pages、chunk_id 和 snippet。
 - `paper-rag plan "问题"`：生成接入最终回答 LLM 前的 JSON evidence pack；只做路由、结构化解析、检索和证据收集，不生成最终自然语言答案。各顶层 route 的第二层语义解析可以调用独立 plan parser LLM。
-- `paper-rag ask "问题"`：当前已打通 metadata v1，基于 `plan` 的 evidence pack 用确定性模板生成可读答案；reference/content 仍只保留入口，后续再补。
+- `paper-rag ask "问题"`：当前已打通 metadata/reference v1，基于 `plan` 的 evidence pack 用确定性模板生成可读答案；content 仍只保留入口，后续再补。
 
 ## 8. 检索策略
 
@@ -263,13 +258,14 @@ CLI 行为：
 ### 8.1 入口与通用规则
 
 - `paper-rag plan "问题"` 是接入最终回答 LLM 前的证据规划与证据收集层；默认输出 JSON evidence pack。
-- 用户问题预计主要是中文；检测到中文时先调用百度领域翻译 API 得到英文 `retrieval_query`，英文输入则不翻译。
-- 主路径固定为“先翻译，再路由”：规则路由只读取英文 `retrieval_query`；`original_query` 只用于追踪展示。
-- 中文翻译失败时返回 `route=error` 和空 evidence，在 `warnings` 中写入 `translation_failed`，CLI 进程仍正常退出。
+- 用户问题固定为中文输入；第一版不考虑英文输入和双语输出场景。
+- 主路径固定为“中文路由 -> 中文 domain parser -> 结构化 JSON -> 执行层取证”；不调用翻译 API。
+- `metadata` 和 `reference` 直接消费 parser 输出的 JSON 执行检索，不生成英文中间 query。
+- `content` 先由 content parser 输出结构化 JSON，再按固定模板生成英文检索文本，例如 `paper: ...; topic: ...; terms: ...`，供 BM25 和 embedding 使用。
 - 顶层路由为 `metadata / reference / content`，优先级为 `reference > metadata > content`。
-- 第一层路由不调用 LLM，使用英文 token + 高置信短语/句型规则；命中顶层 route 后的第二层语义解析可调用独立 plan parser。
-- evidence pack 顶层字段固定包含 `original_query / retrieval_query / route / intent / return_field / router_reason / evidence / warnings`；不再使用旧的 `sub_route` 字段，也不预留 `reference_direction` 字段。
-- 不保留顶层 `language` 字段；后续检索统一消费英文 `retrieval_query`。
+- 第一层路由不调用 LLM，使用中文关键词和高置信短语/句型规则；命中顶层 route 后的第二层语义解析调用独立 plan parser。
+- evidence pack 顶层字段固定包含 `original_query / route / intent / return_field / router_reason / evidence / warnings`；不再使用旧的 `sub_route` 字段，也不预留 reference 专用顶层方向字段。
+- 不保留顶层 `language` 字段；metadata/reference 统一消费中文结构化 JSON，content 的英文检索文本只作为 evidence 内部字段或调试字段保存。
 - evidence 不使用 `scope` 和 `expanded_query`；范围限定统一由 `target_papers` 表达，内部 alias/canonical 扩展不暴露。
 - 第二层语义解析是 `metadata / reference / content` 三个分支共用的设计原则，但每个分支的下沉 schema 可以不同：
   - metadata 重点解析字段查询、论文列表、数量统计、字段过滤和否定过滤。
@@ -281,7 +277,7 @@ CLI 行为：
 
 - metadata route 不进入 Milvus，不检索 chunks；只读取 `data/manifest.jsonl` 中的 active 记录。
 
-- 第一层 metadata 入口采用保守规则：只有英文 `retrieval_query` 命中明显作者、年份、venue、标题、论文列表或统计线索时才进入 metadata route；其他非 reference 问题直接落到 content。
+- 第一层 metadata 入口采用保守中文规则：只有中文原问题命中明显作者、年份、venue、标题、论文列表或统计线索时才进入 metadata route；其他非 reference 问题直接落到 content。
 
 - metadata 命中后，不再用硬规则细分 `paper_list / author / year / venue / title`；改为调用 OpenAI-compatible plan parser 的 metadata 解析提示词，输出严格 JSON。
 
@@ -308,8 +304,8 @@ CLI 行为：
   - 年份范围统一用 `interval` 表达，闭区间写作 `[2015, 2020]`，单边区间用字符串哨兵表示，例如 `[2015, "inf"]` 表示 2015 年以后，`["-inf", 2019]` 表示 2019 年以前。
   - `filters[].negated` 必须显式输出 `true / false`，不能只靠自然语言表达否定。
   - 不允许输出 `!=`、`not contains`、`not in` 等非 schema 运算符；否定只能通过 `negated=true` 表达，且 op 仍保持正向。
-  - `not on ArXiv` / “不在 ArXiv 上发布”必须解析为 `field=venue / op=contains / value=ArXiv / negated=true`，不能写成 `not contains`。
-  - `raw_query` 保存翻译后的英文 query；如果原问题本来是英文，则保存原英文 query。
+  - `not at CVPR` / “不在 CVPR 上发表”必须解析为 `field=venue / op=contains / value=CVPR / negated=true`，不能写成 `not contains`。
+  - `raw_query` 保存原始中文 query。
   - 不确定时使用 `unknown` 或 `null`，不要猜测字段或意图。
   
 - parser 失败边界：
@@ -321,34 +317,46 @@ CLI 行为：
   - `list`：按 filters 查询 `manifest.jsonl`，返回匹配论文列表。
   - `count`：按 filters 查询 `manifest.jsonl`，同时返回 `count` 和匹配论文列表，保证可追溯。
   - 作者过滤必须完整匹配作者名，不支持 `He` 这种姓氏短匹配直接命中 `Kaiming He`。
-  - 否定过滤通过 `negated=true` 表达，例如“不在 ArXiv 上发布”解析为 `venue contains ArXiv` 且 `negated=true`。
+  - 否定过滤通过 `negated=true` 表达，例如“不在 CVPR 上发表”解析为 `venue contains CVPR` 且 `negated=true`。
   
-- metadata evidence 返回匹配论文的 `title / author / year / venue / pdf_path / paper_data_path` 等字段；plan 只返回证据，不直接生成自然语言答案。
+- metadata evidence 返回匹配论文的 `title / author / year / venue / pdf_path / paper_data_path` 等字段；其中 `year` 为 `{"preprint_year": ..., "publish_year": ...}` 对象。
+- metadata 的 year filter 默认使用 `effective_year = preprint_year || publish_year`；例如 “Resnet以后还有哪些论文” 先用别名/标题定位 ResNet，再用 ResNet 的 effective year 生成开区间过滤，默认不包含 anchor 当年。
+- `lookup year` 返回完整 year 对象；`ask` 展示为 “预印本年份 2015，正式发表年份 2016” 或 “预印本年份 2015，未找到正式发表年份” 等可读格式。
+- venue 归一化使用独立 `data/venue_aliases.json`，不混入论文标题别名；metadata filter 中 `field=venue` 时会用 canonical + aliases 一起匹配，例如 `CVPR` 可命中 `IEEE/CVF Conference on Computer Vision and Pattern Recognition`，ask 展示时使用 canonical 短名。
 
 ### 8.3 Reference Route
 
-- reference route 顶层入口仍由规则 token 命中，不进入 Milvus，不联网解析 DOI/DBLP，也不把参考文献条目拆成结构化论文 metadata。
-- 进入条件为英文 query 命中完整 token：`reference / references / referenced / referencing / bibliography / bibliographies / citation / citations / cite / cites / cited / citing`。
+- reference route 顶层入口仍由中文规则命中，不进入 Milvus，不联网解析 DOI/DBLP，也不把参考文献条目拆成结构化论文 metadata。
+- 进入条件为中文原问题命中引用/参考文献语义，例如：`引用 / 引用了 / 被引用 / 参考 / 参考文献 / 列进参考文献 / 作为参考文献 / 参考了哪些`。
 - reference 命中后调用 `PLAN_PARSER_*` 配置下的 OpenAI-compatible parser，只做语义解析，不回答问题。
-- reference parser 输出严格 JSON：`router / intent / direction / anchor / anchor_mode / filters / raw_query`。
+- reference parser 输出严格 JSON：`router / intent / direction / anchors / anchor_mode / filters / raw_query`。
   - `intent` 只接受 `list / count / null`。
-  - `direction=cite` 表示 anchor 论文引用了哪些参考文献。
-  - `direction=cited_by` 表示哪些本地论文引用了 anchor。
+  - `direction=outgoing` 表示从 anchor 论文出发，读取 anchor 自己引用了哪些参考文献。
+  - `direction=incoming` 表示哪些本地论文引用了 anchor。
   - `direction=null` 时不检索，evidence 标记 `parse_status=unknown_direction` 并写 warning。
-  - `anchor` 是锚点论文列表，v1 只接受 `field=title`。
+  - `anchors` 是锚点论文列表，v1 只接受 `field=title`。
   - `anchor_mode` 支持 `per / or / and`；缺失或 null 默认 `per`。
-  - `filters` 复用 metadata filter schema：`field=author/year/venue/title`，`op==/in/contains/interval`，并显式保存 `negated`。
-- `direction=cite`：先把 anchor 解析到本地 `paper_data`，读取 anchor 自己的 `references.jsonl`；v1 只支持 `title/year` filter，作用于 reference `raw_text`。
-- `direction=cited_by`：在全库本地 `references.jsonl.raw_text` 中查 anchor title/alias；filters 作用于“引用者论文”的 manifest metadata。
-- `anchor_mode=per` 分别返回每个 anchor 的结果；`or` 返回并集；`and` 返回交集。
+  - `filters` 复用 metadata filter schema：`field=author/year/venue/title`，`op==/in/contains/interval`，并显式保存 `negated`；缺失或 null 归一化为 `[]`。
+- `direction=outgoing`：先把 anchor 解析到本地 `paper_data`，读取 anchor 自己的 `references.jsonl`；v1 只支持 `title/year` filter，作用于 reference `raw_text`。
+- `direction=incoming`：先用 alias/manifest 把 anchor 解析到 canonical title，再只用 canonical title 扫描全库本地 `references.jsonl.raw_text`；alias 不参与 raw reference 匹配。
+- `direction=incoming` 扫描时排除 anchor 本篇，并按唯一 citing paper 聚合；主结果不返回 reference item 级列表，也不下挂 `matched_references`。
+- `direction=incoming` 的 filters 作用于“引用者论文”的 manifest metadata。
+- `anchor_mode=per` 分别返回每个 anchor 的结果；`or` 返回并集；`and` 按全部 anchor 计算交集，任一 anchor 无命中则交集为空。
 - `intent=count` 返回数量，同时保留命中 reference 条目，方便 ask 追溯来源。
-- evidence 不输出 `expanded_query`，不使用 `scope`，也不恢复旧的 `reference_direction` 字段或 reference cleanup 逻辑。
+- evidence 不输出 `expanded_query`，不使用 `scope`，也不恢复旧版 reference cleanup 逻辑；reference 方向统一使用 `direction=outgoing/incoming/null`。
+- reference evidence 中论文对象只输出 `title / author / year / venue`；`file_hash / pdf_path / paper_data_path / paper_id` 只在内部执行使用，不进入默认 plan JSON。
+- `matched_alias` 只有非空时输出，直接标题命中时省略，避免出现 `matched_alias: null`。
 
 ### 8.4 Content Route
 
 - content route 是默认兜底；当前不做正文子路由，`intent=None`。
 - content 命中后的第二层也属于 plan parser 的职责，后续应使用 content 专用提示词解析正文问题类型、比较对象、目标论文范围、问题焦点和需要召回的内容范围。
 - content parser 的子路由暂定继续围绕 `lookup / reasoning / comparison / synthesis` 讨论，但本阶段不实现硬规则 content 子路由。
+- content parser 直接读取中文原问题，输出结构化 JSON；不调用翻译 API 直接翻译整句自然语言。
+- content 执行层根据 parser JSON 用固定英文模板构造检索文本，避免整句翻译带来的否定、范围和被动语义丢失。
+- 固定英文检索文本只服务 BM25 和 embedding，不作为用户可见回答文本；例如：
+  - `topic: representation compactness; target papers: Center Loss; terms: intra-class compactness, discriminative features`
+  - `compare papers: ResNet, EfficientNet; focus: scaling strategy and model efficiency`
 - ask v1 不对 content 直接生成自然语言答案；content 先只通过 `plan` 产出 evidence pack，后续等正文回答层设计稳定后再接入生成。
 - content route 使用 `abstract + body` 的 `chunks.jsonl` 作为召回输入；不使用 reference，不默认使用 appendix。
 - Milvus dense 召回 top `PLAN_DENSE_TOP_K` chunks，默认 20。
@@ -475,7 +483,8 @@ TOC 构建规则：
 
 内部数据文件结构：
 
-- `metadata.json` 只保存简洁论文级信息：`title`、`author`、`year`、`venue`、`pdf_path`。
+- `metadata.json` 只保存简洁论文级信息：`title`、`author`、`year`、`venue`、`pdf_path`；其中 `year` 与 manifest 一样保存为 `{"preprint_year": ..., "publish_year": ...}`。
+- 读取旧 manifest 时，如果 `year` 仍是整数，兼容迁移为 `{"preprint_year": null, "publish_year": old_year}`。
 - `toc.json` 同时保存树形结构和扁平 section 索引：
   - `sections`：扁平列表，用于按 `section_id` 聚合 chunk；字段包含 `section_id`、`title`、`number`、`level`、`parent_id`、`path`、`start_block_index`、`end_block_index`、`region`。
   - `tree`：树形结构，用于展示和结构化导航；无明确编号的论文退化为同级顶层列表。
@@ -560,23 +569,20 @@ TOC 构建规则：
 - 验证 `paper-rag search "query" --top-k 5` 返回 chunk 级结果，包含 score、title、section、pages、chunk_id 和 snippet。
 - 验证 `paper-rag plan "..."` 输出合法 JSON evidence pack，不生成最终自然语言答案；各顶层 route 的第二层语义解析允许调用独立 plan parser LLM。
 - 验证 plan router：
-  - `Who wrote / Who are the authors` 进入 metadata route，并由 parser 输出 `intent=lookup / return_field=author`。
-  - `When was published / publication year / what year` 进入 metadata route，并由 parser 输出 `intent=lookup / return_field=year`。
-  - `Which journal / Which conference / venue` 进入 metadata route，并由 parser 输出 `intent=lookup / return_field=venue`。
-  - `What is the title / title of` 进入 metadata route，并由 parser 输出 `intent=lookup / return_field=title`。
-- `Who are the authors of ResNet and Transformer respectively` 进入 metadata route，并由 parser 输出 `intent=lookup / return_field=author`，多个目标自动分组。
-  - `Which papers were published in 2015-2019` 进入 metadata route，并由 parser 输出 `intent=list` 和 `year interval [2015, 2019]` filter。
-  - `Which papers are written by Kaiming He` 进入 metadata route，并由 parser 输出 `intent=list` 和 `author = Kaiming He` filter；作者完整姓名匹配，`He` 不应匹配 `Kaiming He`。
-  - `How many papers were published in 2019` 进入 metadata route，并由 parser 输出 `intent=count` 和 `year = 2019` filter。
-  - `Which papers were not published on ArXiv between 2015 and 2020` 进入 metadata route，并由 parser 输出 `year interval [2015, 2020]` 以及 `venue contains ArXiv` 且 `negated=true`。
-  - 英文 reference、referenced、citation、bibliography、cited、cite 类完整 token 问题进入 reference route，并调用 reference parser 解析 `intent / direction / anchor / anchor_mode / filters`。
-  - `recite` 不误命中 reference，`authorization` 不误命中 metadata。
-  - 其他英文问题默认进入 `content` route，`intent=None`。
-  - 中文 metadata/reference/body query 必须先经百度翻译得到英文 `retrieval_query`，再触发路由。
-- 验证百度翻译：
-  - 中文 query 调百度翻译得到英文 `retrieval_query`。
-  - 英文 query 不调用翻译。
-  - 翻译失败时写入 warning，返回 `route=error`，不回退原 query 检索。
+  - `BERT是谁写的？` 直接由中文顶层路由进入 metadata route；parser 输出 `intent=lookup / return_field=author`，并生成 `title contains BERT` filter。
+  - `ResNet和Transformer的作者是谁？` 进入 metadata route；parser 输出 `intent=lookup / return_field=author`，并生成 `title in/contains [ResNet, Transformer]` 这类多标题约束。
+  - `BERT是哪一年发表的？` 进入 metadata route；parser 输出 `intent=lookup / return_field=year`，并生成指向 BERT 的 title filter。
+  - `EfficientNet发表在哪个会议或期刊？` 进入 metadata route；parser 输出 `intent=lookup / return_field=venue`，并生成指向 EfficientNet 的 title filter。
+  - `2015到2020年不在CVPR上发表的论文有哪些？` 进入 metadata route；parser 输出 `intent=list`，包含 `year interval [2015, 2020]` 和 `venue contains CVPR, negated=true` filter。
+  - `2019年以后发表了多少篇论文？` 进入 metadata route；parser 输出 `intent=count`，包含 `year interval [2019, "inf"]` filter。
+  - `2016年以前发表在CVPR上的论文有哪些？` 进入 metadata route；parser 输出 `intent=list`，包含 `year interval ["-inf", 2016]` 和 `venue contains CVPR` filter。
+  - `Kaiming He在2015年发表了哪些论文？` 进入 metadata route；parser 输出 `intent=list`，包含 `author = Kaiming He` 和 `year = 2015` filter；作者完整姓名匹配，`He` 不应匹配 `Kaiming He`。
+  - `哪些论文的标题里包含attention？` 进入 metadata route；parser 输出 `intent=list`，包含 `title contains attention` filter。
+  - `有多少篇论文不是发表在NeurIPS上的？` 进入 metadata route；parser 输出 `intent=count`，包含 `venue contains NeurIPS, negated=true` filter。
+  - 中文引用/参考文献类问题进入 reference route，并调用 reference parser 解析 `intent / direction / anchors / anchor_mode / filters`。
+  - 中文正文问题默认进入 `content` route，`intent=None`。
+  - 不调用翻译 API；metadata/reference parser 的 `raw_query` 保存原始中文问题。
+  - content route 后续验证 parser JSON 到固定英文检索文本的确定性转换，而不是验证自然语言翻译结果。
 - 验证 metadata evidence：
   - 从 `data/manifest.jsonl` 读取 active 记录。
   - parser 返回非法 JSON、非法枚举、缺必需字段、HTTP 超时或错误时，metadata evidence 标记 `parse_failed` 并写入 warning，不落到 content。
@@ -587,23 +593,47 @@ TOC 构建规则：
   - 多目标 lookup 时 evidence 按目标论文或实体分组返回。
   - evidence 返回 metadata 字段，但 plan 不直接回答。
 - 验证 reference route：
-  - reference/citation/bibliography/cite/cited 等完整 token 问题进入 reference route。
-  - `References of ResNet` 解析为 `direction=cite`，读取 ResNet 自己的 `references.jsonl`。
-  - `Which papers cited ResNet` 解析为 `direction=cited_by`，扫描全库本地 `references.jsonl.raw_text` 并返回引用者论文。
+  - reference/citation/bibliography/cite/cited/quote/quoted 等完整 token 问题进入 reference route。
+  - `References of ResNet` 解析为 `direction=outgoing`，读取 ResNet 自己的 `references.jsonl`。
+  - `Which papers cited ResNet` 解析为 `direction=incoming`，扫描全库本地 `references.jsonl.raw_text` 并返回唯一引用者论文。
+  - `incoming` 只用 canonical title 匹配 reference raw text，不用 alias 宽匹配；例如用户输入 `ResNet` 时解析为 `Deep Residual Learning for Image Recognition` 后再匹配。
+  - `incoming` 不把 anchor 本篇计入结果，即使 anchor 本篇 reference 区域里出现自己的 canonical title。
   - `Which papers cited ResNet and EfficientNet respectively` 使用 `anchor_mode=per`，分别返回每个 anchor 的结果。
-  - `Which papers cited both ResNet and EfficientNet` 使用 `anchor_mode=and`，返回交集。
+  - `Which papers cited both ResNet and EfficientNet` 使用 `anchor_mode=and`，按全部 anchor 返回交集；若任一 anchor 无命中，最终结果为空。
   - `Which papers cited ResNet or EfficientNet` 使用 `anchor_mode=or`，返回并集。
+  - parser 输出 `filters=null` 或缺失 filters 时归一化为 `[]`；filters 为对象或字符串时仍 parse_failed。
   - `Which 2019 papers cited ResNet` 的 year filter 作用于引用者论文 manifest metadata。
   - `direction=null` 不检索，返回 `parse_status=unknown_direction` 和明确 warning。
   - reference evidence 不联网解析 DOI/DBLP，不把 reference item 自动补成结构化论文 metadata。
+  - reference evidence 默认不输出 `file_hash / pdf_path / paper_data_path / paper_id`；`matched_alias` 只有非空才出现。
+  - 中文 reference parser 回归问题集，测试时不要直接使用 prompt examples：
+    - `ResNet的参考文献里有哪些工作？` -> `direction=outgoing`，`anchors=["RESNET"]`。
+    - `本地库里哪些文章把ResNet作为参考文献？` -> `direction=incoming`，`anchors=["RESNET"]`，不要把“本地库”抽成 filter。
+    - `Transformer论文参考了哪些早期方法？` -> `direction=outgoing`，anchor 应尽量清洗为 `Transformer`，不要把 vague `early` 硬转成年份 filter。
+    - `哪些文章把Transformer放进了参考文献？` -> `direction=incoming`，不要额外生成重复 anchor 的 title filter。
+    - `2018年之后有哪些论文的参考文献包含ImageNet？` -> `direction=incoming`，year filter 为 `interval [2018, "inf"]`。
+    - `CVPR里的哪些论文参考了ImageNet？` -> `direction=incoming`，venue filter 为 `contains CVPR`。
+    - `哪些论文的参考文献同时包含ResNet和ImageNet？` -> `direction=incoming`，`anchor_mode=and`。
+    - `哪些论文的参考文献包含BERT或者Transformer？` -> `direction=incoming`，`anchor_mode=or`。
+    - `分别列出BERT和Transformer论文自己的参考文献。` -> `direction=outgoing`，`anchor_mode=per`。
+    - `列一下AlexNet论文自己的参考文献。` -> `direction=outgoing`。
+    - `库里有哪些论文把AlexNet列为了参考文献？` -> `direction=incoming`。
+    - `Center Loss这篇文章都参考了哪些论文？` -> `direction=outgoing`。
+    - `哪些人脸识别论文参考了Center Loss？` -> `direction=incoming`，可用 title filter 限定引用者论文。
+    - `2016年之后哪些论文参考了ResNet？` -> `direction=incoming`，year filter 为 `interval [2016, "inf"]`。
+    - `NIPS论文里有哪些参考了ImageNet？` -> `direction=incoming`，venue filter 为 `contains NIPS`。
+    - `哪些论文的bibliography里同时出现了BERT和Transformer？` -> `direction=incoming`，`anchor_mode=and`。
+    - `哪些论文的引用列表里出现了Center Loss或者NormFace？` -> `direction=incoming`，`anchor_mode=or`。
+    - `请分别给出ResNet和EfficientNet自己的参考文献。` -> `direction=outgoing`，`anchor_mode=per`。
 - 验证 body route：
   - mock Milvus dense top20 + 本地 BM25 top20。
   - 使用 RRF 融合，按 `chunk_id` 去重，输出 top8。
   - 命中 chunk 能回查 `blocks.jsonl`，并按同 section 前后 2 blocks 扩展成 `context_unit`。
-- 验证 DBLP 精确标题命中后得到年份、作者和 venue，并触发 PDF/MinerU 输出最终命名。
-- 验证 DBLP 未命中时继续查 Semantic Scholar；Semantic Scholar 命中时必须通过 normalized title 完全一致校验。
-- 验证 Semantic Scholar 未命中时继续查 ArXiv；ArXiv 命中时 `venue="ArXiv"`。
-- 验证 DBLP、Semantic Scholar 和 ArXiv 都未命中时退出码为 0、状态为 unresolved、PDF 不重命名。
+- 验证 DBLP 精确标题命中正式 venue 后得到 `publish_year`、作者和 venue，并触发 PDF/MinerU 输出最终命名。
+- 验证 ArXiv 精确标题命中时写入 `preprint_year`，且不写 `venue="ArXiv"`。
+- 验证 DBLP/Semantic Scholar 命中正式 venue 时写入 `publish_year/venue`，命中 `CoRR/ArXiv` 时不采用为正式发表信息。
+- 验证 DBLP 未命中正式发表时继续查 Semantic Scholar；Semantic Scholar 命中时必须通过 normalized title 完全一致校验。
+- 验证 ArXiv、DBLP 和 Semantic Scholar 都未命中时退出码为 0、状态为 unresolved、PDF 不重命名。
 - 验证重复 hash PDF 不重复调用 MinerU。
 - 验证删除 PDF 后 MinerU 数据归档、`paper_data` 删除、manifest 状态更新。
 - 验证 `reference_list` 在 ingest 阶段拆成条目级 `references.jsonl`，但不参与普通 chunking。

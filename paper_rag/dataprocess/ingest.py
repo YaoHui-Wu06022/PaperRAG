@@ -9,7 +9,7 @@ from typing import Callable
 from ..config import Settings
 from ..utils import infer_title_from_pdf_name, normalize_text, replace_dir, safe_move_dir, sha256_file, slugify_title
 from .extract import extract_paper_data, extract_title, flatten_pages, load_content_list_v2
-from .manifest import Manifest, ManifestRecord
+from .manifest import Manifest, ManifestRecord, effective_year, normalize_year
 from .mineru import MinerUClient, MinerUError
 from .metadata.arxiv import ArxivClient
 from .metadata.dblp import DblpClient
@@ -20,8 +20,8 @@ from .metadata.semantic_scholar import SemanticScholarClient
 class MetadataMatch:
     title: str
     authors: list[str]
-    year: int
-    venue: str
+    year: dict[str, int | None]
+    venue: str | None
     source: str
 
 
@@ -105,19 +105,15 @@ def run_ingest(
                 report(f"[ingest] [{ordinal}/{total}] Title unresolved; skipped paper_data generation")
                 continue
             authors: list[str] = [] if refresh_metadata else (record.author or [])
-            year = None if refresh_metadata else record.year
+            year = normalize_year(None if refresh_metadata else record.year)
             venue = None if refresh_metadata else record.venue
-            has_existing_metadata = bool(record.title and authors and year and venue)
+            if venue and not is_formal_venue(venue):
+                venue = None
+            has_existing_metadata = bool(record.title and authors and effective_year(year))
             if not refresh_metadata and has_existing_metadata:
                 title = record.title or title
             report(f"[ingest] [{ordinal}/{total}] Title: {title}")
-            if not (authors and year and venue):
-                elapsed = time.monotonic() - last_dblp_request
-                if last_dblp_request and elapsed < settings.dblp_delay_seconds:
-                    wait_seconds = settings.dblp_delay_seconds - elapsed
-                    report(f"[ingest] [{ordinal}/{total}] Waiting {wait_seconds:.1f}s before DBLP lookup")
-                    time.sleep(wait_seconds)
-
+            if not (authors and effective_year(year)):
                 def wait_before_semantic_scholar_lookup() -> None:
                     nonlocal last_semantic_scholar_request
                     elapsed = time.monotonic() - last_semantic_scholar_request
@@ -142,34 +138,51 @@ def run_ingest(
                     nonlocal last_arxiv_request
                     last_arxiv_request = time.monotonic()
 
+                def wait_before_dblp_lookup() -> None:
+                    nonlocal last_dblp_request
+                    elapsed = time.monotonic() - last_dblp_request
+                    if last_dblp_request and elapsed < settings.dblp_delay_seconds:
+                        wait_seconds = settings.dblp_delay_seconds - elapsed
+                        report(f"[ingest] [{ordinal}/{total}] Waiting {wait_seconds:.1f}s before DBLP lookup")
+                        time.sleep(wait_seconds)
+
+                def mark_dblp_lookup() -> None:
+                    nonlocal last_dblp_request
+                    last_dblp_request = time.monotonic()
+
                 match = lookup_metadata(
                     title,
                     dblp,
                     semantic_scholar,
                     arxiv,
                     dblp_candidate_limit=settings.dblp_candidate_limit,
+                    dblp_retry_delay_seconds=settings.dblp_delay_seconds,
+                    semantic_scholar_retry_delay_seconds=settings.semantic_scholar_delay_seconds,
+                    arxiv_retry_delay_seconds=settings.arxiv_delay_seconds,
                     report=lambda message: report(f"[ingest] [{ordinal}/{total}] {message}"),
+                    before_dblp_lookup=wait_before_dblp_lookup,
+                    after_dblp_lookup=mark_dblp_lookup,
                     before_semantic_scholar_lookup=wait_before_semantic_scholar_lookup,
                     after_semantic_scholar_lookup=mark_semantic_scholar_lookup,
                     before_arxiv_lookup=wait_before_arxiv_lookup,
                     after_arxiv_lookup=mark_arxiv_lookup,
                 )
-                last_dblp_request = time.monotonic()
                 if match:
                     title = match.title
                     authors = match.authors
                     year = match.year
                     venue = match.venue
-                    report(f"[ingest] [{ordinal}/{total}] {match.source} matched: {venue} ({year})")
+                    report(f"[ingest] [{ordinal}/{total}] {match.source} matched: {format_year_for_log(year)}, venue={venue or 'unresolved'}")
                 else:
-                    summary.unresolved.append(f"{pdf_path.name}: DBLP/Semantic Scholar/ArXiv exact title not found")
-                    report(f"[ingest] [{ordinal}/{total}] Metadata unresolved after DBLP, Semantic Scholar, and ArXiv")
+                    summary.unresolved.append(f"{pdf_path.name}: ArXiv/DBLP/Semantic Scholar exact title not found")
+                    report(f"[ingest] [{ordinal}/{total}] Metadata unresolved after ArXiv, DBLP, and Semantic Scholar")
             else:
-                report(f"[ingest] [{ordinal}/{total}] Metadata already has author/year/venue; skipping external lookup")
+                report(f"[ingest] [{ordinal}/{total}] Metadata already has authors/effective year; skipping external lookup")
             target_pdf = pdf_path
-            if year:
+            rename_year = effective_year(year)
+            if rename_year:
                 try:
-                    renamed = rename_pdf_if_needed(settings.pdf_dir, pdf_path, year, title, file_hash)
+                    renamed = rename_pdf_if_needed(settings.pdf_dir, pdf_path, rename_year, title, file_hash)
                 except OSError as exc:
                     renamed = pdf_path
                     summary.errors.append(f"Could not rename {pdf_path.name}; kept original name: {exc}")
@@ -184,7 +197,7 @@ def run_ingest(
                 renamed_output = rename_mineru_output_if_needed(
                     settings.mineru_output_dir,
                     mineru_output,
-                    year,
+                    rename_year,
                     title,
                 )
                 if renamed_output is None:
@@ -212,7 +225,7 @@ def run_ingest(
                 chunk_target_chars=settings.chunk_target_chars,
                 chunk_overlap_chars=settings.chunk_overlap_chars,
             )
-            record.status = "active" if authors and year and venue else "metadata_unresolved"
+            record.status = "active" if authors and effective_year(year) else "metadata_unresolved"
             record.pdf_path = str(target_pdf)
             record.title = result.title
             record.author = authors
@@ -252,52 +265,26 @@ def lookup_metadata(
     semantic_scholar: SemanticScholarClient,
     arxiv: ArxivClient,
     dblp_candidate_limit: int = 20,
+    dblp_retry_delay_seconds: float = 1.0,
+    semantic_scholar_retry_delay_seconds: float = 1.0,
+    arxiv_retry_delay_seconds: float = 1.0,
     report: Reporter = noop_reporter,
+    before_dblp_lookup: Callable[[], None] | None = None,
+    after_dblp_lookup: Callable[[], None] | None = None,
     before_semantic_scholar_lookup: Callable[[], None] | None = None,
     after_semantic_scholar_lookup: Callable[[], None] | None = None,
     before_arxiv_lookup: Callable[[], None] | None = None,
     after_arxiv_lookup: Callable[[], None] | None = None,
 ) -> MetadataMatch | None:
-    report("Querying DBLP")
-    try:
-        dblp_match = dblp.lookup_exact_title(title, limit=dblp_candidate_limit)
-    except Exception as exc:
-        dblp_match = None
-        report(f"DBLP lookup failed: {exc}")
-    if dblp_match:
-        return MetadataMatch(
-            title=dblp_match.title,
-            authors=dblp_match.authors,
-            year=dblp_match.year,
-            venue=dblp_match.venue,
-            source="DBLP",
-        )
+    arxiv_title: str | None = None
+    arxiv_authors: list[str] = []
+    preprint_year: int | None = None
 
-    report("DBLP exact title not found; querying Semantic Scholar")
-    if before_semantic_scholar_lookup:
-        before_semantic_scholar_lookup()
-    try:
-        semantic_scholar_match = semantic_scholar.lookup_exact_title(title)
-    except Exception as exc:
-        semantic_scholar_match = None
-        report(f"Semantic Scholar lookup failed: {exc}")
-    finally:
-        if after_semantic_scholar_lookup:
-            after_semantic_scholar_lookup()
-    if semantic_scholar_match:
-        return MetadataMatch(
-            title=semantic_scholar_match.title,
-            authors=semantic_scholar_match.authors,
-            year=semantic_scholar_match.year,
-            venue=semantic_scholar_match.venue,
-            source="Semantic Scholar",
-        )
-
-    report("Semantic Scholar exact title not found; querying ArXiv")
+    report("Querying ArXiv")
     if before_arxiv_lookup:
         before_arxiv_lookup()
     try:
-        arxiv_match = arxiv.lookup_exact_title(title)
+        arxiv_match = arxiv.lookup_exact_title(title, retry_delay_seconds=arxiv_retry_delay_seconds)
     except Exception as exc:
         arxiv_match = None
         report(f"ArXiv lookup failed: {exc}")
@@ -305,16 +292,84 @@ def lookup_metadata(
         if after_arxiv_lookup:
             after_arxiv_lookup()
     if arxiv_match:
+        arxiv_title = arxiv_match.title
+        arxiv_authors = arxiv_match.authors
+        preprint_year = arxiv_match.preprint_year
+        report(f"ArXiv matched preprint year: {preprint_year}")
+    else:
+        report("ArXiv exact title not found")
+
+    report("Querying DBLP")
+    if before_dblp_lookup:
+        before_dblp_lookup()
+    try:
+        dblp_match = dblp.lookup_exact_title(
+            title,
+            limit=dblp_candidate_limit,
+            retry_delay_seconds=dblp_retry_delay_seconds,
+        )
+    except Exception as exc:
+        dblp_match = None
+        report(f"DBLP lookup failed: {exc}")
+    finally:
+        if after_dblp_lookup:
+            after_dblp_lookup()
+    if dblp_match and is_formal_venue(dblp_match.venue):
         return MetadataMatch(
-            title=arxiv_match.title,
-            authors=arxiv_match.authors,
-            year=arxiv_match.year,
-            venue=arxiv_match.venue,
+            title=dblp_match.title,
+            authors=dblp_match.authors,
+            year={"preprint_year": preprint_year, "publish_year": dblp_match.year},
+            venue=dblp_match.venue,
+            source="ArXiv+DBLP" if preprint_year else "DBLP",
+        )
+    if dblp_match:
+        report(f"DBLP matched non-formal venue; ignored: {dblp_match.venue}")
+
+    report("DBLP exact title not found; querying Semantic Scholar")
+    if before_semantic_scholar_lookup:
+        before_semantic_scholar_lookup()
+    try:
+        semantic_scholar_match = semantic_scholar.lookup_exact_title(
+            title,
+            retry_delay_seconds=semantic_scholar_retry_delay_seconds,
+        )
+    except Exception as exc:
+        semantic_scholar_match = None
+        report(f"Semantic Scholar lookup failed: {exc}")
+    finally:
+        if after_semantic_scholar_lookup:
+            after_semantic_scholar_lookup()
+    if semantic_scholar_match and is_formal_venue(semantic_scholar_match.venue):
+        return MetadataMatch(
+            title=semantic_scholar_match.title,
+            authors=semantic_scholar_match.authors,
+            year={"preprint_year": preprint_year, "publish_year": semantic_scholar_match.year},
+            venue=semantic_scholar_match.venue,
+            source="ArXiv+Semantic Scholar" if preprint_year else "Semantic Scholar",
+        )
+    if semantic_scholar_match:
+        report(f"Semantic Scholar matched non-formal venue; ignored: {semantic_scholar_match.venue}")
+
+    if arxiv_match:
+        return MetadataMatch(
+            title=arxiv_title or title,
+            authors=arxiv_authors,
+            year={"preprint_year": preprint_year, "publish_year": None},
+            venue=None,
             source="ArXiv",
         )
 
-    report("ArXiv exact title not found")
+    report("Formal metadata exact title not found")
     return None
+
+
+def is_formal_venue(venue: str | None) -> bool:
+    normalized = normalize_text(str(venue or ""))
+    return bool(normalized) and normalized not in {"arxiv", "corr"}
+
+
+def format_year_for_log(year: dict[str, int | None]) -> str:
+    return f"preprint={year.get('preprint_year')}, publish={year.get('publish_year')}"
 
 
 def scan_pdfs(pdf_dir: Path, summary: IngestSummary) -> dict[str, Path]:

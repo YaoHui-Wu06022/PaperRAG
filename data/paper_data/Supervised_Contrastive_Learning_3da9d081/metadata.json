@@ -11,7 +11,10 @@
     "Ce Liu",
     "Dilip Krishnan"
   ],
-  "year": 2020,
+  "year": {
+    "preprint_year": 2020,
+    "publish_year": 2020
+  },
   "venue": "Neural Information Processing Systems",
   "pdf_path": "E:\\Pythonproject\\RAG_project_new\\data\\pdf\\2020_Supervised_Contrastive_Learning.pdf"
 }

@@ -6,7 +6,10 @@
     "Kenton Lee",
     "Kristina Toutanova"
   ],
-  "year": 2019,
+  "year": {
+    "preprint_year": 2018,
+    "publish_year": 2019
+  },
   "venue": "NAACL-HLT",
-  "pdf_path": "E:\\Pythonproject\\RAG_project_new\\data\\pdf\\2019_BERT_Pre_training_of_Deep_Bidirectional_Transformers_for_Language_Understanding.pdf"
+  "pdf_path": "E:\\Pythonproject\\RAG_project_new\\data\\pdf\\2018_BERT_Pre_training_of_Deep_Bidirectional_Transformers_for_Language_Understanding.pdf"
 }

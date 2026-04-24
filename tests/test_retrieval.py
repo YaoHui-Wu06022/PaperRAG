@@ -91,10 +91,6 @@ class RetrievalTests(unittest.TestCase):
                     "EMBEDDING_DIM=1024",
                     "EMBEDDING_BATCH_SIZE=7",
                     "EMBEDDING_CACHE_PATH=data/index/cache.jsonl",
-                    "BAIDU_TRANSLATE_APP_ID=app",
-                    "BAIDU_TRANSLATE_SECRET_KEY=secret",
-                    "BAIDU_TRANSLATE_ENDPOINT=https://example.com/translate",
-                    "BAIDU_TRANSLATE_DOMAIN=academic",
                     "PLAN_DENSE_TOP_K=11",
                     "PLAN_BM25_TOP_K=12",
                     "PLAN_FINAL_TOP_K=4",
@@ -111,10 +107,6 @@ class RetrievalTests(unittest.TestCase):
             self.assertEqual(settings.embedding_dim, 1024)
             self.assertEqual(settings.embedding_batch_size, 7)
             self.assertEqual(settings.embedding_cache_path, root / "data" / "index" / "cache.jsonl")
-            self.assertEqual(settings.baidu_translate_app_id, "app")
-            self.assertEqual(settings.baidu_translate_secret_key, "secret")
-            self.assertEqual(settings.baidu_translate_endpoint, "https://example.com/translate")
-            self.assertEqual(settings.baidu_translate_domain, "academic")
             self.assertEqual(settings.plan_dense_top_k, 11)
             self.assertEqual(settings.plan_bm25_top_k, 12)
             self.assertEqual(settings.plan_final_top_k, 4)

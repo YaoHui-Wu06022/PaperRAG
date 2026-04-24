@@ -8,7 +8,10 @@
     "Wangmeng Zuo",
     "Qinghua Hu"
   ],
-  "year": 2020,
+  "year": {
+    "preprint_year": 2019,
+    "publish_year": 2020
+  },
   "venue": "CVPR",
-  "pdf_path": "E:\\Pythonproject\\RAG_project_new\\data\\pdf\\2020_ECA_Net_Efficient_Channel_Attention_for_Deep_Convolutional_Neural_Networks.pdf"
+  "pdf_path": "E:\\Pythonproject\\RAG_project_new\\data\\pdf\\2019_ECA_Net_Efficient_Channel_Attention_for_Deep_Convolutional_Neural_Networks.pdf"
 }

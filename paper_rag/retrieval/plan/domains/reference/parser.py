@@ -5,7 +5,7 @@ from typing import Any
 from .....config import Settings
 from ..metadata.parser import PlanParserClient, chat_completion_content
 from ..metadata.schema import PlanParseError
-from .prompt import reference_parser_system_prompt
+from .prompt import reference_parser_prompt
 from .schema import validate_reference_parse
 
 
@@ -25,7 +25,7 @@ class ReferenceParserClient(PlanParserClient):
         payload = {
             "model": self.model,
             "messages": [
-                {"role": "system", "content": reference_parser_system_prompt()},
+                {"role": "system", "content": reference_parser_prompt()},
                 {"role": "user", "content": query},
             ],
             "temperature": 0,

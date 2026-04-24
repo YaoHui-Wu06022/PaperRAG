@@ -6,7 +6,10 @@
     "Shaoqing Ren",
     "Jian Sun 0001"
   ],
-  "year": 2016,
+  "year": {
+    "preprint_year": 2015,
+    "publish_year": 2016
+  },
   "venue": "CVPR",
-  "pdf_path": "E:\\Pythonproject\\RAG_project_new\\data\\pdf\\2016_Deep_Residual_Learning_for_Image_Recognition.pdf"
+  "pdf_path": "E:\\Pythonproject\\RAG_project_new\\data\\pdf\\2015_Deep_Residual_Learning_for_Image_Recognition.pdf"
 }

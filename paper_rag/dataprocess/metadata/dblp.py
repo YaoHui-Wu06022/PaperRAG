@@ -22,13 +22,19 @@ class DblpMatch:
 class DblpClient:
     endpoint = "https://dblp.org/search/publ/api"
 
-    def lookup_exact_title(self, title: str, limit: int = 20, timeout: int = 30) -> DblpMatch | None:
+    def lookup_exact_title(
+        self,
+        title: str,
+        limit: int = 20,
+        timeout: int = 30,
+        retry_delay_seconds: float = 1.0,
+    ) -> DblpMatch | None:
         query = build_query(title, limit)
         request = urllib.request.Request(
             f"{self.endpoint}?{query}",
             headers={"User-Agent": "Paper_RAG/0.1 (local research library ingestion)"},
         )
-        with urlopen_with_retry(request, timeout=timeout) as response:
+        with urlopen_with_retry(request, timeout=timeout, delay_seconds=retry_delay_seconds) as response:
             data = json.loads(response.read().decode("utf-8"))
 
         return select_exact_match(title, data)

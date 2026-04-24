@@ -7,15 +7,16 @@ from pathlib import Path
 from typing import Any
 
 from ...config import Settings
+from ...dataprocess.manifest import effective_year
 from ..data.aliases import alias_match_to_dict, expand_query_with_aliases, resolve_target_papers
 from ..data.chunks import ChunkDocument, load_chunk_documents
 from ..data.manifest_lookup import load_active_manifest_records, manifest_record_to_evidence, match_manifest_records
+from ..data.venues import canonicalize_venue, expand_venue_query_terms
 from ..dense.milvus_store import SearchResult
 from ..dense.service import build_embedder, build_store
 from ..sparse.bm25 import BM25Document, BM25Index
 from .context import context_unit
 from .top_router import RouteDecision, build_route_decision, flatten_filter_value, route_tokens
-from .translation import BaiduTranslator, TranslationError, contains_chinese
 
 
 RRF_K = 60
@@ -24,10 +25,7 @@ RRF_K = 60
 @dataclass(frozen=True)
 class PreparedQuery:
     original_query: str
-    retrieval_query: str
-    language: str
     warnings: list[str]
-    translation_provider: str | None = None
     error: str | None = None
 
     @property
@@ -47,24 +45,21 @@ def run_plan(
     settings: Settings,
     query: str,
     *,
-    translator: BaiduTranslator | None = None,
     plan_parser=None,
     embedder=None,
     store=None,
 ) -> dict[str, Any]:
-    prepared = prepare_query(settings, query, translator=translator)
+    prepared = prepare_query(settings, query)
     warnings = list(prepared.warnings)
     if prepared.failed:
         return {
             "original_query": prepared.original_query,
-            "retrieval_query": prepared.retrieval_query,
             "route": "error",
             "router_reason": prepared.error,
-            "translation_provider": prepared.translation_provider,
             "evidence": {},
             "warnings": warnings,
         }
-    route = build_route_decision(settings, prepared.retrieval_query, warnings=warnings, plan_parser=plan_parser)
+    route = build_route_decision(settings, prepared.original_query, warnings=warnings, plan_parser=plan_parser)
     evidence: dict[str, Any]
     if route.route == "metadata":
         evidence = plan_metadata(settings, route, warnings)
@@ -74,12 +69,10 @@ def run_plan(
         evidence = plan_body(settings, prepared, route, warnings, embedder=embedder, store=store)
     return {
         "original_query": prepared.original_query,
-        "retrieval_query": prepared.retrieval_query,
         "route": route.route,
         "intent": route.intent,
         "return_field": route.return_field,
         "router_reason": route.reason,
-        "translation_provider": prepared.translation_provider,
         "evidence": evidence,
         "warnings": warnings,
     }
@@ -88,37 +81,73 @@ def run_plan(
 def prepare_query(
     settings: Settings,
     query: str,
-    *,
-    translator: BaiduTranslator | None = None,
 ) -> PreparedQuery:
-    language = "zh" if contains_chinese(query) else "en"
-    warnings: list[str] = []
-    if language == "en":
-        return PreparedQuery(query, query, language, warnings)
-    translator = translator or BaiduTranslator(
-        app_id=settings.baidu_translate_app_id,
-        secret_key=settings.baidu_translate_secret_key,
-        endpoint=settings.baidu_translate_endpoint,
-        domain=settings.baidu_translate_domain,
-    )
-    try:
-        result = translator.translate_to_english(query)
-    except (TranslationError, OSError, ValueError) as exc:
-        warnings.append(f"translation_failed: {exc}")
-        return PreparedQuery(query, "", language, warnings, error="translation_failed")
-    return PreparedQuery(query, result.text, language, warnings, result.provider)
+    _ = settings
+    return PreparedQuery(query, [])
 
 
-def base_evidence(route: RouteDecision) -> dict[str, Any]:
+def base_evidence(route: RouteDecision, *, public_papers: bool = False) -> dict[str, Any]:
     return {
         "top_route": route.route,
         "intent": route.intent,
         "return_field": route.return_field,
-        "target_papers": route.target_papers,
+        "target_papers": public_paper_list(route.target_papers) if public_papers else route.target_papers,
         "query": route.target_query,
         "filters": route.filters,
         "alias_matches": [alias_match_to_dict(match) for match in route.alias_matches],
     }
+
+
+def public_paper_list(papers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [public_paper(paper) for paper in papers]
+
+
+def public_paper(paper: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not paper:
+        return None
+    result = {
+        "title": paper.get("title"),
+        "author": paper.get("author"),
+        "year": paper.get("year"),
+        "venue": paper.get("venue"),
+    }
+    matched_alias = paper.get("matched_alias")
+    if matched_alias:
+        result["matched_alias"] = matched_alias
+    return result
+
+
+def public_reference_entry(entry: dict[str, Any]) -> dict[str, Any]:
+    result = {
+        "direction": entry.get("direction"),
+        "anchor_query": entry.get("anchor_query"),
+    }
+    if entry.get("reference") is not None:
+        result["reference"] = entry.get("reference")
+    if entry.get("anchor_terms"):
+        result["anchor_terms"] = entry.get("anchor_terms")
+    if entry.get("anchor_paper"):
+        result["anchor_paper"] = public_paper(entry.get("anchor_paper"))
+    if entry.get("citing_paper"):
+        result["citing_paper"] = public_paper(entry.get("citing_paper"))
+    if entry.get("target_paper"):
+        result["target_paper"] = public_paper(entry.get("target_paper"))
+    return result
+
+
+def public_anchor_result(result: dict[str, Any]) -> dict[str, Any]:
+    output = {
+        "anchor_query": result.get("anchor_query"),
+        "target_papers": public_paper_list(result.get("target_papers") or []),
+        "count": result.get("count"),
+    }
+    direction = result.get("direction")
+    entries = [public_reference_entry(entry) for entry in result.get("references") or []]
+    if direction == "incoming":
+        output["citing_papers"] = entries
+    else:
+        output["reference_items"] = entries
+    return output
 
 
 def plan_metadata(
@@ -128,7 +157,7 @@ def plan_metadata(
 ) -> dict[str, Any]:
     if route.parse_status == "parse_failed":
         return {
-            **base_evidence(route),
+            **base_evidence(route, public_papers=True),
             "parse_status": "parse_failed",
             "parser_error": route.parser_error,
             "parser_result": None,
@@ -168,31 +197,33 @@ def plan_reference(settings: Settings, route: RouteDecision, warnings: list[str]
             "parser_error": route.parser_error,
             "parser_result": None,
             "direction": route.direction,
-            "anchor": route.anchor,
+            "anchors": route.anchors,
             "anchor_mode": route.anchor_mode,
-            "references": [],
+            "reference_items": [],
+            "citing_papers": [],
         }
     if route.parse_status == "unknown_direction":
         return {
-            **base_evidence(route),
+            **base_evidence(route, public_papers=True),
             "parse_status": "unknown_direction",
             "parser_result": route.parser_result,
             "direction": route.direction,
-            "anchor": route.anchor,
+            "anchors": route.anchors,
             "anchor_mode": route.anchor_mode,
-            "references": [],
+            "reference_items": [],
+            "citing_papers": [],
         }
-    if not route.anchor:
+    if not route.anchors:
         warnings.append("reference route missing anchor")
         return reference_evidence(route, [], [], parse_status="missing_anchor")
-    if route.direction == "cite":
-        references, anchor_results = reference_cite_results(settings, route, warnings)
-    elif route.direction == "cited_by":
-        references, anchor_results = reference_cited_by_results(settings, route)
+    if route.direction == "outgoing":
+        references, anchor_results = reference_outgoing_results(settings, route, warnings)
+    elif route.direction == "incoming":
+        references, anchor_results = reference_incoming_results(settings, route)
     else:
         warnings.append("reference route direction is unsupported")
         return reference_evidence(route, [], [], parse_status="unknown_direction")
-    references = combine_reference_results(references, route.anchor_mode or "per", route.direction)
+    references = combine_reference_results(references, route.anchor_mode or "per", route.direction, len(route.anchors))
     if not references:
         warnings.append("reference route found no matching references")
     return reference_evidence(route, references, anchor_results, count=len(references))
@@ -207,15 +238,21 @@ def reference_evidence(
     count: int | None = None,
 ) -> dict[str, Any]:
     evidence = {
-        **base_evidence(route),
+        **base_evidence(route, public_papers=True),
         "parse_status": parse_status,
         "parser_result": route.parser_result,
         "direction": route.direction,
-        "anchor": route.anchor,
+        "anchors": route.anchors,
         "anchor_mode": route.anchor_mode,
-        "references": references,
-        "anchor_results": anchor_results,
+        "reference_items": [],
+        "citing_papers": [],
+        "anchor_results": [public_anchor_result(result) for result in anchor_results],
     }
+    public_entries = [public_reference_entry(entry) for entry in references]
+    if route.direction == "incoming":
+        evidence["citing_papers"] = public_entries
+    else:
+        evidence["reference_items"] = public_entries
     if route.intent == "count":
         evidence["count"] = count if count is not None else len(references)
     return evidence
@@ -233,11 +270,11 @@ def plan_body(
     documents = filter_documents_by_targets(load_chunk_documents(settings.paper_data_dir), route.target_papers)
     documents_by_id = {document.chunk_id: document for document in documents}
     try:
-        dense_results = dense_search(settings, prepared.retrieval_query, embedder=embedder, store=store)
+        dense_results = dense_search(settings, prepared.original_query, embedder=embedder, store=store)
     except Exception as exc:
         warnings.append(f"dense retrieval failed: {exc}; using BM25 candidates only")
         dense_results = []
-    bm25_results = bm25_chunk_search(documents, prepared.retrieval_query, settings.plan_bm25_top_k)
+    bm25_results = bm25_chunk_search(documents, prepared.original_query, settings.plan_bm25_top_k)
     fused = fuse_chunk_results(documents_by_id, dense_results, bm25_results)
     context_units = [
         context_unit(settings, candidate, settings.plan_block_window)
@@ -251,14 +288,14 @@ def plan_body(
     }
 
 
-def reference_cite_results(
+def reference_outgoing_results(
     settings: Settings,
     route: RouteDecision,
     warnings: list[str],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     references: list[dict[str, Any]] = []
     anchor_results: list[dict[str, Any]] = []
-    for anchor in route.anchor:
+    for anchor in route.anchors:
         anchor_value = str(anchor.get("value") or "").strip()
         target_papers, _ = resolve_target_papers(settings, [anchor_value])
         anchor_refs: list[dict[str, Any]] = []
@@ -266,8 +303,8 @@ def reference_cite_results(
             for ref in load_reference_rows(target):
                 if reference_raw_matches_filters(ref, route.filters, warnings):
                     entry = {
-                        "direction": "cite",
-                        "anchor": anchor,
+                        "direction": "outgoing",
+                        "anchor_query": anchor,
                         "anchor_paper": target,
                         "target_paper": None,
                         "reference": ref,
@@ -277,7 +314,8 @@ def reference_cite_results(
         if not target_papers:
             warnings.append(f"reference anchor not found locally: {anchor_value}")
         anchor_results.append({
-            "anchor": anchor,
+            "anchor_query": anchor,
+            "direction": "outgoing",
             "target_papers": target_papers,
             "references": anchor_refs,
             "count": len(anchor_refs),
@@ -285,33 +323,41 @@ def reference_cite_results(
     return references, anchor_results
 
 
-def reference_cited_by_results(settings: Settings, route: RouteDecision) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def reference_incoming_results(settings: Settings, route: RouteDecision) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     references: list[dict[str, Any]] = []
     anchor_results: list[dict[str, Any]] = []
     records = load_active_manifest_records(settings)
-    for anchor in route.anchor:
+    for anchor in route.anchors:
         anchor_value = str(anchor.get("value") or "").strip()
-        anchor_terms = reference_anchor_terms(settings, anchor_value)
+        target_papers, _ = resolve_target_papers(settings, [anchor_value])
+        anchor_terms = [str(target.get("title") or "").strip() for target in target_papers if target.get("title")]
+        target_keys = {paper_identity_key(target) for target in target_papers}
         anchor_refs: list[dict[str, Any]] = []
+        seen_citing_papers: set[str] = set()
         for record in records:
-            if not all(record_matches_filter(record, filter_item) for filter_item in route.filters):
+            if not all(record_matches_filter(settings, record, filter_item) for filter_item in route.filters):
                 continue
             paper = manifest_record_to_evidence(record)
             paper["paper_id"] = Path(str(paper.get("paper_data_path") or "")).name if paper.get("paper_data_path") else None
+            paper_key = paper_identity_key(paper)
+            if paper_key in target_keys:
+                continue
+            if paper_key in seen_citing_papers:
+                continue
             for ref in load_reference_rows(paper):
                 if reference_raw_matches_terms(ref.get("raw_text"), anchor_terms):
                     entry = {
-                        "direction": "cited_by",
-                        "anchor": anchor,
-                        "anchor_terms": anchor_terms,
+                        "direction": "incoming",
+                        "anchor_query": anchor,
                         "citing_paper": paper,
-                        "reference": ref,
                     }
                     anchor_refs.append(entry)
                     references.append(entry)
-        target_papers, _ = resolve_target_papers(settings, [anchor_value])
+                    seen_citing_papers.add(paper_key)
+                    break
         anchor_results.append({
-            "anchor": anchor,
+            "anchor_query": anchor,
+            "direction": "incoming",
             "target_papers": target_papers,
             "references": anchor_refs,
             "count": len(anchor_refs),
@@ -367,6 +413,10 @@ def reference_raw_matches_terms(raw_text: Any, terms: list[str]) -> bool:
     return any((term_key := normalized_text_key(term)) and term_key in raw_key for term in terms)
 
 
+def paper_identity_key(paper: dict[str, Any]) -> str:
+    return str(paper.get("paper_id") or paper.get("paper_data_path") or paper.get("title") or "")
+
+
 def reference_raw_matches_filters(ref: dict[str, Any], filters: list[dict[str, Any]], warnings: list[str]) -> bool:
     for filter_item in filters:
         field = filter_item.get("field")
@@ -413,6 +463,7 @@ def combine_reference_results(
     references: list[dict[str, Any]],
     anchor_mode: str,
     direction: str | None,
+    anchor_count: int,
 ) -> list[dict[str, Any]]:
     if anchor_mode == "per":
         return references
@@ -422,13 +473,12 @@ def combine_reference_results(
     if anchor_mode == "or":
         return [items[0] for _, items in sorted(grouped.items())]
     if anchor_mode == "and":
-        anchor_count = len({str(entry.get("anchor", {}).get("value") or "") for entry in references})
-        return [items[0] for _, items in sorted(grouped.items()) if len({str(item.get("anchor", {}).get("value") or "") for item in items}) >= anchor_count]
+        return [items[0] for _, items in sorted(grouped.items()) if len({str(item.get("anchor_query", {}).get("value") or "") for item in items}) >= anchor_count]
     return references
 
 
 def reference_result_key(entry: dict[str, Any], direction: str | None) -> str:
-    if direction == "cited_by":
+    if direction == "incoming":
         paper = entry.get("citing_paper") or {}
         return str(paper.get("paper_id") or paper.get("title") or "")
     ref = entry.get("reference") or {}
@@ -530,17 +580,17 @@ def metadata_lookup_records(
 def metadata_records_by_parser_filters(settings: Settings, filters: list[dict[str, Any]]) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
     for record in load_active_manifest_records(settings):
-        if all(record_matches_filter(record, filter_item) for filter_item in filters):
+        if all(record_matches_filter(settings, record, filter_item) for filter_item in filters):
             records.append(manifest_record_to_evidence(record))
     return records
 
 
-def record_matches_filter(record, filter_item: dict[str, Any]) -> bool:
-    matched = record_matches_positive_filter(record, filter_item)
+def record_matches_filter(settings: Settings, record, filter_item: dict[str, Any]) -> bool:
+    matched = record_matches_positive_filter(settings, record, filter_item)
     return not matched if filter_item.get("negated") else matched
 
 
-def record_matches_positive_filter(record, filter_item: dict[str, Any]) -> bool:
+def record_matches_positive_filter(settings: Settings, record, filter_item: dict[str, Any]) -> bool:
     field = filter_item.get("field")
     op = filter_item.get("op")
     value = filter_item.get("value")
@@ -549,16 +599,17 @@ def record_matches_positive_filter(record, filter_item: dict[str, Any]) -> bool:
     if field == "author":
         return compare_authors(record.author, op, value)
     if field == "venue":
-        return compare_text(record.venue, op, value)
+        return compare_venue(settings, record.venue, op, value)
     if field == "title":
         return compare_text(record.title, op, value)
     return False
 
 
 def compare_number(actual: Any, op: str, expected: Any) -> bool:
-    if actual is None:
+    actual_effective_year = effective_year(actual)
+    if actual_effective_year is None:
         return False
-    actual_number = int(actual)
+    actual_number = int(actual_effective_year)
     if op == "interval":
         bounds = list(expected) if isinstance(expected, list) else []
         if len(bounds) != 2:
@@ -622,6 +673,12 @@ def compare_text(actual: Any, op: str, expected: Any) -> bool:
     if op == "contains":
         return any(value_key and value_key in actual_key for value_key in value_keys)
     return False
+
+
+def compare_venue(settings: Settings, actual: Any, op: str, expected: Any) -> bool:
+    actual_text = canonicalize_venue(settings, actual)
+    values = expand_venue_query_terms(settings, flatten_filter_value(expected))
+    return compare_text(actual_text, op, values) or compare_text(actual, op, values)
 
 
 def normalized_text_key(value: str) -> str:

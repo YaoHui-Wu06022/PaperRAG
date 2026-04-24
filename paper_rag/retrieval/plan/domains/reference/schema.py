@@ -7,7 +7,7 @@ from ..metadata.schema import PlanParseError, validate_metadata_filter
 
 
 REFERENCE_INTENTS = {"list", "count", None}
-REFERENCE_DIRECTIONS = {"cite", "cited_by", None}
+REFERENCE_DIRECTIONS = {"outgoing", "incoming", None}
 REFERENCE_ANCHOR_FIELDS = {"title"}
 REFERENCE_ANCHOR_MODES = {"per", "or", "and"}
 
@@ -30,14 +30,16 @@ def validate_reference_parse(content: str | dict[str, Any], fallback_query: str 
     direction = normalize_nullable_enum(payload.get("direction"))
     if direction not in REFERENCE_DIRECTIONS:
         raise PlanParseError(f"Invalid reference direction: {direction}")
-    anchor = payload.get("anchor")
-    if not isinstance(anchor, list):
-        raise PlanParseError("Reference anchor must be a list")
-    normalized_anchor = [validate_reference_anchor(item) for item in anchor]
+    anchors = payload.get("anchors")
+    if not isinstance(anchors, list):
+        raise PlanParseError("Reference anchors must be a list")
+    normalized_anchors = [validate_reference_anchor(item) for item in anchors]
     anchor_mode = normalize_nullable_enum(payload.get("anchor_mode")) or "per"
     if anchor_mode not in REFERENCE_ANCHOR_MODES:
         raise PlanParseError(f"Invalid reference anchor_mode: {anchor_mode}")
-    filters = payload.get("filters")
+    filters = payload.get("filters", [])
+    if filters is None:
+        filters = []
     if not isinstance(filters, list):
         raise PlanParseError("Reference filters must be a list")
     normalized_filters = [validate_metadata_filter(filter_item) for filter_item in filters]
@@ -48,7 +50,7 @@ def validate_reference_parse(content: str | dict[str, Any], fallback_query: str 
         "router": "reference",
         "intent": intent,
         "direction": direction,
-        "anchor": normalized_anchor,
+        "anchors": normalized_anchors,
         "anchor_mode": anchor_mode,
         "filters": normalized_filters,
         "raw_query": raw_query,

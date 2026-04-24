@@ -23,7 +23,7 @@ class RouteDecision:
     return_field: str | None = None
     filters: list[dict[str, Any]] = field(default_factory=list)
     direction: str | None = None
-    anchor: list[dict[str, Any]] = field(default_factory=list)
+    anchors: list[dict[str, Any]] = field(default_factory=list)
     anchor_mode: str | None = None
 
 
@@ -41,7 +41,7 @@ def route_query(query: str) -> RouteDecision:
         return metadata
     return RouteDecision(
         route="content",
-        reason="default content route for translated/English query",
+        reason="default content route for Chinese query",
         intent=None,
         target_query="",
     )

@@ -7,7 +7,10 @@
     "Zhuowen Tu",
     "Kaiming He"
   ],
-  "year": 2017,
+  "year": {
+    "preprint_year": 2016,
+    "publish_year": 2017
+  },
   "venue": "CVPR",
-  "pdf_path": "E:\\Pythonproject\\RAG_project_new\\data\\pdf\\2017_Aggregated_Residual_Transformations_for_Deep_Neural_Networks.pdf"
+  "pdf_path": "E:\\Pythonproject\\RAG_project_new\\data\\pdf\\2016_Aggregated_Residual_Transformations_for_Deep_Neural_Networks.pdf"
 }

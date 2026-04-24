@@ -49,10 +49,6 @@ class Settings:
     embedding_dim: int
     embedding_batch_size: int
     embedding_cache_path: Path
-    baidu_translate_app_id: str | None
-    baidu_translate_secret_key: str | None
-    baidu_translate_endpoint: str
-    baidu_translate_domain: str | None
     plan_dense_top_k: int
     plan_bm25_top_k: int
     plan_final_top_k: int
@@ -107,13 +103,6 @@ class Settings:
                 env.get("EMBEDDING_CACHE_PATH"),
                 data_dir / "index" / "embedding_cache.jsonl",
             ),
-            baidu_translate_app_id=env.get("BAIDU_TRANSLATE_APP_ID") or None,
-            baidu_translate_secret_key=env.get("BAIDU_TRANSLATE_SECRET_KEY") or None,
-            baidu_translate_endpoint=env.get(
-                "BAIDU_TRANSLATE_ENDPOINT",
-                "https://fanyi-api.baidu.com/api/trans/vip/fieldtranslate",
-            ),
-            baidu_translate_domain=env.get("BAIDU_TRANSLATE_DOMAIN") or "academic",
             plan_dense_top_k=int(env.get("PLAN_DENSE_TOP_K", "20")),
             plan_bm25_top_k=int(env.get("PLAN_BM25_TOP_K", "20")),
             plan_final_top_k=int(env.get("PLAN_FINAL_TOP_K", "8")),
