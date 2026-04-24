@@ -1,28 +1,54 @@
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from .errors import PlanParseError
 
 
-PLAN_FILTER_FIELDS = {"author", "year", "venue", "title"}
-PLAN_FILTER_OPS = {"=", "in", "contains", "interval"}
+PAPER_FILTER_FIELDS = {"author", "year", "venue", "title"}
+PAPER_FILTER_OPS = {"=", "in", "contains", "interval"}
 
 
-def validate_plan_filter(value: Any) -> dict[str, Any]:
+def parse_json_object(content: str | dict[str, Any], parser_name: str) -> dict[str, Any]:
+    if isinstance(content, str):
+        try:
+            payload = json.loads(content)
+        except json.JSONDecodeError as exc:
+            raise PlanParseError(f"{parser_name} parser returned invalid JSON: {exc}") from exc
+    else:
+        payload = dict(content)
+    if not isinstance(payload, dict):
+        raise PlanParseError(f"{parser_name} parser JSON root must be an object")
+    return payload
+
+
+def normalize_string_list(value: Any, field_name: str) -> list[str]:
+    if not isinstance(value, list):
+        raise PlanParseError(f"{field_name} must be a list")
+    normalized: list[str] = []
+    for item in value:
+        if not isinstance(item, str):
+            raise PlanParseError(f"{field_name} items must be strings")
+        text = item.strip()
+        if text:
+            normalized.append(text)
+    return normalized
+
+def validate_paper_filter(value: Any) -> dict[str, Any]:
     if not isinstance(value, dict):
-        raise PlanParseError("Plan filter must be an object")
+        raise PlanParseError("Paper filter must be an object")
     field = value.get("field")
-    if field not in PLAN_FILTER_FIELDS:
-        raise PlanParseError(f"Invalid plan filter field: {field}")
+    if field not in PAPER_FILTER_FIELDS:
+        raise PlanParseError(f"Invalid paper filter field: {field}")
     op = value.get("op")
-    if op not in PLAN_FILTER_OPS:
-        raise PlanParseError(f"Invalid plan filter op: {op}")
+    if op not in PAPER_FILTER_OPS:
+        raise PlanParseError(f"Invalid paper filter op: {op}")
     if "value" not in value:
-        raise PlanParseError("Plan filter missing value")
+        raise PlanParseError("Paper filter missing value")
     negated = value.get("negated")
     if not isinstance(negated, bool):
-        raise PlanParseError("Plan filter negated must be true or false")
+        raise PlanParseError("Paper filter negated must be true or false")
     return {
         "field": field,
         "op": op,
@@ -58,4 +84,3 @@ def _normalize_interval_bound(value: Any) -> int | str:
         return int(value)
     except (TypeError, ValueError) as exc:
         raise PlanParseError("Plan interval filter bounds must be numeric or inf sentinels") from exc
-

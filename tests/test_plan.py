@@ -8,9 +8,11 @@ from pathlib import Path
 from paper_rag.config import Settings
 from paper_rag.answer import run_ask
 from paper_rag.retrieval.dense.milvus_store import SearchResult
+from paper_rag.retrieval.domains.metadata.router import build_metadata_decision
 from paper_rag.retrieval.planner import prepare_query, run_plan
 from paper_rag.retrieval.domains.common.errors import PlanParseError
 from paper_rag.retrieval.domains.metadata.schema import validate_metadata_parse
+from paper_rag.retrieval.domains.reference.router import build_reference_decision
 from paper_rag.retrieval.domains.reference.schema import validate_reference_parse
 from paper_rag.retrieval.top_router import route_query
 
@@ -39,8 +41,7 @@ class StaticReferenceParser:
         payload.setdefault("anchors", [])
         payload.setdefault("anchor_mode", "per")
         payload.setdefault("filters", [])
-        payload.setdefault("raw_query", query)
-        return payload
+        return validate_reference_parse(payload, query)
 
 
 def metadata_lookup(field: str, title: str) -> StaticMetadataParser:
@@ -63,7 +64,7 @@ def reference_payload(
     direction: str | None,
     anchors: list[str],
     *,
-    intent: str | None = "list",
+    intent: str = "list",
     anchor_mode: str = "per",
     filters: list[dict] | None = None,
 ) -> StaticReferenceParser:
@@ -161,7 +162,7 @@ class PlanTests(unittest.TestCase):
         query = "哪些论文引用了RESNET"
         decision = route_query(query)
         self.assertEqual(decision.route, "reference")
-        self.assertEqual(decision.target_query, query)
+        self.assertEqual(decision.query, query)
 
     def test_reference_parser_schema_normalizes_valid_payload(self) -> None:
         payload = validate_reference_parse({
@@ -170,7 +171,6 @@ class PlanTests(unittest.TestCase):
             "anchors": ["ResNet"],
             "anchor_mode": "and",
             "filters": [{"field": "year", "op": "interval", "value": [2015, "inf"], "negated": False}],
-            "raw_query": "哪些论文在2015年后引用了ResNet",
         })
         self.assertEqual(payload["intent"], "count")
         self.assertEqual(payload["direction"], "cited_by")
@@ -183,7 +183,6 @@ class PlanTests(unittest.TestCase):
             "direction": "cites",
             "anchors": ["ResNet"],
             "anchor_mode": "per",
-            "raw_query": "ResNet的参考文献",
         })
         null_filters = validate_reference_parse({
             "intent": "list",
@@ -191,21 +190,70 @@ class PlanTests(unittest.TestCase):
             "anchors": ["ResNet"],
             "anchor_mode": "per",
             "filters": None,
-            "raw_query": "ResNet的参考文献",
         })
         self.assertEqual(missing_filters["filters"], [])
         self.assertEqual(null_filters["filters"], [])
 
-    def test_reference_parser_rejects_router_field(self) -> None:
+    def test_reference_parser_rejects_null_intent(self) -> None:
         with self.assertRaises(PlanParseError):
             validate_reference_parse({
-                "router": "reference",
-                "intent": "list",
+                "intent": None,
                 "direction": "cites",
                 "anchors": ["ResNet"],
                 "anchor_mode": "per",
                 "filters": [],
             })
+
+    def test_reference_parser_ignores_unknown_fields(self) -> None:
+        payload = validate_reference_parse({
+            "intent": "list",
+            "direction": "cites",
+            "anchors": ["ResNet"],
+            "anchor_mode": "per",
+            "filters": [],
+            "raw_query": "ResNet的参考文献",
+            "router": "reference",
+            "extra": "ignored",
+        })
+        self.assertEqual(payload["intent"], "list")
+        self.assertEqual(payload["anchors"], ["ResNet"])
+
+    def test_metadata_anchor_interval_updates_parser_result_filters(self) -> None:
+        with sample_project() as root:
+            settings = Settings.load(Path(root))
+            decision = build_metadata_decision(
+                settings,
+                route_query("ResNet以后还有哪些论文"),
+                "ResNet以后还有哪些论文",
+                warnings=[],
+                plan_parser=StaticMetadataParser({
+                    "intent": "list",
+                    "return_field": None,
+                    "anchors": ["ResNet"],
+                    "filters": [{"field": "year", "op": "interval", "value": ["anchor", "inf"], "negated": False}],
+                }),
+            )
+            self.assertEqual(decision.filters[0]["value"], [2016, "inf"])
+            self.assertEqual(decision.parser_result["filters"][0]["value"], [2016, "inf"])
+
+    def test_reference_anchor_interval_updates_parser_result_filters(self) -> None:
+        with sample_project() as root:
+            settings = Settings.load(Path(root))
+            decision = build_reference_decision(
+                settings,
+                route_query("2015到2020年之间引用了ResNet的论文有哪些"),
+                "2015到2020年之间引用了ResNet的论文有哪些",
+                warnings=[],
+                plan_parser=StaticReferenceParser({
+                    "intent": "list",
+                    "direction": "cited_by",
+                    "anchors": ["ResNet"],
+                    "anchor_mode": "per",
+                    "filters": [{"field": "year", "op": "interval", "value": ["anchor", "inf"], "negated": False}],
+                }),
+            )
+            self.assertEqual(decision.filters[0]["value"], [2016, "inf"])
+            self.assertEqual(decision.parser_result["filters"][0]["value"], [2016, "inf"])
 
     def test_metadata_parser_schema_allows_filter_only_queries(self) -> None:
         payload = validate_metadata_parse({
@@ -245,15 +293,18 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(payload["anchors"], [])
         self.assertEqual(payload["filters"][0]["value"], [2015, 2020])
 
-    def test_metadata_parser_rejects_router_field(self) -> None:
-        with self.assertRaises(PlanParseError):
-            validate_metadata_parse({
-                "router": "metadata",
-                "intent": "lookup",
-                "return_field": "year",
-                "anchors": ["BERT"],
-                "filters": [],
-            })
+    def test_metadata_parser_ignores_unknown_fields(self) -> None:
+        payload = validate_metadata_parse({
+            "router": "metadata",
+            "raw_query": "BERT是谁写的",
+            "intent": "lookup",
+            "return_field": "year",
+            "anchors": ["BERT"],
+            "filters": [],
+            "extra": "ignored",
+        })
+        self.assertEqual(payload["return_field"], "year")
+        self.assertEqual(payload["anchors"], ["BERT"])
 
     def test_reference_parser_schema_rejects_non_list_filters(self) -> None:
         with self.assertRaises(PlanParseError):
@@ -263,7 +314,6 @@ class PlanTests(unittest.TestCase):
                 "anchors": ["ResNet"],
                 "anchor_mode": "per",
                 "filters": {"field": "year", "op": "=", "value": 2019, "negated": False},
-                "raw_query": "ResNet的参考文献",
             })
 
     def test_reference_parser_schema_rejects_invalid_anchor_field(self) -> None:
@@ -274,7 +324,6 @@ class PlanTests(unittest.TestCase):
                 "anchors": [{"field": "author", "value": "Kaiming He"}],
                 "anchor_mode": "per",
                 "filters": [],
-                "raw_query": "Kaiming He参考过的论文",
             })
 
     def test_prepare_query_keeps_original_query_without_translation(self) -> None:
@@ -310,6 +359,9 @@ class PlanTests(unittest.TestCase):
             self.assertEqual(records[0]["year"], {"preprint_year": None, "publish_year": 2016})
             self.assertEqual(records[0]["venue"], "ECCV")
             self.assertEqual(records[0]["value"], ["Yandong Wen", "Kaipeng Zhang"])
+            self.assertIn("pdf_path", records[0])
+            self.assertNotIn("file_hash", records[0])
+            self.assertNotIn("paper_data_path", records[0])
 
     def test_chinese_metadata_route_uses_original_query_for_routing(self) -> None:
         with sample_project() as root:
@@ -717,11 +769,13 @@ class PlanTests(unittest.TestCase):
             self.assertEqual(pack["evidence"]["reference_items"], [])
             self.assertNotIn("references", pack["evidence"])
             self.assertEqual(pack["evidence"]["anchors"], ["ResNet"])
-            anchor_target = pack["evidence"]["anchor_results"][0]["target_papers"][0]
+            anchor_target = pack["evidence"]["anchor_results"][0]["resolved_papers"][0]
             self.assertEqual(anchor_target["title"], "Deep Residual Learning for Image Recognition")
             self.assertEqual(anchor_target["matched_alias"], "ResNet")
             self.assertNotIn("file_hash", anchor_target)
             self.assertNotIn("pdf_path", anchor_target)
+            self.assertEqual(pack["evidence"]["citing_papers"][0]["anchor_mention"], "ResNet")
+            self.assertEqual(pack["evidence"]["anchor_results"][0]["anchor_mention"], "ResNet")
             citing_paper = pack["evidence"]["citing_papers"][0]["citing_paper"]
             self.assertEqual(citing_paper["title"], "A Discriminative Feature Learning Approach for Deep Face Recognition")
             self.assertNotIn("file_hash", citing_paper)
@@ -755,6 +809,7 @@ class PlanTests(unittest.TestCase):
             self.assertEqual(pack["evidence"]["citing_papers"], [])
             self.assertNotIn("references", pack["evidence"])
             self.assertIn("ImageNet", pack["evidence"]["reference_items"][0]["reference"]["raw_text"])
+            self.assertEqual(pack["evidence"]["reference_items"][0]["anchor_mention"], "ResNet")
             anchor_paper = pack["evidence"]["reference_items"][0]["anchor_paper"]
             self.assertEqual(anchor_paper["title"], "Deep Residual Learning for Image Recognition")
             self.assertNotIn("paper_id", anchor_paper)
@@ -818,6 +873,8 @@ class PlanTests(unittest.TestCase):
             self.assertEqual(pack["intent"], None)
             self.assertNotIn("scope", pack["evidence"])
             self.assertNotIn("expanded_query", pack["evidence"])
+            self.assertNotIn("top_route", pack["evidence"])
+            self.assertNotIn("query", pack["evidence"])
             self.assertEqual(store.top_k, 20)
             self.assertEqual(embedder.calls, [["center loss intra class compactness"]])
             units = pack["evidence"]["context_units"]

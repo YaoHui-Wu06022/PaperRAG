@@ -31,5 +31,10 @@ Schema:
 - "return_field":
   - 必须是["author","year","venue","title","null"]其中之一
   - 当查询不需要特定元数据字段时，请使用“null”
+  
+- "anchors":
+  - 字符串列表，只存论文标题、别名或缩写
+  - 问某篇论文的数据时用 anchors
+  - 按标题关键词筛选时用 filters.title
 
 """ + common_schema_fields_prompt()

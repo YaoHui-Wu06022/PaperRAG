@@ -9,11 +9,6 @@ def common_schema_fields_prompt() -> str:
   - "venue"：会议、期刊、发表来源，"value"不会是"本地数据库"等表述
   - "title"：论文标题
 
-- "anchors":
-  - 字符串列表，只存论文标题、别名或缩写
-  - 问某篇论文的数据时用 anchors
-  - 按标题关键词筛选时用 filters.title
-
 - "op":
   - "="：精确匹配作者/年份/期刊/论文标题字段
     示例："作者是 He Kaiming 的论文" -> {"field":"author","op":"=","value":"He Kaiming","negated":false}

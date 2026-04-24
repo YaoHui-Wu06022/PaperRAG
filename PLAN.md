@@ -11,7 +11,6 @@
 - 先构建项目框架，再执行具体功能实现
 - 协作边界：除非用户明确要求拓展功能，否则不主动新增功能链路；默认只做问题分析、边界记录、bug 修正和已达成共识的实现。
 - 论文原始文件统一放在 `data/pdf/`，当前只考虑 PDF 输入。
-- 问题输入和问题输出都
 - 论文解析采用 MinerU 官方 API 实现。
 - 唯一入口为 `paper-rag ingest`，每次运行执行一次全量同步。
 - PDF 身份使用完整 SHA256 `file_hash`，避免重命名后被误判为未处理。
@@ -67,101 +66,92 @@
 - 内容抽取：从 `content_list_v2.json` 抽取标题、TOC、区域、正文 blocks、reference blocks。
 - 数据落盘：维护 `data/mineru_output/`、`data/paper_data/` 和 `data/archive/`。
 
-## 5. 目录结构
+## 5. 仓库结构与模块职责
 
-当前 `paper_rag/` 包按职责分层，后续新增模块优先落到明确职责目录，避免根目录和平铺文件继续膨胀：
+当前仓库按“CLI 入口 / 数据处理 / 检索与计划 / 答案组装”分层，后续新增模块优先落到明确职责目录，避免根目录和平铺文件继续膨胀：
 
 ```text
 paper_rag/
-  __init__.py
-  __main__.py
-  answer.py
-  answer_probe.py
-  config.py
-  utils.py
-
-  cli/
-    main.py
-    ingest.py
-    ask.py
-    retrieval.py
-
-  dataprocess/
-    ingest.py
-    manifest.py
-    mineru.py
-    extract.py
-    metadata/
-      dblp.py
-      semantic_scholar.py
-      arxiv.py
-      retry.py
-
-  retrieval/
-    top_router.py
-    planner.py
-    context.py
-    translation.py
-    plan_probe.py
-    domains/
-      __init__.py
-      common/
-        __init__.py
-        errors.py
-        parser_client.py
-        schema.py
-        aliases.py
-        filters.py
-        prompt.py
-      metadata/
-        __init__.py
-        router.py
-        parser.py
-        prompt.py
-        prompt_probe.py
-        schema.py
-      reference/
-        __init__.py
-        router.py
-        parser.py
-        prompt.py
-        prompt_probe.py
-        schema.py
-      content/
-        __init__.py
-        parser.py
-        prompt.py
-        schema.py
-    dense/
-      service.py
-      embedding.py
-      cache.py
-      milvus_store.py
-    sparse/
-      bm25.py
-    data/
-      aliases.py
-      chunks.py
-      references.py
-      manifest_lookup.py
+├─ __init__.py                       # 根包入口
+├─ __main__.py                       # `python -m paper_rag` 入口
+├─ config.py                         # 全局配置读取与 Settings 定义
+├─ utils.py                          # 跨模块通用小工具
+├─ answer.py                         # ask 最终答案组装：消费 plan evidence，输出可读答案
+├─ answer_probe.py                   # ask 调试入口：直接观察 run_ask 输出与 debug plan
+├─ cli/
+│  ├─ main.py                        # CLI 总入口与子命令注册
+│  ├─ ingest.py                      # `paper-rag ingest` 入口，只做参数接线
+│  ├─ ask.py                         # `paper-rag ask` 入口，只做参数接线
+│  └─ retrieval.py                   # `plan/index/search` 入口，只做参数接线
+├─ dataprocess/
+│  ├─ ingest.py                      # PDF 全量同步主流程：扫描、复用/恢复、抽取、落盘
+│  ├─ manifest.py                    # manifest 结构、读写与状态管理
+│  ├─ mineru.py                      # MinerU API 客户端：上传、轮询、下载、解压
+│  ├─ extract.py                     # 从 MinerU 输出抽取 metadata/toc/blocks/references/chunks
+│  └─ metadata/
+│     ├─ arxiv.py                    # ArXiv 精确标题查询：补 preprint_year 与作者/标题
+│     ├─ dblp.py                     # DBLP 精确标题查询：补 publish_year / venue / authors
+│     ├─ semantic_scholar.py         # Semantic Scholar 补充正式发表信息
+│     └─ retry.py                    # 外部元数据请求的延迟与一次重试策略
+└─ retrieval/
+   ├─ top_router.py                  # 顶层路由：只负责 metadata / reference / content 第一层分流
+   ├─ planner.py                     # plan 主编排：路由分发、取证、聚合、evidence 组装
+   ├─ context.py                     # body 路由命中 chunk 后的 block 扩展与 context_unit 组装
+   ├─ translation.py                 # 当前仅保留基础文本能力；不再承担翻译 API 主路径
+   ├─ plan_probe.py                  # plan 调试入口：直接观察 run_plan 输出
+   ├─ domains/
+   │  ├─ __init__.py                 # domains 包入口
+   │  ├─ common/
+   │  │  ├─ __init__.py              # common 包入口
+   │  │  ├─ errors.py                # PlanParseError 等共享异常
+   │  │  ├─ parser_client.py         # OpenAI-compatible parser client
+   │  │  ├─ schema.py                # 共享 JSON object 预处理、字符串列表规范化、paper filter 校验
+   │  │  ├─ paper_resolved.py        # paper mention -> 本地 resolved papers 的公共解析逻辑
+   │  │  ├─ filters.py               # anchor 年份区间解析、合并与 warning 处理
+   │  │  └─ prompt.py                # metadata/reference 共用 prompt 片段
+   │  ├─ metadata/
+   │  │  ├─ __init__.py              # metadata domain 包入口
+   │  │  ├─ router.py                # metadata route 构建：接 parser、解 anchors、补年份过滤
+   │  │  ├─ parser.py                # metadata parser 调用封装
+   │  │  ├─ prompt.py                # metadata parser 提示词
+   │  │  ├─ prompt_probe.py          # metadata prompt 单独测试入口
+   │  │  └─ schema.py                # metadata 独有 schema：intent / return_field / anchors / filters
+   │  ├─ reference/
+   │  │  ├─ __init__.py              # reference domain 包入口
+   │  │  ├─ router.py                # reference route 构建：接 parser、解 anchors、补年份过滤
+   │  │  ├─ parser.py                # reference parser 调用封装
+   │  │  ├─ prompt.py                # reference parser 提示词
+   │  │  ├─ prompt_probe.py          # reference prompt 单独测试入口
+   │  │  └─ schema.py                # reference 独有 schema：intent / direction / anchors / anchor_mode / filters
+   │  └─ content/
+   │     ├─ __init__.py              # content domain 包入口
+   │     ├─ parser.py                # content parser 调用封装（当前仍以骨架为主）
+   │     ├─ prompt.py                # content parser 提示词
+   │     └─ schema.py                # content schema 骨架，后续随内容链路扩展
+   ├─ dense/
+   │  ├─ service.py                  # embedding 与 Milvus store 的高层接线
+   │  ├─ embedding.py                # DashScope/OpenAI-compatible embedding 客户端
+   │  ├─ cache.py                    # embedding cache 读写
+   │  └─ milvus_store.py             # Milvus/Zilliz collection 管理与向量检索
+   ├─ sparse/
+   │  └─ bm25.py                     # 本地 BM25、tokenize 与停用词逻辑
+   └─ data/
+      ├─ aliases.py                  # 论文别名匹配与 canonical 扩展
+      ├─ chunks.py                   # `chunks.jsonl` 读取与 chunk 文档适配
+      ├─ references.py               # `references.jsonl` 读取适配
+      └─ manifest_lookup.py          # active manifest 读取、匹配与 evidence 投影
 ```
 
-目录职责：
+补充约束：
 
-- `cli/`：命令行入口和参数解析，只做薄封装，把实际工作委托给 dataprocess/retrieval 服务。
-- `dataprocess/`：PDF 同步、MinerU 解析、论文内容抽取、manifest 和 paper_data 生成。
-- `dataprocess/metadata/`：外部论文元数据查询客户端，不参与用户问题检索。
-- `retrieval/top_router.py`：顶层规则路由与通用 route 决策对象，只负责 `reference / metadata / content` 的第一层分流。
-- `retrieval/domains/common/`：plan domain 共享层；集中放共享错误类型、OpenAI-compatible parser client、通用 filter schema、anchor/alias 解析、anchor 年份区间处理和 prompt 共享片段。metadata/reference 只复用这里的公共能力，不再彼此隐式依赖。
-- `retrieval/domains/metadata/`：metadata 独有逻辑目录；只保留 metadata route 入口、metadata 独有 schema、metadata parser prompt 组装、parser 包装和 `prompt_probe.py`。共享 filter 校验、alias/anchor 处理和 parser client 下沉到 `domains/common/`。
-- `retrieval/domains/reference/`：reference 独有逻辑目录；只保留 reference route 入口、reference 独有 schema、reference parser prompt 组装、parser 包装和 `prompt_probe.py`；负责把引用类问题解析为 `intent / direction / anchors / anchor_mode / filters`，共享能力同样走 `domains/common/`。
-- `retrieval/domains/content/`：content 路由入口与正文链路的独立承载目录，当前先只放入口和骨架。
-- `answer.py`：最终答案组装层；消费 `plan` 的 evidence pack，把 metadata/reference 证据渲染成可读答案，不属于检索实现。
-- `answer_probe.py`：根包下的 ask 调试入口，像 `retrieval/plan_probe.py` 一样可直接运行，用于观察 `run_ask` 的自然语言输出和可选 debug plan。
-- `retrieval/planner.py`：接入最终回答 LLM 前的证据链路编排层；负责调用顶层路由和各 domain parser，并把 route decision 展开成 evidence pack。
-- `retrieval/dense/`：向量侧能力；包含 DashScope embedding、embedding cache、Milvus/Zilliz 存储和 `index/search` 服务。
-- `retrieval/sparse/`：本地稀疏检索算法；第一版只包含 BM25 和 tokenizer。
-- `retrieval/data/`：本地检索数据适配层；读取 `chunks.jsonl`、`references.jsonl` 和 `manifest.jsonl`。
+- `planner.py` 当前真实职责不只是调度，还负责：
+  - 调用 `top_router.build_route_decision()` 生成顶层 `RouteDecision`
+  - 按 `metadata / reference / content` 分支分发到三条取证路径
+  - 把内部 `resolved_papers`、alias 命中和 filters 整形成对外 evidence
+  - 把内部完整论文对象裁剪成公开字段 `title / author / year / venue`
+  - 负责 reference 的聚合、去重、交并集和 per-anchor 摘要
+  - 负责 body 路由的 dense/BM25 融合与 `context_units` 组装
+  - 在不改动 parser 的前提下补充 warning、count 和 parse_status 等执行层信息
 - 当前不保留旧路径兼容包装；内部代码和测试统一使用新路径。
 - `ask` 的答案整合逻辑已经落在根包 `answer.py`，CLI 入口在 `cli/ask.py`。
 
@@ -282,24 +272,28 @@ CLI 行为：
 - evidence pack 顶层字段固定包含 `original_query / route / intent / return_field / router_reason / evidence / warnings`；不再使用旧的 `sub_route` 字段，也不预留 reference 专用顶层方向字段。
 - 不保留顶层 `language` 字段；metadata/reference 统一消费中文结构化 JSON，content 的英文检索文本只作为 evidence 内部字段或调试字段保存。
 - evidence 不使用 `scope` 和 `expanded_query`；metadata 范围限定统一由 `anchors` 表达，content/reference 保持各自 route 当前字段，内部 alias/canonical 扩展不暴露。
+- `RouteDecision` 的内部命名统一为 `query / paper_mentions / resolved_papers`：`query` 表示当前路由消费的原始问题文本，`paper_mentions` 表示 parser 抽取出的候选论文提及，`resolved_papers` 表示结合 alias/manifest 解析后的本地论文对象。
+- `planner.py` 的主入口是 `run_plan(settings, query, ...)`：当前 `prepare_query()` 仍是薄预处理，主要保留 query 和 warnings；真正的路由、取证和 evidence 组装都发生在 `run_plan()` 之后。
 - 第二层语义解析是 `metadata / reference / content` 三个分支共用的设计原则，但每个分支的下沉 schema 可以不同：
   - metadata 重点解析字段查询、论文列表、数量统计、字段过滤、否定过滤和锚点论文。
   - reference 重点解析 `cites / cited_by` 引用方向、锚点论文、引用范围过滤和引用列表/统计意图；对应的路由与 parser 骨架独立放在 `retrieval/domains/reference/`。
   - content 重点解析正文问题类型、目标论文范围、比较对象和需要召回的内容焦点。
-  - 当前 metadata/reference schema 已经独立落地，但共享错误类型、parser client、filter schema、alias/anchor 工具、anchor 年份处理和 prompt 公共片段统一下沉到 `retrieval/domains/common/`；content parser schema 后续单独讨论，避免把不同任务硬塞进同一个结构。
+- 当前 metadata/reference schema 已经独立落地，但共享错误类型、parser client、通用文本工具、JSON object 预处理、通用字符串列表规范化、论文元字段 filter schema、paper mention / resolved paper 工具、anchor 年份处理和 prompt 公共片段统一下沉到 `retrieval/domains/common/`；content parser schema 后续单独讨论，避免把不同任务硬塞进同一个结构。
 
 ### 8.2 Metadata Route
 
-- metadata route 不进入 Milvus，不检索 chunks；只读取 `data/manifest.jsonl` 中的 active 记录。
-- metadata 目录只保留 metadata 独有逻辑；共享的 `PlanParseError`、parser client、filter 校验、alias/anchor 解析和 anchor 年份区间处理统一来自 `retrieval/domains/common/`。
+- 模块定位：
+  - metadata route 不进入 Milvus，不检索 chunks；只读取 `data/manifest.jsonl` 中的 active 记录。
+  - `retrieval/domains/metadata/` 只保留 metadata 独有逻辑；共享的 `PlanParseError`、parser client、通用文本工具、JSON object 预处理、通用字符串列表规范化、论文元字段 filter 校验、paper mention / resolved paper 解析和 anchor 年份区间处理统一来自 `retrieval/domains/common/`。
 
-- 第一层 metadata 入口采用保守中文规则：只有中文原问题命中明显作者、年份、venue、标题、论文列表或统计线索时才进入 metadata route；其他非 reference 问题直接落到 content。
+- 顶层入口：
+  - 第一层 metadata 入口采用保守中文规则：只有中文原问题命中明显作者、年份、venue、标题、论文列表或统计线索时才进入 metadata route；其他非 reference 问题直接落到 content。
 
-- metadata 命中后，不再用硬规则细分 `paper_list / author / year / venue / title`；改为调用 OpenAI-compatible plan parser 的 metadata 解析提示词，输出严格 JSON。
+- parser 职责：
+  - metadata 命中后，不再用硬规则细分 `paper_list / author / year / venue / title`；改为调用 OpenAI-compatible plan parser 的 metadata 解析提示词，输出严格 JSON。
+  - plan parser 在 metadata 分支只做结构化解析，不回答问题，不生成自然语言解释；prompt 必须明确要求只输出 JSON。
 
-- plan parser 在 metadata 分支只做结构化解析，不回答问题，不生成自然语言解释；prompt 必须明确要求只输出 JSON。
-
-- metadata 分支 parser 输出 schema：
+- parser 输出 schema：
 
   ```json
   {
@@ -326,13 +320,24 @@ CLI 行为：
   - `not at CVPR` / “不在 CVPR 上发表”必须解析为 `field=venue / op=contains / value=CVPR / negated=true`，不能写成 `not contains`。
   - 不确定字段时使用 `null`；不确定意图时不要猜，非法或不完整输出会被 schema 标记为 `parse_failed`。
   - `filters` 缺失或为 JSON `null` 时归一化为 `[]`；非 list 的 filters 仍然 `parse_failed`。
-  
-- parser 失败边界：
+
+- schema/失败边界：
   - HTTP 超时或错误、非 JSON、非法枚举、缺少必需字段时，metadata evidence 标记 `parse_failed`，写入 warning，不回退 content，也不使用旧硬规则猜答案。
   - metadata parser 在 `parser.py` 内完成一次 schema 校验；`router.py` 只消费已校验结构，不重复调用 `validate_metadata_parse()`。
-  - metadata 独有 schema 只校验 `intent / return_field / anchors / filters`；共享 filter 结构校验由 `domains/common/schema.py` 提供。
-  
-- metadata evidence 行为：
+  - metadata 独有 schema 只校验 `intent / return_field / anchors / filters`；共享的 JSON object 预处理、通用字符串列表规范化和论文元字段 filter 结构校验由 `domains/common/schema.py` 提供。
+  - schema 对多余字段采用忽略策略，不因为额外的 `router`、`raw_query` 或其它未知字段直接失败；只校验当前 route 真正消费的字段。
+
+- 执行层行为：
+  - anchor 年份区间在执行层统一通过 `domains/common/filters.py` 解析；解析后不仅更新 route decision 的 filters，也会同步回写 parser 结果中的 `filters`，避免 plan 内部状态前后不一致。
+  - metadata 的 year filter 默认使用 `effective_year = preprint_year || publish_year`；例如 “Resnet以后还有哪些论文” 先用 `anchors=["ResNet"]` 定位 ResNet，再用 ResNet 的 effective year 生成开区间过滤，默认不包含 anchor 当年。
+  - venue 归一化使用独立 `data/venue_aliases.json`，不混入论文标题别名；metadata filter 中 `field=venue` 时会用 canonical + aliases 一起匹配，例如 `CVPR` 可命中 `IEEE/CVF Conference on Computer Vision and Pattern Recognition`，ask 展示时使用 canonical 短名。
+  - `planner.py` 在 metadata 分支里的执行职责：
+    - `parse_status=parse_failed` 时直接返回 `parser_error` 和空 `records`
+    - `lookup` 时优先用 `resolved_papers` 生成记录；没有锚点命中时再回退到 `route.query` 做 manifest 匹配
+    - `list/count` 时按 parser filters 扫描 active manifest 记录
+    - `count` 由执行层在 evidence 中补充，不依赖 parser 单独返回数量
+
+- evidence 输出：
   - evidence 不再输出 `query` 和 `parser_result`；原始问题只保留在顶层 `original_query`。
   - evidence 中已解析到的锚点论文字段名为 `anchors`，不再输出旧字段 `target_papers`。
   - `lookup`：需要 `return_field`；优先按 `anchors` 里的标题/别名定位论文，再结合 title filter 定位论文并返回目标字段值。
@@ -340,20 +345,22 @@ CLI 行为：
   - `count`：按 filters 查询 `manifest.jsonl`，同时返回 `count` 和匹配论文列表，保证可追溯。
   - 作者过滤必须完整匹配作者名，不支持 `He` 这种姓氏短匹配直接命中 `Kaiming He`。
   - 否定过滤通过 `negated=true` 表达，例如“不在 CVPR 上发表”解析为 `venue contains CVPR` 且 `negated=true`。
-  
-- metadata evidence 返回匹配论文的 `title / author / year / venue / pdf_path / paper_data_path` 等字段；其中 `year` 为 `{"preprint_year": ..., "publish_year": ...}` 对象。
-- metadata 的 year filter 默认使用 `effective_year = preprint_year || publish_year`；例如 “Resnet以后还有哪些论文” 先用 `anchors=["ResNet"]` 定位 ResNet，再用 ResNet 的 effective year 生成开区间过滤，默认不包含 anchor 当年。
-- `lookup year` 返回完整 year 对象；`ask` 展示为 “预印本年份 2015，正式发表年份 2016” 或 “预印本年份 2015，未找到正式发表年份” 等可读格式。
-- venue 归一化使用独立 `data/venue_aliases.json`，不混入论文标题别名；metadata filter 中 `field=venue` 时会用 canonical + aliases 一起匹配，例如 `CVPR` 可命中 `IEEE/CVF Conference on Computer Vision and Pattern Recognition`，ask 展示时使用 canonical 短名。
+  - metadata evidence 返回匹配论文的公开字段 `title / author / year / venue / pdf_path`；其中 `year` 为 `{"preprint_year": ..., "publish_year": ...}` 对象。`file_hash` 和 `paper_data_path` 只在内部执行使用，不进入默认 plan JSON。
+  - `lookup year` 返回完整 year 对象；`ask` 展示为 “预印本年份 2015，正式发表年份 2016” 或 “预印本年份 2015，未找到正式发表年份” 等可读格式。
 
 ### 8.3 Reference Route
 
-- reference route 顶层入口仍由中文规则命中，不进入 Milvus，不联网解析 DOI/DBLP，也不把参考文献条目拆成结构化论文 metadata。
-- reference 目录只保留 reference 独有逻辑；共享的 `PlanParseError`、parser client、filter 校验、alias/anchor 解析和 prompt 公共片段统一来自 `retrieval/domains/common/`。
-- 进入条件为中文原问题命中引用/参考文献语义，例如：`引用 / 引用了 / 引用过 / 引用关系 / 被引用 / 被引 / 参考 / 参考了 / 参考文献 / 引文 / 文献引用 / 列进参考文献 / 作为参考文献`。
-- 顶层 reference route 不再保留英文 token 入口；`cite / cited / reference / bibliography / quote` 等英文词不会作为第一层路由依据。当前产品假设用户问题固定为中文。
-- reference 命中后调用 `PLAN_PARSER_*` 配置下的 OpenAI-compatible parser，只做语义解析，不回答问题。
-- reference parser 输出严格 JSON：
+- 模块定位：
+  - reference route 顶层入口仍由中文规则命中，不进入 Milvus，不联网解析 DOI/DBLP，也不把参考文献条目拆成结构化论文 metadata。
+  - `retrieval/domains/reference/` 只保留 reference 独有逻辑；共享的 `PlanParseError`、parser client、通用文本工具、JSON object 预处理、通用字符串列表规范化、论文元字段 filter 校验、paper mention / resolved paper 解析、anchor 年份区间处理和 prompt 公共片段统一来自 `retrieval/domains/common/`。
+
+- 顶层入口：
+  - 进入条件为中文原问题命中引用/参考文献语义，例如：`引用 / 引用了 / 引用过 / 引用关系 / 被引用 / 被引 / 参考 / 参考了 / 参考文献 / 引文 / 文献引用 / 列进参考文献 / 作为参考文献`。
+  - 顶层 reference route 不再保留英文 token 入口；`cite / cited / reference / bibliography / quote` 等英文词不会作为第一层路由依据。当前产品假设用户问题固定为中文。
+
+- parser 职责：
+  - reference 命中后调用 `PLAN_PARSER_*` 配置下的 OpenAI-compatible parser，只做语义解析，不回答问题。
+  - reference parser 输出严格 JSON：
 
   ```json
   {
@@ -366,44 +373,72 @@ CLI 行为：
   ```
 
   - parser payload 不包含 `router`；顶层 route 只由 `top_router.py` 和 `RouteDecision.route` 表达。
-  - `intent` 只接受 `list / count / null`。
+  - `intent` 只接受 `list / count`；`null` 或其他非法值直接 `parse_failed`。
   - `direction=cites` 表示从 anchor 论文出发，读取 anchor 自己引用了哪些参考文献。
   - `direction=cited_by` 表示哪些本地论文引用了 anchor。
   - `direction=null` 时不检索，evidence 标记 `parse_status=unknown_direction` 并写 warning。
   - `anchors` 是字符串列表，只存论文标题、常用别名或缩写，例如 `["ResNet", "EfficientNet"]`；无锚点时输出 `[]`，空字符串 anchor 会被忽略。
   - `anchor_mode` 支持 `per / or / and`；缺失或 null 默认 `per`。
   - `filters` 复用 `domains/common/schema.py` 中的共享 filter schema：`field=author/year/venue/title`，`op` 为 `= / in / contains / interval`，并显式保存 `negated`；缺失或 null 归一化为 `[]`。
-  - `raw_query` 不是 prompt schema 的必需字段；schema 层会用原始中文问题作为 fallback，供 evidence 调试和追踪。
-- `direction=cites`：先把 anchor 解析到本地 `paper_data`，读取 anchor 自己的 `references.jsonl`；v1 只支持 `title/year` filter，作用于 reference `raw_text`。
-- `direction=cited_by`：先用 alias/manifest 把 anchor 解析到 canonical title，再只用 canonical title 扫描全库本地 `references.jsonl.raw_text`；alias 不参与 raw reference 匹配。
-- `direction=cited_by` 扫描时排除 anchor 本篇，并按唯一 citing paper 聚合；主结果放在 `citing_papers`，不返回 reference item 级列表，也不下挂 `matched_references`。
-- `direction=cited_by` 的 filters 作用于“引用者论文”的 manifest metadata。
-- `anchor_mode=per` 分别返回每个 anchor 的结果；`or` 返回并集；`and` 按全部 anchor 计算交集，任一 anchor 无命中则交集为空。
-- `intent=count` 返回数量，同时保留命中条目/论文，方便 ask 追溯来源。
-- evidence 不输出 `expanded_query`，不使用 `scope`，也不恢复旧版 reference cleanup 逻辑；reference 方向统一使用 `direction=cites/cited_by/null`。
-- reference evidence 中论文对象只输出 `title / author / year / venue`；`file_hash / pdf_path / paper_data_path / paper_id` 只在内部执行使用，不进入默认 plan JSON。
-- `matched_alias` 只有非空时输出，直接标题命中时省略，避免出现 `matched_alias: null`。
+
+- 执行层行为：
+  - reference 执行层和 metadata 一样，会先通过 `domains/common/filters.py` 解析 anchor 年份区间；解析后的 filters 会同时写回 route decision 和 parser 结果。
+  - `direction=cites`：先把 anchor 解析到本地 `paper_data`，读取 anchor 自己的 `references.jsonl`；v1 只支持 `title/year` filter，作用于 reference `raw_text`。
+  - `direction=cited_by`：先用 alias/manifest 把 anchor 解析到 canonical title，再只用 canonical title 扫描全库本地 `references.jsonl.raw_text`；alias 不参与 raw reference 匹配。
+  - `direction=cited_by` 扫描时排除 anchor 本篇，并按唯一 citing paper 聚合；主结果放在 `citing_papers`，不返回 reference item 级列表，也不下挂 `matched_references`。
+  - `direction=cited_by` 的 filters 作用于“引用者论文”的 manifest metadata。
+  - `anchor_mode=per` 分别返回每个 anchor 的结果；`or` 返回并集；`and` 按全部 anchor 计算交集，任一 anchor 无命中则交集为空。
+  - `intent=count` 返回数量，同时保留命中条目/论文，方便 ask 追溯来源。
+  - `planner.py` 在 reference 分支里的执行职责：
+    - 统一处理 `parse_failed / unknown_direction / missing_anchor` 三类非正常取证状态
+    - `cites` 路径逐个 anchor 读取本地 `references.jsonl`，在执行层做 title/year filter 匹配
+    - `cited_by` 路径扫描全库 active manifest，再逐篇读取本地 `references.jsonl`，按 citing paper 去重
+    - 在 planner 内完成 `per / or / and` 的结果组合，而不是让 parser 决定最终集合
+    - 把内部完整 reference / paper 对象裁剪成公开 evidence 字段，避免把路径、hash 等内部信息暴露到默认输出
+
+- evidence 输出：
+  - reference evidence 与 metadata 一样不再重复暴露 `query`、`parser_result` 或 `top_route`；原始问题统一使用顶层 `original_query`。
+  - `reference_items` 和 `citing_papers` 的 item 级结果不再重复携带 `direction`；方向只保留在 reference evidence 顶层。
+  - `reference_items` 和 `citing_papers` 里的锚点提及字段统一命名为 `anchor_mention`，不再使用旧的 `anchor_query`。
+  - `anchor_results` 只保留 per-anchor 摘要：`anchor_mention / resolved_papers / count`，不再下挂完整 `reference_items` 或 `citing_papers`。
+  - evidence 不输出 `expanded_query`，不使用 `scope`，也不恢复旧版 reference cleanup 逻辑；reference 方向统一使用 `direction=cites/cited_by/null`。
+  - reference evidence 中论文对象只输出 `title / author / year / venue`；`file_hash / pdf_path / paper_data_path / paper_id` 只在内部执行使用，不进入默认 plan JSON。
+  - `matched_alias` 只有非空时输出，直接标题命中时省略，避免出现 `matched_alias: null`。
 
 ### 8.4 Content Route
 
-- content route 是默认兜底；当前不做正文子路由，`intent=None`。
-- content 命中后的第二层也属于 plan parser 的职责，后续应使用 content 专用提示词解析正文问题类型、比较对象、目标论文范围、问题焦点和需要召回的内容范围。
-- content parser 的子路由暂定继续围绕 `lookup / reasoning / comparison / synthesis` 讨论，但本阶段不实现硬规则 content 子路由。
-- content parser 直接读取中文原问题，输出结构化 JSON；不调用翻译 API 直接翻译整句自然语言。
-- content 执行层根据 parser JSON 用固定英文模板构造检索文本，避免整句翻译带来的否定、范围和被动语义丢失。
-- 固定英文检索文本只服务 BM25 和 embedding，不作为用户可见回答文本；例如：
-  - `topic: representation compactness; target papers: Center Loss; terms: intra-class compactness, discriminative features`
-  - `compare papers: ResNet, EfficientNet; focus: scaling strategy and model efficiency`
-- ask v1 不对 content 直接生成自然语言答案；content 先只通过 `plan` 产出 evidence pack，后续等正文回答层设计稳定后再接入生成。
-- content route 使用 `abstract + body` 的 `chunks.jsonl` 作为召回输入；不使用 reference，不默认使用 appendix。
-- Milvus dense 召回 top `PLAN_DENSE_TOP_K` chunks，默认 20。
-- 本地 BM25 在 chunks 上召回 top `PLAN_BM25_TOP_K` chunks，默认 20。
-- 如果 `target_papers` 非空，只检索这些目标论文的 chunks；如果为空，则全库检索。
-- 使用 RRF 融合 dense 和 BM25 排名，按 `chunk_id` 去重，最终取 top `PLAN_FINAL_TOP_K`，默认 8。
-- 命中 chunk 后用 `block_ids` 回查 `blocks.jsonl`，并按同 section 前后 `PLAN_BLOCK_WINDOW` 个 blocks 扩展，默认 2。
-- content evidence 输出 `context_units`，每个 unit 包含 chunk 来源、融合分数、dense/BM25 来源、section_path、pages、chunk_text、expanded_blocks。
-- `blocks.jsonl` 用于精读、上下文扩展、图片/表格/公式还原和引用定位；`chunks.jsonl` 只作为召回输入。
+- 模块定位：
+  - content route 是默认兜底；当前不做正文子路由，`intent=None`。
+  - `retrieval/domains/content/` 当前主要承担 parser/prompt/schema 骨架，正文回答链路后续再扩。
 
+- parser 职责：
+  - content 命中后的第二层也属于 plan parser 的职责，后续应使用 content 专用提示词解析正文问题类型、比较对象、目标论文范围、问题焦点和需要召回的内容范围。
+  - content parser 的子路由暂定继续围绕 `lookup / reasoning / comparison / synthesis` 讨论，但本阶段不实现硬规则 content 子路由。
+  - content parser 直接读取中文原问题，输出结构化 JSON；不调用翻译 API 直接翻译整句自然语言。
+
+- 执行层行为：
+  - content 执行层根据 parser JSON 用固定英文模板构造检索文本，避免整句翻译带来的否定、范围和被动语义丢失。
+  - 固定英文检索文本只服务 BM25 和 embedding，不作为用户可见回答文本；例如：
+    - `topic: representation compactness; target papers: Center Loss; terms: intra-class compactness, discriminative features`
+    - `compare papers: ResNet, EfficientNet; focus: scaling strategy and model efficiency`
+  - ask v1 不对 content 直接生成自然语言答案；content 先只通过 `plan` 产出 evidence pack，后续等正文回答层设计稳定后再接入生成。
+  - content route 使用 `abstract + body` 的 `chunks.jsonl` 作为召回输入；不使用 reference，不默认使用 appendix。
+  - Milvus dense 召回 top `PLAN_DENSE_TOP_K` chunks，默认 20。
+  - 本地 BM25 在 chunks 上召回 top `PLAN_BM25_TOP_K` chunks，默认 20。
+  - 如果已经解析出目标论文，则只检索这些论文的 chunks；如果没有解析出目标论文，则全库检索。
+  - 使用 RRF 融合 dense 和 BM25 排名，按 `chunk_id` 去重，最终取 top `PLAN_FINAL_TOP_K`，默认 8。
+  - 命中 chunk 后用 `block_ids` 回查 `blocks.jsonl`，并按同 section 前后 `PLAN_BLOCK_WINDOW` 个 blocks 扩展，默认 2。
+  - `blocks.jsonl` 用于精读、上下文扩展、图片/表格/公式还原和引用定位；`chunks.jsonl` 只作为召回输入。
+  - `planner.py` 在 body 分支里的执行职责：
+    - 先按 `resolved_papers` 过滤本地 chunk 文档，再分别做 dense 检索和 BM25 检索
+    - dense 检索失败时只记 warning，并回退为 BM25-only 候选，不让整条 plan 失败
+    - 使用固定 `RRF_K=60` 做 dense/BM25 融合
+    - 只对融合后的前 `PLAN_FINAL_TOP_K` 个候选构建 `context_units`
+    - `context_unit()` 是 body 侧真正的上下文展开点；planner 只负责挑候选和传入 block window
+
+- evidence 输出：
+  - content evidence 输出 `context_units`，每个 unit 包含 chunk 来源、融合分数、dense/BM25 来源、section_path、pages、chunk_text、expanded_blocks。
+  - content evidence 不再重复输出 `top_route` 或 `query`；原始问题统一使用顶层 `original_query`。
 ### 8.5 索引与 BM25
 
 - `paper-rag index` 消费现有 `data/paper_data/*/chunks.jsonl`，不会自动运行 `ingest`。
@@ -584,42 +619,78 @@ TOC 构建规则：
 第一版测试重点：
 
 - 用 Attention Is All You Need 的 `content_list_v2.json` 验证标题抽取、编号 TOC、abstract/body/reference 区域切分。
+
 - 验证 Center Loss 的 `Abstract.` paragraph fallback 会去掉前缀，且 `Keywords` 不进入普通 blocks。
+
 - 验证 Center Loss、LSTM、NormFace 这类编号致谢标题不会进入 TOC/body blocks。
+
 - 验证 EfficientNet 可从第一页 `page_header` fallback 得到标题。
+
 - 验证 Inception-v4 这类无编号章节体系生成同级 TOC。
+
 - 验证 BERT、ResNet、SENet 这类 References 后 appendix 能正确截断 reference，并以 `region=appendix` 写入 blocks。
+
 - 验证图片/表格 block 保留结构字段：image 的 `source_path/caption`，table 的 `source_path/caption/html`，且表格 `text` 转为半结构化 `Columns` / `Row` 文本。
+
 - 验证 `chunks.jsonl` 自动生成，且只包含 `abstract/body`。
+
 - 验证 chunk schema 包含 `paper_id`、`section_path`、`pages`、`block_ids`、`text`、`embedding_text`。
+
 - 验证 `embedding_text` 有 Paper/Section 前缀和 overlap，`text` 不包含前缀且不混入 overlap。
+
 - 验证长 section 会切成多个 chunks，单个超长 block 不被硬拆。
+
 - 验证 `chunk_id` 后缀和 `chunk_index` 都从 0 开始且保持一致。
+
 - 验证短公式进入 chunk 时带 `Equation:` 标签，长公式不强行进入 chunk。
+
 - 验证 `.env.example` 包含 Milvus 与 Embedding 分区，`Settings` 能读取 URI、token、collection、model、dim、batch 和 cache path。
+
 - 验证 DashScope/OpenAI-compatible embedding 请求：
   - URL 为 `<EMBEDDING_BASE_URL>/embeddings`。
   - Header 使用 `Authorization: Bearer <EMBEDDING_API_KEY>`。
   - Payload 包含 `model`、`input`、`dimensions=1024`。
+  
 - 验证 embedding cache 命中时不发 HTTP 请求；文本、模型或维度变化时重新请求。
+
 - 验证 `paper-rag index` 只读取 chunks，不触发 ingest/MinerU/metadata，并会重建 Milvus collection。
+
 - 验证 `paper-rag search "query" --top-k 5` 返回 chunk 级结果，包含 score、title、section、pages、chunk_id 和 snippet。
+
 - 验证 `paper-rag plan "..."` 输出合法 JSON evidence pack，不生成最终自然语言答案；各顶层 route 的第二层语义解析允许调用独立 plan parser LLM。
+
 - 验证 plan router：
-  - `BERT是谁写的？` 直接由中文顶层路由进入 metadata route；parser 输出 `intent=lookup / return_field=author`，并生成 `title contains BERT` filter。
-  - `ResNet和Transformer的作者是谁？` 进入 metadata route；parser 输出 `intent=lookup / return_field=author`，并生成 `anchors=["ResNet", "Transformer"]` 或等价 title 约束。
-  - `BERT是哪一年发表的？` 进入 metadata route；parser 输出 `intent=lookup / return_field=year`，并生成 `anchors=["BERT"]`。
-  - `EfficientNet发表在哪个会议或期刊？` 进入 metadata route；parser 输出 `intent=lookup / return_field=venue`，并生成 `anchors=["EfficientNet"]`。
-  - `2015到2020年不在CVPR上发表的论文有哪些？` 进入 metadata route；parser 输出 `intent=list`，包含 `year interval [2015, 2020]` 和 `venue contains CVPR, negated=true` filter。
-  - `2019年以后发表了多少篇论文？` 进入 metadata route；parser 输出 `intent=count`，包含 `year interval [2019, "inf"]` filter。
-  - `2016年以前发表在CVPR上的论文有哪些？` 进入 metadata route；parser 输出 `intent=list`，包含 `year interval ["-inf", 2016]` 和 `venue contains CVPR` filter。
-  - `Kaiming He在2015年发表了哪些论文？` 进入 metadata route；parser 输出 `intent=list`，包含 `author = Kaiming He` 和 `year = 2015` filter；作者完整姓名匹配，`He` 不应匹配 `Kaiming He`。
-  - `哪些论文的标题里包含attention？` 进入 metadata route；parser 输出 `intent=list`，包含 `title contains attention` filter。
-  - `有多少篇论文不是发表在NeurIPS上的？` 进入 metadata route；parser 输出 `intent=count`，包含 `venue contains NeurIPS, negated=true` filter。
-  - 中文引用/参考文献类问题进入 reference route，并调用 reference parser 解析 `intent / direction / anchors / anchor_mode / filters`。
-  - 中文正文问题默认进入 `content` route，`intent=None`。
-  - 不调用翻译 API；metadata parser 不再输出 `raw_query`，reference schema 可用原始中文问题补充 `raw_query` 作为追踪字段。
-  - content route 后续验证 parser JSON 到固定英文检索文本的确定性转换，而不是验证自然语言翻译结果。
+  
+  ```
+  BERT是谁写的？ → metadata → {"intent":"lookup","return_field":"author","anchors":["BERT"],"filters":[]}
+  
+  ResNet和Transformer的作者是谁？ → metadata → {"intent":"lookup","return_field":"author","anchors":["ResNet","Transformer"],"filters":[]}
+  
+  BERT是哪一年发表的？ → metadata → {"intent":"lookup","return_field":"year","anchors":["BERT"],"filters":[]}
+  
+  EfficientNet发表在哪个会议或期刊？ → metadata → {"intent":"lookup","return_field":"venue","anchors":["EfficientNet"],"filters":[]}
+  
+  2015到2020年不在CVPR上发表的论文有哪些？ → metadata → {"intent":"list","return_field":null,"anchors":[],"filters":[{"field":"year","op":"interval","value":[2015,2020],"negated":false},{"field":"venue","op":"contains","value":"CVPR","negated":true}]}
+  
+  2019年以后发表了多少篇论文？ → metadata → {"intent":"count","return_field":null,"anchors":[],"filters":[{"field":"year","op":"interval","value":[2019,"inf"],"negated":false}]}
+  
+  2016年以前发表在CVPR上的论文有哪些？ → metadata → {"intent":"list","return_field":null,"anchors":[],"filters":[{"field":"year","op":"interval","value":["-inf",2016],"negated":false},{"field":"venue","op":"contains","value":"CVPR","negated":false}]}
+  
+  Kaiming He在2015年发表了哪些论文？ → metadata → {"intent":"list","return_field":null,"anchors":[],"filters":[{"field":"author","op":"=","value":"Kaiming He","negated":false},{"field":"year","op":"=","value":2015,"negated":false}]}
+  
+  哪些论文的标题里包含attention？ → metadata → {"intent":"list","return_field":null,"anchors":[],"filters":[{"field":"title","op":"contains","value":"attention","negated":false}]}
+  
+  有多少篇论文不是发表在NeurIPS上的？ → metadata → {"intent":"count","return_field":null,"anchors":[],"filters":[{"field":"venue","op":"contains","value":"NeurIPS","negated":true}]}
+  
+  ResNet引用了哪些论文？ → reference → {"intent":"list","direction":"cites","anchors":["ResNet"],"anchor_mode":"per","filters":[]}
+  
+  哪些论文引用了ResNet？ → reference → {"intent":"list","direction":"cited_by","anchors":["ResNet"],"anchor_mode":"per","filters":[]}
+  
+  哪些论文同时引用了ResNet和EfficientNet？ → reference → {"intent":"list","direction":"cited_by","anchors":["ResNet","EfficientNet"],"anchor_mode":"and","filters":[]}
+  
+  2015到2020年之间引用了ResNet的论文有哪些？ → reference → {"intent":"list","direction":"cited_by","anchors":["ResNet"],"anchor_mode":"per","filters":[{"field":"year","op":"interval","value":[2015,2020],"negated":false}]}
+  ```
+  
 - 验证 metadata evidence：
   - 从 `data/manifest.jsonl` 读取 active 记录。
   - parser 返回非法 JSON、非法枚举、缺必需字段、HTTP 超时或错误时，metadata evidence 标记 `parse_failed` 并写入 warning，不落到 content。
@@ -629,6 +700,7 @@ TOC 构建规则：
   - `count` 按 filters 查询 manifest，同时返回 `count` 和匹配论文列表。
   - 多目标 lookup 时 evidence 按命中的 `records` 顺序返回，不再新增分组 schema。
   - metadata evidence 不输出 `query`、`parser_result` 或 `target_papers`；原始问题使用顶层 `original_query`，锚点论文使用 `anchors`。
+  
 - 验证 reference route：
   - 中文问题命中 `引用 / 引用了 / 被引用 / 参考文献 / 引文` 等入口词时进入 reference route；英文 reference token 不再作为顶层入口规则。
   - `ResNet引用了哪些论文` 解析为 `direction=cites`，`anchors=["ResNet"]`，读取 ResNet 自己的 `references.jsonl`。
@@ -638,41 +710,69 @@ TOC 构建规则：
   - `分别列出ResNet和EfficientNet被哪些论文引用` 使用 `anchor_mode=per`，分别返回每个 anchor 的结果。
   - `哪些论文同时引用了ResNet和EfficientNet` 使用 `anchor_mode=and`，按全部 anchor 返回交集；若任一 anchor 无命中，最终结果为空。
   - `哪些论文引用了ResNet或EfficientNet` 使用 `anchor_mode=or`，返回并集。
-  - parser 输出 `filters=null` 或缺失 filters 时归一化为 `[]`；filters 为对象或字符串时仍 parse_failed。
   - `哪些2019年的论文引用了ResNet` 的 year filter 作用于引用者论文 manifest metadata。
   - `direction=null` 不检索，返回 `parse_status=unknown_direction` 和明确 warning。
   - reference evidence 不联网解析 DOI/DBLP，不把 reference item 自动补成结构化论文 metadata。
   - reference evidence 默认不输出 `file_hash / pdf_path / paper_data_path / paper_id`；`matched_alias` 只有非空才出现。
-  - 中文 reference parser 回归问题集，测试时不要直接使用 prompt examples：
-    - `ResNet的参考文献里有哪些工作？` -> `direction=cites`，`anchors=["ResNet"]`。
-    - `本地库里哪些文章把ResNet作为参考文献？` -> `direction=cited_by`，`anchors=["ResNet"]`，不要把“本地库”抽成 filter。
-    - `Transformer论文参考了哪些早期方法？` -> `direction=cites`，anchor 应尽量清洗为 `Transformer`，不要把 vague `early` 硬转成年份 filter。
-    - `哪些文章把Transformer放进了参考文献？` -> `direction=cited_by`，不要额外生成重复 anchor 的 title filter。
-    - `2018年之后有哪些论文的参考文献包含ImageNet？` -> `direction=cited_by`，year filter 为 `interval [2018, "inf"]`。
-    - `CVPR里的哪些论文参考了ImageNet？` -> `direction=cited_by`，venue filter 为 `contains CVPR`。
-    - `哪些论文的参考文献同时包含ResNet和ImageNet？` -> `direction=cited_by`，`anchor_mode=and`。
-    - `哪些论文的参考文献包含BERT或者Transformer？` -> `direction=cited_by`，`anchor_mode=or`。
-    - `分别列出BERT和Transformer论文自己的参考文献。` -> `direction=cites`，`anchor_mode=per`。
-    - `列一下AlexNet论文自己的参考文献。` -> `direction=cites`。
-    - `库里有哪些论文把AlexNet列为了参考文献？` -> `direction=cited_by`。
-    - `Center Loss这篇文章都参考了哪些论文？` -> `direction=cites`。
-    - `哪些人脸识别论文参考了Center Loss？` -> `direction=cited_by`，可用 title filter 限定引用者论文。
-    - `2016年之后哪些论文参考了ResNet？` -> `direction=cited_by`，year filter 为 `interval [2016, "inf"]`。
-    - `NIPS论文里有哪些参考了ImageNet？` -> `direction=cited_by`，venue filter 为 `contains NIPS`。
-    - `哪些论文的bibliography里同时出现了BERT和Transformer？` -> `direction=cited_by`，`anchor_mode=and`。
-    - `哪些论文的引用列表里出现了Center Loss或者NormFace？` -> `direction=cited_by`，`anchor_mode=or`。
-    - `请分别给出ResNet和EfficientNet自己的参考文献。` -> `direction=cites`，`anchor_mode=per`。
+  - reference parser 回归问题集，测试时不要直接使用 prompt examples：
+    
+    ```
+    ResNet的参考文献里有哪些工作？ → reference → {"intent":"list","direction":"cites","anchors":["ResNet"],"anchor_mode":"per","filters":[]}
+    
+    本地库里哪些文章把ResNet作为参考文献？ → reference → {"intent":"list","direction":"cited_by","anchors":["ResNet"],"anchor_mode":"per","filters":[]}
+    
+    Transformer论文参考了哪些早期方法？ → reference → {"intent":"list","direction":"cites","anchors":["Transformer"],"anchor_mode":"per","filters":[]}
+    
+    哪些文章把Transformer放进了参考文献？ → reference → {"intent":"list","direction":"cited_by","anchors":["Transformer"],"anchor_mode":"per","filters":[]}
+    
+    2018年之后有哪些论文的参考文献包含ImageNet？ → reference → {"intent":"list","direction":"cited_by","anchors":["ImageNet"],"anchor_mode":"per","filters":[{"field":"year","op":"interval","value":[2018,"inf"],"negated":false}]}
+    
+    CVPR里的哪些论文参考了ImageNet？ → reference → {"intent":"list","direction":"cited_by","anchors":["ImageNet"],"anchor_mode":"per","filters":[{"field":"venue","op":"contains","value":"CVPR","negated":false}]}
+    
+    哪些论文的参考文献同时包含ResNet和ImageNet？ → reference → {"intent":"list","direction":"cited_by","anchors":["ResNet","ImageNet"],"anchor_mode":"and","filters":[]}
+    
+    哪些论文的参考文献包含BERT或者Transformer？ → reference → {"intent":"list","direction":"cited_by","anchors":["BERT","Transformer"],"anchor_mode":"or","filters":[]}
+    
+    分别列出BERT和Transformer论文自己的参考文献。 → reference → {"intent":"list","direction":"cites","anchors":["BERT","Transformer"],"anchor_mode":"per","filters":[]}
+    
+    列一下AlexNet论文自己的参考文献。 → reference → {"intent":"list","direction":"cites","anchors":["AlexNet"],"anchor_mode":"per","filters":[]}
+    
+    库里有哪些论文把AlexNet列为了参考文献？ → reference → {"intent":"list","direction":"cited_by","anchors":["AlexNet"],"anchor_mode":"per","filters":[]}
+    
+    Center Loss这篇文章都参考了哪些论文？ → reference → {"intent":"list","direction":"cites","anchors":["Center Loss"],"anchor_mode":"per","filters":[]}
+    
+    哪些人脸识别论文参考了Center Loss？ → reference → {"intent":"list","direction":"cited_by","anchors":["Center Loss"],"anchor_mode":"per","filters":[{"field":"title","op":"contains","value":"人脸识别","negated":false}]}
+    
+    2016年之后哪些论文参考了ResNet？ → reference → {"intent":"list","direction":"cited_by","anchors":["ResNet"],"anchor_mode":"per","filters":[{"field":"year","op":"interval","value":[2016,"inf"],"negated":false}]}
+    
+    NIPS论文里有哪些参考了ImageNet？ → reference → {"intent":"list","direction":"cited_by","anchors":["ImageNet"],"anchor_mode":"per","filters":[{"field":"venue","op":"contains","value":"NIPS","negated":false}]}
+    
+    哪些论文的bibliography里同时出现了BERT和Transformer？ → reference → {"intent":"list","direction":"cited_by","anchors":["BERT","Transformer"],"anchor_mode":"and","filters":[]}
+    
+    哪些论文的引用列表里出现了Center Loss或者NormFace？ → reference → {"intent":"list","direction":"cited_by","anchors":["Center Loss","NormFace"],"anchor_mode":"or","filters":[]}
+    
+    请分别给出ResNet和EfficientNet自己的参考文献。 → reference → {"intent":"list","direction":"cites","anchors":["ResNet","EfficientNet"],"anchor_mode":"per","filters":[]}
+    ```
+  
 - 验证 body route：
   - mock Milvus dense top20 + 本地 BM25 top20。
   - 使用 RRF 融合，按 `chunk_id` 去重，输出 top8。
   - 命中 chunk 能回查 `blocks.jsonl`，并按同 section 前后 2 blocks 扩展成 `context_unit`。
+  
 - 验证 DBLP 精确标题命中正式 venue 后得到 `publish_year`、作者和 venue，并触发 PDF/MinerU 输出最终命名。
+
 - 验证 ArXiv 精确标题命中时写入 `preprint_year`，且不写 `venue="ArXiv"`。
+
 - 验证 DBLP/Semantic Scholar 命中正式 venue 时写入 `publish_year/venue`，命中 `CoRR/ArXiv` 时不采用为正式发表信息。
+
 - 验证 DBLP 未命中正式发表时继续查 Semantic Scholar；Semantic Scholar 命中时必须通过 normalized title 完全一致校验。
+
 - 验证 ArXiv、DBLP 和 Semantic Scholar 都未命中时退出码为 0、状态为 unresolved、PDF 不重命名。
+
 - 验证重复 hash PDF 不重复调用 MinerU。
+
 - 验证删除 PDF 后 MinerU 数据归档、`paper_data` 删除、manifest 状态更新。
+
 - 验证 `reference_list` 在 ingest 阶段拆成条目级 `references.jsonl`，但不参与普通 chunking。
 
 ## 12. 待决策问题

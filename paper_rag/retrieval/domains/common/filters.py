@@ -27,11 +27,11 @@ def resolve_anchor_interval_filter(filter_item: dict[str, Any], anchor_years: li
     if not isinstance(value, list) or "anchor" not in value:
         return filter_item
     if not anchor_years:
-        warnings.append("metadata anchor interval could not resolve anchor year")
+        warnings.append("anchor interval could not resolve anchor year")
         return filter_item
     if value == ["anchor", "anchor"]:
         if len(anchor_years) < 2:
-            warnings.append("metadata anchor interval requires at least two anchor years")
+            warnings.append("anchor interval requires at least two anchor years")
             return filter_item
         low, high = min(anchor_years), max(anchor_years)
         resolved = [low + 1, high - 1]

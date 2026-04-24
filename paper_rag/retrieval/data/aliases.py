@@ -73,11 +73,11 @@ def unique_terms(values: list[str]) -> list[str]:
     return result
 
 
-def resolve_target_papers(settings: Settings, target_queries: list[str]) -> tuple[list[dict[str, Any]], list[AliasMatch]]:
+def resolve_paper_mentions(settings: Settings, paper_mentions: list[str]) -> tuple[list[dict[str, Any]], list[AliasMatch]]:
     targets: list[dict[str, Any]] = []
     alias_matches: list[AliasMatch] = []
     seen: set[str] = set()
-    for query in target_queries:
+    for query in paper_mentions:
         expanded_query, matches = expand_query_with_aliases(settings, query)
         alias_matches.extend(matches)
         for record in match_manifest_records(settings, expanded_query):

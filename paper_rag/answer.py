@@ -102,6 +102,7 @@ def build_provenance(route: str, plan_pack: dict[str, Any]) -> list[str]:
 
 def render_reference_answer(plan_pack: dict[str, Any], evidence: dict[str, Any], chinese: bool) -> str:
     parse_status = str(evidence.get("parse_status") or "")
+    direction = str(evidence.get("direction") or "")
     if parse_status == "parse_failed":
         return localized_message(chinese, "这个 reference 问题暂时无法解析。", "This reference question could not be parsed.")
     if parse_status == "unknown_direction":
@@ -116,7 +117,7 @@ def render_reference_answer(plan_pack: dict[str, Any], evidence: dict[str, Any],
         head = localized_message(chinese, f"共找到 {len(references)} 条引用证据：", f"Found {len(references)} reference match(es):")
     lines = [head]
     for index, reference in enumerate(references[:MAX_DISPLAY_ITEMS], start=1):
-        lines.append(f"{index}. {reference_summary(reference)}")
+        lines.append(f"{index}. {reference_summary(reference, direction)}")
     if len(references) > MAX_DISPLAY_ITEMS:
         lines.append("...")
     return "\n".join(lines)
@@ -128,8 +129,7 @@ def reference_results_for_answer(evidence: dict[str, Any]) -> list[dict[str, Any
     return list(evidence.get("reference_items") or [])
 
 
-def reference_summary(reference: dict[str, Any]) -> str:
-    direction = reference.get("direction")
+def reference_summary(reference: dict[str, Any], direction: str) -> str:
     ref = reference.get("reference") or {}
     raw_text = str(ref.get("raw_text") or "").strip()
     if len(raw_text) > 220:

@@ -8,6 +8,14 @@ def route_tokens(query: str) -> list[str]:
     return re.findall(r"[a-z0-9]+", query.lower())
 
 
+def first_matching_term(tokens: list[str], candidates: set[str]) -> str | None:
+    token_set = set(tokens)
+    for term in sorted(candidates):
+        if term in token_set:
+            return term
+    return None
+
+
 def flatten_filter_value(value: Any) -> list[str]:
     if isinstance(value, list):
         return [str(item).strip() for item in value if str(item).strip()]

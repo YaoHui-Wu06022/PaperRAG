@@ -9,7 +9,7 @@ def reference_parser_prompt() -> str:
 将用户查询解析为 JSON。只输出 JSON，不要回答问题。
 Schema:
 {
-  "intent": "list|count|null",
+  "intent": "list|count",
   "direction": "cites|cited_by|null",
   "anchors": [],
   "anchor_mode": "per|or|and",
@@ -35,7 +35,13 @@ Schema:
   - "cited_by"：查询哪些论文的参考文献列表里包含锚点论文，哪些论文引用了锚点论文
     范式: "哪些论文引用了 A""A 被哪些论文引用"
   - 无法判断引用方向时用 null
-  
+
+- "anchors":
+  - 字符串列表，只存引用关系中的锚点论文标题、别名或缩写
+  - direction="cites" 时，anchors 是“谁引用”的论文
+  - direction="cited_by" 时，anchors 是“被谁引用”的论文
+  - 按非锚点论文标题筛选时用 filters.title
+
 - "anchor_mode":
   - "per": 默认模式，单个锚点必须用 "per"，或者多个锚点没有明确要求合并结果
   - "per" 有"分别"语义

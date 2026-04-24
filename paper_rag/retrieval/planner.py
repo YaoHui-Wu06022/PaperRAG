@@ -8,15 +8,16 @@ from typing import Any
 
 from ..config import Settings
 from ..dataprocess.manifest import effective_year
-from .data.aliases import alias_match_to_dict, expand_query_with_aliases, resolve_target_papers
+from .data.aliases import alias_match_to_dict, expand_query_with_aliases, resolve_paper_mentions
 from .data.chunks import ChunkDocument, load_chunk_documents
 from .data.manifest_lookup import load_active_manifest_records, manifest_record_to_evidence, match_manifest_records
 from .data.venues import canonicalize_venue, expand_venue_query_terms
 from .dense.milvus_store import SearchResult
 from .dense.service import build_embedder, build_store
+from .domains.common.text import flatten_filter_value, normalized_text_key, route_tokens
 from .sparse.bm25 import BM25Document, BM25Index
 from .context import context_unit
-from .top_router import RouteDecision, build_route_decision, flatten_filter_value, route_tokens
+from .top_router import RouteDecision, build_route_decision
 
 
 RRF_K = 60
@@ -88,11 +89,9 @@ def prepare_query(
 
 def base_evidence(route: RouteDecision, *, public_papers: bool = False) -> dict[str, Any]:
     return {
-        "top_route": route.route,
         "intent": route.intent,
         "return_field": route.return_field,
-        "target_papers": public_paper_list(route.target_papers) if public_papers else route.target_papers,
-        "query": route.target_query,
+        "resolved_papers": public_paper_list(route.resolved_papers) if public_papers else route.resolved_papers,
         "filters": route.filters,
         "alias_matches": [alias_match_to_dict(match) for match in route.alias_matches],
     }
@@ -112,7 +111,7 @@ def metadata_base_evidence(route: RouteDecision) -> dict[str, Any]:
     return {
         "intent": route.intent,
         "return_field": route.return_field,
-        "anchors": public_paper_list(route.target_papers),
+        "anchors": public_paper_list(route.resolved_papers),
         "filters": route.filters,
         "alias_matches": [alias_match_to_dict(match) for match in route.alias_matches],
     }
@@ -139,7 +138,7 @@ def public_paper(paper: dict[str, Any] | None) -> dict[str, Any] | None:
 
 def public_reference_entry(entry: dict[str, Any]) -> dict[str, Any]:
     result = {
-        "anchor_query": entry.get("anchor_query"),
+        "anchor_mention": entry.get("anchor_mention"),
     }
     if entry.get("reference") is not None:
         result["reference"] = entry.get("reference")
@@ -156,9 +155,19 @@ def public_reference_entry(entry: dict[str, Any]) -> dict[str, Any]:
 
 def public_anchor_result(result: dict[str, Any]) -> dict[str, Any]:
     return {
-        "anchor_query": result.get("anchor_query"),
-        "target_papers": public_paper_list(result.get("target_papers") or []),
+        "anchor_mention": result.get("anchor_mention"),
+        "resolved_papers": public_paper_list(result.get("resolved_papers") or []),
         "count": result.get("count"),
+    }
+
+
+def public_metadata_record(record: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "title": record.get("title"),
+        "author": record.get("author"),
+        "year": record.get("year"),
+        "venue": record.get("venue"),
+        "pdf_path": record.get("pdf_path"),
     }
 
 
@@ -259,7 +268,7 @@ def plan_body(
     embedder=None,
     store=None,
 ) -> dict[str, Any]:
-    documents = filter_documents_by_targets(load_chunk_documents(settings.paper_data_dir), route.target_papers)
+    documents = filter_documents_by_targets(load_chunk_documents(settings.paper_data_dir), route.resolved_papers)
     documents_by_id = {document.chunk_id: document for document in documents}
     try:
         dense_results = dense_search(settings, prepared.original_query, embedder=embedder, store=store)
@@ -289,26 +298,26 @@ def reference_cites_results(
     anchor_results: list[dict[str, Any]] = []
     for anchor in route.anchors:
         anchor_value = str(anchor or "").strip()
-        target_papers, _ = resolve_target_papers(settings, [anchor_value])
+        resolved_papers, _ = resolve_paper_mentions(settings, [anchor_value])
         anchor_refs: list[dict[str, Any]] = []
-        for target in target_papers:
+        for target in resolved_papers:
             for ref in load_reference_rows(target):
                 if reference_raw_matches_filters(ref, route.filters, warnings):
                     entry = {
                         "direction": "cites",
-                        "anchor_query": anchor,
+                        "anchor_mention": anchor,
                         "anchor_paper": target,
                         "target_paper": None,
                         "reference": ref,
                     }
                     anchor_refs.append(entry)
                     references.append(entry)
-        if not target_papers:
+        if not resolved_papers:
             warnings.append(f"reference anchor not found locally: {anchor_value}")
         anchor_results.append({
-            "anchor_query": anchor,
+            "anchor_mention": anchor,
             "direction": "cites",
-            "target_papers": target_papers,
+            "resolved_papers": resolved_papers,
             "references": anchor_refs,
             "count": len(anchor_refs),
         })
@@ -321,9 +330,9 @@ def reference_cited_by_results(settings: Settings, route: RouteDecision) -> tupl
     records = load_active_manifest_records(settings)
     for anchor in route.anchors:
         anchor_value = str(anchor or "").strip()
-        target_papers, _ = resolve_target_papers(settings, [anchor_value])
-        anchor_terms = [str(target.get("title") or "").strip() for target in target_papers if target.get("title")]
-        target_keys = {paper_identity_key(target) for target in target_papers}
+        resolved_papers, _ = resolve_paper_mentions(settings, [anchor_value])
+        anchor_terms = [str(target.get("title") or "").strip() for target in resolved_papers if target.get("title")]
+        target_keys = {paper_identity_key(target) for target in resolved_papers}
         anchor_refs: list[dict[str, Any]] = []
         seen_citing_papers: set[str] = set()
         for record in records:
@@ -340,7 +349,7 @@ def reference_cited_by_results(settings: Settings, route: RouteDecision) -> tupl
                 if reference_raw_matches_terms(ref.get("raw_text"), anchor_terms):
                     entry = {
                         "direction": "cited_by",
-                        "anchor_query": anchor,
+                        "anchor_mention": anchor,
                         "citing_paper": paper,
                     }
                     anchor_refs.append(entry)
@@ -348,9 +357,9 @@ def reference_cited_by_results(settings: Settings, route: RouteDecision) -> tupl
                     seen_citing_papers.add(paper_key)
                     break
         anchor_results.append({
-            "anchor_query": anchor,
+            "anchor_mention": anchor,
             "direction": "cited_by",
-            "target_papers": target_papers,
+            "resolved_papers": resolved_papers,
             "references": anchor_refs,
             "count": len(anchor_refs),
         })
@@ -465,7 +474,7 @@ def combine_reference_results(
     if anchor_mode == "or":
         return [items[0] for _, items in sorted(grouped.items())]
     if anchor_mode == "and":
-        return [items[0] for _, items in sorted(grouped.items()) if len({str(item.get("anchor_query") or "") for item in items}) >= anchor_count]
+        return [items[0] for _, items in sorted(grouped.items()) if len({str(item.get("anchor_mention") or "") for item in items}) >= anchor_count]
     return references
 
 
@@ -528,26 +537,15 @@ def fuse_chunk_results(
     return fused
 
 
-def filter_documents_by_targets(documents: list[ChunkDocument], target_papers: list[dict[str, Any]]) -> list[ChunkDocument]:
-    if not target_papers:
+def filter_documents_by_targets(documents: list[ChunkDocument], resolved_papers: list[dict[str, Any]]) -> list[ChunkDocument]:
+    if not resolved_papers:
         return documents
-    paper_ids = {str(target.get("paper_id")) for target in target_papers if target.get("paper_id")}
+    paper_ids = {str(target.get("paper_id")) for target in resolved_papers if target.get("paper_id")}
     return [document for document in documents if document.paper_id in paper_ids]
 
 
-def metadata_records_for_targets(target_papers: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [
-        {
-            "file_hash": target.get("file_hash"),
-            "title": target.get("title"),
-            "author": target.get("author"),
-            "year": target.get("year"),
-            "venue": target.get("venue"),
-            "pdf_path": target.get("pdf_path"),
-            "paper_data_path": target.get("paper_data_path"),
-        }
-        for target in target_papers
-    ]
+def metadata_records_for_targets(resolved_papers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [public_metadata_record(target) for target in resolved_papers]
 
 
 def metadata_lookup_records(
@@ -558,9 +556,9 @@ def metadata_lookup_records(
     return_field = route.return_field
     if return_field is None:
         warnings.append("metadata lookup missing return_field")
-    records = metadata_records_for_targets(route.target_papers)
-    if not records and route.target_query:
-        records = match_manifest_records(settings, route.target_query)
+    records = metadata_records_for_targets(route.resolved_papers)
+    if not records and route.query:
+        records = match_manifest_records(settings, route.query)
     if return_field is None:
         return records
     return [
@@ -573,7 +571,7 @@ def metadata_records_by_parser_filters(settings: Settings, filters: list[dict[st
     records: list[dict[str, Any]] = []
     for record in load_active_manifest_records(settings):
         if all(record_matches_filter(settings, record, filter_item) for filter_item in filters):
-            records.append(manifest_record_to_evidence(record))
+            records.append(public_metadata_record(manifest_record_to_evidence(record)))
     return records
 
 
@@ -671,11 +669,6 @@ def compare_venue(settings: Settings, actual: Any, op: str, expected: Any) -> bo
     actual_text = canonicalize_venue(settings, actual)
     values = expand_venue_query_terms(settings, flatten_filter_value(expected))
     return compare_text(actual_text, op, values) or compare_text(actual, op, values)
-
-
-def normalized_text_key(value: str) -> str:
-    return " ".join(route_tokens(value))
-
 
 def matching_author(authors: list[str], author_query: str) -> str | None:
     query_tokens = route_tokens(author_query)

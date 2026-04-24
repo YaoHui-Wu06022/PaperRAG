@@ -31,7 +31,8 @@ DEFAULT_QUERIES = [
     # "找一下标题是 Transformer 的论文",
     # "ResNet 是哪一年发表的",
     # "Attention is All You Need之后有哪些不在2019年以前的论文",
-    "Word2Vec之后、BERT 之前有哪些论文",
+    # "Word2Vec之后、BERT 之前有哪些论文",
+    "题目中包含 BERT 的论文有哪些"
 ]
 
 
