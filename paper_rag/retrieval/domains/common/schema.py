@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 from typing import Any
@@ -8,32 +8,43 @@ from .errors import PlanParseError
 
 PAPER_FILTER_FIELDS = {"author", "year", "venue", "title"}
 PAPER_FILTER_OPS = {"=", "in", "contains", "interval"}
+NEGATIVE_INFINITY = {"-inf", "-infinity"}
+POSITIVE_INFINITY = {"inf", "+inf", "infinity", "+infinity"}
 
 
-def parse_json_object(content: str | dict[str, Any], parser_name: str) -> dict[str, Any]:
+def load_payload(content: str | dict[str, Any], name: str) -> dict[str, Any]:
     if isinstance(content, str):
         try:
             payload = json.loads(content)
         except json.JSONDecodeError as exc:
-            raise PlanParseError(f"{parser_name} parser returned invalid JSON: {exc}") from exc
+            raise PlanParseError(f"{name} parser returned invalid JSON: {exc}") from exc
     else:
         payload = dict(content)
     if not isinstance(payload, dict):
-        raise PlanParseError(f"{parser_name} parser JSON root must be an object")
+        raise PlanParseError(f"{name} parser JSON root must be an object")
     return payload
 
 
-def normalize_string_list(value: Any, field_name: str) -> list[str]:
+def norm_string_list(value: Any, name: str) -> list[str]:
     if not isinstance(value, list):
-        raise PlanParseError(f"{field_name} must be a list")
-    normalized: list[str] = []
+        raise PlanParseError(f"{name} must be a list")
+    items: list[str] = []
     for item in value:
         if not isinstance(item, str):
-            raise PlanParseError(f"{field_name} items must be strings")
+            raise PlanParseError(f"{name} items must be strings")
         text = item.strip()
         if text:
-            normalized.append(text)
-    return normalized
+            items.append(text)
+    return items
+
+
+def validate_paper_filters(value: Any, name: str) -> list[dict[str, Any]]:
+    if value is None:
+        value = []
+    if not isinstance(value, list):
+        raise PlanParseError(f"{name} filters must be a list")
+    return [validate_paper_filter(item) for item in value]
+
 
 def validate_paper_filter(value: Any) -> dict[str, Any]:
     if not isinstance(value, dict):
@@ -52,28 +63,26 @@ def validate_paper_filter(value: Any) -> dict[str, Any]:
     return {
         "field": field,
         "op": op,
-        "value": normalize_plan_filter_value(op, value.get("value")),
+        "value": norm_filter_value(op, value.get("value")),
         "negated": negated,
     }
 
 
-def normalize_plan_filter_value(op: str, value: Any) -> Any:
+def norm_filter_value(op: str, value: Any) -> Any:
     if op != "interval":
         return value
-    if isinstance(value, list):
-        if len(value) != 2:
-            raise PlanParseError("Plan interval filter requires two bounds")
-        return [_normalize_interval_bound(value[0]), _normalize_interval_bound(value[1])]
+    if isinstance(value, list) and len(value) == 2:
+        return [norm_interval_bound(value[0]), norm_interval_bound(value[1])]
     raise PlanParseError("Plan interval filter requires a two-item range")
 
 
-def _normalize_interval_bound(value: Any) -> int | str:
+def norm_interval_bound(value: Any) -> int | str:
     if isinstance(value, str):
         text = value.strip()
         normalized = text.lower()
-        if normalized in {"-inf", "-infinity"}:
+        if normalized in NEGATIVE_INFINITY:
             return "-inf"
-        if normalized in {"inf", "+inf", "infinity", "+infinity"}:
+        if normalized in POSITIVE_INFINITY:
             return "inf"
         try:
             return int(normalized)

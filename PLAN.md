@@ -95,7 +95,8 @@ paper_rag/
 │     └─ retry.py                    # 外部元数据请求的延迟与一次重试策略
 └─ retrieval/
    ├─ top_router.py                  # 顶层路由：只负责 metadata / reference / content 第一层分流
-   ├─ planner.py                     # plan 主编排：路由分发、取证、聚合、evidence 组装
+   ├─ top_planner.py                 # plan 顶层编排：准备 query、分发 domain planner、组装顶层 plan 包
+   ├─ evidence.py                    # 对外 evidence 字段裁剪：论文、metadata record、reference entry
    ├─ context.py                     # body 路由命中 chunk 后的 block 扩展与 context_unit 组装
    ├─ translation.py                 # 当前仅保留基础文本能力；不再承担翻译 API 主路径
    ├─ plan_probe.py                  # plan 调试入口：直接观察 run_plan 输出
@@ -112,6 +113,7 @@ paper_rag/
    │  ├─ metadata/
    │  │  ├─ __init__.py              # metadata domain 包入口
    │  │  ├─ router.py                # metadata route 构建：接 parser、解 anchors、补年份过滤
+   │  │  ├─ planner.py               # metadata 取证：manifest 查询、字段 lookup/list/count evidence
    │  │  ├─ parser.py                # metadata parser 调用封装
    │  │  ├─ prompt.py                # metadata parser 提示词
    │  │  ├─ prompt_probe.py          # metadata prompt 单独测试入口
@@ -119,6 +121,7 @@ paper_rag/
    │  ├─ reference/
    │  │  ├─ __init__.py              # reference domain 包入口
    │  │  ├─ router.py                # reference route 构建：接 parser、解 anchors、补年份过滤
+   │  │  ├─ planner.py               # reference 取证：cites/cited_by、本地 references 聚合与交并集
    │  │  ├─ parser.py                # reference parser 调用封装
    │  │  ├─ prompt.py                # reference parser 提示词
    │  │  ├─ prompt_probe.py          # reference prompt 单独测试入口
@@ -126,10 +129,11 @@ paper_rag/
    │  └─ content/
    │     ├─ __init__.py              # content domain 包入口
    │     ├─ router.py                # content 顶层入口：只判断中文正文行为词
-   │     ├─ parser.py                # content parser 调用封装（当前仍以骨架为主）
+   │     ├─ planner.py               # content 取证：retrieval_source、dense/BM25 融合、context_units
+   │     ├─ parser.py                # content parser 调用封装
    │     ├─ prompt.py                # content parser 提示词
    │     ├─ prompt_probe.py          # content prompt 单独测试入口
-   │     └─ schema.py                # content schema 骨架，后续随内容链路扩展
+   │     └─ schema.py                # content 独有 schema：intent / anchors / compare_objects / objects
    ├─ dense/
    │  ├─ service.py                  # embedding 与 Milvus store 的高层接线
    │  ├─ embedding.py                # DashScope/OpenAI-compatible embedding 客户端
@@ -140,22 +144,52 @@ paper_rag/
    └─ data/
       ├─ aliases.py                  # 论文别名匹配与 canonical 扩展
       ├─ chunks.py                   # `chunks.jsonl` 读取与 chunk 文档适配
+      ├─ filters.py                  # author/year/venue/title 论文元字段 filter evaluator
       ├─ references.py               # `references.jsonl` 读取适配
       └─ manifest_lookup.py          # active manifest 读取、匹配与 evidence 投影
 ```
 
 补充约束：
 
-- `planner.py` 当前真实职责不只是调度，还负责：
-  - 调用 `top_router.build_route_decision()` 生成顶层 `RouteDecision`
-  - 按 `metadata / reference / content` 分支分发到三条取证路径
-  - 把内部 `resolved_papers`、alias 命中和 filters 整形成对外 evidence
-  - 把内部完整论文对象裁剪成公开字段 `title / author / year / venue`
-  - 负责 reference 的聚合、去重、交并集和 per-anchor 摘要
-  - 负责 body 路由的 dense/BM25 融合与 `context_units` 组装
-  - 在不改动 parser 的前提下补充 warning、count 和 parse_status 等执行层信息
+- `top_planner.py` 只做顶层编排：调用 `top_router.build_route_decision()`、按 `metadata / reference / content` 分支分发到 domain planner、组装最终 plan 包。
+- 三个 domain planner 分别负责各自取证：metadata 查 manifest，reference 查本地 references，content 组装 retrieval source 并执行 dense/BM25/context 扩展。
+- `evidence.py` 只做内部对象到对外 evidence 字段裁剪；`data/filters.py` 只做论文元字段 filter 判断。
 - 当前不保留旧路径兼容包装；内部代码和测试统一使用新路径。
 - `ask` 的答案整合逻辑已经落在根包 `answer.py`，CLI 入口在 `cli/ask.py`。
+
+### 5.1 函数与变量命名规范
+
+后续新增或重构 retrieval 相关代码时，函数名优先遵循下面的语义前缀，避免同一类操作出现多套命名：
+
+- `validate_*`：校验 schema、parser payload 或输入结构；失败抛 `PlanParseError` 或明确异常，成功返回已规范化的对象。项目里 `validate_*` 可以包含“校验 + 轻量规范化”的含义。
+- `norm_*`：纯归一化逻辑，例如文本、列表、filter value、interval bound；不做外部 I/O，不做检索，不修改 evidence。
+- `to_evidence_*`：把内部对象裁剪/转换成对外 evidence 字典；只负责展示字段投影，不做 parser、检索、聚合。
+- `build_*`：组装较完整的内部结构或 evidence 基础结构，例如 `build_metadata_evidence_base()`、`build_content_retrieval_source()`。
+- `match_*`：布尔匹配判断，例如 manifest record 是否满足 filter、reference raw text 是否命中条件。
+- `search_*`：执行检索动作，例如 dense chunk search、BM25 chunk search。
+- `filter_*`：对集合做过滤并返回子集，例如按论文范围过滤 chunks。
+- `resolve_*`：把别名、论文名、锚点年份等不稳定输入解析成内部稳定对象或具体值。
+- `merge_*` / `fuse_*`：合并同类结果；`fuse_*` 专用于多路检索结果融合，例如 dense + BM25。
+- `parse_*`：把外部行、Milvus hit、JSON 行等原始输入解析成内部对象。
+
+变量命名也按数据所处阶段区分：
+
+- `query`：当前路由使用的原始用户问题文本；不再使用 `target_query` / `raw_query` 表示同一概念。
+- `paper_mentions`：parser 或 filter 中抽出的论文名/别名字符串，还没有解析到本地论文。
+- `resolved_papers`：已经通过别名表、manifest 或本地 paper_data 解析出的论文对象。
+- `anchors`：对外 evidence 中展示的锚点论文列表；只保留公开字段，不暴露内部路径/hash。
+- `filters`：parser 输出并经过本地规范化后的论文元字段约束，字段限于 `author/year/venue/title`。
+- `records`：metadata route 返回的 manifest 记录证据，已经裁剪成对外展示字段。
+- `reference_items`：`direction=cites` 时，锚点论文自己的参考文献条目。
+- `citing_papers`：`direction=cited_by` 时，引用了锚点论文的本地论文列表。
+- `context_units`：content route 命中 chunk 后扩展出的上下文单元，供后续生成使用。
+
+命名边界：
+
+- 不保留旧函数名兼容包装；重命名时同步更新调用点和测试。
+- 对外 JSON 字段稳定优先，内部函数名调整不能顺手改 evidence schema。
+- `metadata` 独有字段保留 `return_field`；`reference` 独有字段保留 `direction / anchors / anchor_mode`；三条路由共用 `filters`。
+- common 层函数名不能绑定某个 domain 语义；如果只适用于论文元字段 filter，命名使用 `paper_filter`，不要写成过宽的 `plan_filter`。
 
 ## 6. 数据流
 
@@ -272,15 +306,15 @@ CLI 行为：
 - 顶层路由为 `reference / content / metadata / unclear`，优先级为 `reference -> content -> metadata -> unclear`。
 - 第一层路由不调用 LLM，只使用中文入口词；命中顶层 route 后的第二层语义解析调用独立 plan parser。
 - reference 入口最高，只识别中文引用/参考文献语义；不再使用 `cite / reference / bibliography / quote` 等英文 token 作为第一层路由依据。
-- content 入口先于 metadata，识别“方法、结构、机制、实验、使用、用了、比较、为什么、总结、贡献、怎么、如何”等中文正文行为词；这样“作者为 He、题目为 ResNet 的论文讲了什么内容”会落到 content，而不是 metadata。
-- metadata 在排除 reference/content 后再判断，只保留中文元数据和论文集合入口词，例如“年、作者、写、谁、期刊、题目、标题、会议、发表、发布、出版、来源、出处、在哪、哪里、多少、几、数量、哪些”。
+- content 入口先于 metadata，优先识别中文“询问行为”，例如“讲、解释、分析、总结、概括、比较、对比、区别、差异、为什么、为何、如何、怎么、使用、采用、用了”；“方法、结构、机制、实验、结果、性能、特点、贡献、局限”等正文对象词必须和疑问词组合才触发 content，不能单独吸收问题。
+- metadata 在排除 reference/content 后再判断，只保留中文元数据字段词和“论文集合 + 列表/统计词”组合：字段词包括“年、作者、谁、期刊、题目、标题、会议、发表、发布、venue”；集合词包括“论文、文章、篇”，列表/统计词包括“哪些、有、多少、几、数量、一共、最早、最新”。
 - `之前 / 之后 / 以前 / 以后` 这类关系词不是任何 route 的独立入口，因为三条路都可能出现；metadata 相对年份问题依赖“哪些 / 年 / 发表”等入口进入 metadata 后，再由 metadata parser 和执行层解析区间。
 - 如果 reference/content/metadata 都没有命中，route 为 `unclear`，提示用户补充是要查正文内容、论文元数据还是引用关系，而不是默认进入正文召回。
 - evidence pack 顶层公共字段包含 `original_query / route / intent / router_reason / filters / evidence / warnings`；`return_field` 只在 metadata route 顶层输出，`direction / anchors / anchor_mode` 只在 reference route 顶层输出，不再使用旧的 `sub_route` 字段。
 - 不保留顶层 `language` 字段；metadata/reference 统一消费中文结构化 JSON，content 的英文检索文本只作为 evidence 内部字段或调试字段保存。
 - evidence 不使用 `scope` 和 `expanded_query`；metadata 锚点解析只作为内部取证步骤，不在 metadata evidence 中直接暴露，content/reference 保持各自 route 当前字段，内部 alias/canonical 扩展不暴露。
 - `RouteDecision` 的内部命名统一为 `query / resolved_papers / resolved_anchor_papers`：`query` 表示当前路由消费的原始问题文本；`resolved_papers` 表示 parser 输出经 filter 归一化、alias 和 manifest 解析后的本地论文对象；`resolved_anchor_papers` 仅供 reference 的 per-anchor 取证使用，避免执行层重复解析 anchor。
-- `planner.py` 的主入口是 `run_plan(settings, query, ...)`：当前 `prepare_query()` 仍是薄预处理，主要保留 query 和 warnings；真正的路由、取证和 evidence 组装都发生在 `run_plan()` 之后。
+- `top_planner.py` 的主入口是 `run_plan(settings, query, ...)`：当前 `prepare_query()` 仍是薄预处理，主要保留 query 和 warnings；真正的路由、取证和 evidence 组装都发生在 `run_plan()` 之后。
 - 第二层语义解析是 `metadata / reference / content` 三个分支共用的设计原则，但每个分支的下沉 schema 可以不同：
   - metadata 重点解析字段查询、论文列表、数量统计、字段过滤、否定过滤和锚点论文。
   - reference 重点解析 `cites / cited_by` 引用方向、锚点论文、引用范围过滤和引用列表/统计意图；对应的路由与 parser 骨架独立放在 `retrieval/domains/reference/`。
@@ -295,11 +329,11 @@ CLI 行为：
 
 - 顶层入口：
   - 第一层路由顺序为 `reference -> content -> metadata -> unclear`。
-  - content 入口词放在 `retrieval/domains/content/router.py`，负责判断正文行为词，例如方法、结构、机制、实验、使用、用了、比较、为什么、总结、贡献等。
-  - metadata 入口词只保留简单中文元数据字段或论文集合线索，例如“年 / 作者 / 写 / 谁 / 期刊 / 题目 / 标题 / 会议 / 发表 / 发布 / 出版 / 来源 / 出处 / 在哪 / 哪里 / 多少 / 几 / 数量 / 哪些”；在已经排除 reference/content 后，命中这些词就进入 metadata。
+- content 入口词放在 `retrieval/domains/content/router.py`，负责判断正文询问行为；正文对象词只在同时命中疑问词时触发，避免“方法 / 实验 / 性能 / 特点”这类裸词误吸 metadata 问题。
+- metadata 入口词只保留简单中文元数据字段，或“论文集合词 + 列表/统计词”的组合；不再堆叠“哪些论文 / 有哪些论文”这类重复句型短语。
   - metadata 入口不使用“之前 / 之后 / 以前 / 以后”这类关系词；这类词只在 metadata parser 和年份区间执行层中表达相对年份约束。
   - 如果 reference/content/metadata 都没有命中，则 route 为 `unclear`，提示用户补充问题语义，而不是默认进入正文召回。
-  - 示例：`Attention is All You Need之后有哪些不在2019年以前的论文` 进入 metadata；`作者为He题目为ResNet的这篇论文讲了什么内容` 因命中 content 行为词“内容”落到 content。
+- 示例：`Attention is All You Need之后有哪些不在2019年以前的论文` 进入 metadata；`作者为He题目为ResNet的这篇论文讲了什么内容` 因命中 content 询问行为“讲”落到 content。
 
 - parser 职责：
   - metadata 命中后，不再用硬规则细分 `paper_list / author / year / venue / title`；改为调用 OpenAI-compatible plan parser 的 metadata 解析提示词，输出严格 JSON。
@@ -429,31 +463,44 @@ CLI 行为：
   - `retrieval/domains/content/` 当前承担 content 顶层入口词、parser/prompt/schema 骨架，正文回答链路后续再扩。
 
 - parser 职责：
-  - content 命中后的第二层也属于 plan parser 的职责，后续应使用 content 专用提示词解析正文问题类型、比较对象、目标论文范围、问题焦点和需要召回的内容范围。
-  - content parser 的子路由暂定继续围绕 `lookup / reasoning / comparison / synthesis` 讨论，但本阶段不实现硬规则 content 子路由。
+  - content 命中后的第二层由 content 专用 parser 解析正文问题类型、比较对象、目标论文范围、问题焦点和需要召回的内容范围。
+  - content parser 已接入 `retrieval/domains/content/parser.py` 和 `schema.py`，和 metadata/reference 一样复用 `PLAN_PARSER_*` 的 OpenAI-compatible parser client。
   - content parser 直接读取中文原问题，输出结构化 JSON；不调用翻译 API 直接翻译整句自然语言。
+  - content parser 输出字段：
+    - `intent`：`fact / method / reason / compare / summary / list`。
+    - `anchors`：论文标题、常用别名或缩写列表，用于限定本地论文范围。
+    - `compare_objects`：比较对象，只用于正文比较组织，不自动等价于论文范围。
+    - `objects`：扣除提问词、比较对象和元数据过滤条件后的正文内容对象，例如方法、模块、机制、数据集、实验结果、贡献等。
+    - `filters`：复用通用论文元字段 filter schema，字段仍是 `author / year / venue / title`，op 仍是 `= / in / contains / interval`。
+  - content parser schema 会忽略未知字段，但会拒绝非法 `intent`、非法 filter、非字符串列表的 anchors/objects/compare_objects。
 
 - 执行层行为：
-  - content 执行层根据 parser JSON 用固定英文模板构造检索文本，避免整句翻译带来的否定、范围和被动语义丢失。
-  - 固定英文检索文本只服务 BM25 和 embedding，不作为用户可见回答文本；例如：
-    - `topic: representation compactness; target papers: Center Loss; terms: intra-class compactness, discriminative features`
-    - `compare papers: ResNet, EfficientNet; focus: scaling strategy and model efficiency`
+  - content route 进入后必须先经过 content parser；parser 缺失配置、HTTP 错误、非 JSON 或 schema 错误时，evidence 标记 `parse_failed`，不再回退到裸原始 query 检索。
+  - content 执行层根据 parser JSON 构造 `retrieval_source`，避免整句翻译带来的否定、范围和被动语义丢失。
+  - `retrieval_source.text` 使用固定字段模板拼接 `intent / objects / compare_objects / anchors / papers / filters / question`，同时服务 dense embedding 和 BM25；它是检索源，不是最终用户答案。
   - ask v1 不对 content 直接生成自然语言答案；content 先只通过 `plan` 产出 evidence pack，后续等正文回答层设计稳定后再接入生成。
   - content route 使用 `abstract + body` 的 `chunks.jsonl` 作为召回输入；不使用 reference，不默认使用 appendix。
   - Milvus dense 召回 top `PLAN_DENSE_TOP_K` chunks，默认 20。
   - 本地 BM25 在 chunks 上召回 top `PLAN_BM25_TOP_K` chunks，默认 20。
-  - 如果已经解析出目标论文，则只检索这些论文的 chunks；如果没有解析出目标论文，则全库检索。
+  - parser 输出后统一执行一次 `resolve_parser_papers()`：`anchors` 和 `title` 字段的精确过滤在同一处解析；`title` 在 `op="="` 或 `op="in"` 时会把常用别名映射回本地规范论文标题，`title contains ...` 保留原始文本。
+  - content filters 已对召回源生效：`title / year / venue / author` 会通过 active manifest 过滤候选论文，随后只对命中的论文 chunks 做 BM25；dense 搜索结果也会在融合前按同一候选 chunk 集合裁剪。
+  - 如果已经解析出目标论文，则只检索这些论文的 chunks；如果同时存在 filters，则取目标论文和 filter 命中论文的交集；如果没有解析出目标论文且没有 filters，则全库检索。
+  - content 也复用 `domains/common/filters.py` 的论文名/别名年份区间解析；解析后的 filters 会同步写回 route decision 和 parser result。
   - 使用 RRF 融合 dense 和 BM25 排名，按 `chunk_id` 去重，最终取 top `PLAN_FINAL_TOP_K`，默认 8。
   - 命中 chunk 后用 `block_ids` 回查 `blocks.jsonl`，并按同 section 前后 `PLAN_BLOCK_WINDOW` 个 blocks 扩展，默认 2。
   - `blocks.jsonl` 用于精读、上下文扩展、图片/表格/公式还原和引用定位；`chunks.jsonl` 只作为召回输入。
   - `planner.py` 在 body 分支里的执行职责：
-    - 先按 `resolved_papers` 过滤本地 chunk 文档，再分别做 dense 检索和 BM25 检索
+    - 处理 content parser 的 `parse_failed`
+    - 先按 `resolved_papers` 和 `filters` 过滤本地 chunk 文档，再分别做 dense 检索和 BM25 检索
+    - 用 `retrieval_source.text` 而不是原始问题调用 embedding 和 BM25
     - dense 检索失败时只记 warning，并回退为 BM25-only 候选，不让整条 plan 失败
     - 使用固定 `RRF_K=60` 做 dense/BM25 融合
     - 只对融合后的前 `PLAN_FINAL_TOP_K` 个候选构建 `context_units`
     - `context_unit()` 是 body 侧真正的上下文展开点；planner 只负责挑候选和传入 block window
 
 - evidence 输出：
+  - content evidence 包含 `intent / anchors / compare_objects / objects / filters / resolved_papers / alias_matches / retrieval_source / context_units`。
+  - `retrieval_source` 保存执行层实际送入 dense/BM25 的检索源文本，以及对应的结构化字段，便于调试 parser 输出到检索输入的映射。
   - content evidence 输出 `context_units`，每个 unit 包含 chunk 来源、融合分数、dense/BM25 来源、section_path、pages、chunk_text、expanded_blocks。
   - content evidence 不再重复输出 `top_route` 或 `query`；原始问题统一使用顶层 `original_query`。
 ### 8.5 索引与 BM25

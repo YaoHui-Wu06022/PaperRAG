@@ -68,10 +68,8 @@ def build_route_decision(
         from .domains.reference.router import build_reference_decision
 
         return build_reference_decision(settings, decision, query, warnings, plan_parser=plan_parser)
+    if decision.route == "content":
+        from .domains.content.router import build_content_decision
+
+        return build_content_decision(settings, decision, query, warnings, plan_parser=plan_parser)
     return decision
-
-
-def has_reference_term(query: str) -> bool:
-    from .domains.reference import router
-
-    return router.has_reference_term(query)

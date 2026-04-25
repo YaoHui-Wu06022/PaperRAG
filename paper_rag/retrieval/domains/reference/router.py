@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any
 
 from ....config import Settings
 from ..common.errors import PlanParseError
@@ -11,34 +10,28 @@ from ...top_router import RouteDecision
 from .parser import ReferenceParserClient
 
 
-REFERENCE_CHINESE_TERMS = {
+REFERENCE_ENTRY_TERMS = {
     "引用",
     "被引",
     "参考",
-    "参考文献",
     "引文",
 }
 
 
 def reference_route(query: str, tokens: list[str] | None = None) -> RouteDecision | None:
     _ = tokens
-    chinese_term = first_chinese_reference_term(query)
-    if chinese_term:
+    term = first_reference_entry_term(query)
+    if term:
         return RouteDecision(
             route="reference",
-            reason=f"匹配到关键词: {chinese_term}",
+            reason=f"匹配到路由词: {term}",
             intent=None,
             query=query,
         )
     return None
 
-
-def has_reference_term(query: str) -> bool:
-    return first_chinese_reference_term(query) is not None
-
-
-def first_chinese_reference_term(query: str) -> str | None:
-    for term in sorted(REFERENCE_CHINESE_TERMS, key=len, reverse=True):
+def first_reference_entry_term(query: str) -> str | None:
+    for term in sorted(REFERENCE_ENTRY_TERMS, key=len, reverse=True):
         if term in query:
             return term
     return None

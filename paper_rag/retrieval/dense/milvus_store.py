@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
@@ -68,7 +68,7 @@ class MilvusStore:
 
     def insert_documents(self, documents: list[ChunkDocument], vectors: list[list[float]], batch_size: int = 100) -> int:
         rows = [
-            document_to_row(document, vector, self.vector_field)
+            build_document_row(document, vector, self.vector_field)
             for document, vector in zip(documents, vectors)
         ]
         for start in range(0, len(rows), batch_size):
@@ -87,10 +87,10 @@ class MilvusStore:
             anns_field=self.vector_field,
         )
         hits = results[0] if results else []
-        return [search_result_from_hit(hit) for hit in hits]
+        return [parse_search_hit(hit) for hit in hits]
 
 
-def document_to_row(document: ChunkDocument, vector: list[float], vector_field: str) -> dict[str, Any]:
+def build_document_row(document: ChunkDocument, vector: list[float], vector_field: str) -> dict[str, Any]:
     return {
         "chunk_id": document.chunk_id,
         "paper_id": document.paper_id,
@@ -103,7 +103,7 @@ def document_to_row(document: ChunkDocument, vector: list[float], vector_field: 
     }
 
 
-def search_result_from_hit(hit: dict[str, Any]) -> SearchResult:
+def parse_search_hit(hit: dict[str, Any]) -> SearchResult:
     entity = hit.get("entity") if isinstance(hit.get("entity"), dict) else hit
     score = hit.get("distance", hit.get("score", 0.0))
     return SearchResult(

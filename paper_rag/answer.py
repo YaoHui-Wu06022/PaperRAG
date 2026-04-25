@@ -6,7 +6,7 @@ from typing import Any
 from .config import Settings
 from .dataprocess.manifest import effective_year
 from .retrieval.data.venues import canonicalize_venue
-from .retrieval.planner import run_plan
+from .retrieval.top_planner import run_plan
 from .retrieval.translation import contains_chinese
 
 MAX_DISPLAY_ITEMS = 10

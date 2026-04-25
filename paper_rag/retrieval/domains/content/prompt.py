@@ -10,6 +10,7 @@ def content_parser_system_prompt() -> str:
 Schema:
 {
   "intent": "fact|method|reason|compare|summary|list",
+  "anchors": [],
   "compare_objects": [],
   "objects": [],
   "filters": [

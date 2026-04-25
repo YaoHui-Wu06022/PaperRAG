@@ -9,8 +9,9 @@ from paper_rag.config import Settings
 from paper_rag.answer import run_ask
 from paper_rag.retrieval.dense.milvus_store import SearchResult
 from paper_rag.retrieval.domains.metadata.router import build_metadata_decision
-from paper_rag.retrieval.planner import prepare_query, run_plan
+from paper_rag.retrieval.top_planner import prepare_query, run_plan
 from paper_rag.retrieval.domains.common.errors import PlanParseError
+from paper_rag.retrieval.domains.content.schema import validate_content_parse
 from paper_rag.retrieval.domains.metadata.schema import validate_metadata_parse
 from paper_rag.retrieval.domains.reference.router import build_reference_decision
 from paper_rag.retrieval.domains.reference.schema import validate_reference_parse
@@ -42,6 +43,21 @@ class StaticReferenceParser:
         payload.setdefault("anchor_mode", "per")
         payload.setdefault("filters", [])
         return validate_reference_parse(payload, query)
+
+
+class StaticContentParser:
+    def __init__(self, payload: dict):
+        self.payload = payload
+        self.calls: list[str] = []
+
+    def parse_content(self, query: str) -> dict:
+        self.calls.append(query)
+        payload = dict(self.payload)
+        payload.setdefault("anchors", [])
+        payload.setdefault("compare_objects", [])
+        payload.setdefault("objects", [])
+        payload.setdefault("filters", [])
+        return validate_content_parse(payload, query)
 
 
 def metadata_lookup(field: str, title: str) -> StaticMetadataParser:
@@ -333,6 +349,42 @@ class PlanTests(unittest.TestCase):
                 "direction": "cites",
                 "anchors": [{"field": "author", "value": "Kaiming He"}],
                 "anchor_mode": "per",
+                "filters": [],
+            })
+
+    def test_content_parser_schema_normalizes_valid_payload(self) -> None:
+        payload = validate_content_parse({
+            "intent": "compare",
+            "anchors": ["ResNet", ""],
+            "compare_objects": ["ResNet", "DenseNet"],
+            "objects": ["方法设计"],
+            "filters": [{"field": "year", "op": "interval", "value": [2015, "inf"], "negated": False}],
+            "router": "content",
+        })
+        self.assertEqual(payload["intent"], "compare")
+        self.assertEqual(payload["anchors"], ["ResNet"])
+        self.assertEqual(payload["compare_objects"], ["ResNet", "DenseNet"])
+        self.assertEqual(payload["objects"], ["方法设计"])
+        self.assertEqual(payload["filters"][0]["value"], [2015, "inf"])
+
+    def test_content_parser_schema_normalizes_missing_or_null_filters(self) -> None:
+        missing_filters = validate_content_parse({
+            "intent": "method",
+            "objects": ["模型结构"],
+        })
+        null_filters = validate_content_parse({
+            "intent": "method",
+            "objects": ["模型结构"],
+            "filters": None,
+        })
+        self.assertEqual(missing_filters["filters"], [])
+        self.assertEqual(null_filters["filters"], [])
+
+    def test_content_parser_rejects_invalid_intent(self) -> None:
+        with self.assertRaises(PlanParseError):
+            validate_content_parse({
+                "intent": "unknown",
+                "objects": [],
                 "filters": [],
             })
 
@@ -804,7 +856,7 @@ class PlanTests(unittest.TestCase):
             self.assertEqual(len(pack["evidence"]["citing_papers"]), 1)
             self.assertEqual(pack["evidence"]["reference_items"], [])
 
-    def test_reference_incoming_returns_local_citing_papers(self) -> None:
+    def test_reference_cited_by_returns_local_citing_papers(self) -> None:
         with sample_project() as root:
             settings = Settings.load(Path(root))
             pack = run_plan(
@@ -848,7 +900,7 @@ class PlanTests(unittest.TestCase):
             self.assertNotIn("citing_papers", pack["evidence"]["anchor_results"][0])
             self.assertNotIn("reference_items", pack["evidence"]["anchor_results"][0])
 
-    def test_reference_outgoing_reads_anchor_references_and_filters_raw_text(self) -> None:
+    def test_reference_cites_reads_anchor_references_and_filters_raw_text(self) -> None:
         with sample_project() as root:
             settings = Settings.load(Path(root))
             pack = run_plan(
@@ -929,20 +981,33 @@ class PlanTests(unittest.TestCase):
             settings = Settings.load(Path(root))
             embedder = FakeEmbedder()
             store = FakeStore()
+            parser = StaticContentParser({
+                "intent": "method",
+                "anchors": ["Center Loss"],
+                "objects": ["intra class compactness"],
+                "filters": [{"field": "title", "op": "=", "value": "Center Loss", "negated": False}],
+            })
             pack = run_plan(
                 settings,
-                "center loss 方法 intra class compactness",
+                "center loss 方法如何提升 intra class compactness",
+                plan_parser=parser,
                 embedder=embedder,
                 store=store,
             )
             self.assertEqual(pack["route"], "content")
-            self.assertEqual(pack["intent"], None)
+            self.assertEqual(pack["intent"], "method")
             self.assertNotIn("scope", pack["evidence"])
             self.assertNotIn("expanded_query", pack["evidence"])
             self.assertNotIn("top_route", pack["evidence"])
             self.assertNotIn("query", pack["evidence"])
             self.assertEqual(store.top_k, 20)
-            self.assertEqual(embedder.calls, [["center loss 方法 intra class compactness"]])
+            self.assertEqual(len(embedder.calls), 1)
+            retrieval_text = embedder.calls[0][0]
+            self.assertIn("intent: method", retrieval_text)
+            self.assertIn("intra class compactness", retrieval_text)
+            self.assertIn("A Discriminative Feature Learning Approach for Deep Face Recognition", retrieval_text)
+            self.assertEqual(pack["evidence"]["retrieval_source"]["text"], retrieval_text)
+            self.assertEqual(pack["evidence"]["parse_status"], "ok")
             units = pack["evidence"]["context_units"]
             self.assertGreaterEqual(len(units), 1)
             self.assertIn("dense", units[0]["sources"])
@@ -950,6 +1015,44 @@ class PlanTests(unittest.TestCase):
             block_ids = [block["block_id"] for block in units[0]["expanded_blocks"]]
             self.assertIn("b1", block_ids)
             self.assertIn("b2", block_ids)
+
+    def test_content_filters_limit_retrieval_source_documents(self) -> None:
+        with sample_project() as root:
+            settings = Settings.load(Path(root))
+            embedder = FakeEmbedder()
+            store = FakeStore()
+            pack = run_plan(
+                settings,
+                "ResNet的方法设计是什么",
+                plan_parser=StaticContentParser({
+                    "intent": "method",
+                    "anchors": ["ResNet"],
+                    "objects": ["方法设计"],
+                    "filters": [
+                        {"field": "title", "op": "=", "value": "ResNet", "negated": False},
+                        {"field": "year", "op": "interval", "value": [2015, 2016], "negated": False},
+                        {"field": "venue", "op": "contains", "value": "CVPR", "negated": False},
+                        {"field": "author", "op": "=", "value": "Kaiming He", "negated": False},
+                    ],
+                }),
+                embedder=embedder,
+                store=store,
+            )
+            self.assertEqual(pack["route"], "content")
+            self.assertEqual(pack["intent"], "method")
+            title_filter = next(filter_item for filter_item in pack["evidence"]["filters"] if filter_item["field"] == "title")
+            self.assertEqual(title_filter, {
+                "field": "title",
+                "op": "=",
+                "value": "Deep Residual Learning for Image Recognition",
+                "negated": False,
+            })
+            self.assertEqual(pack["evidence"]["resolved_papers"][0]["title"], "Deep Residual Learning for Image Recognition")
+            self.assertEqual(pack["evidence"]["resolved_papers"][0]["matched_alias"], "ResNet")
+            units = pack["evidence"]["context_units"]
+            self.assertGreaterEqual(len(units), 1)
+            self.assertEqual(units[0]["title"], "Deep Residual Learning for Image Recognition")
+            self.assertIn("方法设计", pack["evidence"]["retrieval_source"]["text"])
 
 def sample_project():
     temp = tempfile.TemporaryDirectory()
@@ -1036,6 +1139,14 @@ def sample_project():
         }),
         encoding="utf-8",
     )
+    (resnet_paper / "metadata.json").write_text(
+        json.dumps({
+            "title": "Deep Residual Learning for Image Recognition",
+            "year": {"preprint_year": 2015, "publish_year": 2016},
+            "venue": "CVPR",
+        }),
+        encoding="utf-8",
+    )
     (paper / "chunks.jsonl").write_text(
         "\n".join([
             json.dumps({
@@ -1094,6 +1205,38 @@ def sample_project():
                 "type": "paragraph",
                 "text": "Softmax loss learns separable features.",
                 "page": 2,
+                "section_id": "sec_1",
+                "section_path": ["1 Introduction"],
+            }),
+        ]) + "\n",
+        encoding="utf-8",
+    )
+    (resnet_paper / "chunks.jsonl").write_text(
+        "\n".join([
+            json.dumps({
+                "chunk_id": "ResNet_def::chunk_0000",
+                "paper_id": "ResNet_def",
+                "chunk_index": 0,
+                "region": "body",
+                "section_id": "sec_1",
+                "section_path": ["1 Introduction"],
+                "pages": [1],
+                "block_ids": ["r1"],
+                "text": "Residual learning uses shortcut connections to ease the training of very deep networks.",
+                "embedding_text": "Paper: Deep Residual Learning for Image Recognition\nSection: 1 Introduction\n\nResidual learning uses shortcut connections.",
+            }),
+        ]) + "\n",
+        encoding="utf-8",
+    )
+    (resnet_paper / "blocks.jsonl").write_text(
+        "\n".join([
+            json.dumps({
+                "block_id": "r1",
+                "order": 0,
+                "region": "body",
+                "type": "paragraph",
+                "text": "Residual learning uses shortcut connections to ease optimization.",
+                "page": 1,
                 "section_id": "sec_1",
                 "section_path": ["1 Introduction"],
             }),

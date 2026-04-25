@@ -11,35 +11,34 @@ from .parser import MetadataParserClient
 
 
 METADATA_ENTRY_TERMS = {
-    # author
     "作者",
-    "写",
     "谁",
-    "发布",
-    "提出",
-    # title
-    "题",
     "题目",
     "标题",
     "名字",
-    # year
     "年",
-    "时",
-
-    # venue
+    "发表",
+    "发布",
     "期刊",
     "会议",
-    "发表",
-    "出版",
-    "来源",
-    "出处",
-    "在哪",
-    "哪里",
-    # 计数词
+    "venue",
+}
+
+PAPER_TERMS = {
+    "论文",
+    "文章",
+    "篇",
+}
+
+METADATA_LIST_TERMS = {
+    "哪些",
+    "有",
     "多少",
     "几",
     "数量",
-    "哪些",
+    "一共",
+    "最早",
+    "最新",
 }
 
 
@@ -53,6 +52,39 @@ def metadata_route(query: str, tokens: list[str]) -> RouteDecision | None:
         intent=None,
         query=query,
     )
+
+
+def metadata_entry_reason(query: str, tokens: list[str]) -> str:
+    _ = tokens
+    term = first_metadata_entry_term(query)
+    if term:
+        return f"匹配到路由词: {term}"
+    paper_term = first_paper_term(query)
+    list_term = first_metadata_list_term(query)
+    if paper_term and list_term:
+        return f"匹配到论文集合和列表词: {paper_term}/{list_term}"
+    return ""
+
+
+def first_metadata_entry_term(query: str) -> str | None:
+    for term in sorted(METADATA_ENTRY_TERMS, key=len, reverse=True):
+        if term in query:
+            return term
+    return None
+
+
+def first_paper_term(query: str) -> str | None:
+    for term in sorted(PAPER_TERMS, key=len, reverse=True):
+        if term in query:
+            return term
+    return None
+
+
+def first_metadata_list_term(query: str) -> str | None:
+    for term in sorted(METADATA_LIST_TERMS, key=len, reverse=True):
+        if term in query:
+            return term
+    return None
 
 
 def build_metadata_decision(
@@ -124,19 +156,3 @@ def apply_anchor_year_filters(settings: Settings, decision: RouteDecision, warni
         filters=resolved_filters,
         anchors=decision.anchors,
     )
-
-
-def metadata_entry_reason(query: str, tokens: list[str]) -> str:
-    """Only decide whether to enter metadata parsing."""
-    _ = tokens
-    term = first_matching_term(query, METADATA_ENTRY_TERMS)
-    if term:
-        return f"matched metadata entry clue: {term}"
-    return ""
-
-
-def first_matching_term(query: str, terms: set[str]) -> str | None:
-    for term in sorted(terms, key=len, reverse=True):
-        if term in query:
-            return term
-    return None

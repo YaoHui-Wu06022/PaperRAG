@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 from dataclasses import dataclass
@@ -45,7 +45,7 @@ def load_reference_documents(settings: Settings, paper_ids: set[str] | None = No
     return documents
 
 
-def reference_to_payload(document: ReferenceDocument) -> dict[str, Any]:
+def to_evidence_reference_document(document: ReferenceDocument) -> dict[str, Any]:
     return {
         "paper_id": document.paper_id,
         "title": document.title,

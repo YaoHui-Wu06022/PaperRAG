@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import asdict
 
@@ -41,10 +41,10 @@ def match_manifest_records(settings: Settings, query: str) -> list[dict]:
     matches.sort(key=lambda item: item[0], reverse=True)
     if matches and matches[0][0] >= 10.0:
         matches = [item for item in matches if item[0] >= 10.0]
-    return [manifest_record_to_evidence(record) for _, record in matches]
+    return [to_evidence_manifest_record(record) for _, record in matches]
 
 
-def manifest_record_to_evidence(record: ManifestRecord) -> dict:
+def to_evidence_manifest_record(record: ManifestRecord) -> dict:
     data = asdict(record)
     return {
         "file_hash": data["file_hash"],

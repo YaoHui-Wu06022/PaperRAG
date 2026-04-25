@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 from dataclasses import dataclass
@@ -39,7 +39,7 @@ def load_chunk_documents(paper_data_dir: Path) -> list[ChunkDocument]:
         metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
         title = str(metadata.get("title") or directory.name)
         for row in read_jsonl(chunks_path):
-            documents.append(chunk_from_row(row, title))
+            documents.append(parse_chunk_row(row, title))
     return documents
 
 
@@ -51,7 +51,7 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
     ]
 
 
-def chunk_from_row(row: dict[str, Any], title: str) -> ChunkDocument:
+def parse_chunk_row(row: dict[str, Any], title: str) -> ChunkDocument:
     section_path = row.get("section_path") or []
     pages = row.get("pages") or []
     return ChunkDocument(

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from typing import Any
 
@@ -11,11 +11,11 @@ def resolve_paper_year_filters(
     filters: list[dict[str, Any]],
     warnings: list[str],
 ) -> list[dict[str, Any]]:
-    resolved_filters = [resolve_paper_interval_filter(settings, filter_item, warnings) for filter_item in filters]
+    resolved_filters = [resolve_year_interval_filter(settings, filter_item, warnings) for filter_item in filters]
     return merge_year_interval_filters(resolved_filters)
 
 
-def resolve_paper_interval_filter(
+def resolve_year_interval_filter(
     settings: Settings,
     filter_item: dict[str, Any],
     warnings: list[str],
@@ -29,9 +29,9 @@ def resolve_paper_interval_filter(
     left, right = [resolve_year_boundary(settings, boundary, warnings) for boundary in value]
     if left == value[0] and right == value[1]:
         return filter_item
-    if not interval_bounds_are_resolved(left, right):
+    if not has_resolved_interval_bounds(left, right):
         return {**filter_item, "value": [left, right]}
-    return {**filter_item, "value": normalize_interval_filter_bounds(left, right)}
+    return {**filter_item, "value": norm_interval_filter_bounds(left, right)}
 
 
 def resolve_year_boundary(settings: Settings, boundary: Any, warnings: list[str]) -> Any:
@@ -52,7 +52,7 @@ def resolve_year_boundary(settings: Settings, boundary: Any, warnings: list[str]
     return boundary
 
 
-def normalize_interval_filter_bounds(left: Any, right: Any) -> list[Any]:
+def norm_interval_filter_bounds(left: Any, right: Any) -> list[Any]:
     if isinstance(left, int) and is_positive_infinity(right):
         return [left + 1, right]
     if is_negative_infinity(left) and isinstance(right, int):
@@ -66,8 +66,8 @@ def merge_year_interval_filters(filters: list[dict[str, Any]]) -> list[dict[str,
     merged: dict[str, Any] | None = None
     output: list[dict[str, Any]] = []
     for filter_item in filters:
-        if can_merge_year_interval(filter_item):
-            merged = merge_interval_filter(merged, filter_item)
+        if is_mergeable_year_interval(filter_item):
+            merged = merge_year_interval(merged, filter_item)
         else:
             output.append(filter_item)
     if merged is not None:
@@ -75,7 +75,7 @@ def merge_year_interval_filters(filters: list[dict[str, Any]]) -> list[dict[str,
     return output
 
 
-def can_merge_year_interval(filter_item: dict[str, Any]) -> bool:
+def is_mergeable_year_interval(filter_item: dict[str, Any]) -> bool:
     value = filter_item.get("value")
     return (
         filter_item.get("field") == "year"
@@ -83,11 +83,11 @@ def can_merge_year_interval(filter_item: dict[str, Any]) -> bool:
         and not filter_item.get("negated")
         and isinstance(value, list)
         and len(value) == 2
-        and interval_bounds_are_resolved(value[0], value[1])
+        and has_resolved_interval_bounds(value[0], value[1])
     )
 
 
-def merge_interval_filter(current: dict[str, Any] | None, next_filter: dict[str, Any]) -> dict[str, Any]:
+def merge_year_interval(current: dict[str, Any] | None, next_filter: dict[str, Any]) -> dict[str, Any]:
     if current is None:
         return dict(next_filter)
     current_lower, current_upper = current["value"]
@@ -117,7 +117,7 @@ def min_upper_bound(left: Any, right: Any) -> Any:
     return min(left, right)
 
 
-def interval_bounds_are_resolved(left: Any, right: Any) -> bool:
+def has_resolved_interval_bounds(left: Any, right: Any) -> bool:
     return (isinstance(left, int) or is_infinity(left)) and (isinstance(right, int) or is_infinity(right))
 
 
