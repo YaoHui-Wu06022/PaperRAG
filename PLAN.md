@@ -107,7 +107,7 @@ paper_rag/
    │  │  ├─ parser_client.py         # OpenAI-compatible parser client
    │  │  ├─ schema.py                # 校验 JSON、字符串列表规范化、转成内部稳定格式
    │  │  ├─ paper_resolver.py        # parser anchors / title filters -> 本地 resolved_papers 的公共解析逻辑
-  │  │  ├─ filters.py               # 论文名/别名年份区间解析、合并与 warning 处理
+   │  │  ├─ filters.py               # 论文名/别名年份区间解析、合并与 warning 处理
    │  │  └─ prompt.py                # metadata/reference 共用 prompt 片段
    │  ├─ metadata/
    │  │  ├─ __init__.py              # metadata domain 包入口
@@ -125,8 +125,10 @@ paper_rag/
    │  │  └─ schema.py                # reference 独有 schema：intent / direction/ anchor_mode
    │  └─ content/
    │     ├─ __init__.py              # content domain 包入口
+   │     ├─ router.py                # content 顶层入口：只判断中文正文行为词
    │     ├─ parser.py                # content parser 调用封装（当前仍以骨架为主）
    │     ├─ prompt.py                # content parser 提示词
+   │     ├─ prompt_probe.py          # content prompt 单独测试入口
    │     └─ schema.py                # content schema 骨架，后续随内容链路扩展
    ├─ dense/
    │  ├─ service.py                  # embedding 与 Milvus store 的高层接线
@@ -267,8 +269,13 @@ CLI 行为：
 - 主路径固定为“中文路由 -> 中文 domain parser -> 结构化 JSON -> 执行层取证”；不调用翻译 API。
 - `metadata` 和 `reference` 直接消费 parser 输出的 JSON 执行检索，不生成英文中间 query。
 - `content` 先由 content parser 输出结构化 JSON，再按固定模板生成英文检索文本，例如 `paper: ...; topic: ...; terms: ...`，供 BM25 和 embedding 使用。
-- 顶层路由为 `metadata / reference / content`，优先级为 `reference > metadata > content`。
-- 第一层路由不调用 LLM，使用中文关键词和高置信短语/句型规则；命中顶层 route 后的第二层语义解析调用独立 plan parser。
+- 顶层路由为 `reference / content / metadata / unclear`，优先级为 `reference -> content -> metadata -> unclear`。
+- 第一层路由不调用 LLM，只使用中文入口词；命中顶层 route 后的第二层语义解析调用独立 plan parser。
+- reference 入口最高，只识别中文引用/参考文献语义；不再使用 `cite / reference / bibliography / quote` 等英文 token 作为第一层路由依据。
+- content 入口先于 metadata，识别“方法、结构、机制、实验、使用、用了、比较、为什么、总结、贡献、怎么、如何”等中文正文行为词；这样“作者为 He、题目为 ResNet 的论文讲了什么内容”会落到 content，而不是 metadata。
+- metadata 在排除 reference/content 后再判断，只保留中文元数据和论文集合入口词，例如“年、作者、写、谁、期刊、题目、标题、会议、发表、发布、出版、来源、出处、在哪、哪里、多少、几、数量、哪些”。
+- `之前 / 之后 / 以前 / 以后` 这类关系词不是任何 route 的独立入口，因为三条路都可能出现；metadata 相对年份问题依赖“哪些 / 年 / 发表”等入口进入 metadata 后，再由 metadata parser 和执行层解析区间。
+- 如果 reference/content/metadata 都没有命中，route 为 `unclear`，提示用户补充是要查正文内容、论文元数据还是引用关系，而不是默认进入正文召回。
 - evidence pack 顶层公共字段包含 `original_query / route / intent / router_reason / filters / evidence / warnings`；`return_field` 只在 metadata route 顶层输出，`direction / anchors / anchor_mode` 只在 reference route 顶层输出，不再使用旧的 `sub_route` 字段。
 - 不保留顶层 `language` 字段；metadata/reference 统一消费中文结构化 JSON，content 的英文检索文本只作为 evidence 内部字段或调试字段保存。
 - evidence 不使用 `scope` 和 `expanded_query`；metadata 锚点解析只作为内部取证步骤，不在 metadata evidence 中直接暴露，content/reference 保持各自 route 当前字段，内部 alias/canonical 扩展不暴露。
@@ -289,7 +296,8 @@ CLI 行为：
 - 顶层入口：
   - 第一层路由顺序为 `reference -> content -> metadata -> unclear`。
   - content 入口词放在 `retrieval/domains/content/router.py`，负责判断正文行为词，例如方法、结构、机制、实验、使用、用了、比较、为什么、总结、贡献等。
-  - metadata 入口词只保留简单元数据字段线索，例如“年 / 作者 / 期刊 / 题目 / 标题 / 会议 / 发表 / 发布 / venue”；在已经排除 reference/content 后，命中这些词就进入 metadata。
+  - metadata 入口词只保留简单中文元数据字段或论文集合线索，例如“年 / 作者 / 写 / 谁 / 期刊 / 题目 / 标题 / 会议 / 发表 / 发布 / 出版 / 来源 / 出处 / 在哪 / 哪里 / 多少 / 几 / 数量 / 哪些”；在已经排除 reference/content 后，命中这些词就进入 metadata。
+  - metadata 入口不使用“之前 / 之后 / 以前 / 以后”这类关系词；这类词只在 metadata parser 和年份区间执行层中表达相对年份约束。
   - 如果 reference/content/metadata 都没有命中，则 route 为 `unclear`，提示用户补充问题语义，而不是默认进入正文召回。
   - 示例：`Attention is All You Need之后有哪些不在2019年以前的论文` 进入 metadata；`作者为He题目为ResNet的这篇论文讲了什么内容` 因命中 content 行为词“内容”落到 content。
 
@@ -417,8 +425,8 @@ CLI 行为：
 ### 8.4 Content Route
 
 - 模块定位：
-  - content route 是默认兜底；当前不做正文子路由，`intent=None`。
-  - `retrieval/domains/content/` 当前主要承担 parser/prompt/schema 骨架，正文回答链路后续再扩。
+  - content route 由中文正文行为词触发，不再作为默认兜底；如果没有命中 reference/content/metadata，顶层 route 会返回 `unclear`。
+  - `retrieval/domains/content/` 当前承担 content 顶层入口词、parser/prompt/schema 骨架，正文回答链路后续再扩。
 
 - parser 职责：
   - content 命中后的第二层也属于 plan parser 的职责，后续应使用 content 专用提示词解析正文问题类型、比较对象、目标论文范围、问题焦点和需要召回的内容范围。

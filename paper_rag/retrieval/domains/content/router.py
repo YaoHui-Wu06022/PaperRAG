@@ -8,6 +8,8 @@ CONTENT_ACTION_TERMS = {
     "流程",
     "内容",
     "步骤",
+    "怎么",
+    "如何",
     "方法",
     "做法",
     "设计",
@@ -57,8 +59,6 @@ CONTENT_ACTION_TERMS = {
     "共同",
     "优",
     "缺",
-    "vs",
-    "VS",
     # summary
     "总结",
     "概括",

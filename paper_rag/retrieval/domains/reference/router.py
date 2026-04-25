@@ -17,8 +17,6 @@ REFERENCE_CHINESE_TERMS = {
     "参考",
     "参考文献",
     "引文",
-    "reference",
-    "references"
 }
 
 
