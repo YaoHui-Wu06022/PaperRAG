@@ -60,6 +60,12 @@ def render_ask_answer(settings: Settings, plan_pack: dict[str, Any]) -> tuple[st
 
     if route == "error":
         return localized_message(chinese, "证据规划失败，无法回答。", "Planning failed, unable to answer."), build_provenance(route, plan_pack)
+    if route == "unclear":
+        return localized_message(
+            chinese,
+            "问题语义不明确：请补充是要查正文内容，还是查论文元数据。",
+            "The question intent is unclear: please clarify whether you want paper content or metadata.",
+        ), build_provenance(route, plan_pack)
     if route == "reference":
         return render_reference_answer(plan_pack, evidence, chinese), build_provenance(route, plan_pack)
     if route != "metadata":

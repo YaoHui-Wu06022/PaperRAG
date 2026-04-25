@@ -27,9 +27,10 @@ DEFAULT_QUERIES = [
     # "这篇论文用了什么损失函数？"
     # "《Attention Is All You Need》这篇论文的方法是什么？"
     # "ResNet和DenseNet有什么区别？"
-    "ResNet和BERT之间有哪些论文用了attention机制？"
+    # "ResNet和BERT之间有哪些论文用了attention机制？"
     # "2018年以后CVPR的目标检测论文用了哪些数据集？"
     # "哪些ResNet之后的论文用了transformer方法？"
+    "Resnet 这篇论文讲了什么内容"
 ]
 
 

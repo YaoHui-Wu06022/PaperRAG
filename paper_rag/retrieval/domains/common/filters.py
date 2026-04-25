@@ -11,10 +11,7 @@ def resolve_paper_year_filters(
     filters: list[dict[str, Any]],
     warnings: list[str],
 ) -> list[dict[str, Any]]:
-    resolved_filters = [
-        resolve_paper_interval_filter(settings, filter_item, warnings)
-        for filter_item in filters
-    ]
+    resolved_filters = [resolve_paper_interval_filter(settings, filter_item, warnings) for filter_item in filters]
     return merge_year_interval_filters(resolved_filters)
 
 
@@ -29,33 +26,30 @@ def resolve_paper_interval_filter(
     if not isinstance(value, list) or len(value) != 2:
         return filter_item
 
-    left, right = value
-    resolved_left = resolve_year_boundary(settings, left, warnings)
-    resolved_right = resolve_year_boundary(settings, right, warnings)
-    if resolved_left == left and resolved_right == right:
+    left, right = [resolve_year_boundary(settings, boundary, warnings) for boundary in value]
+    if left == value[0] and right == value[1]:
         return filter_item
-    if not interval_bounds_are_resolved(resolved_left, resolved_right):
-        return {**filter_item, "value": [resolved_left, resolved_right]}
-    return {**filter_item, "value": normalize_interval_filter_bounds(resolved_left, resolved_right)}
+    if not interval_bounds_are_resolved(left, right):
+        return {**filter_item, "value": [left, right]}
+    return {**filter_item, "value": normalize_interval_filter_bounds(left, right)}
 
 
 def resolve_year_boundary(settings: Settings, boundary: Any, warnings: list[str]) -> Any:
     if isinstance(boundary, int) or is_infinity(boundary):
         return boundary
-    if not isinstance(boundary, str):
+    if not isinstance(boundary, str) or not boundary.strip():
         return boundary
-    mention = boundary.strip()
-    if not mention:
-        return boundary
-    from .paper_resolver import resolve_paper_mentions
 
-    papers, _ = resolve_paper_mentions(settings, [mention])
+    from .paper_resolver import resolve_paper_queries
+
+    mention = boundary.strip()
+    papers, _ = resolve_paper_queries(settings, [mention])
     years = [effective_year(paper.get("year")) for paper in papers]
     years = [year for year in years if year is not None]
-    if not years:
-        warnings.append(f"paper interval could not resolve boundary year: {mention}")
-        return boundary
-    return min(years)
+    if years:
+        return min(years)
+    warnings.append(f"paper interval could not resolve boundary year: {mention}")
+    return boundary
 
 
 def normalize_interval_filter_bounds(left: Any, right: Any) -> list[Any]:
@@ -72,20 +66,25 @@ def merge_year_interval_filters(filters: list[dict[str, Any]]) -> list[dict[str,
     merged: dict[str, Any] | None = None
     output: list[dict[str, Any]] = []
     for filter_item in filters:
-        if (
-            filter_item.get("field") == "year"
-            and filter_item.get("op") == "interval"
-            and not filter_item.get("negated")
-            and isinstance(filter_item.get("value"), list)
-            and len(filter_item["value"]) == 2
-            and interval_bounds_are_resolved(filter_item["value"][0], filter_item["value"][1])
-        ):
+        if can_merge_year_interval(filter_item):
             merged = merge_interval_filter(merged, filter_item)
         else:
             output.append(filter_item)
     if merged is not None:
         output.append(merged)
     return output
+
+
+def can_merge_year_interval(filter_item: dict[str, Any]) -> bool:
+    value = filter_item.get("value")
+    return (
+        filter_item.get("field") == "year"
+        and filter_item.get("op") == "interval"
+        and not filter_item.get("negated")
+        and isinstance(value, list)
+        and len(value) == 2
+        and interval_bounds_are_resolved(value[0], value[1])
+    )
 
 
 def merge_interval_filter(current: dict[str, Any] | None, next_filter: dict[str, Any]) -> dict[str, Any]:

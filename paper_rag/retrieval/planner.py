@@ -8,7 +8,7 @@ from typing import Any
 
 from ..config import Settings
 from ..dataprocess.manifest import effective_year
-from .data.aliases import alias_match_to_dict, expand_query_with_aliases, resolve_paper_mentions
+from .data.aliases import alias_match_to_dict, expand_query_with_aliases
 from .data.chunks import ChunkDocument, load_chunk_documents
 from .data.manifest_lookup import load_active_manifest_records, manifest_record_to_evidence, match_manifest_records
 from .data.venues import canonicalize_venue, expand_venue_query_terms
@@ -66,6 +66,12 @@ def run_plan(
         evidence = plan_metadata(settings, route, warnings)
     elif route.route == "reference":
         evidence = plan_reference(settings, route, warnings)
+    elif route.route == "unclear":
+        warnings.append(route.reason)
+        evidence = {
+            "parse_status": "unclear",
+            "message": route.reason,
+        }
     else:
         evidence = plan_body(settings, prepared, route, warnings, embedder=embedder, store=store)
     result: dict[str, Any] = {
@@ -304,7 +310,7 @@ def reference_cites_results(
     anchor_results: list[dict[str, Any]] = []
     for anchor in route.anchors:
         anchor_value = str(anchor or "").strip()
-        resolved_papers, _ = resolve_paper_mentions(settings, [anchor_value])
+        resolved_papers = route.resolved_anchor_papers.get(anchor, [])
         anchor_refs: list[dict[str, Any]] = []
         for target in resolved_papers:
             for ref in load_reference_rows(target):
@@ -336,7 +342,7 @@ def reference_cited_by_results(settings: Settings, route: RouteDecision) -> tupl
     records = load_active_manifest_records(settings)
     for anchor in route.anchors:
         anchor_value = str(anchor or "").strip()
-        resolved_papers, _ = resolve_paper_mentions(settings, [anchor_value])
+        resolved_papers = route.resolved_anchor_papers.get(anchor, [])
         anchor_terms = [str(target.get("title") or "").strip() for target in resolved_papers if target.get("title")]
         target_keys = {paper_identity_key(target) for target in resolved_papers}
         anchor_refs: list[dict[str, Any]] = []

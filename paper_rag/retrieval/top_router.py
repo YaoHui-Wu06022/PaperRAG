@@ -14,8 +14,8 @@ class RouteDecision:
     reason: str
     intent: str | None = None
     query: str = ""
-    paper_mentions: list[str] = field(default_factory=list)
     resolved_papers: list[dict[str, Any]] = field(default_factory=list)
+    resolved_anchor_papers: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
     alias_matches: list[AliasMatch] = field(default_factory=list)
     parser_result: dict[str, Any] | None = None
     parse_status: str = "not_parsed"
@@ -34,14 +34,19 @@ def route_query(query: str) -> RouteDecision:
     reference = reference_route(query, tokens)
     if reference:
         return reference
-    from .domains.metadata.router import metadata_route  # local import avoids circular import
+    from .domains.content.router import content_route
+
+    content = content_route(query, tokens)
+    if content:
+        return content
+    from .domains.metadata.router import metadata_route
 
     metadata = metadata_route(query, tokens)
     if metadata:
         return metadata
     return RouteDecision(
-        route="content",
-        reason="default content route for Chinese query",
+        route="unclear",
+        reason="question intent is unclear; please add a content action clue or a metadata field clue",
         intent=None,
         query=query,
     )
@@ -67,6 +72,6 @@ def build_route_decision(
 
 
 def has_reference_term(query: str) -> bool:
-    from .domains.reference.router import has_reference_term as reference_has_term
+    from .domains.reference import router
 
-    return reference_has_term(query)
+    return router.has_reference_term(query)

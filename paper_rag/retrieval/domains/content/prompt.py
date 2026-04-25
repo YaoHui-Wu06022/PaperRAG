@@ -25,8 +25,8 @@ Schema:
 字段含义:
 - "intent": 正文查询意图，只能从 fact/method/reason/compare/summary/list 中选择一个
 - "compare_objects": 比较主体，只在 intent="compare" 时使用，表示被比较对象
+- "objects": 表示扣除提问词、compare_objects 和元数据过滤条件后，剩余的正文内容对象
 - "filters": 论文元数据过滤条件，包括 author/year/venue/title
-- "objects": 表示扣除提问词、anchors、compare_objects 和元数据过滤条件后，剩余的正文内容对象
 
 intent 判断优先级:
 1. 明确比较两个或多个对象的差异、相同点、优劣、对比、vs -> compare
@@ -36,65 +36,59 @@ intent 判断优先级:
 5. 问总结、概括、归纳、主要贡献、局限、趋势、共同点 -> summary
 6. 问是什么、定义、具体事实、实验结果、用了什么、报告了什么结论 -> fact
 
-- "anchors":
-  - 没有明确限定到具体论文时，anchors 返回 []，示例"这篇论文用了什么方法" -> {"anchors":[]}
-  - anchors 不等于正文内容对象；同一表面词不要同时放入 anchors 和 objects
-  - 如果问句中出现非指代论文语义，例如“ResNet方法”“ResNet结构”，可以将完整短语放入 objects
-
+规则:
 - "compare_objects":
-  - 只在 intent="compare" 时使用，表示被比较对象，可以是论文、模型、方法、模块、任务、数据集或概念
+  - 可以是论文、模型、方法、模块、任务、数据集或概念
   - 如果不是比较问题，compare_objects 返回 []
-  - 用于组织比较答案，不用于限定论文范围；限定论文范围使用 anchors 或 filters
-  - compare_objects 可以和 anchors 重复
-  - compare_objects 不要和 objects 放入同一个表面词
-  - 不要翻译、扩展同义词或补充没有明确表达的术语
+  - 用于组织比较答案，不用于限定论文范围；限定论文范围使用 filters
+  - 如果明确比较 X 和 Y，则 X 和 Y 必须放入 compare_objects；如果 X 和 Y 明确指向具体论文，同时用 filters.title 绑定论文范围
+  - 如果只是比较模型、方法、概念，不要自动生成 filters.title
 
 - "objects":
   - 可以是模型、方法、模块、结构、任务、数据集、损失函数、指标、机制、概念、实验对象、贡献、局限、趋势、共同点等
-  - 不包括已经进入 anchors 的同一表面词
-  - 不包括已经进入 compare_objects 的同一表面词
+  - objects 不包括已经进入 compare_objects 的同一表面词
   - 不记录 author/year/venue/title 这类元数据条件，它们应进入 filters
   - 不包含普通提问词、动词或泛化词
-
-- "filters":
-  - 只用于论文元数据过滤，包括 author/year/venue/title
-  - 如果没有元数据过滤条件，返回 []
-  - filters.title 只用于筛选论文标题字段；论文锚定使用 anchors，不用 title "="
+  - 如果论文绑定词出现在更具体的正文技术短语中，例如“ResNet方法”“ResNet结构”，把完整短语放入 objects且不用 filters.title 绑定论文范围
   
 """ + common_schema_fields_prompt() + """
+
 示例：
 - "Transformer 使用了什么位置编码"
 -> {
   "intent": "fact",
-  "anchors": ["Transformer"],
   "compare_objects": [],
   "objects": ["位置编码"],
-  "filters": []
+  "filters": [
+    {"field":"title","op":"=","value":"Transformer","negated":false}
+  ]
 }
 - "BERT 的 masked language model 是怎么训练的"
 -> {
   "intent": "method",
-  "anchors": ["BERT"],
   "compare_objects": [],
   "objects": ["masked language model"],
-  "filters": []
+  "filters": [
+    {"field":"title","op":"=","value":"BERT","negated":false}
+  ]
 }
 - "Center Loss 为什么能提升类内紧致性"
 -> {
   "intent": "reason",
-  "anchors": ["Center Loss"],
   "compare_objects": [],
   "objects": ["类内紧致性"],
-  "filters": []
+  "filters": [
+    {"field":"title","op":"=","value":"Center Loss","negated":false}
+  ]
 }
 - "从数据集、评价指标和实验结果三个方面比较Faster R-CNN和YOLO"
 -> {
   "intent": "compare",
-  "anchors": [],
   "compare_objects": ["Faster R-CNN", "YOLO"],
   "objects": ["数据集", "评价指标", "实验结果"],
   "filters": []
 }
+
 - "比较ResNet和DenseNet这两篇论文的方法设计"
 -> {
   "intent": "compare",

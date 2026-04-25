@@ -3,27 +3,23 @@ from __future__ import annotations
 from copy import deepcopy
 
 from ....config import Settings
-from ..common.filters import resolve_paper_year_filters
-from ..common.paper_resolver import paper_mentions_from_anchors_and_title_filters, resolve_paper_mentions
 from ..common.errors import PlanParseError
+from ..common.filters import resolve_paper_year_filters
+from ..common.paper_resolver import resolve_parser_papers
 from ...top_router import RouteDecision
 from .parser import MetadataParserClient
 
 
 METADATA_ENTRY_TERMS = {
+    "年",
     "作者",
-    "标题",
-    "题目",
-    "会议",
+    "写",
     "期刊",
-    "年份",
+    "题目",
+    "标题",
+    "会议",
     "发表",
-    "哪一年",
-    "谁写",
-    "写的",
-    "谁提出",
-    "多少篇",
-    "几篇",
+    "发布",
 }
 
 
@@ -63,18 +59,19 @@ def build_metadata_decision(
             parser_error=str(exc),
             return_field=None,
         )
-    paper_mentions = paper_mentions_from_anchors_and_title_filters(parser_result)
-    if parser_result["intent"] == "lookup" and not paper_mentions:
-        paper_mentions = [query]
-    resolved_papers, alias_matches = resolve_paper_mentions(settings, paper_mentions)
+    resolved = resolve_parser_papers(
+        settings,
+        parser_result,
+        fallback_query=query if parser_result["intent"] == "lookup" else None,
+    )
+    parser_result = {**parser_result, "filters": resolved["filters"]}
     enriched = RouteDecision(
         route=decision.route,
         reason=decision.reason,
         intent=parser_result["intent"],
         query=query,
-        paper_mentions=paper_mentions,
-        resolved_papers=resolved_papers,
-        alias_matches=alias_matches,
+        resolved_papers=resolved["resolved_papers"],
+        alias_matches=resolved["alias_matches"],
         parser_result=parser_result,
         parse_status="ok",
         return_field=parser_result["return_field"],
@@ -97,8 +94,8 @@ def apply_anchor_year_filters(settings: Settings, decision: RouteDecision, warni
         reason=decision.reason,
         intent=decision.intent,
         query=decision.query,
-        paper_mentions=decision.paper_mentions,
         resolved_papers=decision.resolved_papers,
+        resolved_anchor_papers=decision.resolved_anchor_papers,
         alias_matches=decision.alias_matches,
         parser_result=parser_result,
         parse_status=decision.parse_status,
@@ -111,14 +108,15 @@ def apply_anchor_year_filters(settings: Settings, decision: RouteDecision, warni
 
 def metadata_entry_reason(query: str, tokens: list[str]) -> str:
     """Only decide whether to enter metadata parsing."""
-    term = first_metadata_entry_term(query)
+    _ = tokens
+    term = first_matching_term(query, METADATA_ENTRY_TERMS)
     if term:
-        return f"匹配到关键词: {term}"
+        return f"matched metadata entry clue: {term}"
     return ""
 
 
-def first_metadata_entry_term(query: str) -> str | None:
-    for term in sorted(METADATA_ENTRY_TERMS, key=len, reverse=True):
+def first_matching_term(query: str, terms: set[str]) -> str | None:
+    for term in sorted(terms, key=len, reverse=True):
         if term in query:
             return term
     return None

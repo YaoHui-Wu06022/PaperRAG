@@ -25,7 +25,8 @@ from paper_rag.retrieval.planner import run_plan
 DEFAULT_QUERIES = [
     # "Resnet之后在CVPR发表论文有哪些",
     # "ResNet或transformer引用了哪些论文",
-    "Resnet之后哪些论文引用了Resnet"
+    # "Resnet之后哪些论文引用了Resnet"
+    "Attention is All You Need之后有哪些不在2019年以前的论文",
 ]
 
 

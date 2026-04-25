@@ -28,7 +28,7 @@ Schema:
   - 当查询是在询问满足某些条件的论文数量时，使用 "count"
 
 - "return_field":
-  - 必须是["author","year","venue","title","null"]其中之一
-  - 当查询不需要特定元数据字段时，请使用“null”
+  - 只能从 author/year/venue/title/null 中选择一个
+  - 当查询不需要特定元数据字段时，请使用 null
 
 """ + common_schema_fields_prompt()

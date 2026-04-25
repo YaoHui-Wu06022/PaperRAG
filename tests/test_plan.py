@@ -123,7 +123,7 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(route_query("这篇论文引用了哪些论文").route, "reference")
         self.assertEqual(route_query("哪些论文引用了ResNet").route, "reference")
         self.assertEqual(route_query("BERT的参考文献有哪些").route, "reference")
-        self.assertEqual(route_query("how does center loss improve compactness").route, "content")
+        self.assertEqual(route_query("how does center loss improve compactness").route, "unclear")
 
     def test_rule_router_keeps_reference_as_top_level_entry_only(self) -> None:
         self.assertEqual(route_query("哪些论文引用了ResNet").route, "reference")
@@ -136,8 +136,8 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(route_query("ResNet的引文关系").route, "reference")
 
     def test_router_uses_token_boundaries(self) -> None:
-        self.assertEqual(route_query("recite the result").route, "content")
-        self.assertEqual(route_query("authorization method").route, "content")
+        self.assertEqual(route_query("recite the result").route, "unclear")
+        self.assertEqual(route_query("authorization method").route, "unclear")
         self.assertEqual(route_query("BERT是哪一年发表的").route, "metadata")
 
     def test_metadata_router_field_routes(self) -> None:
@@ -157,6 +157,16 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(by_author.route, "metadata")
         self.assertEqual(by_author.intent, None)
         self.assertEqual(by_author.filters, [])
+        relative = route_query("Attention is All You Need之后有哪些不在2019年以前的论文")
+        self.assertEqual(relative.route, "metadata")
+        cvpr_range = route_query("2015到2020年不在CVPR的论文有哪些")
+        self.assertEqual(cvpr_range.route, "metadata")
+
+    def test_metadata_router_does_not_absorb_content_questions(self) -> None:
+        self.assertEqual(route_query("有哪些论文用了attention机制").route, "content")
+        self.assertEqual(route_query("ResNet之后有哪些论文用了attention机制").route, "content")
+        self.assertEqual(route_query("比较ResNet和DenseNet的方法").route, "content")
+        self.assertEqual(route_query("作者为He题目为ResNet的这篇论文讲了什么内容").route, "content")
 
     def test_reference_route_keeps_original_query(self) -> None:
         query = "哪些论文引用了RESNET"
@@ -445,6 +455,45 @@ class PlanTests(unittest.TestCase):
                 }),
             )
             self.assertEqual([record["venue"] for record in not_cvpr["evidence"]["records"]], ["ECCV"])
+
+    def test_metadata_title_exact_filters_are_normalized_once_after_parse(self) -> None:
+        with sample_project() as root:
+            settings = Settings.load(Path(root))
+            pack = run_plan(
+                settings,
+                "Center Loss 和 ResNet 的标题是什么",
+                plan_parser=metadata_list([
+                    {"field": "title", "op": "=", "value": "Center Loss", "negated": False},
+                    {"field": "title", "op": "=", "value": "ResNet", "negated": False},
+                ]),
+            )
+            self.assertEqual(pack["evidence"]["filters"], [{
+                "field": "title",
+                "op": "in",
+                "value": [
+                    "A Discriminative Feature Learning Approach for Deep Face Recognition",
+                    "Deep Residual Learning for Image Recognition",
+                ],
+                "negated": False,
+            }])
+            self.assertEqual(len(pack["evidence"]["records"]), 2)
+
+    def test_metadata_title_contains_filter_keeps_original_text(self) -> None:
+        with sample_project() as root:
+            settings = Settings.load(Path(root))
+            pack = run_plan(
+                settings,
+                "标题里包含ResNet的论文",
+                plan_parser=metadata_list([
+                    {"field": "title", "op": "contains", "value": "ResNet", "negated": False},
+                ]),
+            )
+            self.assertEqual(pack["evidence"]["filters"], [{
+                "field": "title",
+                "op": "contains",
+                "value": "ResNet",
+                "negated": False,
+            }])
 
     def test_metadata_venue_filter_uses_aliases(self) -> None:
         with sample_project() as root:
@@ -882,7 +931,7 @@ class PlanTests(unittest.TestCase):
             store = FakeStore()
             pack = run_plan(
                 settings,
-                "center loss intra class compactness",
+                "center loss 方法 intra class compactness",
                 embedder=embedder,
                 store=store,
             )
@@ -893,7 +942,7 @@ class PlanTests(unittest.TestCase):
             self.assertNotIn("top_route", pack["evidence"])
             self.assertNotIn("query", pack["evidence"])
             self.assertEqual(store.top_k, 20)
-            self.assertEqual(embedder.calls, [["center loss intra class compactness"]])
+            self.assertEqual(embedder.calls, [["center loss 方法 intra class compactness"]])
             units = pack["evidence"]["context_units"]
             self.assertGreaterEqual(len(units), 1)
             self.assertIn("dense", units[0]["sources"])

@@ -106,7 +106,7 @@ paper_rag/
    │  │  ├─ errors.py                # PlanParseError 等共享异常
    │  │  ├─ parser_client.py         # OpenAI-compatible parser client
    │  │  ├─ schema.py                # 校验 JSON、字符串列表规范化、转成内部稳定格式
-   │  │  ├─ paper_resolver.py        # paper mention -> 本地 resolved papers 的公共解析逻辑
+   │  │  ├─ paper_resolver.py        # parser anchors / title filters -> 本地 resolved_papers 的公共解析逻辑
   │  │  ├─ filters.py               # 论文名/别名年份区间解析、合并与 warning 处理
    │  │  └─ prompt.py                # metadata/reference 共用 prompt 片段
    │  ├─ metadata/
@@ -272,22 +272,26 @@ CLI 行为：
 - evidence pack 顶层公共字段包含 `original_query / route / intent / router_reason / filters / evidence / warnings`；`return_field` 只在 metadata route 顶层输出，`direction / anchors / anchor_mode` 只在 reference route 顶层输出，不再使用旧的 `sub_route` 字段。
 - 不保留顶层 `language` 字段；metadata/reference 统一消费中文结构化 JSON，content 的英文检索文本只作为 evidence 内部字段或调试字段保存。
 - evidence 不使用 `scope` 和 `expanded_query`；metadata 锚点解析只作为内部取证步骤，不在 metadata evidence 中直接暴露，content/reference 保持各自 route 当前字段，内部 alias/canonical 扩展不暴露。
-- `RouteDecision` 的内部命名统一为 `query / paper_mentions / resolved_papers`：`query` 表示当前路由消费的原始问题文本，`paper_mentions` 表示 parser 抽取出的候选论文提及，`resolved_papers` 表示结合 alias/manifest 解析后的本地论文对象。
+- `RouteDecision` 的内部命名统一为 `query / resolved_papers / resolved_anchor_papers`：`query` 表示当前路由消费的原始问题文本；`resolved_papers` 表示 parser 输出经 filter 归一化、alias 和 manifest 解析后的本地论文对象；`resolved_anchor_papers` 仅供 reference 的 per-anchor 取证使用，避免执行层重复解析 anchor。
 - `planner.py` 的主入口是 `run_plan(settings, query, ...)`：当前 `prepare_query()` 仍是薄预处理，主要保留 query 和 warnings；真正的路由、取证和 evidence 组装都发生在 `run_plan()` 之后。
 - 第二层语义解析是 `metadata / reference / content` 三个分支共用的设计原则，但每个分支的下沉 schema 可以不同：
   - metadata 重点解析字段查询、论文列表、数量统计、字段过滤、否定过滤和锚点论文。
   - reference 重点解析 `cites / cited_by` 引用方向、锚点论文、引用范围过滤和引用列表/统计意图；对应的路由与 parser 骨架独立放在 `retrieval/domains/reference/`。
   - content 重点解析正文问题类型、目标论文范围、比较对象和需要召回的内容焦点。
-- 当前 metadata/reference schema 已经独立落地，但共享错误类型、parser client、通用文本工具、JSON object 预处理、通用字符串列表规范化、论文元字段 filter schema、paper mention / resolved paper 工具、anchor 年份处理和 prompt 公共片段统一下沉到 `retrieval/domains/common/`；content parser schema 后续单独讨论，避免把不同任务硬塞进同一个结构。
+- 当前 metadata/reference schema 已经独立落地，但共享错误类型、parser client、通用文本工具、JSON object 预处理、通用字符串列表规范化、论文元字段 filter schema、论文解析到 `resolved_papers` 的工具、anchor 年份处理和 prompt 公共片段统一下沉到 `retrieval/domains/common/`；content parser schema 后续单独讨论，避免把不同任务硬塞进同一个结构。
 
 ### 8.2 Metadata Route
 
 - 模块定位：
   - metadata route 不进入 Milvus，不检索 chunks；只读取 `data/manifest.jsonl` 中的 active 记录。
-  - `retrieval/domains/metadata/` 只保留 metadata 独有逻辑；共享的 `PlanParseError`、parser client、通用文本工具、JSON object 预处理、通用字符串列表规范化、论文元字段 filter 校验、paper mention / resolved paper 解析和论文名/别名年份区间处理统一来自 `retrieval/domains/common/`。
+  - `retrieval/domains/metadata/` 只保留 metadata 独有逻辑；共享的 `PlanParseError`、parser client、通用文本工具、JSON object 预处理、通用字符串列表规范化、论文元字段 filter 校验、parser 输出到 `resolved_papers` 的解析和论文名/别名年份区间处理统一来自 `retrieval/domains/common/`。
 
 - 顶层入口：
-  - 第一层 metadata 入口采用保守中文规则：只有中文原问题命中明显作者、年份、venue、标题、论文列表或统计线索时才进入 metadata route；其他非 reference 问题直接落到 content。
+  - 第一层路由顺序为 `reference -> content -> metadata -> unclear`。
+  - content 入口词放在 `retrieval/domains/content/router.py`，负责判断正文行为词，例如方法、结构、机制、实验、使用、用了、比较、为什么、总结、贡献等。
+  - metadata 入口词只保留简单元数据字段线索，例如“年 / 作者 / 期刊 / 题目 / 标题 / 会议 / 发表 / 发布 / venue”；在已经排除 reference/content 后，命中这些词就进入 metadata。
+  - 如果 reference/content/metadata 都没有命中，则 route 为 `unclear`，提示用户补充问题语义，而不是默认进入正文召回。
+  - 示例：`Attention is All You Need之后有哪些不在2019年以前的论文` 进入 metadata；`作者为He题目为ResNet的这篇论文讲了什么内容` 因命中 content 行为词“内容”落到 content。
 
 - parser 职责：
   - metadata 命中后，不再用硬规则细分 `paper_list / author / year / venue / title`；改为调用 OpenAI-compatible plan parser 的 metadata 解析提示词，输出严格 JSON。
@@ -314,6 +318,8 @@ CLI 行为：
   - `filters[].field` 只能是 `author / year / venue / title`。
   - `filters[].op` 只能是 `= / in / contains / interval`。
   - `filters[].value` 可以是字符串、数字、字符串列表或区间列表，例如 `"Kaiming He"`、`2015`、`["ResNet", "Transformer"]`、`[2015, 2020]`。
+  - parser 输出后统一执行一次 `resolve_parser_papers()`：`anchors` 和 `title` 字段的精确过滤在同一处解析；`title` 在 `op="="` 或 `op="in"` 时会把常用别名映射回本地规范论文标题，例如 `ResNet` -> `Deep Residual Learning for Image Recognition`；多个同类 `title = ...` 会合并为一个 `title in [...]`，避免按 AND 误筛空。归一化完成后，后续执行层只消费 `filters`、`resolved_papers` 和 reference 专用的 `resolved_anchor_papers`，不再保留单独的 paper mention 中间字段。
+  - `title contains ...` 不做论文别名映射，保留 parser 原始文本，用于“标题里包含 attention / face recognition”等模糊包含查询。
   - 年份范围统一用 `interval` 表达，闭区间写作 `[2015, 2020]`，单边区间用字符串哨兵表示，例如 `[2015, "inf"]` 表示 2015 年以后，`["-inf", 2019]` 表示 2019 年以前。
   - `filters[].negated` 必须显式输出 `true / false`，不能只靠自然语言表达否定。
   - 不允许输出 `!=`、`not contains`、`not in` 等非 schema 运算符；否定只能通过 `negated=true` 表达，且 op 仍保持正向。
@@ -324,7 +330,8 @@ CLI 行为：
 - schema/失败边界：
   - HTTP 超时或错误、非 JSON、非法枚举、缺少必需字段时，metadata evidence 标记 `parse_failed`，写入 warning，不回退 content，也不使用旧硬规则猜答案。
   - metadata parser 在 `parser.py` 内完成一次 schema 校验；`router.py` 只消费已校验结构，不重复调用 `validate_metadata_parse()`。
-  - metadata 独有 schema 只校验 `intent / return_field / anchors / filters`；共享的 JSON object 预处理、通用字符串列表规范化和论文元字段 filter 结构校验由 `domains/common/schema.py` 提供。
+  - metadata 独有字段是 `return_field`，枚举为 `author / year / venue / title / null`；`intent / filters` 为 route 通用字段，`filters` 的结构校验由 `domains/common/schema.py` 提供。
+  - metadata parser 仍可输出 `anchors` 辅助内部论文定位，但 `anchors` 不作为 metadata 对外 evidence 字段展示。
   - schema 对多余字段采用忽略策略，不因为额外的 `router`、`raw_query` 或其它未知字段直接失败；只校验当前 route 真正消费的字段。
 
 - 执行层行为：
@@ -354,7 +361,7 @@ CLI 行为：
 
 - 模块定位：
   - reference route 顶层入口仍由中文规则命中，不进入 Milvus，不联网解析 DOI/DBLP，也不把参考文献条目拆成结构化论文 metadata。
-  - `retrieval/domains/reference/` 只保留 reference 独有逻辑；共享的 `PlanParseError`、parser client、通用文本工具、JSON object 预处理、通用字符串列表规范化、论文元字段 filter 校验、paper mention / resolved paper 解析、论文名/别名年份区间处理和 prompt 公共片段统一来自 `retrieval/domains/common/`。
+  - `retrieval/domains/reference/` 只保留 reference 独有逻辑；共享的 `PlanParseError`、parser client、通用文本工具、JSON object 预处理、通用字符串列表规范化、论文元字段 filter 校验、parser 输出到 `resolved_papers` 的解析、论文名/别名年份区间处理和 prompt 公共片段统一来自 `retrieval/domains/common/`。
 
 - 顶层入口：
   - 进入条件为中文原问题命中引用/参考文献语义，例如：`引用 / 引用了 / 引用过 / 引用关系 / 被引用 / 被引 / 参考 / 参考了 / 参考文献 / 引文 / 文献引用 / 列进参考文献 / 作为参考文献`。
@@ -376,12 +383,12 @@ CLI 行为：
 
   - parser payload 不包含 `router`；顶层 route 只由 `top_router.py` 和 `RouteDecision.route` 表达。
   - `intent` 只接受 `list / count`；`null` 或其他非法值直接 `parse_failed`。
-  - `direction=cites` 表示从 anchor 论文出发，读取 anchor 自己引用了哪些参考文献。
-  - `direction=cited_by` 表示哪些本地论文引用了 anchor。
-  - `direction=null` 时不检索，evidence 标记 `parse_status=unknown_direction` 并写 warning。
+  - reference 独有字段是 `direction / anchors / anchor_mode`。
+  - `direction` 只能是 `cites / cited_by / null`；`direction=cites` 表示从 anchor 论文出发，读取 anchor 自己引用了哪些参考文献。
+  - `direction=cited_by` 表示哪些本地论文引用了 anchor；`direction=null` 时不检索，evidence 标记 `parse_status=unknown_direction` 并写 warning。
   - `anchors` 是字符串列表，只存论文标题、常用别名或缩写，例如 `["ResNet", "EfficientNet"]`；无锚点时输出 `[]`，空字符串 anchor 会被忽略。
-  - `anchor_mode` 支持 `per / or / and`；缺失或 null 默认 `per`。
-  - `filters` 复用 `domains/common/schema.py` 中的共享 filter schema：`field=author/year/venue/title`，`op` 为 `= / in / contains / interval`，并显式保存 `negated`；缺失或 null 归一化为 `[]`。
+  - `anchor_mode` 只能是 `per / or / and`；缺失或 null 默认 `per`。
+  - `filters` 是 metadata/reference/content 通用字段，复用 `domains/common/schema.py` 中的共享 filter schema：`field=author/year/venue/title`，`op` 为 `= / in / contains / interval`，并显式保存 `negated`；缺失或 null 归一化为 `[]`。
 
 - 执行层行为：
   - reference 执行层和 metadata 一样，会先通过 `domains/common/filters.py` 解析论文名/别名年份区间；解析后的 filters 会同时写回 route decision 和 parser 结果。

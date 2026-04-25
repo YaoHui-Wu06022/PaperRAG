@@ -3,7 +3,6 @@ from __future__ import annotations
 
 def common_schema_fields_prompt() -> str:
     return """
-    
 - "filters":
   - "field": 被约束的元数据字段，只能是 ["author", "year", "venue", "title"]
     - "author": 作者

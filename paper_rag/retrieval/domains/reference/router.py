@@ -4,9 +4,9 @@ from copy import deepcopy
 from typing import Any
 
 from ....config import Settings
-from ..common.paper_resolver import alias_matches_for_unresolved_anchors, dedupe_alias_matches, resolve_paper_mentions
 from ..common.errors import PlanParseError
 from ..common.filters import resolve_paper_year_filters
+from ..common.paper_resolver import resolve_parser_papers
 from ...top_router import RouteDecision
 from .parser import ReferenceParserClient
 
@@ -69,9 +69,8 @@ def build_reference_decision(
             parse_status="parse_failed",
             parser_error=str(exc),
         )
-    paper_mentions = parser_result["anchors"]
-    resolved_papers, alias_matches = resolve_paper_mentions(settings, paper_mentions)
-    alias_matches.extend(alias_matches_for_unresolved_anchors(settings, paper_mentions))
+    resolved = resolve_parser_papers(settings, parser_result)
+    parser_result = {**parser_result, "filters": resolved["filters"]}
     parse_status = "ok" if parser_result["direction"] else "unknown_direction"
     if parse_status == "unknown_direction":
         warnings.append("reference parser returned direction=null")
@@ -80,9 +79,9 @@ def build_reference_decision(
         reason=decision.reason,
         intent=parser_result["intent"],
         query=query,
-        paper_mentions=paper_mentions,
-        resolved_papers=resolved_papers,
-        alias_matches=dedupe_alias_matches(alias_matches),
+        resolved_papers=resolved["resolved_papers"],
+        resolved_anchor_papers=resolved["resolved_anchor_papers"],
+        alias_matches=resolved["alias_matches"],
         parser_result=parser_result,
         parse_status=parse_status,
         filters=parser_result["filters"],
@@ -106,8 +105,8 @@ def apply_anchor_year_filters(settings: Settings, decision: RouteDecision, warni
         reason=decision.reason,
         intent=decision.intent,
         query=decision.query,
-        paper_mentions=decision.paper_mentions,
         resolved_papers=decision.resolved_papers,
+        resolved_anchor_papers=decision.resolved_anchor_papers,
         alias_matches=decision.alias_matches,
         parser_result=parser_result,
         parse_status=decision.parse_status,
