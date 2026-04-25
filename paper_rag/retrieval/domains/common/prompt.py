@@ -24,10 +24,11 @@ def common_schema_fields_prompt() -> str:
 
 - 相对年份:
   - 区间边界用具体论文标题、简称、别名或缩写填充，并且必须使用字符串
-  - "Resnet以后" -> {"field":"year","op":"interval","value":[Resnet,"inf"],"negated":false}
-  - "Resnet以前" -> {"field":"year","op":"interval","value":["-inf",Resnet],"negated":false}
-  - "Resnet和Bert之间" -> {"field":"year","op":"interval","value":[Resnet,Bert],"negated":false}
-
+  - 不要把相对年份锚点额外转成 title filter
+  - "ResNet以后" -> {"field":"year","op":"interval","value":["ResNet","inf"],"negated":false}
+  - "ResNet以前" -> {"field":"year","op":"interval","value":["-inf","ResNet"],"negated":false}
+  - "ResNet和BERT之间" -> {"field":"year","op":"interval","value":["ResNet","BERT"],"negated":false}
+  
 - 某个过滤条件前带"不"，表示否定语义，使用"negated": true
   示例
   - "不在2015年之前" -> {"field":"year","op":"interval","value":["-inf",2015],"negated":true}
