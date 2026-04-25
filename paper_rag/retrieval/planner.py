@@ -68,15 +68,22 @@ def run_plan(
         evidence = plan_reference(settings, route, warnings)
     else:
         evidence = plan_body(settings, prepared, route, warnings, embedder=embedder, store=store)
-    return {
+    result: dict[str, Any] = {
         "original_query": prepared.original_query,
         "route": route.route,
         "intent": route.intent,
-        "return_field": route.return_field,
         "router_reason": route.reason,
-        "evidence": evidence,
-        "warnings": warnings,
     }
+    if route.route == "metadata":
+        result["return_field"] = route.return_field
+    elif route.route == "reference":
+        result["direction"] = route.direction
+        result["anchors"] = route.anchors
+        result["anchor_mode"] = route.anchor_mode
+    result["filters"] = route.filters
+    result["evidence"] = evidence
+    result["warnings"] = warnings
+    return result
 
 
 def prepare_query(
@@ -111,7 +118,6 @@ def metadata_base_evidence(route: RouteDecision) -> dict[str, Any]:
     return {
         "intent": route.intent,
         "return_field": route.return_field,
-        "anchors": public_paper_list(route.resolved_papers),
         "filters": route.filters,
         "alias_matches": [alias_match_to_dict(match) for match in route.alias_matches],
     }

@@ -4,27 +4,21 @@ from copy import deepcopy
 from typing import Any
 
 from ....config import Settings
-from ..common.paper_resolved import alias_matches_for_unresolved_anchors, dedupe_alias_matches, resolve_paper_mentions
+from ..common.paper_resolver import alias_matches_for_unresolved_anchors, dedupe_alias_matches, resolve_paper_mentions
 from ..common.errors import PlanParseError
-from ..common.filters import resolve_anchor_year_filters
+from ..common.filters import resolve_paper_year_filters
 from ...top_router import RouteDecision
 from .parser import ReferenceParserClient
 
 
 REFERENCE_CHINESE_TERMS = {
     "引用",
-    "引用了",
-    "引用过",
-    "引用关系",
-    "被引用",
     "被引",
     "参考",
-    "参考了",
     "参考文献",
     "引文",
-    "文献引用",
-    "列进参考文献",
-    "作为参考文献",
+    "reference",
+    "references"
 }
 
 
@@ -96,12 +90,12 @@ def build_reference_decision(
         anchors=parser_result["anchors"],
         anchor_mode=parser_result["anchor_mode"],
     )
-    return apply_anchor_year_filters(decision, warnings)
+    return apply_anchor_year_filters(settings, decision, warnings)
 
 
-def apply_anchor_year_filters(decision: RouteDecision, warnings: list[str]) -> RouteDecision:
+def apply_anchor_year_filters(settings: Settings, decision: RouteDecision, warnings: list[str]) -> RouteDecision:
     filters = list(decision.filters)
-    resolved_filters = resolve_anchor_year_filters(filters, decision.resolved_papers, warnings)
+    resolved_filters = resolve_paper_year_filters(settings, filters, warnings)
     if resolved_filters == filters:
         return decision
     parser_result = deepcopy(decision.parser_result) if decision.parser_result is not None else None

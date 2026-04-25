@@ -26,7 +26,9 @@ DEFAULT_QUERIES = [
     # "BERT是谁写的",
     # "哪些论文引用了ResNet",
     # "Resnet之后在CVPR发表论文有哪些",
-    "哪些论文引用resnet"
+    # "哪些论文引用resnet"
+    "transformer之后哪些论文引用了Resnet"
+
 ]
 
 

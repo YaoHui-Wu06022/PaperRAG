@@ -38,19 +38,14 @@ Schema:
 
 - "anchors":
   - 字符串列表，只存引用关系中的锚点论文标题、别名或缩写
-  - direction="cites" 时，anchors 是“谁引用”的论文
-  - direction="cited_by" 时，anchors 是“被谁引用”的论文
-  - 按非锚点论文标题筛选时用 filters.title
+  - 没有明确锚点则返回 []，示例"这篇论文引用了哪些参考文献" -> {"anchors":[]}
+  - direction="cites" 时，anchors 是“谁引用”的论文，filters 作用于锚点论文引用的论文
+  - direction="cited_by" 时，anchors 是“被谁引用”的论文，filters 作用于引用锚点论文的论文
 
 - "anchor_mode":
   - "per": 默认模式，单个锚点必须用 "per"，或者多个锚点没有明确要求合并结果
   - "per" 有"分别"语义
   - "or": 有"或""任一满足"语义
   - "and": 有“同时满足”语义
-  
-- filters:
-  - filters 作用于非锚点一侧
-  - direction="cites" 时，filters 作用于锚点论文引用的论文
-  - direction="cited_by" 时，filters 作用于引用锚点论文的论文
 
 """ + common_schema_fields_prompt()

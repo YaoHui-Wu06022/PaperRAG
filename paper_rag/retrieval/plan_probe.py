@@ -23,8 +23,9 @@ from paper_rag.retrieval.planner import run_plan
 
 
 DEFAULT_QUERIES = [
-    "Resnet之后在CVPR发表论文有哪些",
+    # "Resnet之后在CVPR发表论文有哪些",
     # "ResNet或transformer引用了哪些论文",
+    "Resnet之后哪些论文引用了Resnet"
 ]
 
 

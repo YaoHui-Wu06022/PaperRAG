@@ -20,25 +20,22 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from paper_rag.config import Settings
 from paper_rag.retrieval.domains.common.parser_client import PlanParserClient
-from paper_rag.retrieval.domains.metadata.prompt import metadata_parser_system_prompt
+from paper_rag.retrieval.domains.content.prompt import content_parser_system_prompt
 
 
 DEFAULT_QUERIES = [
-    # "在2016-2025年不在ACM发表的论文有哪些",
-    # "找出 2015 年之后的论文",
-    # "列出不在 2015 年到 2018 年之间的论文",
-    # "哪些论文不是 He Kaiming 写的",
-    # "找一下标题是 Transformer 的论文",
-    # "ResNet 是哪一年发表的",
-    "Attention is All You Need之后有哪些不在2019年以前的论文",
-    # "Word2Vec之后、BERT 之前有哪些论文",
+    # "这篇论文用了什么损失函数？"
+    # "《Attention Is All You Need》这篇论文的方法是什么？"
+    # "ResNet和DenseNet有什么区别？"
+    "ResNet和BERT之间有哪些论文用了attention机制？"
+    # "2018年以后CVPR的目标检测论文用了哪些数据集？"
+    # "哪些ResNet之后的论文用了transformer方法？"
 ]
 
 
-
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Probe metadata parser prompt outputs for anchored year queries.")
-    parser.add_argument("queries", nargs="*", help="Optional queries. Defaults to anchored year-range examples.")
+    parser = argparse.ArgumentParser(description="Probe content parser prompt outputs.")
+    parser.add_argument("queries", nargs="*", help="Optional queries. Defaults to representative content examples.")
     parser.add_argument("--project-root", type=Path, default=find_project_root(), help="Project root containing .env")
     args = parser.parse_args()
 
@@ -58,7 +55,7 @@ def main() -> int:
 
 
 def parse_once(client: PlanParserClient, query: str) -> str:
-    return client.complete_json(metadata_parser_system_prompt(), query)
+    return client.complete_json(content_parser_system_prompt(), query)
 
 
 def pretty_json_or_raw(content: str) -> str:
@@ -66,6 +63,7 @@ def pretty_json_or_raw(content: str) -> str:
         return json.dumps(json.loads(content), ensure_ascii=False, indent=2)
     except json.JSONDecodeError:
         return content
+
 
 if __name__ == "__main__":
     sys.exit(main())

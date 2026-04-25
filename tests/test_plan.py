@@ -230,7 +230,7 @@ class PlanTests(unittest.TestCase):
                     "intent": "list",
                     "return_field": None,
                     "anchors": ["ResNet"],
-                    "filters": [{"field": "year", "op": "interval", "value": ["anchor", "inf"], "negated": False}],
+                    "filters": [{"field": "year", "op": "interval", "value": ["ResNet", "inf"], "negated": False}],
                 }),
             )
             self.assertEqual(decision.filters[0]["value"], [2016, "inf"])
@@ -249,7 +249,7 @@ class PlanTests(unittest.TestCase):
                     "direction": "cited_by",
                     "anchors": ["ResNet"],
                     "anchor_mode": "per",
-                    "filters": [{"field": "year", "op": "interval", "value": ["anchor", "inf"], "negated": False}],
+                    "filters": [{"field": "year", "op": "interval", "value": ["ResNet", "inf"], "negated": False}],
                 }),
             )
             self.assertEqual(decision.filters[0]["value"], [2016, "inf"])
@@ -351,9 +351,9 @@ class PlanTests(unittest.TestCase):
             self.assertNotIn("parser_result", pack["evidence"])
             self.assertNotIn("target_papers", pack["evidence"])
             self.assertNotIn("top_route", pack["evidence"])
+            self.assertNotIn("anchors", pack["evidence"])
             self.assertEqual(pack["evidence"]["intent"], "lookup")
             self.assertEqual(pack["evidence"]["return_field"], "author")
-            self.assertEqual(pack["evidence"]["anchors"][0]["title"], "A Discriminative Feature Learning Approach for Deep Face Recognition")
             records = pack["evidence"]["records"]
             self.assertEqual(len(records), 1)
             self.assertEqual(records[0]["year"], {"preprint_year": None, "publish_year": 2016})
@@ -602,12 +602,12 @@ class PlanTests(unittest.TestCase):
             settings = Settings.load(Path(root))
             pack = run_plan(
                 settings,
-                "Resnet以后还有哪些论文",
+                "Resnet以后发表的论文有哪些",
                 plan_parser=StaticMetadataParser({
                     "intent": "list",
                     "return_field": None,
                     "anchors": ["ResNet"],
-                    "filters": [{"field": "year", "op": "interval", "value": ["anchor", "inf"], "negated": False}],
+                    "filters": [{"field": "year", "op": "interval", "value": ["ResNet", "inf"], "negated": False}],
                 }),
             )
             self.assertEqual(pack["route"], "metadata")
@@ -623,35 +623,37 @@ class PlanTests(unittest.TestCase):
             settings = Settings.load(Path(root))
             pack = run_plan(
                 settings,
-                "ResNet和Center Loss之间有哪些论文",
+                "ResNet和Center Loss之间发表的论文有哪些",
                 plan_parser=StaticMetadataParser({
                     "intent": "list",
                     "return_field": None,
                     "anchors": ["Center Loss", "ResNet"],
-                    "filters": [{"field": "year", "op": "interval", "value": ["anchor", "anchor"], "negated": False}],
+                    "filters": [{"field": "year", "op": "interval", "value": ["Center Loss", "ResNet"], "negated": False}],
                 }),
             )
             self.assertEqual(pack["route"], "metadata")
             self.assertEqual(pack["evidence"]["filters"], [
-                {"field": "year", "op": "interval", "value": [2016, 2015], "negated": False},
+                {"field": "year", "op": "interval", "value": [2015, 2016], "negated": False},
             ])
-            self.assertEqual(pack["evidence"]["records"], [])
+            titles = [record["title"] for record in pack["evidence"]["records"]]
+            self.assertIn("Deep Residual Learning for Image Recognition", titles)
+            self.assertIn("A Discriminative Feature Learning Approach for Deep Face Recognition", titles)
 
     def test_metadata_multiple_anchor_interval_uses_min_max_years(self) -> None:
         with sample_project() as root:
             settings = Settings.load(Path(root))
             pack = run_plan(
                 settings,
-                "ResNet和Center Loss之间有哪些论文",
+                "ResNet和Center Loss之间发表的论文有哪些",
                 plan_parser=StaticMetadataParser({
                     "intent": "list",
                     "return_field": None,
                     "anchors": ["ResNet", "Center Loss"],
-                    "filters": [{"field": "year", "op": "interval", "value": ["anchor", "anchor"], "negated": False}],
+                    "filters": [{"field": "year", "op": "interval", "value": ["ResNet", "Center Loss"], "negated": False}],
                 }),
             )
             self.assertEqual(pack["evidence"]["filters"], [
-                {"field": "year", "op": "interval", "value": [2016, 2015], "negated": False},
+                {"field": "year", "op": "interval", "value": [2015, 2016], "negated": False},
             ])
 
     def test_metadata_year_intervals_are_merged(self) -> None:
@@ -659,13 +661,13 @@ class PlanTests(unittest.TestCase):
             settings = Settings.load(Path(root))
             pack = run_plan(
                 settings,
-                "ResNet之后2019年以前有哪些论文",
+                "ResNet之后2019年以前发表的论文有哪些",
                 plan_parser=StaticMetadataParser({
                     "intent": "list",
                     "return_field": None,
                     "anchors": ["ResNet"],
                     "filters": [
-                        {"field": "year", "op": "interval", "value": ["anchor", "inf"], "negated": False},
+                        {"field": "year", "op": "interval", "value": ["ResNet", "inf"], "negated": False},
                         {"field": "year", "op": "interval", "value": ["-inf", 2019], "negated": False},
                     ],
                 }),
@@ -744,6 +746,11 @@ class PlanTests(unittest.TestCase):
             self.assertNotIn("retrieval_query", pack)
             self.assertEqual(pack["route"], "reference")
             self.assertEqual(pack["intent"], "list")
+            self.assertNotIn("return_field", pack)
+            self.assertEqual(pack["direction"], "cited_by")
+            self.assertEqual(pack["anchors"], ["ResNet"])
+            self.assertEqual(pack["anchor_mode"], "per")
+            self.assertEqual(pack["filters"], [{"field": "year", "op": "=", "value": 2016, "negated": False}])
             self.assertEqual(pack["evidence"]["parse_status"], "ok")
             self.assertEqual(len(pack["evidence"]["citing_papers"]), 1)
             self.assertEqual(pack["evidence"]["reference_items"], [])
@@ -758,6 +765,11 @@ class PlanTests(unittest.TestCase):
             )
             self.assertEqual(pack["route"], "reference")
             self.assertEqual(pack["intent"], "list")
+            self.assertNotIn("return_field", pack)
+            self.assertEqual(pack["direction"], "cited_by")
+            self.assertEqual(pack["anchors"], ["ResNet"])
+            self.assertEqual(pack["anchor_mode"], "per")
+            self.assertEqual(pack["filters"], [])
             self.assertNotIn("scope", pack["evidence"])
             self.assertNotIn("expanded_query", pack["evidence"])
             self.assertNotIn("query", pack["evidence"])
@@ -800,6 +812,11 @@ class PlanTests(unittest.TestCase):
                 ),
             )
             self.assertEqual(pack["route"], "reference")
+            self.assertNotIn("return_field", pack)
+            self.assertEqual(pack["direction"], "cites")
+            self.assertEqual(pack["anchors"], ["ResNet"])
+            self.assertEqual(pack["anchor_mode"], "per")
+            self.assertEqual(pack["filters"], [{"field": "title", "op": "contains", "value": "ImageNet", "negated": False}])
             self.assertEqual(pack["evidence"]["direction"], "cites")
             self.assertNotIn("query", pack["evidence"])
             self.assertNotIn("parser_result", pack["evidence"])

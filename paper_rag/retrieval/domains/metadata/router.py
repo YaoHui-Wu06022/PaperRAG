@@ -3,8 +3,8 @@ from __future__ import annotations
 from copy import deepcopy
 
 from ....config import Settings
-from ..common.filters import resolve_anchor_year_filters
-from ..common.paper_resolved import paper_mentions_from_anchors_and_title_filters, resolve_paper_mentions
+from ..common.filters import resolve_paper_year_filters
+from ..common.paper_resolver import paper_mentions_from_anchors_and_title_filters, resolve_paper_mentions
 from ..common.errors import PlanParseError
 from ...top_router import RouteDecision
 from .parser import MetadataParserClient
@@ -13,17 +13,15 @@ from .parser import MetadataParserClient
 METADATA_ENTRY_TERMS = {
     "作者",
     "标题",
+    "题目",
     "会议",
     "期刊",
-    "题目",
-    "发布",
-    "发表",
     "年份",
+    "发表",
     "哪一年",
-    "几年",
     "谁写",
+    "写的",
     "谁提出",
-    "哪些论文",
     "多少篇",
     "几篇",
 }
@@ -83,12 +81,12 @@ def build_metadata_decision(
         filters=parser_result["filters"],
         anchors=parser_result["anchors"],
     )
-    return apply_anchor_year_filters(enriched, warnings)
+    return apply_anchor_year_filters(settings, enriched, warnings)
 
 
-def apply_anchor_year_filters(decision: RouteDecision, warnings: list[str]) -> RouteDecision:
+def apply_anchor_year_filters(settings: Settings, decision: RouteDecision, warnings: list[str]) -> RouteDecision:
     filters = list(decision.filters)
-    resolved_filters = resolve_anchor_year_filters(filters, decision.resolved_papers, warnings)
+    resolved_filters = resolve_paper_year_filters(settings, filters, warnings)
     if resolved_filters == filters:
         return decision
     parser_result = deepcopy(decision.parser_result) if decision.parser_result is not None else None

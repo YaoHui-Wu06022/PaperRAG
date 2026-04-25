@@ -69,17 +69,18 @@ def normalize_plan_filter_value(op: str, value: Any) -> Any:
 
 def _normalize_interval_bound(value: Any) -> int | str:
     if isinstance(value, str):
-        normalized = value.strip().lower()
+        text = value.strip()
+        normalized = text.lower()
         if normalized in {"-inf", "-infinity"}:
             return "-inf"
         if normalized in {"inf", "+inf", "infinity", "+infinity"}:
             return "inf"
-        if normalized == "anchor":
-            return "anchor"
         try:
             return int(normalized)
-        except ValueError as exc:
-            raise PlanParseError("Plan interval filter bounds must be numeric or inf sentinels") from exc
+        except ValueError:
+            if text:
+                return text
+            raise PlanParseError("Plan interval filter bounds must be numeric, paper mentions, or inf sentinels")
     try:
         return int(value)
     except (TypeError, ValueError) as exc:
