@@ -31,7 +31,6 @@ class FusedChunk:
 
 def plan_body(
     settings: Settings,
-    original_query: str,
     route: RouteDecision,
     warnings: list[str],
     *,
@@ -45,7 +44,7 @@ def plan_body(
             "parser_error": route.parser_error,
             "context_units": [],
         }
-    retrieval_source = build_content_retrieval_source(route, original_query)
+    retrieval_source = build_content_retrieval_source(route)
     retrieval_query = retrieval_source["text"]
     documents = filter_content_chunks(settings, load_chunk_documents(settings.paper_data_dir), route)
     documents_by_id = {document.chunk_id: document for document in documents}
@@ -85,7 +84,7 @@ def build_content_evidence_base(route: RouteDecision, *, retrieval_source: dict[
     return evidence
 
 
-def build_content_retrieval_source(route: RouteDecision, original_query: str) -> dict[str, Any]:
+def build_content_retrieval_source(route: RouteDecision) -> dict[str, Any]:
     parser_result = route.parser_result or {}
     anchors = list(route.anchors)
     compare_objects = list(parser_result.get("compare_objects") or [])
@@ -99,7 +98,7 @@ def build_content_retrieval_source(route: RouteDecision, original_query: str) ->
         f"anchors: {', '.join(anchors)}",
         f"papers: {', '.join(paper_titles)}",
         f"filters: {', '.join(filter_terms)}",
-        f"question: {original_query}",
+        f"question: {route.extract_query}",
     ]
     text = "; ".join(part for part in parts if not part.endswith(": "))
     return {

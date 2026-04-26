@@ -52,9 +52,10 @@ def run_plan(
             "message": route.reason,
         }
     else:
-        evidence = plan_body(settings, prepared.original_query, route, warnings, embedder=embedder, store=store)
+        evidence = plan_body(settings, route, warnings, embedder=embedder, store=store)
     result: dict[str, Any] = {
         "original_query": prepared.original_query,
+        "extract_query": route.extract_query,
         "route": route.route,
         "intent": route.intent,
         "router_reason": route.reason,

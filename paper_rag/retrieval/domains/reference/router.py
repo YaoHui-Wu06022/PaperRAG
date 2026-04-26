@@ -5,46 +5,19 @@ from copy import deepcopy
 from ....config import Settings
 from ..common.errors import PlanParseError
 from ..common.filters import resolve_paper_year_filters
-from ..common.paper_resolver import resolve_parser_papers
+from ..common.paper_resolver import dedupe_alias_matches, merge_papers, resolve_parser_papers
 from ...top_router import RouteDecision
 from .parser import ReferenceParserClient
-
-
-REFERENCE_ENTRY_TERMS = {
-    "引用",
-    "被引",
-    "参考",
-    "引文",
-}
-
-
-def reference_route(query: str, tokens: list[str] | None = None) -> RouteDecision | None:
-    _ = tokens
-    term = first_reference_entry_term(query)
-    if term:
-        return RouteDecision(
-            route="reference",
-            reason=f"匹配到路由词: {term}",
-            intent=None,
-            query=query,
-        )
-    return None
-
-def first_reference_entry_term(query: str) -> str | None:
-    for term in sorted(REFERENCE_ENTRY_TERMS, key=len, reverse=True):
-        if term in query:
-            return term
-    return None
 
 
 def build_reference_decision(
     settings: Settings,
     decision: RouteDecision,
-    query: str,
     warnings: list[str],
     *,
     plan_parser=None,
 ) -> RouteDecision:
+    query = decision.extract_query
     try:
         parser = plan_parser or ReferenceParserClient.from_settings(settings)
         if not hasattr(parser, "parse_reference"):
@@ -56,23 +29,29 @@ def build_reference_decision(
             route=decision.route,
             reason=decision.reason,
             intent=None,
-            query=query,
+            extract_query=query,
+            resolved_papers=decision.resolved_papers,
+            resolved_anchor_papers=decision.resolved_anchor_papers,
+            alias_matches=decision.alias_matches,
             parse_status="parse_failed",
             parser_error=str(exc),
+            filters=decision.filters,
         )
-    resolved = resolve_parser_papers(settings, parser_result)
+
+    combined_filters = [*decision.filters, *parser_result["filters"]]
+    resolved = resolve_parser_papers(settings, {**parser_result, "filters": combined_filters})
     parser_result = {**parser_result, "filters": resolved["filters"]}
     parse_status = "ok" if parser_result["direction"] else "unknown_direction"
     if parse_status == "unknown_direction":
         warnings.append("reference parser returned direction=null")
-    decision = RouteDecision(
+    enriched = RouteDecision(
         route=decision.route,
         reason=decision.reason,
         intent=parser_result["intent"],
-        query=query,
-        resolved_papers=resolved["resolved_papers"],
+        extract_query=query,
+        resolved_papers=merge_papers(decision.resolved_papers, resolved["resolved_papers"]),
         resolved_anchor_papers=resolved["resolved_anchor_papers"],
-        alias_matches=resolved["alias_matches"],
+        alias_matches=dedupe_alias_matches([*decision.alias_matches, *resolved["alias_matches"]]),
         parser_result=parser_result,
         parse_status=parse_status,
         filters=parser_result["filters"],
@@ -80,7 +59,7 @@ def build_reference_decision(
         anchors=parser_result["anchors"],
         anchor_mode=parser_result["anchor_mode"],
     )
-    return apply_anchor_year_filters(settings, decision, warnings)
+    return apply_anchor_year_filters(settings, enriched, warnings)
 
 
 def apply_anchor_year_filters(settings: Settings, decision: RouteDecision, warnings: list[str]) -> RouteDecision:
@@ -95,7 +74,7 @@ def apply_anchor_year_filters(settings: Settings, decision: RouteDecision, warni
         route=decision.route,
         reason=decision.reason,
         intent=decision.intent,
-        query=decision.query,
+        extract_query=decision.extract_query,
         resolved_papers=decision.resolved_papers,
         resolved_anchor_papers=decision.resolved_anchor_papers,
         alias_matches=decision.alias_matches,

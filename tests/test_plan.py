@@ -15,7 +15,8 @@ from paper_rag.retrieval.domains.content.schema import validate_content_parse
 from paper_rag.retrieval.domains.metadata.schema import validate_metadata_parse
 from paper_rag.retrieval.domains.reference.router import build_reference_decision
 from paper_rag.retrieval.domains.reference.schema import validate_reference_parse
-from paper_rag.retrieval.top_router import route_query
+from paper_rag.retrieval.domains.top.schema import validate_top_parse
+from paper_rag.retrieval.top_router import build_route_decision, RouteDecision
 
 
 class StaticMetadataParser:
@@ -30,6 +31,13 @@ class StaticMetadataParser:
         payload.setdefault("filters", [])
         return validate_metadata_parse(payload, query)
 
+    def parse_top(self, query: str) -> dict:
+        return validate_top_parse({
+            "router": "metadata",
+            "filters": self.payload.get("top_filters", []),
+            "extract_query": query,
+        }, query)
+
 
 class StaticReferenceParser:
     def __init__(self, payload: dict):
@@ -43,6 +51,13 @@ class StaticReferenceParser:
         payload.setdefault("anchor_mode", "per")
         payload.setdefault("filters", [])
         return validate_reference_parse(payload, query)
+
+    def parse_top(self, query: str) -> dict:
+        return validate_top_parse({
+            "router": "reference",
+            "filters": self.payload.get("top_filters", []),
+            "extract_query": query,
+        }, query)
 
 
 class StaticContentParser:
@@ -59,12 +74,29 @@ class StaticContentParser:
         payload.setdefault("filters", [])
         return validate_content_parse(payload, query)
 
+    def parse_top(self, query: str) -> dict:
+        return validate_top_parse({
+            "router": "content",
+            "filters": self.payload.get("top_filters", []),
+            "extract_query": query,
+        }, query)
+
+
+class StaticTopParser:
+    def __init__(self, payload: dict):
+        self.payload = payload
+        self.calls: list[str] = []
+
+    def parse_top(self, query: str) -> dict:
+        self.calls.append(query)
+        return validate_top_parse(self.payload, query)
+
 
 def metadata_lookup(field: str, title: str) -> StaticMetadataParser:
     return StaticMetadataParser({
         "intent": "lookup",
         "return_field": field,
-        "filters": [{"field": "title", "op": "contains", "value": title, "negated": False}],
+        "filters": [{"field": "title", "op": "=", "value": title, "negated": False}],
     })
 
 
@@ -133,62 +165,135 @@ class FakeStore:
 
 
 class PlanTests(unittest.TestCase):
+    def route_with_top(
+        self,
+        query: str,
+        router: str,
+        *,
+        filters: list[dict] | None = None,
+        extract_query: str | None = None,
+    ) -> RouteDecision:
+        with sample_project() as root:
+            settings = Settings.load(Path(root))
+            return build_route_decision(
+                settings,
+                query,
+                warnings=[],
+                plan_parser=StaticTopParser({
+                    "router": router,
+                    "filters": filters or [],
+                    "extract_query": extract_query or query,
+                }),
+            )
+
     def test_router_uses_explicit_routes_before_body_default(self) -> None:
-        self.assertEqual(route_query("这篇论文是哪一年发表的").route, "metadata")
-        self.assertEqual(route_query("这篇论文是哪一年发表的").intent, None)
-        self.assertEqual(route_query("这篇论文引用了哪些论文").route, "reference")
-        self.assertEqual(route_query("哪些论文引用了ResNet").route, "reference")
-        self.assertEqual(route_query("BERT的参考文献有哪些").route, "reference")
-        self.assertEqual(route_query("how does center loss improve compactness").route, "unclear")
+        self.assertEqual(self.route_with_top("这篇论文是哪一年发表的", "metadata").route, "metadata")
+        self.assertEqual(self.route_with_top("这篇论文是哪一年发表的", "metadata").intent, None)
+        self.assertEqual(self.route_with_top("这篇论文引用了哪些论文", "reference").route, "reference")
+        self.assertEqual(self.route_with_top("哪些论文引用了ResNet", "reference").route, "reference")
+        self.assertEqual(self.route_with_top("BERT的参考文献有哪些", "reference").route, "reference")
+        self.assertEqual(self.route_with_top("无法判断的问题", "unclear").route, "unclear")
 
-    def test_rule_router_keeps_reference_as_top_level_entry_only(self) -> None:
-        self.assertEqual(route_query("哪些论文引用了ResNet").route, "reference")
-        self.assertEqual(route_query("哪些2019年的论文引用了ResNet").route, "reference")
-        self.assertEqual(route_query("ResNet引用了哪些论文").route, "reference")
-        self.assertEqual(route_query("ResNet的参考文献有哪些").route, "reference")
-        self.assertEqual(route_query("BERT被哪些论文引用").route, "reference")
-        self.assertEqual(route_query("有多少论文引用了BERT").route, "reference")
-        self.assertEqual(route_query("哪些论文把BERT作为参考文献").route, "reference")
-        self.assertEqual(route_query("ResNet的引文关系").route, "reference")
+    def test_top_parser_replaces_rule_router(self) -> None:
+        self.assertEqual(self.route_with_top("哪些论文引用了ResNet", "reference").route, "reference")
+        self.assertEqual(self.route_with_top("ResNet引用了哪些论文", "reference").route, "reference")
+        self.assertEqual(self.route_with_top("BERT是谁写的", "metadata").route, "metadata")
+        self.assertEqual(self.route_with_top("ResNet的结构有什么特点", "content").route, "content")
+        self.assertEqual(self.route_with_top("模糊问题", "unclear").route, "unclear")
 
-    def test_router_uses_token_boundaries(self) -> None:
-        self.assertEqual(route_query("recite the result").route, "unclear")
-        self.assertEqual(route_query("authorization method").route, "unclear")
-        self.assertEqual(route_query("BERT是哪一年发表的").route, "metadata")
+    def test_top_parser_schema_validates_route_filters_and_extract_query(self) -> None:
+        payload = validate_top_parse({
+            "router": "metadata",
+            "filters": [{"field": "year", "op": "interval", "value": [2015, 2020], "negated": False}],
+            "extract_query": "有哪些论文",
+            "extra": "ignored",
+        })
+        self.assertEqual(payload["router"], "metadata")
+        self.assertEqual(payload["extract_query"], "有哪些论文")
+        self.assertEqual(payload["filters"][0]["field"], "year")
+
+    def test_top_parser_schema_rejects_invalid_payloads(self) -> None:
+        with self.assertRaises(PlanParseError):
+            validate_top_parse({"router": "body", "filters": [], "extract_query": "问题"})
+        with self.assertRaises(PlanParseError):
+            validate_top_parse({"router": "metadata", "filters": [], "extract_query": 123})
+        with self.assertRaises(PlanParseError):
+            validate_top_parse({"router": "metadata", "filters": [{"field": "section", "op": "=", "value": "intro", "negated": False}], "extract_query": "问题"})
+        with self.assertRaises(PlanParseError):
+            validate_top_parse({"router": "metadata", "filters": [{"field": "title", "op": "contains", "value": "ResNet", "negated": False}], "extract_query": "问题"})
+        with self.assertRaises(PlanParseError):
+            validate_top_parse({"router": "metadata", "filters": []})
+
+    def test_top_parser_failure_returns_unclear(self) -> None:
+        class BadTopParser:
+            def parse_top(self, query: str) -> dict:
+                raise PlanParseError("bad top payload")
+
+        with sample_project() as root:
+            settings = Settings.load(Path(root))
+            warnings: list[str] = []
+            decision = build_route_decision(
+                settings,
+                "无法判断的问题",
+                warnings=warnings,
+                plan_parser=BadTopParser(),
+            )
+            self.assertEqual(decision.route, "unclear")
+            self.assertEqual(decision.parse_status, "parse_failed")
+            self.assertIn("top_parse_failed", warnings[0])
 
     def test_metadata_router_field_routes(self) -> None:
-        self.assertEqual(route_query("BERT是谁写的").route, "metadata")
-        self.assertEqual(route_query("BERT的作者是谁").route, "metadata")
-        self.assertEqual(route_query("BERT是哪一年发表的").route, "metadata")
-        self.assertEqual(route_query("BERT发表在哪个期刊").route, "metadata")
-        self.assertEqual(route_query("BERT发表在哪个会议").route, "metadata")
-        self.assertEqual(route_query("BERT的标题是什么").route, "metadata")
+        self.assertEqual(self.route_with_top("BERT是谁写的", "metadata").route, "metadata")
+        self.assertEqual(self.route_with_top("BERT的作者是谁", "metadata").route, "metadata")
+        self.assertEqual(self.route_with_top("BERT是哪一年发表的", "metadata").route, "metadata")
+        self.assertEqual(self.route_with_top("BERT发表在哪个期刊", "metadata").route, "metadata")
+        self.assertEqual(self.route_with_top("BERT发表在哪个会议", "metadata").route, "metadata")
+        self.assertEqual(self.route_with_top("BERT的标题是什么", "metadata").route, "metadata")
 
     def test_metadata_router_paper_list_filters(self) -> None:
-        by_year = route_query("哪些论文在2015-2019发表")
+        by_year = self.route_with_top(
+            "哪些论文在2015-2019发表",
+            "metadata",
+            filters=[{"field": "year", "op": "interval", "value": [2015, 2019], "negated": False}],
+        )
         self.assertEqual(by_year.route, "metadata")
         self.assertEqual(by_year.intent, None)
-        self.assertEqual(by_year.filters, [])
-        by_author = route_query("哪些论文是Kaiming He写的")
+        self.assertEqual(by_year.filters, [{"field": "year", "op": "interval", "value": [2015, 2019], "negated": False}])
+        by_author = self.route_with_top(
+            "哪些论文是Kaiming He写的",
+            "metadata",
+            filters=[{"field": "author", "op": "=", "value": "Kaiming He", "negated": False}],
+        )
         self.assertEqual(by_author.route, "metadata")
         self.assertEqual(by_author.intent, None)
-        self.assertEqual(by_author.filters, [])
-        relative = route_query("Attention is All You Need之后有哪些不在2019年以前的论文")
+        self.assertEqual(by_author.filters, [{"field": "author", "op": "=", "value": "Kaiming He", "negated": False}])
+        relative = self.route_with_top(
+            "Attention is All You Need之后有哪些不在2019年以前的论文",
+            "metadata",
+            filters=[{"field": "year", "op": "interval", "value": ["Attention is All You Need", "inf"], "negated": False}],
+        )
         self.assertEqual(relative.route, "metadata")
-        cvpr_range = route_query("2015到2020年不在CVPR的论文有哪些")
+        cvpr_range = self.route_with_top(
+            "2015到2020年不在CVPR的论文有哪些",
+            "metadata",
+            filters=[
+                {"field": "year", "op": "interval", "value": [2015, 2020], "negated": False},
+                {"field": "venue", "op": "contains", "value": "CVPR", "negated": True},
+            ],
+        )
         self.assertEqual(cvpr_range.route, "metadata")
 
     def test_metadata_router_does_not_absorb_content_questions(self) -> None:
-        self.assertEqual(route_query("有哪些论文用了attention机制").route, "content")
-        self.assertEqual(route_query("ResNet之后有哪些论文用了attention机制").route, "content")
-        self.assertEqual(route_query("比较ResNet和DenseNet的方法").route, "content")
-        self.assertEqual(route_query("作者为He题目为ResNet的这篇论文讲了什么内容").route, "content")
+        self.assertEqual(self.route_with_top("有哪些论文用了attention机制", "content").route, "content")
+        self.assertEqual(self.route_with_top("ResNet之后有哪些论文用了attention机制", "content").route, "content")
+        self.assertEqual(self.route_with_top("比较ResNet和DenseNet的方法", "content").route, "content")
+        self.assertEqual(self.route_with_top("作者为He题目为ResNet的这篇论文讲了什么内容", "content").route, "content")
 
     def test_reference_route_keeps_original_query(self) -> None:
         query = "哪些论文引用了RESNET"
-        decision = route_query(query)
+        decision = self.route_with_top(query, "reference")
         self.assertEqual(decision.route, "reference")
-        self.assertEqual(decision.query, query)
+        self.assertEqual(decision.extract_query, query)
 
     def test_reference_parser_schema_normalizes_valid_payload(self) -> None:
         payload = validate_reference_parse({
@@ -249,14 +354,16 @@ class PlanTests(unittest.TestCase):
             settings = Settings.load(Path(root))
             decision = build_metadata_decision(
                 settings,
-                route_query("ResNet以后还有哪些论文"),
-                "ResNet以后还有哪些论文",
+                RouteDecision(
+                    route="metadata",
+                    reason="top parser selected route: metadata",
+                    extract_query="ResNet以后还有哪些论文",
+                    filters=[{"field": "year", "op": "interval", "value": ["ResNet", "inf"], "negated": False}],
+                ),
                 warnings=[],
                 plan_parser=StaticMetadataParser({
                     "intent": "list",
                     "return_field": None,
-                    "anchors": ["ResNet"],
-                    "filters": [{"field": "year", "op": "interval", "value": ["ResNet", "inf"], "negated": False}],
                 }),
             )
             self.assertEqual(decision.filters[0]["value"], [2016, "inf"])
@@ -267,15 +374,18 @@ class PlanTests(unittest.TestCase):
             settings = Settings.load(Path(root))
             decision = build_reference_decision(
                 settings,
-                route_query("2015到2020年之间引用了ResNet的论文有哪些"),
-                "2015到2020年之间引用了ResNet的论文有哪些",
+                RouteDecision(
+                    route="reference",
+                    reason="top parser selected route: reference",
+                    extract_query="2015到2020年之间引用了ResNet的论文有哪些",
+                    filters=[{"field": "year", "op": "interval", "value": ["ResNet", "inf"], "negated": False}],
+                ),
                 warnings=[],
                 plan_parser=StaticReferenceParser({
                     "intent": "list",
                     "direction": "cited_by",
                     "anchors": ["ResNet"],
                     "anchor_mode": "per",
-                    "filters": [{"field": "year", "op": "interval", "value": ["ResNet", "inf"], "negated": False}],
                 }),
             )
             self.assertEqual(decision.filters[0]["value"], [2016, "inf"])
@@ -819,6 +929,13 @@ class PlanTests(unittest.TestCase):
 
     def test_ask_parse_failed_reports_failure(self) -> None:
         class BadParser:
+            def parse_top(self, query: str) -> dict:
+                return validate_top_parse({
+                    "router": "metadata",
+                    "filters": [],
+                    "extract_query": query,
+                }, query)
+
             def parse_metadata(self, query: str) -> dict:
                 raise PlanParseError("invalid parser payload")
 

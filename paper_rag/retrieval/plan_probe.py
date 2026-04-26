@@ -27,7 +27,7 @@ DEFAULT_QUERIES = [
     # "ResNet或transformer引用了哪些论文",
     # "Resnet之后哪些论文引用了Resnet"
     # "Attention is All You Need之后有哪些不在2019年以前的论文",
-    "2018年以后CVPR的目标检测论文用了哪些数据集？",
+    # "2018年以后CVPR的目标检测论文用了哪些数据集？",
 
 ]
 

@@ -57,8 +57,8 @@ def metadata_lookup_records(
     if return_field is None:
         warnings.append("metadata lookup missing return_field")
     records = to_evidence_metadata_records(route.resolved_papers)
-    if not records and route.query:
-        records = match_manifest_records(settings, route.query)
+    if not records and route.extract_query:
+        records = match_manifest_records(settings, route.extract_query)
     if return_field is None:
         return records
     return [

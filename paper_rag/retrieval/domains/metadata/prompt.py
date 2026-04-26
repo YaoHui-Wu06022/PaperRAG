@@ -11,14 +11,6 @@ Schema:
 {
   "intent": "lookup|list|count",
   "return_field": "author|year|venue|title|null",
-  "filters": [
-    {
-      "field": "author|year|venue|title",
-      "op": "=|in|contains|interval",
-      "value": "",
-      "negated": false
-    }
-  ]
 }
 
 规则:

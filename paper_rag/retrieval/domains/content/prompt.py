@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from ..common.prompt import common_schema_fields_prompt
-
 
 def content_parser_system_prompt() -> str:
     return """
@@ -10,24 +8,14 @@ def content_parser_system_prompt() -> str:
 Schema:
 {
   "intent": "fact|method|reason|compare|summary|list",
-  "anchors": [],
   "compare_objects": [],
   "objects": [],
-  "filters": [
-    {
-      "field": "author|year|venue|title",
-      "op": "=|in|contains|interval",
-      "value": "",
-      "negated": false
-    }
-  ]
 }
 
 字段含义:
 - "intent": 正文查询意图，只能从 fact/method/reason/compare/summary/list 中选择一个
 - "compare_objects": 比较主体，只在 intent="compare" 时使用，表示被比较对象
 - "objects": 表示扣除提问词、compare_objects 和元数据过滤条件后，剩余的正文内容对象
-- "filters": 论文元数据过滤条件，包括 author/year/venue/title
 
 intent 判断优先级:
 1. 明确比较两个或多个对象的差异、相同点、优劣、对比、vs -> compare
@@ -42,8 +30,7 @@ intent 判断优先级:
   - 可以是论文、模型、方法、模块、任务、数据集或概念
   - 如果不是比较问题，compare_objects 返回 []
   - 用于组织比较答案，不用于限定论文范围；限定论文范围使用 filters
-  - 如果明确比较 X 和 Y，则 X 和 Y 必须放入 compare_objects；如果 X 和 Y 明确指向具体论文，同时用 filters.title 绑定论文范围
-  - 如果只是比较模型、方法、概念，不要自动生成 filters.title
+  - 如果明确比较 X 和 Y，则 X 和 Y 必须放入 compare_objects
 
 - "objects":
   - 可以是模型、方法、模块、结构、任务、数据集、损失函数、指标、机制、概念、实验对象、贡献、局限、趋势、共同点等
@@ -52,8 +39,6 @@ intent 判断优先级:
   - 不包含普通提问词、动词或泛化词
   - 如果论文绑定词出现在更具体的正文技术短语中，例如“ResNet方法”“ResNet结构”，把完整短语放入 objects且不用 filters.title 绑定论文范围
   
-""" + common_schema_fields_prompt() + """
-
 示例：
 - "Transformer 使用了什么位置编码"
 -> {
