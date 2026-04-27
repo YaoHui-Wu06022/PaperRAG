@@ -204,13 +204,29 @@ class PlanTests(unittest.TestCase):
     def test_top_parser_schema_validates_route_filters_and_extract_query(self) -> None:
         payload = validate_top_parse({
             "router": "metadata",
-            "filters": [{"field": "year", "op": "interval", "value": [2015, 2020], "negated": False}],
+            "filters": [
+                {"field": "year", "op": "interval", "value": [2015, 2020], "negated": False},
+                {"field": "title", "op": "contains", "value": "attention", "negated": False},
+                {"field": "paper", "op": "=", "value": "ResNet", "negated": False},
+            ],
+            "filter_groups": [{
+                "subject": "论文",
+                "filters": [
+                    {"field": "venue", "op": "=", "value": "CVPR", "negated": False},
+                    {"field": "paper", "op": "in", "value": ["BERT", "Transformer"], "negated": False},
+                ],
+            }],
             "extract_query": "有哪些论文",
             "extra": "ignored",
         })
         self.assertEqual(payload["router"], "metadata")
         self.assertEqual(payload["extract_query"], "有哪些论文")
         self.assertEqual(payload["filters"][0]["field"], "year")
+        self.assertEqual(payload["filters"][1]["field"], "title")
+        self.assertEqual(payload["filters"][2]["field"], "paper")
+        self.assertEqual(payload["filter_groups"][0]["subject"], "论文")
+        self.assertEqual(payload["filter_groups"][0]["filters"][0]["field"], "venue")
+        self.assertEqual(payload["filter_groups"][0]["filters"][1]["field"], "paper")
 
     def test_top_parser_schema_rejects_invalid_payloads(self) -> None:
         with self.assertRaises(PlanParseError):
@@ -220,9 +236,95 @@ class PlanTests(unittest.TestCase):
         with self.assertRaises(PlanParseError):
             validate_top_parse({"router": "metadata", "filters": [{"field": "section", "op": "=", "value": "intro", "negated": False}], "extract_query": "问题"})
         with self.assertRaises(PlanParseError):
-            validate_top_parse({"router": "metadata", "filters": [{"field": "title", "op": "contains", "value": "ResNet", "negated": False}], "extract_query": "问题"})
-        with self.assertRaises(PlanParseError):
             validate_top_parse({"router": "metadata", "filters": []})
+        with self.assertRaises(PlanParseError):
+            validate_top_parse({"router": "metadata", "filters": [], "extract_query": "问题", "filter_groups": [{"label": "论文", "filters": []}]})
+        with self.assertRaises(PlanParseError):
+            validate_top_parse({"router": "metadata", "filters": [], "extract_query": "问题", "filter_groups": [{"subject": "论文", "filters": ":[{"}]})
+        with self.assertRaises(PlanParseError):
+            validate_top_parse({"router": "metadata", "filters": [{"field": "unknown", "op": "=", "value": "x", "negated": False}], "extract_query": "问题"})
+
+    def test_top_parser_schema_rejects_invalid_field_ops(self) -> None:
+        invalid_filters = [
+            {"field": "title", "op": "=", "value": "ResNet", "negated": False},
+            {"field": "paper", "op": "contains", "value": "ResNet", "negated": False},
+            {"field": "author", "op": "=", "value": "Kaiming He", "negated": False},
+            {"field": "venue", "op": "contains", "value": "CVPR", "negated": False},
+            {"field": "year", "op": "contains", "value": 2017, "negated": False},
+        ]
+        for filter_item in invalid_filters:
+            with self.subTest(filter_item=filter_item), self.assertRaises(PlanParseError):
+                validate_top_parse({
+                    "router": "metadata",
+                    "extract_query": "问题",
+                    "filters": [filter_item],
+                })
+        with self.assertRaises(PlanParseError):
+            validate_top_parse({
+                "router": "metadata",
+                "extract_query": "查找 ResNet 的作者",
+                "filters": [],
+                "filter_groups": [{
+                    "subject": "论文",
+                    "filters": [{"field": "paper", "op": "contains", "value": "ResNet", "negated": False}],
+                }],
+            })
+
+    def test_top_single_filter_group_normalizes_to_filters(self) -> None:
+        with sample_project() as root:
+            settings = Settings.load(Path(root))
+            warnings: list[str] = []
+            decision = build_route_decision(
+                settings,
+                "2015年CVPR论文有多少篇",
+                warnings=warnings,
+                plan_parser=StaticTopParser({
+                    "router": "metadata",
+                    "extract_query": "统计{subject}数量",
+                    "filters": [],
+                    "filter_groups": [{
+                        "subject": "论文",
+                        "filters": [
+                            {"field": "title", "op": "contains", "value": "attention", "negated": False},
+                            {"field": "paper", "op": "=", "value": "ResNet", "negated": False},
+                        ],
+                    }],
+                }),
+            )
+        self.assertEqual(decision.extract_query, "统计论文数量")
+        self.assertEqual(decision.filters, [
+            {"field": "title", "op": "contains", "value": "attention", "negated": False},
+            {"field": "paper", "op": "=", "value": "ResNet", "negated": False},
+        ])
+        self.assertEqual(decision.filter_groups, [])
+
+    def test_top_multiple_filter_groups_are_preserved(self) -> None:
+        with sample_project() as root:
+            settings = Settings.load(Path(root))
+            warnings: list[str] = []
+            decision = build_route_decision(
+                settings,
+                "2015年CVPR论文和2018年ArXiv论文分别有多少篇",
+                warnings=warnings,
+                plan_parser=StaticTopParser({
+                    "router": "metadata",
+                    "extract_query": "统计{subject}数量",
+                    "filters": [],
+                    "filter_groups": [
+                        {
+                            "subject": "论文",
+                            "filters": [{"field": "year", "op": "=", "value": 2015, "negated": False}],
+                        },
+                        {
+                            "subject": "论文",
+                            "filters": [{"field": "year", "op": "=", "value": 2018, "negated": False}],
+                        },
+                    ],
+                }),
+            )
+        self.assertEqual(decision.extract_query, "统计{subject}数量")
+        self.assertEqual(decision.filters, [])
+        self.assertEqual(len(decision.filter_groups), 2)
 
     def test_top_parser_failure_returns_unclear(self) -> None:
         class BadTopParser:
@@ -262,11 +364,11 @@ class PlanTests(unittest.TestCase):
         by_author = self.route_with_top(
             "哪些论文是Kaiming He写的",
             "metadata",
-            filters=[{"field": "author", "op": "=", "value": "Kaiming He", "negated": False}],
+            filters=[{"field": "author", "op": "contains", "value": "Kaiming He", "negated": False}],
         )
         self.assertEqual(by_author.route, "metadata")
         self.assertEqual(by_author.intent, None)
-        self.assertEqual(by_author.filters, [{"field": "author", "op": "=", "value": "Kaiming He", "negated": False}])
+        self.assertEqual(by_author.filters, [{"field": "author", "op": "contains", "value": "Kaiming He", "negated": False}])
         relative = self.route_with_top(
             "Attention is All You Need之后有哪些不在2019年以前的论文",
             "metadata",
@@ -278,7 +380,7 @@ class PlanTests(unittest.TestCase):
             "metadata",
             filters=[
                 {"field": "year", "op": "interval", "value": [2015, 2020], "negated": False},
-                {"field": "venue", "op": "contains", "value": "CVPR", "negated": True},
+                {"field": "venue", "op": "=", "value": "CVPR", "negated": True},
             ],
         )
         self.assertEqual(cvpr_range.route, "metadata")

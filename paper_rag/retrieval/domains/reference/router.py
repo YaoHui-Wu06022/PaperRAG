@@ -36,6 +36,7 @@ def build_reference_decision(
             parse_status="parse_failed",
             parser_error=str(exc),
             filters=decision.filters,
+            filter_groups=decision.filter_groups,
         )
 
     combined_filters = [*decision.filters, *parser_result["filters"]]
@@ -55,6 +56,7 @@ def build_reference_decision(
         parser_result=parser_result,
         parse_status=parse_status,
         filters=parser_result["filters"],
+        filter_groups=decision.filter_groups,
         direction=parser_result["direction"],
         anchors=parser_result["anchors"],
         anchor_mode=parser_result["anchor_mode"],
@@ -82,6 +84,7 @@ def apply_anchor_year_filters(settings: Settings, decision: RouteDecision, warni
         parse_status=decision.parse_status,
         parser_error=decision.parser_error,
         filters=resolved_filters,
+        filter_groups=decision.filter_groups,
         direction=decision.direction,
         anchors=decision.anchors,
         anchor_mode=decision.anchor_mode,

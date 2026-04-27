@@ -1,16 +1,19 @@
 from __future__ import annotations
 
-from ..common.prompt import common_schema_fields_prompt
-
-
 def metadata_parser_system_prompt() -> str:
     return """
 你是一个元数据查询解析器。
-请将用户查询解析为 JSON，只输出 JSON，不要回答问题。
+请将用户查询解析为 JSON，只输出 JSON，不要回答问题
+
 Schema:
 {
-  "intent": "lookup|list|count",
+  "intent": "lookup|list|count|unknown",
   "return_field": "author|year|venue|title|null",
+  "paper_filter": {
+    "op": "=|in",
+    "value": "",
+    "negated": false
+  }
 }
 
 规则:
@@ -23,4 +26,10 @@ Schema:
   - 只能从 author/year/venue/title/null 中选择一个
   - 当查询不需要特定元数据字段时，请使用 null
 
-""" + common_schema_fields_prompt()
+- "filters"
+  - 没有过滤条件时返回空数组 []
+  - "op":
+    - "=": 用于问题中很明确指定的论文标题
+    - "in": 用于问题中很明确指定的论文标题集合
+
+"""

@@ -7,7 +7,6 @@ from .config import Settings
 from .dataprocess.manifest import effective_year
 from .retrieval.data.venues import canonicalize_venue
 from .retrieval.top_planner import run_plan
-from .retrieval.translation import contains_chinese
 
 MAX_DISPLAY_ITEMS = 10
 
@@ -53,44 +52,34 @@ def display_warnings(warnings: list[str]) -> list[str]:
 
 
 def render_ask_answer(settings: Settings, plan_pack: dict[str, Any]) -> tuple[str, list[str]]:
-    original_query = str(plan_pack.get("original_query") or "")
-    chinese = contains_chinese(original_query)
     route = str(plan_pack.get("route") or "")
     evidence = plan_pack.get("evidence") or {}
 
     if route == "error":
-        return localized_message(chinese, "证据规划失败，无法回答。", "Planning failed, unable to answer."), build_provenance(route, plan_pack)
+        return "证据规划失败，无法回答。", build_provenance(route, plan_pack)
     if route == "unclear":
-        return localized_message(
-            chinese,
-            "问题语义不明确：请补充是要查正文内容，还是查论文元数据。",
-            "The question intent is unclear: please clarify whether you want paper content or metadata.",
-        ), build_provenance(route, plan_pack)
+        return "问题语义不明确：请补充是要查正文内容、论文元数据，还是引用关系。", build_provenance(route, plan_pack)
     if route == "reference":
-        return render_reference_answer(plan_pack, evidence, chinese), build_provenance(route, plan_pack)
+        return render_reference_answer(plan_pack, evidence), build_provenance(route, plan_pack)
     if route != "metadata":
-        return localized_message(
-            chinese,
-            "当前 ask 只支持 metadata/reference 问题；content 还未接入最终回答。",
-            "The current ask command only supports metadata/reference questions; content is not implemented yet.",
-        ), build_provenance(route, plan_pack)
+        return "当前 ask 只支持 metadata/reference 问题，content 还未接入最终回答。", build_provenance(route, plan_pack)
 
     parse_status = str(evidence.get("parse_status") or "")
     if parse_status == "parse_failed":
-        return localized_message(chinese, "这个 metadata 问题暂时无法解析。", "This metadata question could not be parsed."), build_provenance(route, plan_pack)
+        return "这个 metadata 问题暂时无法解析。", build_provenance(route, plan_pack)
     if parse_status == "unknown":
-        return localized_message(chinese, "暂时无法确定这是一个支持的 metadata 问题。", "This does not look like a supported metadata question."), build_provenance(route, plan_pack)
+        return "暂时无法确定这是一个支持的 metadata 问题。", build_provenance(route, plan_pack)
 
     records = list(evidence.get("records") or [])
     if not records:
-        return localized_message(chinese, "没有找到匹配的论文。", "No matching papers were found."), build_provenance(route, plan_pack)
+        return "没有找到匹配的论文。", build_provenance(route, plan_pack)
 
     intent = str(plan_pack.get("intent") or "lookup")
     if intent == "count":
-        return render_count_answer(settings, records, evidence.get("count"), chinese), build_provenance(route, plan_pack)
+        return render_count_answer(settings, records, evidence.get("count")), build_provenance(route, plan_pack)
     if intent == "list":
-        return render_list_answer(settings, records, chinese), build_provenance(route, plan_pack)
-    return render_lookup_answer(settings, records, plan_pack.get("return_field"), chinese), build_provenance(route, plan_pack)
+        return render_list_answer(settings, records), build_provenance(route, plan_pack)
+    return render_lookup_answer(settings, records, plan_pack.get("return_field")), build_provenance(route, plan_pack)
 
 
 def build_provenance(route: str, plan_pack: dict[str, Any]) -> list[str]:
@@ -106,21 +95,21 @@ def build_provenance(route: str, plan_pack: dict[str, Any]) -> list[str]:
     return ["; ".join(parts)]
 
 
-def render_reference_answer(plan_pack: dict[str, Any], evidence: dict[str, Any], chinese: bool) -> str:
+def render_reference_answer(plan_pack: dict[str, Any], evidence: dict[str, Any]) -> str:
     parse_status = str(evidence.get("parse_status") or "")
     direction = str(evidence.get("direction") or "")
     if parse_status == "parse_failed":
-        return localized_message(chinese, "这个 reference 问题暂时无法解析。", "This reference question could not be parsed.")
+        return "这个 reference 问题暂时无法解析。"
     if parse_status == "unknown_direction":
-        return localized_message(chinese, "暂时无法判断引用方向。", "Unable to determine the reference direction.")
+        return "暂时无法判断引用方向。"
     references = reference_results_for_answer(evidence)
     if not references:
-        return localized_message(chinese, "没有找到匹配的引用证据。", "No matching reference evidence was found.")
+        return "没有找到匹配的引用证据。"
     if str(plan_pack.get("intent") or "list") == "count":
         total = evidence.get("count") if isinstance(evidence.get("count"), int) else len(references)
-        head = localized_message(chinese, f"共找到 {total} 条引用证据。", f"Found {total} reference match(es).")
+        head = f"共找到 {total} 条引用证据。"
     else:
-        head = localized_message(chinese, f"共找到 {len(references)} 条引用证据：", f"Found {len(references)} reference match(es):")
+        head = f"共找到 {len(references)} 条引用证据："
     lines = [head]
     for index, reference in enumerate(references[:MAX_DISPLAY_ITEMS], start=1):
         lines.append(f"{index}. {reference_summary(reference, direction)}")
@@ -142,88 +131,86 @@ def reference_summary(reference: dict[str, Any], direction: str) -> str:
         raw_text = f"{raw_text[:217]}..."
     if direction == "cited_by":
         paper = reference.get("citing_paper") or {}
-        title = str(paper.get("title") or "Unknown paper")
+        title = str(paper.get("title") or "未知论文")
         return title if not raw_text else f"{title} -> {raw_text}"
     paper = reference.get("anchor_paper") or {}
-    title = str(paper.get("title") or "Unknown paper")
-    return f"{title} cites -> {raw_text}"
+    title = str(paper.get("title") or "未知论文")
+    return f"{title} 引用了 -> {raw_text}"
 
 
-def render_lookup_answer(settings: Settings, records: list[dict[str, Any]], return_field: Any, chinese: bool) -> str:
+def render_lookup_answer(settings: Settings, records: list[dict[str, Any]], return_field: Any) -> str:
     field = str(return_field or "title")
     if len(records) == 1:
-        return render_lookup_line(settings, records[0], field, chinese)
-    lines = [render_lookup_line(settings, record, field, chinese, index=index) for index, record in enumerate(records, start=1)]
+        return render_lookup_line(settings, records[0], field)
+    lines = [render_lookup_line(settings, record, field, index=index) for index, record in enumerate(records, start=1)]
     return "\n".join(lines)
 
 
-def render_lookup_line(settings: Settings, record: dict[str, Any], field: str, chinese: bool, *, index: int | None = None) -> str:
-    title = str(record.get("title") or "").strip() or localized_message(chinese, "未命名论文", "Untitled paper")
+def render_lookup_line(settings: Settings, record: dict[str, Any], field: str, *, index: int | None = None) -> str:
+    title = str(record.get("title") or "").strip() or "未命名论文"
     value = record.get("value", record.get(field))
-    value_text = render_value(settings, value, field, chinese)
+    value_text = render_value(settings, value, field)
     if field == "title":
-        text = localized_message(chinese, f"{title} 的标题是 {value_text}。", f"{title} is titled {value_text}.")
+        text = f"{title} 的标题是 {value_text}。"
     elif field == "author":
-        text = localized_message(chinese, f"{title} 的作者是 {value_text}。", f"{title} was written by {value_text}.")
+        text = f"{title} 的作者是 {value_text}。"
     elif field == "year":
         if isinstance(value, dict):
-            text = localized_message(chinese, f"{title} 的年份信息是 {value_text}。", f"{title} year information: {value_text}.")
+            text = f"{title} 的年份信息是 {value_text}。"
         else:
-            text = localized_message(chinese, f"{title} 发表于 {value_text} 年。", f"{title} was published in {value_text}.")
+            text = f"{title} 发表于 {value_text} 年。"
     elif field == "venue":
-        text = localized_message(chinese, f"{title} 发表在 {value_text}。", f"{title} was published in {value_text}.")
+        text = f"{title} 发表在 {value_text}。"
     else:
-        text = localized_message(chinese, f"{title} 的 {field} 是 {value_text}。", f"The {field} of {title} is {value_text}.")
+        text = f"{title} 的 {field} 是 {value_text}。"
     if index is not None:
         return f"{index}. {text}"
     return text
 
 
-def render_list_answer(settings: Settings, records: list[dict[str, Any]], chinese: bool) -> str:
-    head = localized_message(chinese, f"共找到 {len(records)} 篇论文：", f"Found {len(records)} paper(s):")
+def render_list_answer(settings: Settings, records: list[dict[str, Any]]) -> str:
+    head = f"共找到 {len(records)} 篇论文："
     lines = [head]
     for index, record in enumerate(records[:MAX_DISPLAY_ITEMS], start=1):
-        lines.append(f"{index}. {paper_summary(settings, record, chinese)}")
+        lines.append(f"{index}. {paper_summary(settings, record)}")
     if len(records) > MAX_DISPLAY_ITEMS:
         lines.append("...")
     return "\n".join(lines)
 
 
-def render_count_answer(settings: Settings, records: list[dict[str, Any]], count: Any, chinese: bool) -> str:
+def render_count_answer(settings: Settings, records: list[dict[str, Any]], count: Any) -> str:
     total = count if isinstance(count, int) else len(records)
-    head = localized_message(chinese, f"共找到 {total} 篇论文。", f"Found {total} paper(s).")
+    head = f"共找到 {total} 篇论文。"
     if not records:
         return head
     lines = [head]
     for index, record in enumerate(records[:MAX_DISPLAY_ITEMS], start=1):
-        lines.append(f"{index}. {paper_summary(settings, record, chinese)}")
+        lines.append(f"{index}. {paper_summary(settings, record)}")
     if len(records) > MAX_DISPLAY_ITEMS:
         lines.append("...")
     return "\n".join(lines)
 
 
-def paper_summary(settings: Settings, record: dict[str, Any], chinese: bool) -> str:
-    title = str(record.get("title") or "").strip() or localized_message(chinese, "未命名论文", "Untitled paper")
+def paper_summary(settings: Settings, record: dict[str, Any]) -> str:
+    title = str(record.get("title") or "").strip() or "未命名论文"
     year = record.get("year")
     venue = canonicalize_venue(settings, record.get("venue"))
     effective = effective_year(year)
     meta_bits = [str(value) for value in [effective, venue] if value not in (None, "")]
     if meta_bits:
-        joiner = "，" if chinese else ", "
-        return f"{title} ({joiner.join(meta_bits)})"
+        return f"{title} ({'，'.join(meta_bits)})"
     return title
 
 
-def render_value(settings: Settings, value: Any, field: str, chinese: bool) -> str:
+def render_value(settings: Settings, value: Any, field: str) -> str:
     if isinstance(value, list):
         values = [str(item).strip() for item in value if str(item).strip()]
-        joiner = "、" if chinese else ", "
-        return joiner.join(values) if values else localized_message(chinese, "未找到", "not found")
+        return "、".join(values) if values else "未找到"
     if value is None or value == "":
-        return localized_message(chinese, "未找到", "not found")
+        return "未找到"
     if field == "year":
         if isinstance(value, dict):
-            return render_year_value(value, chinese)
+            return render_year_value(value)
         try:
             return str(int(value))
         except (TypeError, ValueError):
@@ -233,25 +220,13 @@ def render_value(settings: Settings, value: Any, field: str, chinese: bool) -> s
     return str(value)
 
 
-def render_year_value(value: dict[str, Any], chinese: bool) -> str:
+def render_year_value(value: dict[str, Any]) -> str:
     preprint_year = value.get("preprint_year")
     publish_year = value.get("publish_year")
-    if chinese:
-        if preprint_year and publish_year:
-            return f"预印本年份 {preprint_year}，正式发表年份 {publish_year}"
-        if preprint_year:
-            return f"预印本年份 {preprint_year}，未找到正式发表年份"
-        if publish_year:
-            return f"正式发表年份 {publish_year}"
-        return "未找到"
     if preprint_year and publish_year:
-        return f"preprint year {preprint_year}, publication year {publish_year}"
+        return f"预印本年份 {preprint_year}，正式发表年份 {publish_year}"
     if preprint_year:
-        return f"preprint year {preprint_year}; publication year not found"
+        return f"预印本年份 {preprint_year}，未找到正式发表年份"
     if publish_year:
-        return f"publication year {publish_year}"
-    return "not found"
-
-
-def localized_message(chinese: bool, zh: str, en: str) -> str:
-    return zh if chinese else en
+        return f"正式发表年份 {publish_year}"
+    return "未找到"

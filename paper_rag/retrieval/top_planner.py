@@ -67,6 +67,7 @@ def run_plan(
         result["anchors"] = route.anchors
         result["anchor_mode"] = route.anchor_mode
     result["filters"] = route.filters
+    result["filter_groups"] = route.filter_groups
     result["evidence"] = evidence
     result["warnings"] = warnings
     return result

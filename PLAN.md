@@ -303,12 +303,14 @@ CLI 行为：
 - 主路径固定为“顶层中文 LLM parser -> 中文 domain parser -> 结构化 JSON -> 执行层取证”；不调用翻译 API。
 - `metadata` 和 `reference` 直接消费 parser 输出的 JSON 执行检索，不生成英文中间 query。
 - `content` 先由 content parser 输出结构化 JSON，再按固定模板生成英文检索文本，例如 `paper: ...; topic: ...; terms: ...`，供 BM25 和 embedding 使用。
-- 顶层 parser 输出 `router / extract_query / filters`，由 LLM 判断进入 `reference / content / metadata / unclear`，不再使用命中词路由兜底。
-- 顶层 `filters` 只允许公共论文范围字段 `author / year / venue`；顶层完全不允许 `title` filter，包括 `title = / in / contains`。
-- `extract_query` 是去掉顶层公共范围约束后的下游问题文本；metadata/reference/content parser 都只消费 `extract_query` 继续解析各自独有语义。
-- 标题过滤只由下游 parser 输出；执行层合并 `top_filters + downstream_filters` 后，再统一做 `title = / in` 别名归一化、`title contains` 原文保留、论文解析和年份区间解析。
+- 顶层 parser 输出 `router / extract_query / filters / filter_groups`，由 LLM 判断进入 `reference / content / metadata / unclear`，不再使用命中词路由兜底。
+- 顶层 `filters` 与 `filter_groups[*].filters` 可表达 `author / year / venue / title / paper`；其中 `title` 只表示显式标题包含过滤，`paper` 表示具体论文强锚点。
+- `filter_groups` 只表达“多个主语各自带独立筛选条件”的情况，每项为 `subject / filters`；已进入 filters 的筛选条件必须从 `subject` 和 `extract_query` 中移除。
+- 如果顶层错误地只返回一个 `filter_group` 且全局 `filters=[]`，执行层会把 `{subject}` / `{subject_1}` 替换为具体 subject，并把该 group 的 filters 合并回全局 filters，清空 `filter_groups`。
+- `extract_query` 是去掉顶层范围约束后的下游问题文本；metadata/reference/content parser 都只消费矫正后的 `extract_query` 继续解析各自独有语义。
+- 当前阶段只保证顶层结构正确且可观察；`title/paper` 在二层与执行层如何消费后续单独设计。
 - 如果顶层 parser 返回 `unclear` 或解析失败，route 为 `unclear`，提示用户补充是要查正文内容、论文元数据还是引用关系，而不是默认进入正文召回。
-- evidence pack 顶层公共字段包含 `original_query / extract_query / route / intent / router_reason / filters / evidence / warnings`；`return_field` 只在 metadata route 顶层输出，`direction / anchors / anchor_mode` 只在 reference route 顶层输出，不再使用旧的 `sub_route` 字段。
+- evidence pack 顶层公共字段包含 `original_query / extract_query / route / intent / router_reason / filters / filter_groups / evidence / warnings`；`return_field` 只在 metadata route 顶层输出，`direction / anchors / anchor_mode` 只在 reference route 顶层输出，不再使用旧的 `sub_route` 字段。
 - 不保留顶层 `language` 字段；metadata/reference 统一消费中文结构化 JSON，content 的英文检索文本只作为 evidence 内部字段或调试字段保存。
 - evidence 不使用 `scope` 和 `expanded_query`；metadata 锚点解析只作为内部取证步骤，不在 metadata evidence 中直接暴露，content/reference 保持各自 route 当前字段，内部 alias/canonical 扩展不暴露。
 - `RouteDecision` 的内部命名统一为 `extract_query / resolved_papers / resolved_anchor_papers`：`extract_query` 表示当前路由消费的下游问题文本；`resolved_papers` 表示 parser 输出经 filter 归一化、alias 和 manifest 解析后的本地论文对象；`resolved_anchor_papers` 仅供 reference 的 per-anchor 取证使用，避免执行层重复解析 anchor。
@@ -322,10 +324,13 @@ CLI 行为：
 ### 8.2 顶层 LLM Parser 与分支衔接
 
 - 顶层 parser 是 metadata/reference/content/unclear 的唯一第一层分流来源；不再保留 metadata/reference/content 各自的中文或英文命中词 router 作为兜底。
-- 顶层 parser 输出固定为 `router / extract_query / filters`：`original_query` 是用户原始问题，`extract_query` 是去掉公共范围约束后交给下游 domain parser 的问题。
-- 顶层 `filters` 只允许公共论文范围字段 `author / year / venue`；顶层完全不允许 `title` filter，包括 `title = / in / contains`。
-- 标题过滤只由下游 metadata/reference/content parser 输出；执行层把 `top_filters + downstream_filters` 合并后，再统一做 `title = / in` 别名归一化、`title contains` 原文保留、论文解析和年份区间解析。
-- `RouteDecision` 内部使用 `extract_query` 表示当前分支消费的问题文本；对外 evidence pack 顶层输出 `original_query / extract_query / route / intent / router_reason / filters / evidence / warnings`，不再输出旧 `answer_target`。
+- 顶层 parser 输出固定为 `router / extract_query / filters / filter_groups`：`original_query` 是用户原始问题，`extract_query` 是去掉公共范围约束后交给下游 domain parser 的问题。
+- 顶层 `filters` 和 `filter_groups[*].filters` 支持 `author / year / venue / title / paper`。
+- 顶层字段约束为：`author` 只允许 `contains`；`year` 允许 `=` 或 `interval`；`venue` 允许 `=` 或 `in`；`title` 只允许 `contains`；`paper` 只允许 `=` 或 `in`。
+- `filter_groups[*].subject` 保存去掉局部筛选条件后的主语；多个 groups 原样传给下游，暂不实现多 group 的 metadata/reference/content 执行语义。
+- 单个 `filter_group` 且全局 `filters=[]` 被视为 LLM 结构化错误，会在进入二层前矫正成普通 `extract_query + filters`。
+- 本阶段只对齐顶层 parser schema 和 probe；二层 metadata/reference/content 如何消费 `title/paper` 后续重新设计。
+- `RouteDecision` 内部使用 `extract_query / filters / filter_groups` 表示当前分支消费的问题文本和范围；对外 evidence pack 顶层输出 `original_query / extract_query / route / intent / router_reason / filters / filter_groups / evidence / warnings`，不再输出旧 `answer_target`。
 - 如果顶层 parser 返回 `unclear` 或解析失败，plan 直接返回 unclear evidence，不进入任何 domain parser，也不默认落到 content。
 
 ### 8.3 Metadata Route

@@ -24,15 +24,7 @@ from paper_rag.retrieval.domains.reference.prompt import reference_parser_prompt
 
 
 DEFAULT_QUERIES = [
-    # "哪些论文引用了ResNet",
-    # "ResNet引用了哪些论文",
-    # "哪些论文同时引用了ResNet和EfficientNet",
-    # "哪些2019年之后在CVPR发表的的论文引用了BERT",
-    # "ResNet引用的论文里哪些和ImageNet有关",
-    # "ResNet 和 Resnxt 的参考文献分别有多少"
-    # "哪些论文被Resnet或Transformer引用"
-    # "这篇论文引用了哪些CVPR的论文"
-    # "transformer之后哪些论文引用了Resnet"
+
 ]
 
 

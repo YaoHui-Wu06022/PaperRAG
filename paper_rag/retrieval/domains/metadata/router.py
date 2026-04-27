@@ -37,6 +37,7 @@ def build_metadata_decision(
             parser_error=str(exc),
             return_field=None,
             filters=decision.filters,
+            filter_groups=decision.filter_groups,
         )
 
     combined_filters = [*decision.filters, *parser_result["filters"]]
@@ -54,6 +55,7 @@ def build_metadata_decision(
         parse_status="ok",
         return_field=parser_result["return_field"],
         filters=parser_result["filters"],
+        filter_groups=decision.filter_groups,
         anchors=parser_result.get("anchors") or [],
     )
     return apply_anchor_year_filters(settings, enriched, warnings)
@@ -80,5 +82,6 @@ def apply_anchor_year_filters(settings: Settings, decision: RouteDecision, warni
         parser_error=decision.parser_error,
         return_field=decision.return_field,
         filters=resolved_filters,
+        filter_groups=decision.filter_groups,
         anchors=decision.anchors,
     )

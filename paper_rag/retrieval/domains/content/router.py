@@ -36,6 +36,7 @@ def build_content_decision(
             parse_status="parse_failed",
             parser_error=str(exc),
             filters=decision.filters,
+            filter_groups=decision.filter_groups,
         )
 
     combined_filters = [*decision.filters, *parser_result["filters"]]
@@ -52,6 +53,7 @@ def build_content_decision(
         parser_result=parser_result,
         parse_status="ok",
         filters=parser_result["filters"],
+        filter_groups=decision.filter_groups,
         anchors=parser_result["anchors"],
     )
     return apply_anchor_year_filters(settings, enriched, warnings)
@@ -77,5 +79,6 @@ def apply_anchor_year_filters(settings: Settings, decision: RouteDecision, warni
         parse_status=decision.parse_status,
         parser_error=decision.parser_error,
         filters=resolved_filters,
+        filter_groups=decision.filter_groups,
         anchors=decision.anchors,
     )

@@ -6,7 +6,7 @@ from typing import Any
 from .errors import PlanParseError
 
 
-PAPER_FILTER_FIELDS = {"author", "year", "venue", "title"}
+PAPER_FILTER_FIELDS = {"author", "year", "venue", "title", "paper"}
 PAPER_FILTER_OPS = {"=", "in", "contains", "interval"}
 NEGATIVE_INFINITY = {"-inf", "-infinity"}
 POSITIVE_INFINITY = {"inf", "+inf", "infinity", "+infinity"}
