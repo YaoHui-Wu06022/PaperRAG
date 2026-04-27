@@ -34,6 +34,19 @@ Schema:
       "value": "",
       "negated": false
     }
+  ],
+  "filter_groups": [
+    {
+      "subject": "",
+      "filters": [
+        {
+          "field": "author|year|venue",
+          "op": "=|in|contains|interval",
+          "value": "",
+          "negated": false
+        }
+      ]
+    }
   ]
 }
 JSON 类型硬规则:
