@@ -36,7 +36,58 @@ Schema:
     }
   ]
 }
+JSON 类型硬规则:
+- filters 必须是数组，不能是 null
+- filter_groups 必须是数组，不能是 null
+- filter_groups[].filters 必须是数组，不能是 null
+- 没有元素时返回[]
+- op="interval" 时，value 必须是长度为 2 的数组
 
+字段语义:
+"router":
+  - metadata：利用论文作者、年份、venue、标题这些元数据进行查询
+  - reference：查询引用关系、参考文献列表、引用次数
+  - content：查询论文正文内容、方法、原理、机制、结构、实验、结果、性能、贡献、局限、问题、改进
+  - unclear：无法判断应该进入哪个 router
+
+"filters":
+  - 表示作用于整个问题的全局筛选
+  - 会作用于所有主语和整个问题
+  - 如果某个筛选只修饰某一个主语，不要放入 filters，应放入对应的 filter_groups[].filters
+  - 如果多个筛选修饰一个主语，不应该分别放到filters和filter_groups[].filter，都应该在filters
+
+"filter_groups":
+  - 表示多个独立主语组，只有一个主语时，必须返回 []
+  - 多个主语如果只是普通并列，且没有各自独立限定，也返回 []
+  - 当多个主语各自带有不同限定，或者需要通过 {subject_1}/{subject_2} 参与联合问题时，使用 filter_groups
+  - 例子: 
+    - 2015年CVPR论文 和 2018年ArXiv论文 -> 2015年用于筛选CVPR, 2018年用于筛选ArXiv
+  - 不是多个主语一定使用，需要判断各个主语是否有局部筛选条件
+  - 多个主语不使用filter_groups的例子:
+    - 比较 ResNet 和 Transformer 的方法设计 -> 无局部筛选条件
+    - 2015年以后 CV 和 NLP 分别有什么发展 -> 2015年用于全局筛选
+  - "subject":
+    - 保存去掉局部筛选条件后的主语
+    - 不要把论文名、模型名、方法名、简称、别名从 subject 中移除
+    - 不要保留进入 filters 的 year、venue、author 筛选条件
+    - 例子: 
+        - “2015年CVPR论文” 对应:
+        {
+          "subject": "论文",
+          "filters": [
+            {"field":"year","op":"=","value":2015,"negated":false},
+            {"field":"venue","op":"=","value":"CVPR","negated":false}
+          ]
+        }
+        - “2015年CVPR的ResNet论文” 对应:
+        {
+          "subject": "ResNet论文",
+          "filters": [
+            {"field":"year","op":"=","value":2015,"negated":false},
+            {"field":"venue","op":"=","value":"CVPR","negated":false}
+          ]
+        }
+    
 - "extract_query":
   - 表示用户真正想查询、返回、解释、比较、总结或统计的核心目标
   - 必须移除已经抽成 filters 的限制条件，包括 author、year、venue
