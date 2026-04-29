@@ -257,9 +257,14 @@ paper 表示需要由执行层解析为具体论文的绑定锚点
 规则:
 - object_scope条件必须完整保留在 residual_query
 - 只有一个 A 时，paper=A 进入 filters，filter_groups=[]
-- residual_query -> “目标论文引用的+条件+论文有哪些”或“目标论文引用了哪些+条件+论文”，不允许保留被动语态
+- residual_query 必须保留 object_scope 原始条件，并自然改写为主动引用表达
+- 推荐形式：
+  - “目标论文引用了哪些 <object_scope原始条件> 论文”
+  - “目标论文引用的 <object_scope原始条件> 论文有哪些”
 正确输出范式:
-输入: “X 引用了哪些 Y 年以前发表在 VENUE 上的论文”
+输入1: “X 引用了哪些 Y 年以前发表在 VENUE 上的论文”
+输入2: “哪些 Y 年以前发表在 VENUE 上的论文被 X 引用”
+相同输出:
 {
   "router": "reference",
   "residual_query": "目标论文引用了哪些Y年以前发表在VENUE上的论文",
@@ -282,16 +287,25 @@ paper 表示需要由执行层解析为具体论文的绑定锚点
 - 有哪些 + 条件 + 论文引用了 A
 - A 被哪些 + 条件 + 论文引用
 - 条件 + 论文是否引用了 A
+- 引用了 A 的 + 条件 + 论文有哪些
 输出规则:
 - “条件 + 论文”是 source_scope，即候选引用方
-- 条件可以进入顶层 filters
-- residual_query -> “有哪些 + 条件 + 论文引用了 A ”或“条件 + 论文引用了 A 吗”，不允许保留被动语态
-例:
-输入: “2020 年以后的论文引用了 X 吗”
-输出要点:
-- router="reference"
-- filters=[{"field":"year","op":"interval","value":[2020,"inf"],"negated":false}]
-- residual_query="论文引用了 X 吗"
+- 修饰 source_scope 的条件可以进入顶层 filters / filter_groups，并从 residual_query 中删除
+- residual_query 必须自然改写为主动引用表达，不允许保留被动语态
+
+正确输出范式:
+输入1: “有哪些 Y 年以后发表在 VENUE 上的论文引用了 X”
+输入2: “X 被哪些 Y 年以后发表在 VENUE 上的论文引用”
+相同输出:
+{
+  "router": "reference",
+  "residual_query": "有哪些论文引用了X",
+  "filters": [
+    {"field":"year","op":"interval","value":["Y","inf"],"negated":false},
+    {"field":"venue","op":"=","value":"VENUE","negated":false}
+  ],
+  "filter_groups": []
+}
 
 如果source_scope没有额外条件: 
 输入: “X 被哪些论文引用”
@@ -302,67 +316,70 @@ paper 表示需要由执行层解析为具体论文的绑定锚点
 - residual_query="有哪些论文引用了X"
 
 3. 多个引用发出方：使用 filter_groups
-以下句式等价:
-- A 和 B 同时引用了哪些论文
-- 哪些论文被 A 和 B 同时引用
+以下句式等价，A/B 都是 source_scope，必须归一化为主动引用表达:
+- A 和 B 同时引用了哪些 + 条件 + 论文
+- 哪些 + 条件 + 论文被 A 和 B 同时引用
 - A 和 B 是否都引用了 C
-- A 和 B 分别引用了哪些论文
+- A 和 B 分别引用了哪些 + 条件 + 论文
+- 被 A 和 B 分别引用的 + 条件 + 论文有哪些
 
 输出规则:
-- A/B 是引用发出方 / 被展开主体
-- A/B 进入 filter_groups
+- A/B 是 source_scope，即多个引用发出方 / 被展开主体
+- A/B 必须进入 filter_groups，不能合并成 paper in
 - 同时 / 是否都引用 -> residual_query 使用 {subject_1}/{subject_2}
 - 分别 / 各自引用 -> residual_query 使用 {subject}
-- 被引用对象 C 是 object_scope，不进入顶层 paper，保留在 residual_query
-例:
-输入: “Transformer 和 ResNet 同时引用了哪些论文”
-输出要点:
-- router="reference"
-- residual_query="{subject_1} 和 {subject_2} 同时引用的论文有哪些"
-- filter_groups=[
+- 被引用对象 C 是 object_scope，不进入顶层 paper，必须保留在 residual_query
+正确输出范式:
+输入1: “A 和 B 同时引用了哪些 Y 年以后发表在 VENUE 上的论文”
+输入2: “哪些 Y 年以后发表在 VENUE 上的论文被 A 和 B 同时引用”
+相同输出:
+{
+  "router": "reference",
+  "residual_query": "{subject_1}和{subject_2}同时引用了哪些Y年以后发表在VENUE上的论文",
+  "filters": [],
+  "filter_groups": [
     {
-      "subject":"目标论文A",
-      "filters":[{"field":"paper","op":"=","value":"Transformer","negated":false}]
+      "subject": "目标论文A",
+      "filters": [
+        {"field": "paper", "op": "=", "value": "A", "negated": false}
+      ]
     },
     {
-      "subject":"目标论文B",
-      "filters":[{"field":"paper","op":"=","value":"ResNet","negated":false}]
+      "subject": "目标论文B",
+      "filters": [
+        {"field": "paper", "op": "=", "value": "B", "negated": false}
+      ]
     }
   ]
-输入: “Transformer 和 ResNet 是否都引用了 Word2Vec”
-输出要点:
-- router="reference"
-- residual_query="{subject_1} 和 {subject_2} 是否都引用了 Word2Vec"
-- filter_groups=[
-    {
-      "subject":"目标论文A",
-      "filters":[{"field":"paper","op":"=","value":"Transformer","negated":false}]
-    },
-    {
-      "subject":"目标论文B",
-      "filters":[{"field":"paper","op":"=","value":"ResNet","negated":false}]
-    }
-  ]
-说明:
-- Word2Vec 是 object_scope，不进入顶层 paper
+}
 
 4. 多个被引用对象：顶层不绑定这些对象
-输入范式:
-- 哪些论文共同引用了 A 和 B
-- 哪些论文同时引用了 A 和 B
-- 有哪些论文都引用了 A 和 B
+以下句式等价，A/B 都是 object_scope，必须归一化为“引用 A 和 B 的论文”表达:
+- 哪些 + 条件 + 论文共同引用了 A 和 B
+- 哪些 + 条件 + 论文同时引用了 A 和 B
+- 有哪些 + 条件 + 论文都引用了 A 和 B
+- A 和 B 被哪些 + 条件 + 论文共同引用
+- A 和 B 被哪些 + 条件 + 论文同时引用
 
 输出规则:
-- A/B 是被引用对象 / 查找对象
-- 顶层不抽 paper=A/B
-- 顶层不生成 filter_groups
+- A/B 是 object_scope，即多个被引用对象 / 查找对象
+- A/B 不进入顶层 paper
+- A/B 不生成 filter_groups
+- “条件 + 论文”是 source_scope，即候选引用方
 - residual_query 保留 A/B
-例:
-输入: “有哪些 2020 年以后的论文同时引用了 Transformer 和 ResNet”
-输出要点:
-- router="reference"
-- filters=[{"field":"year","op":"interval","value":[2020,"inf"],"negated":false}]
-- residual_query="哪些论文同时引用了 Transformer 和 ResNet"
+
+正确输出范式:
+输入1: “有哪些 Y 年以后的论文同时引用了 A 和 B”
+输入2: “A 和 B 被哪些 Y 年以后的论文同时引用”
+都是相同输出:
+{
+  "router": "reference",
+  "residual_query": "有哪些论文同时引用了A和B",
+  "filters": [
+    {"field":"year","op":"interval","value":["Y","inf"],"negated":false}
+  ],
+  "filter_groups": []
+}
 
 5. reference 被动句消歧
 - “哪些 + 条件 + 论文被 A 引用” -> A 是 source_scope；“条件 + 论文”是 object_scope，条件不抽顶层
