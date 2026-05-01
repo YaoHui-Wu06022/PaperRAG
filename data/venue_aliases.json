@@ -1,68 +1,217 @@
 [
   {
-    "canonical": "CVPR",
+    "canonical": "IEEE/CVF Conference on Computer Vision and Pattern Recognition",
+    "display": "CVPR",
     "aliases": [
-      "IEEE/CVF Conference on Computer Vision and Pattern Recognition",
+      "CVPR",
       "IEEE Conference on Computer Vision and Pattern Recognition",
       "Computer Vision and Pattern Recognition"
     ]
   },
   {
-    "canonical": "NeurIPS",
+    "canonical": "International Conference on Computer Vision",
+    "display": "ICCV",
     "aliases": [
+      "ICCV",
+      "IEEE International Conference on Computer Vision"
+    ]
+  },
+  {
+    "canonical": "European Conference on Computer Vision",
+    "display": "ECCV",
+    "aliases": [
+      "ECCV"
+    ]
+  },
+  {
+    "canonical": "Conference on Neural Information Processing Systems",
+    "display": "NeurIPS",
+    "aliases": [
+      "NeurIPS",
       "Neural Information Processing Systems",
-      "NIPS"
+      "NIPS",
+      "Advances in Neural Information Processing Systems"
     ]
   },
   {
-    "canonical": "ICML",
+    "canonical": "International Conference on Machine Learning",
+    "display": "ICML",
     "aliases": [
-      "International Conference on Machine Learning"
+      "ICML"
     ]
   },
   {
-    "canonical": "ICLR",
+    "canonical": "International Conference on Learning Representations",
+    "display": "ICLR",
     "aliases": [
-      "International Conference on Learning Representations"
+      "ICLR"
     ]
   },
   {
-    "canonical": "ICCV",
+    "canonical": "Association for the Advancement of Artificial Intelligence Conference on Artificial Intelligence",
+    "display": "AAAI",
     "aliases": [
-      "International Conference on Computer Vision"
-    ]
-  },
-  {
-    "canonical": "ECCV",
-    "aliases": [
-      "European Conference on Computer Vision"
-    ]
-  },
-  {
-    "canonical": "AAAI",
-    "aliases": [
+      "AAAI",
       "AAAI Conference on Artificial Intelligence"
     ]
   },
   {
-    "canonical": "NAACL-HLT",
+    "canonical": "International Joint Conference on Artificial Intelligence",
+    "display": "IJCAI",
     "aliases": [
-      "North American Chapter of the Association for Computational Linguistics",
-      "Human Language Technologies"
+      "IJCAI"
     ]
   },
   {
-    "canonical": "ACM Multimedia",
+    "canonical": "Annual Meeting of the Association for Computational Linguistics",
+    "display": "ACL",
+    "aliases": [
+      "ACL"
+    ]
+  },
+  {
+    "canonical": "Conference on Empirical Methods in Natural Language Processing",
+    "display": "EMNLP",
+    "aliases": [
+      "EMNLP"
+    ]
+  },
+  {
+    "canonical": "North American Chapter of the Association for Computational Linguistics",
+    "display": "NAACL",
+    "aliases": [
+      "NAACL",
+      "NAACL-HLT",
+      "Conference of the North American Chapter of the Association for Computational Linguistics"
+    ]
+  },
+  {
+    "canonical": "ACM International Conference on Multimedia",
+    "display": "ACM MM",
     "aliases": [
       "ACM MM",
-      "MM"
+      "ACM Multimedia"
     ]
   },
   {
-    "canonical": "TMLR",
+    "canonical": "ACM SIGKDD Conference on Knowledge Discovery and Data Mining",
+    "display": "KDD",
     "aliases": [
-      "Trans. Mach. Learn. Res.",
-      "Transactions on Machine Learning Research"
+      "KDD",
+      "SIGKDD",
+      "ACM SIGKDD International Conference on Knowledge Discovery and Data Mining"
+    ]
+  },
+  {
+    "canonical": "International World Wide Web Conference",
+    "display": "WWW",
+    "aliases": [
+      "WWW",
+      "The Web Conference",
+      "World Wide Web Conference"
+    ]
+  },
+  {
+    "canonical": "International Conference on Research and Development in Information Retrieval",
+    "display": "SIGIR",
+    "aliases": [
+      "SIGIR",
+      "ACM SIGIR",
+      "ACM SIGIR Conference on Research and Development in Information Retrieval"
+    ]
+  },
+  {
+    "canonical": "International Conference on Very Large Data Bases",
+    "display": "VLDB",
+    "aliases": [
+      "VLDB",
+      "Very Large Data Bases"
+    ]
+  },
+  {
+    "canonical": "ACM SIGMOD International Conference on Management of Data",
+    "display": "SIGMOD",
+    "aliases": [
+      "SIGMOD",
+      "ACM SIGMOD"
+    ]
+  },
+  {
+    "canonical": "IEEE International Conference on Robotics and Automation",
+    "display": "ICRA",
+    "aliases": [
+      "ICRA"
+    ]
+  },
+  {
+    "canonical": "IEEE/RSJ International Conference on Intelligent Robots and Systems",
+    "display": "IROS",
+    "aliases": [
+      "IROS"
+    ]
+  },
+  {
+    "canonical": "Journal of Machine Learning Research",
+    "display": "JMLR",
+    "aliases": [
+      "JMLR",
+      "J. Mach. Learn. Res."
+    ]
+  },
+  {
+    "canonical": "Transactions on Machine Learning Research",
+    "display": "TMLR",
+    "aliases": [
+      "TMLR",
+      "Trans. Mach. Learn. Res."
+    ]
+  },
+  {
+    "canonical": "IEEE Transactions on Pattern Analysis and Machine Intelligence",
+    "display": "TPAMI",
+    "aliases": [
+      "TPAMI",
+      "IEEE TPAMI",
+      "IEEE Trans. Pattern Anal. Mach. Intell.",
+      "IEEE Transactions on Pattern Analysis and Machine Intelligence"
+    ]
+  },
+  {
+    "canonical": "International Journal of Computer Vision",
+    "display": "IJCV",
+    "aliases": [
+      "IJCV",
+      "Int. J. Comput. Vis."
+    ]
+  },
+  {
+    "canonical": "Neural Computation",
+    "display": "Neural Computation",
+    "aliases": [
+      "Neural Computation",
+      "Neural Comput."
+    ]
+  },
+  {
+    "canonical": "Nature",
+    "display": "Nature",
+    "aliases": [
+      "Nature"
+    ]
+  },
+  {
+    "canonical": "Science",
+    "display": "Science",
+    "aliases": [
+      "Science"
+    ]
+  },
+  {
+    "canonical": "arXiv",
+    "display": "arXiv",
+    "aliases": [
+      "arXiv",
+      "arXiv preprint"
     ]
   }
 ]

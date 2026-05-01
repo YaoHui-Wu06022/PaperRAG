@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import shutil
 import time
 from dataclasses import dataclass, field
@@ -8,6 +9,8 @@ from typing import Callable
 
 from ..config import Settings
 from ..utils import infer_title_from_pdf_name, normalize_text, replace_dir, safe_move_dir, sha256_file, slugify_title
+from .annotations import load_paper_annotations, save_paper_annotations, upsert_paper_annotation
+from .citation_graph import build_citation_graph
 from .extract import extract_paper_data, extract_title, flatten_pages, load_content_list_v2
 from .manifest import Manifest, ManifestRecord, effective_year, normalize_year
 from .mineru import MinerUClient, MinerUError
@@ -47,6 +50,20 @@ def noop_reporter(_: str) -> None:
     return None
 
 
+def clean_author_name(name: str) -> str:
+    text = name.strip() if isinstance(name, str) else ""
+    return re.sub(r"\s+\d{4}$", "", text).strip()
+
+
+def clean_author_list(authors: list[str]) -> list[str]:
+    cleaned_authors: list[str] = []
+    for author in authors:
+        cleaned = clean_author_name(author)
+        if cleaned:
+            cleaned_authors.append(cleaned)
+    return cleaned_authors
+
+
 def run_ingest(
     settings: Settings,
     *,
@@ -62,6 +79,7 @@ def run_ingest(
     summary = IngestSummary()
     report(f"[ingest] Loading manifest: {settings.manifest_path}")
     manifest = Manifest.load(settings.manifest_path)
+    annotations = load_paper_annotations(settings)
     report(f"[ingest] Scanning PDFs: {settings.pdf_dir}")
     pdf_by_hash = scan_pdfs(settings.pdf_dir, summary)
     report(f"[ingest] Found {len(pdf_by_hash)} unique PDF(s)")
@@ -104,7 +122,7 @@ def run_ingest(
                 manifest.upsert(record)
                 report(f"[ingest] [{ordinal}/{total}] Title unresolved; skipped paper_data generation")
                 continue
-            authors: list[str] = [] if refresh_metadata else (record.author or [])
+            authors: list[str] = [] if refresh_metadata else clean_author_list(record.author or [])
             year = normalize_year(None if refresh_metadata else record.year)
             venue = None if refresh_metadata else record.venue
             if venue and not is_formal_venue(venue):
@@ -169,7 +187,7 @@ def run_ingest(
                 )
                 if match:
                     title = match.title
-                    authors = match.authors
+                    authors = clean_author_list(match.authors)
                     year = match.year
                     venue = match.venue
                     report(f"[ingest] [{ordinal}/{total}] {match.source} matched: {format_year_for_log(year)}, venue={venue or 'unresolved'}")
@@ -235,6 +253,7 @@ def run_ingest(
             record.archived_mineru_output_path = None
             record.paper_data_path = str(result.paper_data_dir)
             record.message = "; ".join(result.warnings) if result.warnings else None
+            upsert_paper_annotation(annotations, file_hash, result.title)
             manifest.upsert(record)
             for warning in result.warnings:
                 report(f"[ingest] [{ordinal}/{total}] Warning: {warning}")
@@ -255,6 +274,16 @@ def run_ingest(
 
     report(f"[ingest] Saving manifest: {settings.manifest_path}")
     manifest.save()
+    save_paper_annotations(settings, annotations)
+    try:
+        graph_result = build_citation_graph(settings, manifest)
+        report(
+            "[ingest] Citation graph: "
+            f"{graph_result.node_count} node(s), {graph_result.edge_count} edge(s) -> {graph_result.path}"
+        )
+    except Exception as exc:
+        summary.errors.append(f"Citation graph build failed: {exc}")
+        report(f"[ingest] Citation graph build failed: {exc}")
     report("[ingest] Complete")
     return summary
 
@@ -293,7 +322,7 @@ def lookup_metadata(
             after_arxiv_lookup()
     if arxiv_match:
         arxiv_title = arxiv_match.title
-        arxiv_authors = arxiv_match.authors
+        arxiv_authors = clean_author_list(arxiv_match.authors)
         preprint_year = arxiv_match.preprint_year
         report(f"ArXiv matched preprint year: {preprint_year}")
     else:
@@ -317,8 +346,8 @@ def lookup_metadata(
     if dblp_match and is_formal_venue(dblp_match.venue):
         return MetadataMatch(
             title=dblp_match.title,
-            authors=dblp_match.authors,
-            year={"preprint_year": preprint_year, "publish_year": dblp_match.year},
+            authors=clean_author_list(dblp_match.authors),
+            year={"preprint_year": preprint_year, "publish_year": formal_publish_year(dblp_match.year, dblp_match.venue)},
             venue=dblp_match.venue,
             source="ArXiv+DBLP" if preprint_year else "DBLP",
         )
@@ -342,8 +371,11 @@ def lookup_metadata(
     if semantic_scholar_match and is_formal_venue(semantic_scholar_match.venue):
         return MetadataMatch(
             title=semantic_scholar_match.title,
-            authors=semantic_scholar_match.authors,
-            year={"preprint_year": preprint_year, "publish_year": semantic_scholar_match.year},
+            authors=clean_author_list(semantic_scholar_match.authors),
+            year={
+                "preprint_year": preprint_year,
+                "publish_year": formal_publish_year(semantic_scholar_match.year, semantic_scholar_match.venue),
+            },
             venue=semantic_scholar_match.venue,
             source="ArXiv+Semantic Scholar" if preprint_year else "Semantic Scholar",
         )
@@ -353,7 +385,7 @@ def lookup_metadata(
     if arxiv_match:
         return MetadataMatch(
             title=arxiv_title or title,
-            authors=arxiv_authors,
+            authors=clean_author_list(arxiv_authors),
             year={"preprint_year": preprint_year, "publish_year": None},
             venue=None,
             source="ArXiv",
@@ -366,6 +398,13 @@ def lookup_metadata(
 def is_formal_venue(venue: str | None) -> bool:
     normalized = normalize_text(str(venue or ""))
     return bool(normalized) and normalized not in {"arxiv", "corr"}
+
+
+def formal_publish_year(source_year: int, venue: str | None) -> int:
+    venue_years = re.findall(r"\b(?:19|20)\d{2}\b", str(venue or ""))
+    if venue_years:
+        return int(venue_years[0])
+    return source_year
 
 
 def format_year_for_log(year: dict[str, int | None]) -> str:

@@ -36,7 +36,7 @@ TOP_FILTER_OPS_BY_FIELD = {
 }
 
 DEFAULT_QUERIES = [
-    "Transformer 后续的论文中有哪些发表在 CVPR？",
+    " VIT被哪些2018以后发布在CVPR上的论文引用",
 ]
 
 def main() -> int:

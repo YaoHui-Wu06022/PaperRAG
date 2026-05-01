@@ -24,7 +24,7 @@ from paper_rag.retrieval.domains.reference.prompt import reference_parser_prompt
 
 
 DEFAULT_QUERIES = [
-
+    "LSTM 被哪些 2014 年之前发布在 ArXiv 上的论文或2017年以后发布在CVPR上的论文引用？",
 ]
 
 
@@ -59,17 +59,12 @@ def parse_batch(client: PlanParserClient, queries: list[str]) -> str:
 def batch_system_prompt(system_prompt: str) -> str:
     return (
         system_prompt
-        + "\n\n批量测试模式覆盖说明：\n"
-        + "- 只返回一个 JSON 数组。\n"
-        + "- 数组里的每一项必须严格符合上面定义的单问题 schema。\n"
     )
 
 
 def batch_query(queries: list[str]) -> str:
     return (
-        "请按顺序解析下面所有问题，并只返回一个 JSON 数组。\n"
-        "数组里的每一项必须是一个单问题 schema 对象，只包含 intent、direction、anchors、anchor_mode、filters。\n"
-        + "\n".join(f"{index}. {query}" for index, query in enumerate(queries, start=1))
+       "\n".join(f"{index}. {query}" for index, query in enumerate(queries, start=1))
     )
 
 

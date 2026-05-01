@@ -63,6 +63,7 @@
 - ArXiv 查询：用论文标题做 normalized exact match，命中后返回 author、title 和 `preprint_year`。
 - DBLP 查询：用论文标题做 normalized exact match，命中正式 venue 后返回 author、title、`publish_year` 和 `venue`；`CoRR/ArXiv` 记录不作为正式发表信息。
 - Semantic Scholar 查询：作为 DBLP 未命中正式发表后的补充召回，只接受 normalized title 完全一致；命中正式 venue 后返回 author、title、`publish_year` 和 `venue`。
+- 正式 `publish_year` 的合并口径：如果正式 venue 字符串中能解析出 `19xx/20xx` 四位年份，优先使用 venue 年份；否则使用 DBLP/Semantic Scholar 返回的 year 字段。
 - 内容抽取：从 `content_list_v2.json` 抽取标题、TOC、区域、正文 blocks、reference blocks。
 - 数据落盘：维护 `data/mineru_output/`、`data/paper_data/` 和 `data/archive/`。
 
@@ -88,6 +89,7 @@ paper_rag/
 │  ├─ manifest.py                    # manifest 结构、读写与状态管理
 │  ├─ mineru.py                      # MinerU API 客户端：上传、轮询、下载、解压
 │  ├─ extract.py                     # 从 MinerU 输出抽取 metadata/toc/blocks/references/chunks
+│  ├─ citation_graph.py              # ingest 后重建本地 citation graph，只记录库内 active 论文引用边
 │  └─ metadata/
 │     ├─ arxiv.py                    # ArXiv 精确标题查询：补 preprint_year 与作者/标题
 │     ├─ dblp.py                     # DBLP 精确标题查询：补 publish_year / venue / authors
@@ -142,7 +144,7 @@ paper_rag/
    ├─ sparse/
    │  └─ bm25.py                     # 本地 BM25、tokenize 与停用词逻辑
    └─ data/
-      ├─ aliases.py                  # 论文别名匹配与 canonical 扩展
+     ├─ aliases.py                  # 从 `paper_annotations.json` 读取论文别名并做 canonical 扩展
       ├─ chunks.py                   # `chunks.jsonl` 读取与 chunk 文档适配
       ├─ filters.py                  # author/year/venue/title 论文元字段 filter evaluator
       ├─ references.py               # `references.jsonl` 读取适配
@@ -213,10 +215,19 @@ paper_rag/
    - 先查 ArXiv：命中后写入 `preprint_year`、ArXiv title 和 ArXiv authors，但不写 `venue="ArXiv"`。
    - 再查 DBLP：命中正式 venue 后写入 `publish_year/venue`，并优先采用 DBLP title/authors；如果命中 `CoRR/ArXiv`，只记录为非正式命中并继续查 Semantic Scholar。
    - 再查 Semantic Scholar：命中正式 venue 后写入 `publish_year/venue`，并采用 Semantic Scholar title/authors；如果命中 `CoRR/ArXiv`，不采用为正式发表信息。
+   - DBLP/Semantic Scholar 的正式 `publish_year` 优先从 venue 字符串中的四位年份解析；venue 无年份时才回退到源返回的 year 字段。
    - 只有 ArXiv 命中时，论文仍可 active，`publish_year=null`、`venue=null`，命名使用 `preprint_year_标题`。
    - `effective_year = preprint_year || publish_year`；PDF 重命名为 `effective_year_标题.pdf`，MinerU 输出目录最终命名为 `effective_year_标题`。
    - ArXiv、DBLP 和 Semantic Scholar 都未命中：保留解析结果，不重命名 PDF，CLI 汇总提示，退出码仍为 0。
 10. 从 `content_list_v2.json` 构建 `metadata.json`、`toc.json`、`blocks.jsonl`、`references.jsonl`。
+11. 保存 manifest 后重建 `data/paper_data/citation_graph.json`：
+   - 只读取 manifest 中 `status=active` 且有 `paper_data_path/title` 的本地论文。
+   - 扫描每篇 active 论文的 `references.jsonl`。
+   - 匹配边时必须同时满足：本地论文 canonical title 做 normalized exact-contained match、第一作者姓氏命中 reference token、年份候选命中 reference token。
+   - 年份候选只来自 `year.preprint_year` 和 `year.publish_year`；不再从 `venue` 字符串中额外抽年份，避免 metadata 未修正时误建边。
+   - 不使用 alias、不联网、不解析 DOI，避免短标题或模型名造成误判。
+   - 图边方向固定为 `source -> target`，其中 `source` 是引用发出论文，`target` 是被引用的本地论文。
+   - 跳过 self edge；PDF 删除、恢复或 refresh 后，下次 ingest 会按当前 active manifest 重新生成图。
 
 异常规则：
 
@@ -303,17 +314,17 @@ CLI 行为：
 - 主路径固定为“顶层中文 LLM parser -> 中文 domain parser -> 结构化 JSON -> 执行层取证”；不调用翻译 API。
 - `metadata` 和 `reference` 直接消费 parser 输出的 JSON 执行检索，不生成英文中间 query。
 - `content` 先由 content parser 输出结构化 JSON，再按固定模板生成英文检索文本，例如 `paper: ...; topic: ...; terms: ...`，供 BM25 和 embedding 使用。
-- 顶层 parser 输出 `router / extract_query / filters / filter_groups`，由 LLM 判断进入 `reference / content / metadata / unclear`，不再使用命中词路由兜底。
+- 顶层 parser 输出 `router / residual_query / filters / filter_groups`，由 LLM 判断进入 `reference / content / metadata / unclear`，不再使用命中词路由兜底。
 - 顶层 `filters` 与 `filter_groups[*].filters` 可表达 `author / year / venue / title / paper`；其中 `title` 只表示显式标题包含过滤，`paper` 表示具体论文强锚点。
-- `filter_groups` 只表达“多个主语各自带独立筛选条件”的情况，每项为 `subject / filters`；已进入 filters 的筛选条件必须从 `subject` 和 `extract_query` 中移除。
+- `filter_groups` 只表达“多个主语各自带独立筛选条件”的情况，每项为 `subject / filters`；已进入 filters 的筛选条件必须从 `subject` 和 `residual_query` 中移除。
 - 如果顶层错误地只返回一个 `filter_group` 且全局 `filters=[]`，执行层会把 `{subject}` / `{subject_1}` 替换为具体 subject，并把该 group 的 filters 合并回全局 filters，清空 `filter_groups`。
-- `extract_query` 是去掉顶层范围约束后的下游问题文本；metadata/reference/content parser 都只消费矫正后的 `extract_query` 继续解析各自独有语义。
+- `residual_query` 是交给下层 parser 的剩余查询，只保留尚未被顶层结构化抽取的语义；metadata/reference/content parser 后续都应消费矫正后的 `residual_query`。
 - 当前阶段只保证顶层结构正确且可观察；`title/paper` 在二层与执行层如何消费后续单独设计。
 - 如果顶层 parser 返回 `unclear` 或解析失败，route 为 `unclear`，提示用户补充是要查正文内容、论文元数据还是引用关系，而不是默认进入正文召回。
-- evidence pack 顶层公共字段包含 `original_query / extract_query / route / intent / router_reason / filters / filter_groups / evidence / warnings`；`return_field` 只在 metadata route 顶层输出，`direction / anchors / anchor_mode` 只在 reference route 顶层输出，不再使用旧的 `sub_route` 字段。
+- evidence pack 顶层公共字段后续以 `original_query / residual_query / route / intent / router_reason / filters / filter_groups / evidence / warnings` 为准；`return_field` 只在 metadata route 顶层输出，`direction / anchors / anchor_mode` 只在 reference route 顶层输出，不再使用旧的 `sub_route` 字段。
 - 不保留顶层 `language` 字段；metadata/reference 统一消费中文结构化 JSON，content 的英文检索文本只作为 evidence 内部字段或调试字段保存。
 - evidence 不使用 `scope` 和 `expanded_query`；metadata 锚点解析只作为内部取证步骤，不在 metadata evidence 中直接暴露，content/reference 保持各自 route 当前字段，内部 alias/canonical 扩展不暴露。
-- `RouteDecision` 的内部命名统一为 `extract_query / resolved_papers / resolved_anchor_papers`：`extract_query` 表示当前路由消费的下游问题文本；`resolved_papers` 表示 parser 输出经 filter 归一化、alias 和 manifest 解析后的本地论文对象；`resolved_anchor_papers` 仅供 reference 的 per-anchor 取证使用，避免执行层重复解析 anchor。
+- `RouteDecision` 的后续内部命名应从 `extract_query` 迁移到 `residual_query`：`residual_query` 表示当前路由消费的下游问题文本；`resolved_papers` 表示 parser 输出经 filter 归一化、alias 和 manifest 解析后的本地论文对象；`resolved_anchor_papers` 仅供 reference 的 per-anchor 取证使用，避免执行层重复解析 anchor。
 - `top_planner.py` 的主入口是 `run_plan(settings, query, ...)`：当前 `prepare_query()` 仍是薄预处理，主要保留 `original_query` 和 warnings；真正的顶层解析、domain 分发、取证和 evidence 组装都发生在 `run_plan()` 之后。
 - 第二层语义解析是 `metadata / reference / content` 三个分支共用的设计原则，但每个分支的下沉 schema 可以不同：
   - metadata 重点解析字段查询、论文列表、数量统计、字段过滤、否定过滤和锚点论文。
@@ -324,14 +335,38 @@ CLI 行为：
 ### 8.2 顶层 LLM Parser 与分支衔接
 
 - 顶层 parser 是 metadata/reference/content/unclear 的唯一第一层分流来源；不再保留 metadata/reference/content 各自的中文或英文命中词 router 作为兜底。
-- 顶层 parser 输出固定为 `router / extract_query / filters / filter_groups`：`original_query` 是用户原始问题，`extract_query` 是去掉公共范围约束后交给下游 domain parser 的问题。
+- 顶层 parser 输出固定为 `router / residual_query / filters / filter_groups`：`original_query` 是用户原始问题，`residual_query` 是去掉顶层结构化筛选后交给下游 domain parser 的剩余问题。
 - 顶层 `filters` 和 `filter_groups[*].filters` 支持 `author / year / venue / title / paper`。
-- 顶层字段约束为：`author` 只允许 `contains`；`year` 允许 `=` 或 `interval`；`venue` 允许 `=` 或 `in`；`title` 只允许 `contains`；`paper` 只允许 `=` 或 `in`。
+- 顶层字段约束为：`author` 只允许 `contains`；`year` 允许 `=` 或 `interval`；`venue` 允许 `=` 或 `in`；`title` 只允许 `contains`；`paper` 只允许 `=`，表示需要执行层解析的具体论文强锚点。
 - `filter_groups[*].subject` 保存去掉局部筛选条件后的主语；多个 groups 原样传给下游，暂不实现多 group 的 metadata/reference/content 执行语义。
-- 单个 `filter_group` 且全局 `filters=[]` 被视为 LLM 结构化错误，会在进入二层前矫正成普通 `extract_query + filters`。
+- 单个 `filter_group` 且全局 `filters=[]` 被视为 LLM 结构化错误，会在进入二层前矫正成普通 `residual_query + filters`。
 - 本阶段只对齐顶层 parser schema 和 probe；二层 metadata/reference/content 如何消费 `title/paper` 后续重新设计。
-- `RouteDecision` 内部使用 `extract_query / filters / filter_groups` 表示当前分支消费的问题文本和范围；对外 evidence pack 顶层输出 `original_query / extract_query / route / intent / router_reason / filters / filter_groups / evidence / warnings`，不再输出旧 `answer_target`。
+- `RouteDecision` 后续使用 `residual_query / filters / filter_groups` 表示当前分支消费的问题文本和范围；对外 evidence pack 顶层输出 `original_query / residual_query / route / intent / router_reason / filters / filter_groups / evidence / warnings`，不再输出旧 `answer_target`。
 - 如果顶层 parser 返回 `unclear` 或解析失败，plan 直接返回 unclear evidence，不进入任何 domain parser，也不默认落到 content。
+
+- 顶层只抽取“当前要检索、返回、绑定或分组的论文范围条件”；修饰正文对象、reference 查找对象、被引用对象或被引用论文范围的条件，必须保留在 `residual_query`，不进入顶层 `filters / filter_groups`。
+- `paper` 绑定按 route 区分：
+  - `metadata` 采用积极绑定策略：裸论文名可作为 `paper`；多个论文查同一元数据字段时使用 `filter_groups`；但 `A 和 B 之间的论文/工作` 优先解析为 `year interval`，不绑定为 paper。
+  - `reference` 只绑定引用发出方或被展开主体；被引用对象、查找对象和关系另一端内容不进入顶层 `paper`，必须保留在 `residual_query`。
+  - `content` 采用保守绑定策略：只有“X 这篇论文 / 标题是 X 的论文 / 名为 X 的论文”等强绑定表达才抽 `paper`；普通“X 的结构 / X 相关论文 / 使用 X 的论文”保留在 `residual_query`。
+- `residual_query` 生成规则：
+  - 已进入顶层 `filters / filter_groups[*].filters` 的 year、venue、author、title contains、paper 绑定必须从 `residual_query` 中删除。
+  - 单个 `paper` 进入 `filters` 后，`residual_query` 用“目标论文”指代该 paper，例如“目标论文的作者是谁”。
+  - 多个组分别跑同一问题时，`residual_query` 使用 `{subject}` 占位，例如“{subject}的作者是谁”。
+  - 多个组之间存在关系、比较、联系或差异时，`residual_query` 使用 `{subject_1}`、`{subject_2}` 等顺序占位，例如“{subject_1} 和 {subject_2} 的共同点是什么”。
+  - 如果对象没有进入顶层 `paper`，说明它仍是正文对象、reference 查找对象或其他待解析主体，`residual_query` 必须保留原名，不替换成“目标论文”或 subject 占位符。
+  - reference 中允许把被动句归一为主动句，但不能破坏引用方向；例如“被 A 引用的论文”应归一为“目标论文引用的论文”，而“A 被哪些论文引用”应保留为“引用 A 的论文”语义。
+
+- 顶层 parser 的泛称、锚点和占位符约定：
+
+  | 名称 | 出现位置 | 什么时候出现 | 含义 |
+  | --- | --- | --- | --- |
+  | `论文` | `residual_query` | 单主体，无 paper 绑定，只剩泛称论文 | 当前候选论文范围 |
+  | `目标论文` | `residual_query` | 单主体，有 `paper = X` | 被绑定的具体论文 |
+  | `论文A / 论文B` | `filter_groups[].subject` | 多主体，无 paper 绑定，局部条件抽走后只剩论文 | 多个候选论文范围 |
+  | `目标论文A / 目标论文B` | `filter_groups[].subject` | 多主体，每组有 `paper = X` | 多个具体论文锚点 |
+  | `{subject}` | `residual_query` | 多主体分别处理 | 逐个代入每个 subject |
+  | `{subject_i}` | `residual_query` | 多主体之间有关系 | 固定引用第 i 个 subject |
 
 ### 8.3 Metadata Route
 
@@ -393,7 +428,8 @@ CLI 行为：
   - 解析后不仅更新 route decision 的 filters，也会同步回写 parser 结果中的 `filters`，避免 plan 内部状态前后不一致。
   - metadata 的 year filter 默认使用 `effective_year = preprint_year || publish_year`；开放区间会排除边界论文年份，例如 `["ResNet", "inf"]` 会转为 `[ResNet有效年份+1, "inf"]`，`["-inf", "BERT"]` 会转为 `["-inf", BERT有效年份-1]`。
   - 两端都是论文名/别名时，会先解析到本地 effective year，再归一化为有效年份区间；如果用户或 parser 把较晚论文放在前面，也会自动调整为升序区间。
-  - venue 归一化使用独立 `data/venue_aliases.json`，不混入论文标题别名；metadata filter 中 `field=venue` 时会用 canonical + aliases 一起匹配，例如 `CVPR` 可命中 `IEEE/CVF Conference on Computer Vision and Pattern Recognition`，ask 展示时使用 canonical 短名。
+  - venue 归一化使用独立 `data/venue_aliases.json`，不混入论文标题别名；`canonical` 保存正式全称，`display` 保存展示名，`aliases` 必须包含 display 和常见别名；匹配时使用 canonical + aliases，ask 展示时使用 display。
+  - 每篇论文的人工扩展信息使用 `data/paper_annotations.json`，key 为 `file_hash`；ingest 只自动维护 `title` 骨架，人工只维护 `aliases` 和 `tags`；旧 `data/paper_aliases.json` 废弃。
   - `planner.py` 在 metadata 分支里的执行职责：
     - `parse_status=parse_failed` 时直接返回 `parser_error` 和空 `records`
     - `lookup` 时优先用 `resolved_papers` 生成记录；没有锚点命中时再回退到 `route.query` 做 manifest 匹配
@@ -652,6 +688,11 @@ TOC 构建规则：
   - `raw_text`
   - `page`
   - `source_block_id`
+- `citation_graph.json` 在 `ingest` 末尾全库重建，属于 `paper_data` 的派生索引，不替代原始 `references.jsonl`；第一版只用于沉淀本地论文之间的引用边，reference route 何时切换到该图后续单独接入。
+  - 边匹配需要 `canonical title + first author surname + year candidates` 三条件同时满足，避免 `Long Short-Term Memory` 被 `Long short-term memory-networks for machine reading` 这类短标题包含误判命中。
+  - 年份候选只来自 metadata 的 `year` 对象；若正式发表年份需要由 venue 修正，应先在 metadata refresh 阶段写入 `publish_year`。
+  - `nodes`：active 本地论文，字段为 `paper_id/title/author/year/venue`。
+  - `edges`：本地引用边，字段为 `source_paper_id/target_paper_id/ref_index/raw_text/page/source_block_id/match_type`。
 - `chunks.jsonl` 是后续检索输入层，由 `ingest` 在生成 `blocks.jsonl` 后同步生成；默认只覆盖 `abstract + body`，不生成 `appendix/reference` chunks。
 - chunk 采用 section 内聚合策略：
   - 按 `section_id` / `section_path` 分组。
@@ -705,6 +746,10 @@ TOC 构建规则：
 - 结构化输出：
   - 验证图片/表格 block 保留结构字段：image 的 `source_path/caption`，table 的 `source_path/caption/html`，且表格 `text` 转为半结构化 `Columns` / `Row` 文本。
   - 验证 `reference_list` 在 ingest 阶段拆成条目级 `references.jsonl`，但不参与普通 chunking。
+  - 验证 `citation_graph.json` 会在 ingest 末尾生成，只包含 active 本地论文节点和 canonical title 命中的本地引用边。
+  - 验证 citation graph 对边匹配要求 canonical title、第一作者姓氏和年份候选同时命中；短标题包含但作者/年份不匹配时不生成边。
+  - 验证年份候选只读取 `year.preprint_year/publish_year`，SENet 这类边必须依赖 refresh 后的 `publish_year=2018` 才能建立。
+  - 验证 citation graph 跳过 self edge，不纳入 deleted/inactive manifest 记录，且 PDF 删除后下次 ingest 会重建图并移除对应节点/边。
 
 - chunk 生成：
   - 验证 `chunks.jsonl` 自动生成，且只包含 `abstract/body`。
@@ -718,6 +763,7 @@ TOC 构建规则：
   - 验证 ArXiv 精确标题命中时写入 `preprint_year`，且不写 `venue="ArXiv"`。
   - 验证 DBLP 精确标题命中正式 venue 后得到 `publish_year`、作者和 venue，并触发 PDF/MinerU 输出最终命名。
   - 验证 DBLP/Semantic Scholar 命中正式 venue 时写入 `publish_year/venue`，命中 `CoRR/ArXiv` 时不采用为正式发表信息。
+  - 验证正式 venue 中包含四位年份时，`publish_year` 优先使用 venue 年份；venue 无年份时回退到源返回的 year 字段。
   - 验证 DBLP 未命中正式发表时继续查 Semantic Scholar；Semantic Scholar 命中时必须通过 normalized title 完全一致校验。
   - 验证 ArXiv、DBLP 和 Semantic Scholar 都未命中时退出码为 0、状态为 unresolved、PDF 不重命名。
   - 验证重复 hash PDF 不重复调用 MinerU。

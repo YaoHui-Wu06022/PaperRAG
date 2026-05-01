@@ -24,14 +24,7 @@ from paper_rag.retrieval.domains.metadata.prompt import metadata_parser_system_p
 
 
 DEFAULT_QUERIES = [
-    # "在2016-2025年不在ACM发表的论文有哪些",
-    # "找出 2015 年之后的论文",
-    # "列出不在 2015 年到 2018 年之间的论文",
-    # "哪些论文不是 He Kaiming 写的",
-    # "找一下标题是 Transformer 的论文",
-    # "ResNet 是哪一年发表的",
-    "Attention is All You Need之后有哪些不在2019年以前的论文",
-    # "Word2Vec之后、BERT 之前有哪些论文",
+    "标题包含 attention 或 transformer 的论文有哪些？"
 ]
 
 
@@ -67,17 +60,12 @@ def parse_batch(client: PlanParserClient, queries: list[str]) -> str:
 def batch_system_prompt(system_prompt: str) -> str:
     return (
         system_prompt
-        + "\n\n批量测试模式覆盖说明：\n"
-        + "- 只返回一个 JSON 数组。\n"
-        + "- 数组里的每一项必须严格符合上面定义的单问题 schema。\n"
     )
 
 
 def batch_query(queries: list[str]) -> str:
     return (
-        "请按顺序解析下面所有问题，并只返回一个 JSON 数组。\n"
-        "数组里的每一项必须是一个单问题 schema 对象，只包含 intent、return_field、filters。\n"
-        + "\n".join(f"{index}. {query}" for index, query in enumerate(queries, start=1))
+        "\n".join(f"{index}. {query}" for index, query in enumerate(queries, start=1))
     )
 
 

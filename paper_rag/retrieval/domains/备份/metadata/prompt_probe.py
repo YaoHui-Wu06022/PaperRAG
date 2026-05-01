@@ -20,15 +20,18 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from paper_rag.config import Settings
 from paper_rag.retrieval.domains.common.parser_client import PlanParserClient, chat_completion_content
-from paper_rag.retrieval.domains.content.prompt import content_parser_system_prompt
+from paper_rag.retrieval.domains.metadata.prompt import metadata_parser_system_prompt
 
 
 DEFAULT_QUERIES = [
+    "论文有多少篇"
 ]
 
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Probe content parser prompt outputs.")
-    parser.add_argument("queries", nargs="*", help="Optional queries. Defaults to representative content examples.")
+    parser = argparse.ArgumentParser(description="Probe metadata parser prompt outputs for anchored year queries.")
+    parser.add_argument("queries", nargs="*", help="Optional queries. Defaults to anchored year-range examples.")
     parser.add_argument("--project-root", type=Path, default=find_project_root(), help="Project root containing .env")
     args = parser.parse_args()
 
@@ -47,27 +50,22 @@ def main() -> int:
 
 
 def parse_once(client: PlanParserClient, query: str) -> str:
-    return client.complete_json(content_parser_system_prompt(), query)
+    return client.complete_json(metadata_parser_system_prompt(), query)
 
 
 def parse_batch(client: PlanParserClient, queries: list[str]) -> str:
-    return complete_batch_json(client, batch_system_prompt(content_parser_system_prompt()), batch_query(queries))
+    return complete_batch_json(client, batch_system_prompt(metadata_parser_system_prompt()), batch_query(queries))
 
 
 def batch_system_prompt(system_prompt: str) -> str:
     return (
         system_prompt
-        + "\n\n批量测试模式覆盖说明：\n"
-        + "- 只返回一个 JSON 数组。\n"
-        + "- 数组里的每一项必须严格符合上面定义的单问题 schema。\n"
     )
 
 
 def batch_query(queries: list[str]) -> str:
     return (
-        "请按顺序解析下面所有问题，并只返回一个 JSON 数组。\n"
-        "数组里的每一项必须是一个单问题 schema 对象，只包含 intent、anchors、compare_objects、objects、filters。\n"
-        + "\n".join(f"{index}. {query}" for index, query in enumerate(queries, start=1))
+        "\n".join(f"{index}. {query}" for index, query in enumerate(queries, start=1))
     )
 
 
@@ -88,7 +86,6 @@ def pretty_json_or_raw(content: str) -> str:
         return json.dumps(json.loads(content), ensure_ascii=False, indent=2)
     except json.JSONDecodeError:
         return content
-
 
 if __name__ == "__main__":
     sys.exit(main())

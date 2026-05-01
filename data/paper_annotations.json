@@ -1,0 +1,107 @@
+{
+  "133ecc4d73d2928566e13d8a30b851be611a09a90ec66273e8d9d16f7026076c": {
+    "title": "Exponential Moving Average of Weights in Deep Learning: Dynamics and Benefits",
+    "aliases": [],
+    "tags": []
+  },
+  "1e0651b6810ecba34a3dbc5b5b0209226f889004607c1f203540a48d64e5a93a": {
+    "title": "Deep Residual Learning for Image Recognition",
+    "aliases": [
+      "ResNet"
+    ],
+    "tags": []
+  },
+  "1ebca04b3460b1dcf254092f48f420d48e9c23a50f077e78179ef9b42fa5324b": {
+    "title": "Aggregated Residual Transformations for Deep Neural Networks",
+    "aliases": [
+      "ResNeXt"
+    ],
+    "tags": []
+  },
+  "27a8b27d6a421f0c1ecc62927fd95213d306d926b92d67b3168a8b32c967644f": {
+    "title": "NormFace: L2 Hypersphere Embedding for Face Verification",
+    "aliases": [
+      "NormFace"
+    ],
+    "tags": []
+  },
+  "3da9d0812b27de20e3623ea0f71933dd866f10459fdf04e1129f9f5abdc093cd": {
+    "title": "Supervised Contrastive Learning",
+    "aliases": [
+      "SupCon",
+      "SupCon loss"
+    ],
+    "tags": []
+  },
+  "4770aa24dc2d1ae1620ebdb4533855e2918ab6f252db670a7c3877cfe2dc9030": {
+    "title": "A Discriminative Feature Learning Approach for Deep Face Recognition",
+    "aliases": [
+      "Center loss"
+    ],
+    "tags": []
+  },
+  "4e782a60f7f01ec552a725c021779f8dd694d12ece217ab1a9b5e09c75958d77": {
+    "title": "ECA-Net: Efficient Channel Attention for Deep Convolutional Neural Networks",
+    "aliases": [
+      "ECA-Net"
+    ],
+    "tags": []
+  },
+  "5692a5514787a8c6727b4ff3b726a3385798bc68e12138d1d4af83947e2acf6e": {
+    "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+    "aliases": [
+      "BERT"
+    ],
+    "tags": []
+  },
+  "60e7a8e033ca861eb88d84e71cad1951904bd355e5dec6fa596f6f2ad0087683": {
+    "title": "Squeeze-and-Excitation Networks",
+    "aliases": [
+      "SENet"
+    ],
+    "tags": []
+  },
+  "66a9f13f2635290ca3900a87a6548badbe8fba154a0478555a16e15a8c907c96": {
+    "title": "Going deeper with convolutions",
+    "aliases": [
+      "GoogLeNet",
+      "Inception"
+    ],
+    "tags": []
+  },
+  "90137160c57217953d5f61857e64ca58e85f06e1b13b4f475c918b1b582b9771": {
+    "title": "ImageNet Classification with Deep Convolutional Neural Networks",
+    "aliases": [
+      "AlexNet"
+    ],
+    "tags": []
+  },
+  "af6b1bd620f81bfaea81edf8227484588e1fcc2427d6b5020fa17454d7566c70": {
+    "title": "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks",
+    "aliases": [
+      "EfficientNet"
+    ],
+    "tags": []
+  },
+  "cbf756a42355674bc3d6ff2ff39276b51706e82efe3b102aa356dafc3bdc0b05": {
+    "title": "Inception-v4, Inception-ResNet and the Impact of Residual Connections on Learning",
+    "aliases": [
+      "Inception-v4"
+    ],
+    "tags": []
+  },
+  "ceb9e53dbc0493f5b3bf5520ed940f3e6b526064d17b2118d77e51f79c0edcc6": {
+    "title": "Long Short-Term Memory",
+    "aliases": [
+      "LSTM"
+    ],
+    "tags": []
+  },
+  "d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537": {
+    "title": "Attention is All you Need",
+    "aliases": [
+      "Transformer"
+    ],
+    "tags": []
+  }
+}

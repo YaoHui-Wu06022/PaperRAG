@@ -23,10 +23,11 @@ def canonicalize_venue(settings: Settings, venue: Any) -> str:
         canonical = str(entry.get("canonical") or "").strip()
         if not canonical:
             continue
+        display = str(entry.get("display") or "").strip() or canonical
         for candidate in venue_entry_terms(entry):
             candidate_key = venue_key(candidate)
             if candidate_key and (text_key == candidate_key or candidate_key in text_key):
-                return canonical
+                return display
     return text
 
 

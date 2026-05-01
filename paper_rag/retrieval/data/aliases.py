@@ -17,15 +17,26 @@ class AliasMatch:
     expanded_terms: list[str]
 
 
-def load_paper_aliases(settings: Settings) -> list[dict[str, Any]]:
-    path = settings.data_dir / "paper_aliases.json"
+def load_paper_annotation_aliases(settings: Settings) -> list[dict[str, Any]]:
+    path = settings.data_dir / "paper_annotations.json"
     if not path.exists():
         return []
-    return json.loads(path.read_text(encoding="utf-8"))
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        return []
+    entries: list[dict[str, Any]] = []
+    for annotation in payload.values():
+        if not isinstance(annotation, dict):
+            continue
+        title = str(annotation.get("title") or "").strip()
+        aliases = [str(alias).strip() for alias in annotation.get("aliases") or [] if str(alias).strip()]
+        if title and aliases:
+            entries.append({"canonical": title, "aliases": aliases})
+    return entries
 
 
 def expand_query_with_aliases(settings: Settings, query: str) -> tuple[str, list[AliasMatch]]:
-    matches = find_alias_matches(load_paper_aliases(settings), query)
+    matches = find_alias_matches(load_paper_annotation_aliases(settings), query)
     if not matches:
         return query, []
     terms = tokenize(query)

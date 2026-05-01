@@ -86,6 +86,12 @@ Filter 合法组合:
 - venue contains
 - follow/prior 用在 paper 以外字段
 
+Filter 组合语义:
+- 数组内的多个条件默认是 AND
+- A 或 B 这种 OR 不能拆成多个 filters
+- 如果同一字段支持集合 op，则用集合 op，例如 venue in ["ACL","EMNLP"]
+- 如果同一字段不支持集合 op，例如 title contains / author contains，则用 paper_groups + group_mode="or"
+
 citation graph 语义:
 - edge(A, B) 表示 A 引用了 B
 - paper follow X: 当前侧候选论文 P 满足 edge(P, X)，即 P 引用了 X
@@ -112,7 +118,6 @@ citation graph 语义:
 - 判断 source_scope 与 object_scope，再做结构化抽取
 - 条件属于 source 侧还是 object 侧，只由该条件修饰的是引用发出方还是被引用方决定
 - return_side 只表示答案来自哪一侧，不能决定条件放在哪一侧
-- “X 后续工作 / X 前期工作”不是普通 semantic，必须抽成对应侧 paper follow / paper prior
 
 被动句消歧:
 A. X 在“被”前面
@@ -231,9 +236,21 @@ year:
 - “2019年以前 / 2019年之前 / 2019年及以前”:
   - {"field":"year","op":"interval","value":["-inf",2019],"negated":false}
 - “X 之后 / X 以后 / X 之前 / X 以前”:
-  - 如果表达普通时间关系，不是“后续/前期工作”，可以使用论文名作为 year interval 边界
+  - 表达普通时间关系，不是“后续/前期工作”，可以使用论文名作为 year interval 边界
   - “X 之后的论文” -> {"field":"year","op":"interval","value":["X","inf"],"negated":false}
   - “X 之前的论文” -> {"field":"year","op":"interval","value":["-inf","X"],"negated":false}
+  - 只有出现“后续工作 / 后续论文 / 后续研究 / 后续发展”时，才抽 paper follow
+  - 只有出现“前期工作 / 早期工作 / 基础工作 / 参考的早期论文”时，才抽 paper prior
+  - “X 之后有哪些论文引用了 Y”:
+    - source_filters=[year interval ["X","inf"]]
+    - object_filters=[paper=Y]
+  - “有哪些 X 后续工作引用了 Y”:
+    - source_filters=[paper follow X]
+    - object_filters=[paper=Y]
+  例: “ResNet之后，有哪些论文引用ResNet”:
+  - source_filters=[year interval ["ResNet","inf"]]
+  - object_filters=[paper=ResNet]
+  - return_side="source"
 
 venue:
 - 单个 venue:

@@ -1290,28 +1290,33 @@ def sample_project():
         ]),
         encoding="utf-8",
     )
-    (data / "paper_aliases.json").write_text(
-        json.dumps([
-            {
-                "canonical": "Long Short-Term Memory",
+    (data / "paper_annotations.json").write_text(
+        json.dumps({
+            "lstm-hash": {
+                "title": "Long Short-Term Memory",
                 "aliases": ["LSTM"],
+                "tags": [],
             },
-            {
-                "canonical": "A Discriminative Feature Learning Approach for Deep Face Recognition",
+            "abc": {
+                "title": "A Discriminative Feature Learning Approach for Deep Face Recognition",
                 "aliases": ["Center loss"],
+                "tags": [],
             },
-            {
-                "canonical": "Deep Residual Learning for Image Recognition",
+            "def": {
+                "title": "Deep Residual Learning for Image Recognition",
                 "aliases": ["ResNet"],
+                "tags": [],
             },
-        ]),
+        }),
         encoding="utf-8",
     )
     (data / "venue_aliases.json").write_text(
         json.dumps([
             {
-                "canonical": "CVPR",
+                "canonical": "IEEE/CVF Conference on Computer Vision and Pattern Recognition",
+                "display": "CVPR",
                 "aliases": [
+                    "CVPR",
                     "IEEE/CVF Conference on Computer Vision and Pattern Recognition",
                     "Computer Vision and Pattern Recognition",
                 ],
