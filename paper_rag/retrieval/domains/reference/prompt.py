@@ -58,7 +58,7 @@ Schema:
 - object_scope: 被引用方
 - return_side 表示答案来自哪一侧:
   - source: 返回引用发出方，例如“哪些论文引用了 X”
-  - object: 返回被引用方，例如“ X 引用了哪些论文”
+  - object: 返回被引用方，例如“X 引用了哪些论文”
   - null: 不返回某一侧，通常用于 exists 判断
 - semantic / filters / groups 分别表示非结构化语义、共享结构化条件、多个局部集合；已抽取到 filters 的内容不得残留在 semantic
 - group 有效条件 = 对应侧 filters + group.filters
@@ -99,7 +99,7 @@ citation graph 语义:
   - return_side 必须是 source 或 object
 - intent="exists": 是否引用 / 有没有引用 / 引用了吗 / 是否都引用 / 是否同时引用
   - return_side 必须是 null
-- “X 的引用次数 / X 的被引次数”默认表示有多少 source_scope 引用了 X:
+- “X 的被引次数”表示有多少 source_scope 引用了 X:
   - intent="count", return_side="source", object_filters=[paper=X]
 - “X 引用了多少篇论文 / X 的参考文献数量”表示 X 引用了多少 object_scope:
   - intent="count", return_side="object", source_filters=[paper=X]
@@ -135,6 +135,7 @@ B. X 在“被”后面
 - return_side="object"
 例:
 输入: “哪些 2014 年之前发布在 ArXiv 上的论文被 LSTM 引用”
+内部改写: "LSTM 引用了哪些 2014 年之前发布在 ArXiv 上的论文"
 输出要点:
 - return_side="object"
 - source_filters=[paper=LSTM]
@@ -143,14 +144,14 @@ B. X 在“被”后面
 主动句:
 - “X 引用了哪些 + 条件 + 论文”
   - X 是 source_scope
-  - source_filters: {"field":"paper","op":"=","value":"X","negated":false}
+  - source_filters=[paper=X]
   - “条件 + 论文”是 object_scope
   - return_side="object"
   
 - “哪些 + 条件 + 论文引用了 X”
   - “条件 + 论文”是 source_scope
   - X 是 object_scope
-  - object_filters: {"field":"paper","op":"=","value":"X","negated":false}
+  - object_filters=[paper=X]
   - return_side="source"
   
 - “X 是否引用了 Y”
@@ -263,7 +264,7 @@ semantic:
   - “目标检测论文” -> semantic="目标检测论文"
   - “目标检测相关论文” -> semantic="目标检测相关论文"
   - “使用 CNN 的论文” -> semantic="使用 CNN 的论文"
-  - “Transformer 后续的目标检测论文” -> filters=[paper follow Transformer], semantic="目标检测论文"
+- “Transformer 后续的目标检测论文” -> filters=[paper follow Transformer], semantic="目标检测论文"
   
 semantic 反向校验:
 - semantic 中不得残留标题、年份、venue、作者、paper follow/prior 等可结构化条件
@@ -276,22 +277,22 @@ source_groups:
   - return_side="object"
   - source_mode="per"
   - source_groups=[
-      {"filters":[{"field":"paper","op":"=","value":"X","negated":false}]},
-      {"filters":[{"field":"paper","op":"=","value":"Y","negated":false}]}
+      {"semantic":"","filters":[paper=X]},
+      {"semantic":"","filters":[paper=Y]}
     ]
 - “X 和 Y 同时引用了哪些论文”
   - return_side="object"
   - source_mode="and"
   - source_groups=[
-      {"filters":[{"field":"paper","op":"=","value":"X","negated":false}]},
-      {"filters":[{"field":"paper","op":"=","value":"Y","negated":false}]}
+      {"semantic":"","filters":[paper=X]},
+      {"semantic":"","filters":[paper=Y]}
     ]
 - “X 或 Y 引用了哪些论文”
   - return_side="object"
   - source_mode="or"
   - source_groups=[
-      {"filters":[{"field":"paper","op":"=","value":"X","negated":false}]},
-      {"filters":[{"field":"paper","op":"=","value":"Y","negated":false}]}
+      {"semantic":"","filters":[paper=X]},
+      {"semantic":"","filters":[paper=Y]}
     ]
     
 object_groups:
@@ -300,15 +301,15 @@ object_groups:
   - return_side="source"
   - object_mode="and"
   - object_groups=[
-      {"filters":[{"field":"paper","op":"=","value":"X","negated":false}]},
-      {"filters":[{"field":"paper","op":"=","value":"Y","negated":false}]}
+      {"semantic":"","filters":[paper=X]},
+      {"semantic":"","filters":[paper=Y]}
     ]
 - “哪些论文引用了 X 或 Y”
   - return_side="source"
   - object_mode="or"
   - object_groups=[
-      {"filters":[{"field":"paper","op":"=","value":"X","negated":false}]},
-      {"filters":[{"field":"paper","op":"=","value":"Y","negated":false}]}
+      {"semantic":"","filters":[paper=X]},
+      {"semantic":"","filters":[paper=Y]}
     ]
     
 共享条件:
