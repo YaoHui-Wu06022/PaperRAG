@@ -30,7 +30,7 @@ Schema:
       "filters": []
     }
   ],
-  "group_mode": "single|per|or"
+  "group_mode": "single|per|or|and"
 }
 
 核心定义:
@@ -44,6 +44,7 @@ mode 语义:
 - single: 单个 paper_scope；不使用 paper_groups，paper_groups 必须为 []
 - per: 分别/各自，对每个 group 分别执行同一元数据查询
 - or: 任一/或，候选论文集合为所有 group 的并集
+- and: 仅用于 intent="exists"；表示所有 group 都必须满足同一元数据判断
 
 Filter 合法组合:
 - paper:
@@ -162,7 +163,7 @@ title:
 
 semantic:
 - semantic 只保存无法结构化的主题语义
-- semantic 不保存普通动作词: 引用、被引用、参考文献、哪些、多少、是否
+- semantic 不保存普通动作词
 - semantic 不保存已经进入 filters / groups 的结构化条件
 - 如果移除结构化条件后只剩“论文 / 工作 / 研究 / 相关论文”等泛称，semantic=""
 - 如果泛称前还有主题修饰词，则保留完整主题短语:
@@ -199,7 +200,17 @@ paper_groups:
         {"semantic":"","filters":[title contains word1]},
         {"semantic":"","filters":[title contains word2]}
       ]
-    
+- "都 / 是否都" -> "and":
+  - 仅当 intent="exists" 时允许 group_mode="and"
+  - 输入: “Transformer 和 ResNet 是不是都发表在 NeurIPS”
+    - intent="exists"
+    - return_fields=[]
+    - filters=[venue=NeurIPS]
+    - group_mode="and"
+    - paper_groups=[
+        {"semantic":"","filters":[paper=Transformer]},
+        {"semantic":"","filters":[paper=ResNet]}
+      ]
 分组完整性:
 - 出现“分别 / 各自”时，被“和 / 与 / 以及”连接的每个论文范围都必须进入 paper_groups
 - 不得把第一个范围放到顶层 paper_semantic / filters，把后续范围放到 paper_groups
@@ -224,6 +235,7 @@ paper_groups:
 - intent="lookup" 时 return_fields 必须非空
 - intent="list" 时 return_fields 默认至少包含 title
 - intent="count" 或 "exists" 或 null 时 return_fields 必须为 []
+- intent!="exists" 时 group_mode 不得为 "and"
 - paper_semantic / group.semantic 不得包含已抽取到 filters / groups 的结构化条件
 - follow/prior 只能用于 field="paper"
 - 如果 filters 中出现多个同字段条件，并且用户表达的是“或 / 任一”，必须改成 paper_groups + group_mode="or"

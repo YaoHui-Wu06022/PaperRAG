@@ -90,8 +90,10 @@ Filter 组合语义:
 - 数组内的多个条件默认是 AND
 - A 或 B 这种 OR 不能拆成多个 filters
 - 如果同一字段支持集合 op，则用集合 op，例如 venue in ["ACL","EMNLP"]
-- 如果同一字段不支持集合 op，例如 title contains / author contains，则用 paper_groups + group_mode="or"
-
+- 如果同一字段不支持集合 op，例如 title contains / author contains，则根据该条件修饰的作用域放入对应侧 groups，并设置对应侧 mode="or"
+  - source 侧 OR -> source_groups + source_mode="or"
+  - object 侧 OR -> object_groups + object_mode="or"
+  
 citation graph 语义:
 - edge(A, B) 表示 A 引用了 B
 - paper follow X: 当前侧候选论文 P 满足 edge(P, X)，即 P 引用了 X

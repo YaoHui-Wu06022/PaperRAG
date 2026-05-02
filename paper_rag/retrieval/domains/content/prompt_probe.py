@@ -24,6 +24,7 @@ from paper_rag.retrieval.domains.content.prompt import content_parser_system_pro
 
 
 DEFAULT_QUERIES = [
+    "2018 年 ACL 或 2019 年 EMNLP 的论文报告了哪些实验结果？"
 ]
 
 def main() -> int:
@@ -57,17 +58,12 @@ def parse_batch(client: PlanParserClient, queries: list[str]) -> str:
 def batch_system_prompt(system_prompt: str) -> str:
     return (
         system_prompt
-        + "\n\n批量测试模式覆盖说明：\n"
-        + "- 只返回一个 JSON 数组。\n"
-        + "- 数组里的每一项必须严格符合上面定义的单问题 schema。\n"
     )
 
 
 def batch_query(queries: list[str]) -> str:
     return (
-        "请按顺序解析下面所有问题，并只返回一个 JSON 数组。\n"
-        "数组里的每一项必须是一个单问题 schema 对象，只包含 intent、anchors、compare_objects、objects、filters。\n"
-        + "\n".join(f"{index}. {query}" for index, query in enumerate(queries, start=1))
+        "\n".join(f"{index}. {query}" for index, query in enumerate(queries, start=1))
     )
 
 
