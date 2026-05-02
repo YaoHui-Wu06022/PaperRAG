@@ -24,7 +24,7 @@ from paper_rag.retrieval.domains.reference.prompt import reference_parser_prompt
 
 
 DEFAULT_QUERIES = [
-    "LSTM 被哪些 2014 年之前发布在 ArXiv 上的论文或2017年以后发布在CVPR上的论文引用？",
+    "VIT 被哪些 2020 年以后或标题包含 attention 的论文引用？",
 ]
 
 

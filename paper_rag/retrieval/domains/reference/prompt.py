@@ -1,7 +1,15 @@
 from __future__ import annotations
 
+from ..common.prompt import (
+    CITATION_GRAPH_RULES,
+    FILTER_BOOLEAN_RULES,
+    PAPER_FILTER_RULES,
+    PAPER_FILTER_SCHEMA,
+    SINGLE_SIDE_SCOPE_EXTRACTION_RULES,
+)
+
 def reference_parser_prompt() -> str:
-    return """
+    prompt = """
 你是引用关系查询解析器，只输出 JSON，不要回答问题
 输入是原始用户问题，且顶层已经判断 router="reference"
 
@@ -19,12 +27,7 @@ Schema:
 
   "source_semantic": "",
   "source_filters": [
-    {
-      "field": "paper|author|year|venue|title",
-      "op": "=|contains|interval|in|follow|prior",
-      "value": "",
-      "negated": false
-    }
+    __PAPER_FILTER_SCHEMA__
   ],
   "source_groups": [
     {
@@ -36,12 +39,7 @@ Schema:
 
   "object_semantic": "",
   "object_filters": [
-    {
-      "field": "paper|author|year|venue|title",
-      "op": "=|contains|interval|in|follow|prior",
-      "value": "",
-      "negated": false
-    }
+    __PAPER_FILTER_SCHEMA__
   ],
   "object_groups": [
     {
@@ -69,36 +67,14 @@ mode 语义:
 - and: 同时/共同/都，候选结果必须同时满足所有 group 的引用关系
 - or: 任一/或，候选结果满足任一 group 即可
 
-Filter 合法组合:
-- paper:
-  - "=": 绑定单篇论文
-  - "follow": 当前侧论文位于 value 的后续集合中
-  - "prior": 当前侧论文位于 value 的前期集合中
-- year: "=" | "interval"
-- venue: "=" | "in"
-- author: "contains"
-- title: "contains"
-禁止组合:
-- paper in
-- year contains
-- author =
-- title =
-- venue contains
-- follow/prior 用在 paper 以外字段
+__PAPER_FILTER_RULES__
 
-Filter 组合语义:
-- 数组内的多个条件默认是 AND
-- A 或 B 这种 OR 不能拆成多个 filters
-- 如果同一字段支持集合 op，则用集合 op，例如 venue in ["ACL","EMNLP"]
-- 如果同一字段不支持集合 op，例如 title contains / author contains，则根据该条件修饰的作用域放入对应侧 groups，并设置对应侧 mode="or"
+__FILTER_BOOLEAN_RULES__
+- 根据该条件修饰的作用域放入对应侧 groups
   - source 侧 OR -> source_groups + source_mode="or"
   - object 侧 OR -> object_groups + object_mode="or"
   
-citation graph 语义:
-- edge(A, B) 表示 A 引用了 B
-- paper follow X: 当前侧候选论文 P 满足 edge(P, X)，即 P 引用了 X
-- paper prior X: 当前侧候选论文 P 满足 edge(X, P)，即 X 引用了 P
-- follow/prior 是 citation graph 关系过滤，不要额外生成 year filter
+__CITATION_GRAPH_RULES__
 
 范式 1: intent / return_side
 - intent="list": 引用了哪些 / 引用的论文有哪些 / 参考文献有哪些 / 哪些论文引用了 X
@@ -254,40 +230,7 @@ year:
   - object_filters=[paper=ResNet]
   - return_side="source"
 
-venue:
-- 单个 venue:
-  - {"field":"venue","op":"=","value":"VENUE","negated":false}
-- 多个候选 venue:
-  - {"field":"venue","op":"in","value":["VENUE1","VENUE2"],"negated":false}
-- “不是 / 不在 / 非 VENUE”:
-  - {"field":"venue","op":"=","value":"VENUE","negated":true}
-  
-author:
-- “X 写的论文 / 作者是 X 的论文”:
-  - {"field":"author","op":"contains","value":"X","negated":false}
-- “不是 X 写的论文 / 作者不是 X 的论文”:
-  - {"field":"author","op":"contains","value":"X","negated":true}
-
-title:
-- “标题包含 X / 题目包含 X / title 包含 X 的论文”:
-  - {"field":"title","op":"contains","value":"X","negated":false}
-- “标题不包含 X / 题目不包含 X / title 不含 X 的论文”:
-  - {"field":"title","op":"contains","value":"X","negated":true} 
-
-semantic:
-- semantic 只保存无法结构化的主题语义
-- semantic 不保存普通动作词: 引用、被引用、参考文献、哪些、多少、是否
-- semantic 不保存已经进入 filters / groups 的结构化条件
-- 如果移除结构化条件后只剩“论文 / 工作 / 研究 / 相关论文”等泛称，semantic=""
-- 如果泛称前还有主题修饰词，则保留完整主题短语:
-  - “目标检测论文” -> semantic="目标检测论文"
-  - “目标检测相关论文” -> semantic="目标检测相关论文"
-  - “使用 CNN 的论文” -> semantic="使用 CNN 的论文"
-- “Transformer 后续的目标检测论文” -> filters=[paper follow Transformer], semantic="目标检测论文"
-  
-semantic 反向校验:
-- semantic 中不得残留标题、年份、venue、作者、paper follow/prior 等可结构化条件
-- 这些内容必须进入 filters 或 groups
+__SINGLE_SIDE_SCOPE_EXTRACTION_RULES__
 
 范式 4: groups 与 mode
 source_groups:
@@ -406,3 +349,10 @@ object_groups 多条件桶:
 - source_semantic / object_semantic / group.semantic 不得包含已抽取到对应侧 filters / groups 的结构化条件
 - follow/prior 只能用于 field="paper"
 """
+    return (
+        prompt.replace("__PAPER_FILTER_SCHEMA__", PAPER_FILTER_SCHEMA)
+        .replace("__PAPER_FILTER_RULES__", PAPER_FILTER_RULES)
+        .replace("__FILTER_BOOLEAN_RULES__", FILTER_BOOLEAN_RULES)
+        .replace("__CITATION_GRAPH_RULES__", CITATION_GRAPH_RULES)
+        .replace("__SINGLE_SIDE_SCOPE_EXTRACTION_RULES__", SINGLE_SIDE_SCOPE_EXTRACTION_RULES)
+    )

@@ -24,7 +24,7 @@ from paper_rag.retrieval.domains.content.prompt import content_parser_system_pro
 
 
 DEFAULT_QUERIES = [
-    "2018 年 ACL 或 2019 年 EMNLP 的论文报告了哪些实验结果？"
+    " 作者包含 Smith 或 Lee 的论文是否报告了消融实验？"
 ]
 
 def main() -> int:

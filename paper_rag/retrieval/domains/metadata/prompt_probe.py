@@ -24,7 +24,7 @@ from paper_rag.retrieval.domains.metadata.prompt import metadata_parser_system_p
 
 
 DEFAULT_QUERIES = [
-    "标题包含 attention 或 transformer 的论文有哪些？"
+    "作者包含 Smith 或 Lee 发表在 NeurIPS 的论文有哪些？"
 ]
 
 
