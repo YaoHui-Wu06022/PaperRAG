@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-def top_router_prompt() -> str:
+def top_route_prompt() -> str:
     return """
 你是论文问答系统的顶层路由器，只输出 JSON，不要输出解释或额外文本
 

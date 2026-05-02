@@ -4,7 +4,7 @@ from typing import Any
 
 from ....config import Settings
 from ..common.parser_client import PlanParserClient
-from .prompt import top_router_prompt
+from .prompt import top_route_prompt
 from .schema import validate_top_parse
 
 
@@ -17,5 +17,5 @@ class TopParserClient:
         return cls(PlanParserClient.from_settings(settings))
 
     def parse_top(self, query: str) -> dict[str, Any]:
-        content = self.client.complete_json(top_router_prompt(), query)
+        content = self.client.complete_json(top_route_prompt(), query)
         return validate_top_parse(content, query)

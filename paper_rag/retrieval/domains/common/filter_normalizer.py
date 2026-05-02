@@ -3,7 +3,7 @@
 from typing import Any
 
 from ....config import Settings
-from ....dataprocess.manifest import effective_year
+from ....dataprocess.manifest import normalize_year
 
 
 def resolve_paper_year_filters(
@@ -44,12 +44,17 @@ def resolve_year_boundary(settings: Settings, boundary: Any, warnings: list[str]
 
     mention = boundary.strip()
     papers, _ = resolve_paper_queries(settings, [mention])
-    years = [effective_year(paper.get("year")) for paper in papers]
+    years = [publish_or_preprint_year(paper.get("year")) for paper in papers]
     years = [year for year in years if year is not None]
     if years:
         return min(years)
     warnings.append(f"paper interval could not resolve boundary year: {mention}")
     return boundary
+
+
+def publish_or_preprint_year(value: Any) -> int | None:
+    year = normalize_year(value)
+    return year.get("publish_year") or year.get("preprint_year")
 
 
 def norm_interval_filter_bounds(left: Any, right: Any) -> list[Any]:

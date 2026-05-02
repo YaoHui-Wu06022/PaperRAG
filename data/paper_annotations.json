@@ -2,28 +2,72 @@
   "133ecc4d73d2928566e13d8a30b851be611a09a90ec66273e8d9d16f7026076c": {
     "title": "Exponential Moving Average of Weights in Deep Learning: Dynamics and Benefits",
     "aliases": [],
-    "tags": []
+    "tags": {
+      "zh": [
+        "优化方法",
+        "权重平均",
+        "训练稳定性"
+      ],
+      "en": [
+        "optimization",
+        "weight averaging",
+        "training stability"
+      ]
+    }
   },
   "1e0651b6810ecba34a3dbc5b5b0209226f889004607c1f203540a48d64e5a93a": {
     "title": "Deep Residual Learning for Image Recognition",
     "aliases": [
       "ResNet"
     ],
-    "tags": []
+    "tags": {
+      "zh": [
+        "卷积神经网络",
+        "残差连接",
+        "图像分类"
+      ],
+      "en": [
+        "CNN",
+        "residual connection",
+        "image classification"
+      ]
+    }
   },
   "1ebca04b3460b1dcf254092f48f420d48e9c23a50f077e78179ef9b42fa5324b": {
     "title": "Aggregated Residual Transformations for Deep Neural Networks",
     "aliases": [
       "ResNeXt"
     ],
-    "tags": []
+    "tags": {
+      "zh": [
+        "卷积神经网络",
+        "残差连接",
+        "分组卷积"
+      ],
+      "en": [
+        "CNN",
+        "residual connection",
+        "grouped convolution"
+      ]
+    }
   },
   "27a8b27d6a421f0c1ecc62927fd95213d306d926b92d67b3168a8b32c967644f": {
     "title": "NormFace: L2 Hypersphere Embedding for Face Verification",
     "aliases": [
       "NormFace"
     ],
-    "tags": []
+    "tags": {
+      "zh": [
+        "人脸识别",
+        "度量学习",
+        "特征归一化"
+      ],
+      "en": [
+        "face recognition",
+        "metric learning",
+        "feature normalization"
+      ]
+    }
   },
   "3da9d0812b27de20e3623ea0f71933dd866f10459fdf04e1129f9f5abdc093cd": {
     "title": "Supervised Contrastive Learning",
@@ -31,35 +75,90 @@
       "SupCon",
       "SupCon loss"
     ],
-    "tags": []
+    "tags": {
+      "zh": [
+        "对比学习",
+        "监督学习",
+        "损失函数"
+      ],
+      "en": [
+        "contrastive learning",
+        "supervised learning",
+        "loss function"
+      ]
+    }
   },
   "4770aa24dc2d1ae1620ebdb4533855e2918ab6f252db670a7c3877cfe2dc9030": {
     "title": "A Discriminative Feature Learning Approach for Deep Face Recognition",
     "aliases": [
       "Center loss"
     ],
-    "tags": []
+    "tags": {
+      "zh": [
+        "人脸识别",
+        "度量学习",
+        "损失函数"
+      ],
+      "en": [
+        "face recognition",
+        "metric learning",
+        "loss function"
+      ]
+    }
   },
   "4e782a60f7f01ec552a725c021779f8dd694d12ece217ab1a9b5e09c75958d77": {
     "title": "ECA-Net: Efficient Channel Attention for Deep Convolutional Neural Networks",
     "aliases": [
       "ECA-Net"
     ],
-    "tags": []
+    "tags": {
+      "zh": [
+        "卷积神经网络",
+        "注意力机制",
+        "通道注意力"
+      ],
+      "en": [
+        "CNN",
+        "attention mechanism",
+        "channel attention"
+      ]
+    }
   },
   "5692a5514787a8c6727b4ff3b726a3385798bc68e12138d1d4af83947e2acf6e": {
     "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
     "aliases": [
       "BERT"
     ],
-    "tags": []
+    "tags": {
+      "zh": [
+        "自然语言处理",
+        "Transformer",
+        "预训练"
+      ],
+      "en": [
+        "NLP",
+        "Transformer",
+        "pretraining"
+      ]
+    }
   },
   "60e7a8e033ca861eb88d84e71cad1951904bd355e5dec6fa596f6f2ad0087683": {
     "title": "Squeeze-and-Excitation Networks",
     "aliases": [
       "SENet"
     ],
-    "tags": []
+    "tags": {
+      "zh": [
+        "卷积神经网络",
+        "注意力机制",
+        "通道注意力"
+      ],
+      "en": [
+        "CNN",
+        "attention mechanism",
+        "channel attention"
+      ]
+    }
   },
   "66a9f13f2635290ca3900a87a6548badbe8fba154a0478555a16e15a8c907c96": {
     "title": "Going deeper with convolutions",
@@ -67,41 +166,107 @@
       "GoogLeNet",
       "Inception"
     ],
-    "tags": []
+    "tags": {
+      "zh": [
+        "卷积神经网络",
+        "多分支结构",
+        "图像分类"
+      ],
+      "en": [
+        "CNN",
+        "multi branch architecture",
+        "image classification"
+      ]
+    }
   },
   "90137160c57217953d5f61857e64ca58e85f06e1b13b4f475c918b1b582b9771": {
     "title": "ImageNet Classification with Deep Convolutional Neural Networks",
     "aliases": [
       "AlexNet"
     ],
-    "tags": []
+    "tags": {
+      "zh": [
+        "卷积神经网络",
+        "图像分类",
+        "ImageNet"
+      ],
+      "en": [
+        "CNN",
+        "image classification",
+        "ImageNet"
+      ]
+    }
   },
   "af6b1bd620f81bfaea81edf8227484588e1fcc2427d6b5020fa17454d7566c70": {
     "title": "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks",
     "aliases": [
       "EfficientNet"
     ],
-    "tags": []
+    "tags": {
+      "zh": [
+        "卷积神经网络",
+        "模型缩放",
+        "高效架构"
+      ],
+      "en": [
+        "CNN",
+        "model scaling",
+        "efficient architecture"
+      ]
+    }
   },
   "cbf756a42355674bc3d6ff2ff39276b51706e82efe3b102aa356dafc3bdc0b05": {
     "title": "Inception-v4, Inception-ResNet and the Impact of Residual Connections on Learning",
     "aliases": [
       "Inception-v4"
     ],
-    "tags": []
+    "tags": {
+      "zh": [
+        "卷积神经网络",
+        "Inception结构",
+        "残差连接"
+      ],
+      "en": [
+        "CNN",
+        "Inception",
+        "residual connection"
+      ]
+    }
   },
   "ceb9e53dbc0493f5b3bf5520ed940f3e6b526064d17b2118d77e51f79c0edcc6": {
     "title": "Long Short-Term Memory",
     "aliases": [
       "LSTM"
     ],
-    "tags": []
+    "tags": {
+      "zh": [
+        "循环神经网络",
+        "序列建模",
+        "门控结构"
+      ],
+      "en": [
+        "RNN",
+        "sequence model",
+        "gated architecture"
+      ]
+    }
   },
   "d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537": {
     "title": "Attention is All you Need",
     "aliases": [
       "Transformer"
     ],
-    "tags": []
+    "tags": {
+      "zh": [
+        "Transformer",
+        "注意力机制",
+        "序列建模"
+      ],
+      "en": [
+        "Transformer",
+        "attention mechanism",
+        "sequence modeling"
+      ]
+    }
   }
 }

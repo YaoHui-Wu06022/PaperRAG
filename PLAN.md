@@ -1,5 +1,15 @@
 # Paper_RAG Maintenance Plan
 
+## 0. 当前检索入口状态（覆盖旧 plan/ask 描述）
+
+- `paper-rag plan` 和 `paper-rag ask` 当前暂时下线；CLI 不再注册这两个子命令，后续按新的三层语义链路重新实现。
+- 当前仍保留的检索 CLI 是 `paper-rag index` 和 `paper-rag search`；数据处理 CLI 仍是 `paper-rag ingest`。
+- 顶层 route parser 只做第一层分流：输入统一称为 `original_query`，输出只允许 `{"router": "metadata|reference|content|unclear"}`。
+- 顶层不再输出 `extract_query`、`residual_query`、`answer_target`、`filters` 或 `filter_groups`；这些旧字段在顶层语义中全部废弃。
+- `top_planner.py` 和 `top_router.py` 已移除；共享路由决策类型下沉到 `paper_rag/retrieval/route.py`。
+- `metadata/reference/content` 三条二层链路的 parser、schema、prompt、planner 先保留文件骨架，但不再由旧 `plan/ask` 入口强接；后续等二层 schema 重新定稿后再接回新的 plan/ask。
+- `paper_rag/retrieval/domains/top/prompt_probe.py` 是当前顶层 prompt 的调试入口，只测试单个中文问题到 `router` 的输出，不测试 evidence pack。
+
 记住，PowerShell 的中文输入编码始终用'utf-8'
 
 ## 1. 项目目标
@@ -34,8 +44,8 @@
 - content 也先输出结构化 JSON，再用固定模板生成英文检索文本，供 BM25 和 embedding 召回使用。
 - 代码里的注释用中文
 - 写在PLAN.md里的数学公式以math形式写入
-- top_router.py 产出顶层“计划路由决策对象”，metadata/reference 的二级语义由各自 domain parser 解析，planner.py 只按决策对象执行取证。
-- 当前 metadata 和 reference 链路可用；content 先保留顶层 route 入口和 dense/BM25 取证，最终生成后续再完善。
+- 顶层 parser 当前只输出 `router`，不产出计划决策对象；metadata/reference/content 的二层链路后续重新接回。
+- 当前 plan/ask 暂时下线；content、metadata、reference 的 prompt/schema 文件先作为后续重建骨架保留。
 
 ## 3. 架构草案
 
@@ -51,10 +61,10 @@
 
 第一版围绕 `ingest` 建立以下模块，并按职责整理到 `paper_rag/` 包结构中：
 
-- `paper_rag/cli/`：CLI 入口层，当前提供 `paper-rag ingest`、`paper-rag index`、`paper-rag search`、`paper-rag plan`、`paper-rag ask`；其中 `ask` 是薄入口，真正的答案组装逻辑放在根包 `answer.py`。
+- `paper_rag/cli/`：CLI 入口层，当前提供 `paper-rag ingest`、`paper-rag index`、`paper-rag search`；`plan` 和 `ask` 暂时下线，后续按新三层语义链路重做。
 - `paper_rag/dataprocess/`：PDF 同步、MinerU 调用、内容抽取和 paper_data 生成的数据处理层。
 - `paper_rag/dataprocess/metadata/`：DBLP、Semantic Scholar、ArXiv 等外部论文元数据查询客户端。
-- `paper_rag/retrieval/`：检索与证据规划层，按 `plan / dense / sparse / data` 分区保存。
+- `paper_rag/retrieval/`：检索与证据规划层，当前保留 `dense / sparse / data / domains`；顶层 parser 仅用于 route 调试，旧 plan 编排入口已移除。
 - `paper_rag/config.py` 和 `paper_rag/utils.py`：跨模块基础设施，暂留根包。
 - PDF 扫描与同步：扫描 `data/pdf/`，计算 hash，识别新增、删除和重复 PDF。
 - Manifest 管理：维护 `data/manifest.jsonl`，记录 `file_hash`、当前 PDF 路径、title、status、MinerU 输出路径、paper_data 路径。
@@ -77,13 +87,10 @@ paper_rag/
 ├─ __main__.py                       # `python -m paper_rag` 入口
 ├─ config.py                         # 全局配置读取与 Settings 定义
 ├─ utils.py                          # 跨模块通用小工具
-├─ answer.py                         # ask 最终答案组装：消费 plan evidence，输出可读答案
-├─ answer_probe.py                   # ask 调试入口：直接观察 run_ask 输出与 debug plan
 ├─ cli/
 │  ├─ main.py                        # CLI 总入口与子命令注册
 │  ├─ ingest.py                      # `paper-rag ingest` 入口，只做参数接线
-│  ├─ ask.py                         # `paper-rag ask` 入口，只做参数接线
-│  └─ retrieval.py                   # `plan/index/search` 入口，只做参数接线
+│  └─ retrieval.py                   # `index/search` 入口，只做参数接线
 ├─ dataprocess/
 │  ├─ ingest.py                      # PDF 全量同步主流程：扫描、复用/恢复、抽取、落盘
 │  ├─ manifest.py                    # manifest 结构、读写与状态管理
@@ -96,12 +103,10 @@ paper_rag/
 │     ├─ semantic_scholar.py         # Semantic Scholar 补充正式发表信息
 │     └─ retry.py                    # 外部元数据请求的延迟与一次重试策略
 └─ retrieval/
-   ├─ top_router.py                  # 顶层路由：调用 top parser，产出 router / extract_query / 公共 filters
-   ├─ top_planner.py                 # plan 顶层编排：准备 query、分发 domain planner、组装顶层 plan 包
+   ├─ route.py                       # domain 间共享的 RouteDecision 类型
    ├─ evidence.py                    # 对外 evidence 字段裁剪：论文、metadata record、reference entry
    ├─ context.py                     # body 路由命中 chunk 后的 block 扩展与 context_unit 组装
    ├─ translation.py                 # 当前仅保留基础文本能力；不再承担翻译 API 主路径
-   ├─ plan_probe.py                  # plan 调试入口：直接观察 run_plan 输出
    ├─ domains/
    │  ├─ __init__.py                 # domains 包入口
    │  ├─ common/
@@ -144,7 +149,8 @@ paper_rag/
    ├─ sparse/
    │  └─ bm25.py                     # 本地 BM25、tokenize 与停用词逻辑
    └─ data/
-     ├─ aliases.py                  # 从 `paper_annotations.json` 读取论文别名并做 canonical 扩展
+      ├─ aliases.py                  # 从 `paper_annotations.json` 读取论文别名并做 canonical 扩展
+      ├─ paper_tags.py               # 从 `paper_annotations.json` 读取双语 tags，支持 metadata semantic 召回
       ├─ chunks.py                   # `chunks.jsonl` 读取与 chunk 文档适配
       ├─ filters.py                  # author/year/venue/title 论文元字段 filter evaluator
       ├─ references.py               # `references.jsonl` 读取适配
@@ -153,11 +159,11 @@ paper_rag/
 
 补充约束：
 
-- `top_planner.py` 只做顶层编排：调用 `top_router.build_route_decision()`、按 `metadata / reference / content` 分支分发到 domain planner、组装最终 plan 包。
-- 三个 domain planner 分别负责各自取证：metadata 查 manifest，reference 查本地 references，content 组装 retrieval source 并执行 dense/BM25/context 扩展。
+- `plan` 和 `ask` 入口当前下线，`answer.py`、`answer_probe.py`、`cli/ask.py`、`retrieval/plan_probe.py`、`top_planner.py`、`top_router.py` 不再保留。
+- 顶层 parser 只存在于 `retrieval/domains/top/`，只负责 `original_query -> router` 的调试与校验。
+- 三个 domain planner 暂时作为二层骨架保留；后续等二层 schema 重新定稿后再接回新的 plan/ask。
 - `evidence.py` 只做内部对象到对外 evidence 字段裁剪；`data/filters.py` 只做论文元字段 filter 判断。
 - 当前不保留旧路径兼容包装；内部代码和测试统一使用新路径。
-- `ask` 的答案整合逻辑已经落在根包 `answer.py`，CLI 入口在 `cli/ask.py`。
 
 ### 5.1 函数与变量命名规范
 
@@ -280,12 +286,12 @@ conda 下 RAG_project 环境运行
   - `EMBEDDING_DIM=1024`
   - `EMBEDDING_BATCH_SIZE=10`
   - `EMBEDDING_CACHE_PATH=data/index/embedding_cache.jsonl`
-- `paper-rag plan` 证据链路参数通过 `.env` 配置：
+- 旧 `paper-rag plan` 证据链路参数暂时保留在 `.env` 中，等待新版 plan/ask 重建时复用或清理：
   - `PLAN_DENSE_TOP_K=20`
   - `PLAN_BM25_TOP_K=20`
   - `PLAN_FINAL_TOP_K=8`
   - `PLAN_BLOCK_WINDOW=2`
-- plan 语义解析通过独立 OpenAI-compatible parser 配置；该 parser 用于 `metadata / reference / content` 三个顶层 route 的第二层结构化解析，不生成最终答案：
+- plan 语义解析配置当前主要供 top/domain prompt probe 调试使用；新版 plan/ask 重建前不作为 CLI 主路径：
   - `PLAN_PARSER_BASE_URL`
   - `PLAN_PARSER_API_KEY`
   - `PLAN_PARSER_MODEL`
@@ -300,73 +306,27 @@ CLI 行为：
 - `paper-rag ingest --refresh`：强制忽略 manifest 中已有元数据，对全库重新执行 ArXiv -> DBLP -> Semantic Scholar 元数据刷新。
 - `paper-rag index`：消费现有 `data/paper_data/*/chunks.jsonl`，调用 embedding 并重建 Milvus collection；不会自动运行 `ingest`，避免意外触发 MinerU 或外部元数据请求。
 - `paper-rag search "query" --top-k 5`：对 query 做 embedding，在 Milvus 中进行 chunk 级向量召回，输出 score、title、section、pages、chunk_id 和 snippet。
-- `paper-rag plan "问题"`：生成接入最终回答 LLM 前的 JSON evidence pack；只做路由、结构化解析、检索和证据收集，不生成最终自然语言答案。各顶层 route 的第二层语义解析可以调用独立 plan parser LLM。
-- `paper-rag ask "问题"`：当前已打通 metadata/reference v1，基于 `plan` 的 evidence pack 用确定性模板生成可读答案；content 仍只保留入口，后续再补。
+- `paper-rag plan`：当前暂时下线，后续按新三层语义链路重做。
+- `paper-rag ask`：当前暂时下线，后续在新版 plan evidence 稳定后再接回。
 
 ## 8. 检索策略
 
-检索层负责把用户问题转成结构化 evidence pack，不生成最终自然语言答案。
+检索层当前只保留 index/search 和 prompt 调试骨架；plan/ask 暂时下线，后续重新接入。
 
 ### 8.1 入口与通用规则
 
-- `paper-rag plan "问题"` 是接入最终回答 LLM 前的证据规划与证据收集层；默认输出 JSON evidence pack。
-- 用户问题固定为中文输入；第一版不考虑英文输入和双语输出场景。
-- 主路径固定为“顶层中文 LLM parser -> 中文 domain parser -> 结构化 JSON -> 执行层取证”；不调用翻译 API。
-- `metadata` 和 `reference` 直接消费 parser 输出的 JSON 执行检索，不生成英文中间 query。
-- `content` 先由 content parser 输出结构化 JSON，再按固定模板生成英文检索文本，例如 `paper: ...; topic: ...; terms: ...`，供 BM25 和 embedding 使用。
-- 顶层 parser 输出 `router / residual_query / filters / filter_groups`，由 LLM 判断进入 `reference / content / metadata / unclear`，不再使用命中词路由兜底。
-- 顶层 `filters` 与 `filter_groups[*].filters` 可表达 `author / year / venue / title / paper`；其中 `title` 只表示显式标题包含过滤，`paper` 表示具体论文强锚点。
-- `filter_groups` 只表达“多个主语各自带独立筛选条件”的情况，每项为 `subject / filters`；已进入 filters 的筛选条件必须从 `subject` 和 `residual_query` 中移除。
-- 如果顶层错误地只返回一个 `filter_group` 且全局 `filters=[]`，执行层会把 `{subject}` / `{subject_1}` 替换为具体 subject，并把该 group 的 filters 合并回全局 filters，清空 `filter_groups`。
-- `residual_query` 是交给下层 parser 的剩余查询，只保留尚未被顶层结构化抽取的语义；metadata/reference/content parser 后续都应消费矫正后的 `residual_query`。
-- 当前阶段只保证顶层结构正确且可观察；`title/paper` 在二层与执行层如何消费后续单独设计。
-- 如果顶层 parser 返回 `unclear` 或解析失败，route 为 `unclear`，提示用户补充是要查正文内容、论文元数据还是引用关系，而不是默认进入正文召回。
-- evidence pack 顶层公共字段后续以 `original_query / residual_query / route / intent / router_reason / filters / filter_groups / evidence / warnings` 为准；`return_field` 只在 metadata route 顶层输出，`direction / anchors / anchor_mode` 只在 reference route 顶层输出，不再使用旧的 `sub_route` 字段。
-- 不保留顶层 `language` 字段；metadata/reference 统一消费中文结构化 JSON，content 的英文检索文本只作为 evidence 内部字段或调试字段保存。
-- evidence 不使用 `scope` 和 `expanded_query`；metadata 锚点解析只作为内部取证步骤，不在 metadata evidence 中直接暴露，content/reference 保持各自 route 当前字段，内部 alias/canonical 扩展不暴露。
-- `RouteDecision` 的后续内部命名应从 `extract_query` 迁移到 `residual_query`：`residual_query` 表示当前路由消费的下游问题文本；`resolved_papers` 表示 parser 输出经 filter 归一化、alias 和 manifest 解析后的本地论文对象；`resolved_anchor_papers` 仅供 reference 的 per-anchor 取证使用，避免执行层重复解析 anchor。
-- `top_planner.py` 的主入口是 `run_plan(settings, query, ...)`：当前 `prepare_query()` 仍是薄预处理，主要保留 `original_query` 和 warnings；真正的顶层解析、domain 分发、取证和 evidence 组装都发生在 `run_plan()` 之后。
-- 第二层语义解析是 `metadata / reference / content` 三个分支共用的设计原则，但每个分支的下沉 schema 可以不同：
-  - metadata 重点解析字段查询、论文列表、数量统计、字段过滤、否定过滤和锚点论文。
-  - reference 重点解析 `cites / cited_by` 引用方向、锚点论文、引用范围过滤和引用列表/统计意图；对应的路由与 parser 骨架独立放在 `retrieval/domains/reference/`。
-  - content 重点解析正文问题类型、目标论文范围、比较对象和需要召回的内容焦点。
-- 当前 metadata/reference schema 已经独立落地，但共享错误类型、parser client、通用文本工具、JSON object 预处理、通用字符串列表规范化、论文元字段 filter schema、论文解析到 `resolved_papers` 的工具、anchor 年份处理和 prompt 公共片段统一下沉到 `retrieval/domains/common/`；content parser schema 后续单独讨论，避免把不同任务硬塞进同一个结构。
+- `paper-rag plan` 和 `paper-rag ask` 当前不注册 CLI 子命令。
+- 用户问题在后续链路中统一称为 `original_query`；当前不再引入 `extract_query`、`residual_query` 或 `answer_target`。
+- 顶层 parser 只用于 route 调试：`original_query -> {"router": "metadata|reference|content|unclear"}`。
+- 顶层不抽取 filters，不处理 title/paper，不生成 filter_groups，也不做 evidence pack。
+- `metadata/reference/content` 三条二层链路的 parser、schema、prompt、planner 文件先保留为骨架；等二层 schema 重新定稿后，再重新设计 plan evidence 和 ask 输出。
 
 ### 8.2 顶层 LLM Parser 与分支衔接
 
-- 顶层 parser 是 metadata/reference/content/unclear 的唯一第一层分流来源；不再保留 metadata/reference/content 各自的中文或英文命中词 router 作为兜底。
-- 顶层 parser 输出固定为 `router / residual_query / filters / filter_groups`：`original_query` 是用户原始问题，`residual_query` 是去掉顶层结构化筛选后交给下游 domain parser 的剩余问题。
-- 顶层 `filters` 和 `filter_groups[*].filters` 支持 `author / year / venue / title / paper`。
-- 顶层字段约束为：`author` 只允许 `contains`；`year` 允许 `=` 或 `interval`；`venue` 允许 `=` 或 `in`；`title` 只允许 `contains`；`paper` 只允许 `=`，表示需要执行层解析的具体论文强锚点。
-- `filter_groups[*].subject` 保存去掉局部筛选条件后的主语；多个 groups 原样传给下游，暂不实现多 group 的 metadata/reference/content 执行语义。
-- 单个 `filter_group` 且全局 `filters=[]` 被视为 LLM 结构化错误，会在进入二层前矫正成普通 `residual_query + filters`。
-- 本阶段只对齐顶层 parser schema 和 probe；二层 metadata/reference/content 如何消费 `title/paper` 后续重新设计。
-- `RouteDecision` 后续使用 `residual_query / filters / filter_groups` 表示当前分支消费的问题文本和范围；对外 evidence pack 顶层输出 `original_query / residual_query / route / intent / router_reason / filters / filter_groups / evidence / warnings`，不再输出旧 `answer_target`。
-- 如果顶层 parser 返回 `unclear` 或解析失败，plan 直接返回 unclear evidence，不进入任何 domain parser，也不默认落到 content。
-
-- 顶层只抽取“当前要检索、返回、绑定或分组的论文范围条件”；修饰正文对象、reference 查找对象、被引用对象或被引用论文范围的条件，必须保留在 `residual_query`，不进入顶层 `filters / filter_groups`。
-- `paper` 绑定按 route 区分：
-  - `metadata` 采用积极绑定策略：裸论文名可作为 `paper`；多个论文查同一元数据字段时使用 `filter_groups`；但 `A 和 B 之间的论文/工作` 优先解析为 `year interval`，不绑定为 paper。
-  - `reference` 只绑定引用发出方或被展开主体；被引用对象、查找对象和关系另一端内容不进入顶层 `paper`，必须保留在 `residual_query`。
-  - `content` 采用保守绑定策略：只有“X 这篇论文 / 标题是 X 的论文 / 名为 X 的论文”等强绑定表达才抽 `paper`；普通“X 的结构 / X 相关论文 / 使用 X 的论文”保留在 `residual_query`。
-- `residual_query` 生成规则：
-  - 已进入顶层 `filters / filter_groups[*].filters` 的 year、venue、author、title contains、paper 绑定必须从 `residual_query` 中删除。
-  - 单个 `paper` 进入 `filters` 后，`residual_query` 用“目标论文”指代该 paper，例如“目标论文的作者是谁”。
-  - 多个组分别跑同一问题时，`residual_query` 使用 `{subject}` 占位，例如“{subject}的作者是谁”。
-  - 多个组之间存在关系、比较、联系或差异时，`residual_query` 使用 `{subject_1}`、`{subject_2}` 等顺序占位，例如“{subject_1} 和 {subject_2} 的共同点是什么”。
-  - 如果对象没有进入顶层 `paper`，说明它仍是正文对象、reference 查找对象或其他待解析主体，`residual_query` 必须保留原名，不替换成“目标论文”或 subject 占位符。
-  - reference 中允许把被动句归一为主动句，但不能破坏引用方向；例如“被 A 引用的论文”应归一为“目标论文引用的论文”，而“A 被哪些论文引用”应保留为“引用 A 的论文”语义。
-
-- 顶层 parser 的泛称、锚点和占位符约定：
-
-  | 名称 | 出现位置 | 什么时候出现 | 含义 |
-  | --- | --- | --- | --- |
-  | `论文` | `residual_query` | 单主体，无 paper 绑定，只剩泛称论文 | 当前候选论文范围 |
-  | `目标论文` | `residual_query` | 单主体，有 `paper = X` | 被绑定的具体论文 |
-  | `论文A / 论文B` | `filter_groups[].subject` | 多主体，无 paper 绑定，局部条件抽走后只剩论文 | 多个候选论文范围 |
-  | `目标论文A / 目标论文B` | `filter_groups[].subject` | 多主体，每组有 `paper = X` | 多个具体论文锚点 |
-  | `{subject}` | `residual_query` | 多主体分别处理 | 逐个代入每个 subject |
-  | `{subject_i}` | `residual_query` | 多主体之间有关系 | 固定引用第 i 个 subject |
+- 顶层 parser 是 metadata/reference/content/unclear 的唯一第一层分流来源。
+- 顶层 schema 只允许一个字段：`router`。
+- `top/prompt_probe.py --validated` 只校验并展示 `router`，不再校验 query 裁剪、filters 或 groups。
+- 如果顶层 parser 输出除了 `router` 之外的字段，schema 会报错，避免旧 top prompt 结构悄悄混入。
 
 ### 8.3 Metadata Route
 
@@ -397,7 +357,7 @@ CLI 行为：
   }
   ```
 
-  - parser payload 不包含 `router`；顶层 route 只由 `top_router.py` 和 `RouteDecision.route` 表达。
+  - parser payload 不包含 `router`；顶层 route 只由 top parser 的 `router` 输出表达。
 
 - parser 枚举约束：
   - `intent` 只能是 `lookup / list / count`；非法枚举直接 `parse_failed`，不再通过 `intent=unknown` 表达。
@@ -429,7 +389,12 @@ CLI 行为：
   - metadata 的 year filter 默认使用 `effective_year = preprint_year || publish_year`；开放区间会排除边界论文年份，例如 `["ResNet", "inf"]` 会转为 `[ResNet有效年份+1, "inf"]`，`["-inf", "BERT"]` 会转为 `["-inf", BERT有效年份-1]`。
   - 两端都是论文名/别名时，会先解析到本地 effective year，再归一化为有效年份区间；如果用户或 parser 把较晚论文放在前面，也会自动调整为升序区间。
   - venue 归一化使用独立 `data/venue_aliases.json`，不混入论文标题别名；`canonical` 保存正式全称，`display` 保存展示名，`aliases` 必须包含 display 和常见别名；匹配时使用 canonical + aliases，ask 展示时使用 display。
-  - 每篇论文的人工扩展信息使用 `data/paper_annotations.json`，key 为 `file_hash`；ingest 只自动维护 `title` 骨架，人工只维护 `aliases` 和 `tags`；旧 `data/paper_aliases.json` 废弃。
+  - 每篇论文的人工扩展信息使用 `data/paper_annotations.json`，key 为 `file_hash`；ingest 只自动维护 `title` 骨架，人工维护 `aliases` 和双语 `tags`；旧 `data/paper_aliases.json` 废弃。
+  - `paper_annotations.json` 的 `tags` 固定为 `{"zh": [...], "en": [...]}`，不再兼容旧的 `tags: []` 列表格式；新增 annotation 默认写入空的双语 tags。
+  - `paper_semantic` 非空时，metadata planner 先做 semantic 候选召回，再执行结构化 filters；semantic 候选来自 manifest title 召回和 annotation tags 召回的并集。
+  - tag 召回不按 `file_hash` 直接绑定，而是按 annotation 的 `title` 与 manifest record 的 `title` 归一化对齐；aliases 仍只用于论文别名解析。
+  - 中文 tag 匹配采用去空白后 substring，例如 `目标检测相关论文` 可命中 tag `目标检测`；英文 tag 使用 normalized key 包含匹配，例如 `object detection papers` 可命中 `object detection`。
+  - tag 建议使用领域短语粒度，避免过短或过泛的词；`目标检测 / 残差连接 / 图像分类 / object detection / residual connection` 这类标签适合，`图像 / 学习 / 网络 / model` 这类标签容易造成宽召回。
   - `planner.py` 在 metadata 分支里的执行职责：
     - `parse_status=parse_failed` 时直接返回 `parser_error` 和空 `records`
     - `lookup` 时优先用 `resolved_papers` 生成记录；没有锚点命中时再回退到 `route.query` 做 manifest 匹配
@@ -454,8 +419,8 @@ CLI 行为：
   - `retrieval/domains/reference/` 只保留 reference 独有逻辑；共享的 `PlanParseError`、parser client、通用文本工具、JSON object 预处理、通用字符串列表规范化、论文元字段 filter 校验、parser 输出到 `resolved_papers` 的解析、论文名/别名年份区间处理和 prompt 公共片段统一来自 `retrieval/domains/common/`。
 
 - 顶层衔接：
-  - reference 自身不再保留命中词入口；顶层 parser 负责选择 reference，并把去掉公共范围约束后的 `extract_query` 交给 reference parser。
-  - reference parser 可以继续输出标题相关 anchors 或 filters；这些 filters 会和顶层 `author/year/venue` filters 合并后执行。
+  - reference 自身不再保留命中词入口；顶层 parser 只负责选择 reference。
+  - 下游 reference parser 后续重新设计时，输入统一使用 `original_query`。
 
 - parser 职责：
   - reference 命中后调用 `PLAN_PARSER_*` 配置下的 OpenAI-compatible parser，只做语义解析，不回答问题。
@@ -471,7 +436,7 @@ CLI 行为：
   }
   ```
 
-  - parser payload 不包含 `router`；顶层 route 只由 `top_router.py` 和 `RouteDecision.route` 表达。
+  - parser payload 不包含 `router`；顶层 route 只由 top parser 的 `router` 输出表达。
   - `intent` 只接受 `list / count`；`null` 或其他非法值直接 `parse_failed`。
   - reference 独有字段是 `direction / anchors / anchor_mode`。
   - `direction` 只能是 `cites / cited_by / null`；`direction=cites` 表示从 anchor 论文出发，读取 anchor 自己引用了哪些参考文献。
@@ -584,14 +549,11 @@ CLI 行为：
 
 ## 9. 生成策略
 
-生成层第一版打通 metadata 和 reference 的确定性问答，`paper-rag ask` 作为 plan evidence 的可读答案出口。
+生成层当前暂时下线，`paper-rag ask` 不注册 CLI 子命令。
 
-- `paper-rag ask "问题"` 复用 `paper-rag plan` 的 evidence pack；当前对 metadata/reference 用确定性模板输出自然语言答案。
-- ask 不重新做 PDF ingest、MinerU 解析或外部 metadata 查询；它只消费当前 evidence pack 和本地 `paper_data`。
-- metadata evidence 用于回答作者、年份、venue、标题和论文列表类问题；lookup/list/count 都可直接出答案。
-- reference evidence 用于回答“某论文引用了哪些参考文献”和“哪些本地论文引用了某论文”这两类本地引用关系问题；list/count 都可直接出答案。
-- content 仍保留入口，但 ask v1 不对 content 生成最终答案，先统一返回明确的未实现提示。
-- 生成回答时保留简短 provenance；metadata 结果仍可追溯到 manifest/paper_data。
+- 旧的 metadata/reference 确定性回答入口已移除。
+- 后续新版 ask 需要等新版 plan evidence schema 稳定后再接回。
+- content 生成链路仍然待设计，不在当前阶段提供最终自然语言回答。
 - 第一版 ask 不在本阶段实现 rerank、长答案规划、引用网络图、DOI/DBLP 解析或联网补全。
 
 ## 10. 抽取与 Chunk 规则
@@ -669,6 +631,20 @@ TOC 构建规则：
 
 - `metadata.json` 只保存简洁论文级信息：`title`、`author`、`year`、`venue`、`pdf_path`；其中 `year` 与 manifest 一样保存为 `{"preprint_year": ..., "publish_year": ...}`。
 - 读取旧 manifest 时，如果 `year` 仍是整数，兼容迁移为 `{"preprint_year": null, "publish_year": old_year}`。
+- `paper_annotations.json` 保存人工维护的论文别名与语义标签，key 仍为 `file_hash`，value 固定为：
+
+  ```json
+  {
+    "title": "Deep Residual Learning for Image Recognition",
+    "aliases": ["ResNet"],
+    "tags": {
+      "zh": ["卷积神经网络", "残差连接", "图像分类"],
+      "en": ["CNN", "residual connection", "image classification"]
+    }
+  }
+  ```
+
+  `aliases` 用于论文别名解析；`tags.zh/en` 用于 metadata 的 `paper_semantic` 候选召回。tags 不按 file hash 参与检索匹配，而是通过规范化 title 与 manifest 对齐。
 - `toc.json` 同时保存树形结构和扁平 section 索引：
   - `sections`：扁平列表，用于按 `section_id` 聚合 chunk；字段包含 `section_id`、`title`、`number`、`level`、`parent_id`、`path`、`start_block_index`、`end_block_index`、`region`。
   - `tree`：树形结构，用于展示和结构化导航；无明确编号的论文退化为同级顶层列表。
@@ -772,7 +748,7 @@ TOC 构建规则：
 ### 11.2 Metadata Route
 
 - 路由与 parser：
-  - 验证 `paper-rag plan "..."` 输出合法 JSON evidence pack，不生成最终自然语言答案；顶层 route 命中 metadata 后允许调用独立 parser LLM。
+  - `paper-rag plan` 当前下线；metadata route 测试暂时只覆盖 parser/schema/执行层单元能力。
   - metadata parser 返回非法 JSON、非法枚举、缺必需字段、HTTP 超时或错误时，metadata evidence 标记 `parse_failed` 并写入 warning，不落到 content。
   - parser 返回非法 intent 时标记 `parse_failed`，不查询 manifest，不回退 content。
 
@@ -780,6 +756,8 @@ TOC 构建规则：
   - `lookup` 按 `anchors` 和 title filter 匹配 manifest，并返回目标字段值。
   - `list` 按 filters 查询 manifest 并返回匹配论文列表。
   - `count` 按 filters 查询 manifest，同时返回 `count` 和匹配论文列表。
+  - `paper_semantic` 先用 title 与 annotation tags 召回候选，再由 filters 收窄结果；覆盖中文 tag、英文 tag、标题召回和 filters 收窄四类测试。
+  - `paper_annotations.json` 新格式测试覆盖 `tags.zh/en` 归一化、新建 annotation 默认空双语 tags、旧 list tags 不保留、别名解析不受 tags 结构影响。
   - 多目标 lookup 时 evidence 按命中的 `records` 顺序返回，不再新增分组 schema。
   - metadata evidence 不输出 `query`、`parser_result`、内部 `resolved_papers` 或锚点论文列表；原始问题使用顶层 `original_query`，最终回答证据使用 `records`。
   - metadata `records` 默认只对外输出 `title / author / year / venue / pdf_path` 及当前查询需要的字段值，不暴露内部路径或哈希。
@@ -914,12 +892,8 @@ TOC 构建规则：
 
 ### 11.6 Ask
 
-- metadata ask 闭环：
-  - 验证 `paper-rag ask "BERT是谁写的"` 能从 metadata evidence 渲染自然语言答案。
-  - 验证 `paper-rag ask "哪些论文是Kaiming He写的"` 能输出论文列表而不是单字段值。
-  - 验证 `paper-rag ask "哪些论文在2015-2020发表"` 能输出列表并保留数量信息。
-  - 验证 `paper-rag ask "哪些论文不在ArXiv上发表"` 能正确处理否定过滤。
-  - 验证 `paper-rag ask` 在 `parse_failed`、无记录或未实现 route 时返回稳定、非幻觉的说明。
+- `paper-rag ask` 当前下线；暂不保留 ask 闭环测试。
+- 后续新版 plan evidence schema 稳定后，再补 metadata/reference/content 的 ask 测试。
 
 ## 12. 待决策问题
 
@@ -928,3 +902,36 @@ TOC 构建规则：
 - body route 后续是否需要细分 method/experiment/result/definition/comparison 等子路由。
 - 是否需要 reference 编号定位，例如 `[12]` 或“第 12 篇引用”。
 
+## 13. Reference 路由更新
+
+- reference 路由统一理解为 `source_scope --cites--> object_scope`。
+- parser 输出字段为 `intent`、`return_side`、`source_semantic / source_filters / source_groups / source_mode`、`object_semantic / object_filters / object_groups / object_mode`。
+- 旧字段 `direction / anchors / anchor_mode` 不再保留，也不做兼容包壳。
+- router 会分别规范化 source 侧和 object 侧：
+  - `paper` 和 `title = / in` 解析到本地 canonical title。
+  - `venue` 通过本地 venue aliases 规范化。
+  - `year interval` 的论文名边界优先取正式 `publish_year`，没有正式年份时才退到 `preprint_year`。
+- planner 使用本地 `data/paper_data/citation_graph.json` 执行：
+  - 图边方向固定为 `source_paper_id -> target_paper_id`。
+  - `return_side="source"` 返回引用发出方论文。
+  - `return_side="object"` 返回被引用方论文。
+  - `exists` 判断两侧 scope 之间是否存在本地 citation graph 边。
+- reference evidence 以 `source_scope / object_scope / answer_papers / edges` 为主，按需补 `count / exists / group_results`。
+
+## 14. ArXiv 年份过滤规则
+
+- `venue=ArXiv` 是特殊过滤语义，不要求 manifest 的 `venue` 写成 `ArXiv`。
+- 只要论文 metadata 里存在 `year.preprint_year`，该论文就可以被 `venue=ArXiv` 命中。
+- 同一组 filters 中包含非否定的 `venue=ArXiv` 时，`year` 过滤使用 `preprint_year`。
+- 不含 `venue=ArXiv` 的普通年份过滤使用 `publish_year`。
+## 15. Retrieval data/common 边界
+
+- `paper_rag/retrieval/data` 是本地数据执行层，负责读取 manifest、paper tags、citation graph，以及判断本地 record 是否命中 filters。
+- `paper_rag/retrieval/domains/common` 是三条 domain parser/router 的共用语义层，只放 schema 校验、parser 输出归一化、paper/title/venue 解析等工具。
+- `retrieval/data/filters.py` 是 manifest 元字段 filter evaluator，负责对 `author / year / venue / title` 等字段做实际匹配。
+- `retrieval/domains/common/filter_normalizer.py` 不是执行过滤，而是把 parser 输出的 filter 先规范化，例如解析 `year interval ["ResNet","inf"]` 里的论文名边界，并合并可合并的 year interval。
+- `retrieval/data/paper_scope.py` 负责 `semantic + filters + groups` 到候选论文 records 的构建，内部可以调用 manifest、tags、citation graph。
+- `retrieval/data/citation_scope.py` 负责基于本地 `citation_graph.json` 解析 `paper follow / paper prior` 这类本地引用范围。
+- `retrieval/data/text.py` 是底层文本规范化工具，供 data 层和上层 domain/common 使用；data 层不能反向调用 `domains/common`。
+- 旧的 `retrieval/data/references.py` 已由本地 citation graph 链路替代，不再保留旧 references.jsonl 扫描入口。
+- `domains/common` 下不再放会读取本地数据或构造候选 records 的模块，避免 common 同时承担 parser 共用和数据执行两种职责。

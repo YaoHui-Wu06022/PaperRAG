@@ -4,9 +4,9 @@ from copy import deepcopy
 
 from ....config import Settings
 from ..common.errors import PlanParseError
-from ..common.filters import resolve_paper_year_filters
-from ..common.paper_resolver import dedupe_alias_matches, merge_papers, resolve_parser_papers
-from ...top_router import RouteDecision
+from ..common.filter_normalizer import resolve_paper_year_filters
+from ..common.paper_resolver import dedupe_alias_matches, merge_papers, resolve_parser_paper_scope
+from ...route import RouteDecision
 from .parser import ReferenceParserClient
 
 
@@ -17,75 +17,121 @@ def build_reference_decision(
     *,
     plan_parser=None,
 ) -> RouteDecision:
-    query = decision.extract_query
+    original_query = decision.original_query
     try:
         parser = plan_parser or ReferenceParserClient.from_settings(settings)
         if not hasattr(parser, "parse_reference"):
             raise PlanParseError("plan_parser must provide parse_reference(query)")
-        parser_result = parser.parse_reference(query)
+        parser_result = parser.parse_reference(original_query)
     except (PlanParseError, OSError, ValueError) as exc:
         warnings.append(f"reference_parse_failed: {exc}")
         return RouteDecision(
             route=decision.route,
-            reason=decision.reason,
             intent=None,
-            extract_query=query,
+            original_query=original_query,
             resolved_papers=decision.resolved_papers,
-            resolved_anchor_papers=decision.resolved_anchor_papers,
             alias_matches=decision.alias_matches,
+            parser_result=decision.parser_result,
             parse_status="parse_failed",
             parser_error=str(exc),
-            filters=decision.filters,
-            filter_groups=decision.filter_groups,
+            return_side=decision.return_side,
+            source_semantic=decision.source_semantic,
+            source_filters=decision.source_filters,
+            source_groups=decision.source_groups,
+            source_mode=decision.source_mode,
+            object_semantic=decision.object_semantic,
+            object_filters=decision.object_filters,
+            object_groups=decision.object_groups,
+            object_mode=decision.object_mode,
         )
 
-    combined_filters = [*decision.filters, *parser_result["filters"]]
-    resolved = resolve_parser_papers(settings, {**parser_result, "filters": combined_filters})
-    parser_result = {**parser_result, "filters": resolved["filters"]}
-    parse_status = "ok" if parser_result["direction"] else "unknown_direction"
-    if parse_status == "unknown_direction":
-        warnings.append("reference parser returned direction=null")
+    source_resolved = resolve_parser_paper_scope(settings, {
+        "filters": parser_result["source_filters"],
+        "paper_groups": parser_result["source_groups"],
+    })
+    object_resolved = resolve_parser_paper_scope(settings, {
+        "filters": parser_result["object_filters"],
+        "paper_groups": parser_result["object_groups"],
+    })
+    parser_result = {
+        **parser_result,
+        "source_filters": source_resolved["filters"],
+        "source_groups": source_resolved["paper_groups"],
+        "object_filters": object_resolved["filters"],
+        "object_groups": object_resolved["paper_groups"],
+        "source_resolved_papers": source_resolved["resolved_papers"],
+        "object_resolved_papers": object_resolved["resolved_papers"],
+    }
     enriched = RouteDecision(
         route=decision.route,
-        reason=decision.reason,
         intent=parser_result["intent"],
-        extract_query=query,
-        resolved_papers=merge_papers(decision.resolved_papers, resolved["resolved_papers"]),
-        resolved_anchor_papers=resolved["resolved_anchor_papers"],
-        alias_matches=dedupe_alias_matches([*decision.alias_matches, *resolved["alias_matches"]]),
+        original_query=original_query,
+        resolved_papers=merge_papers(
+            decision.resolved_papers,
+            source_resolved["resolved_papers"],
+            object_resolved["resolved_papers"],
+        ),
+        alias_matches=dedupe_alias_matches([
+            *decision.alias_matches,
+            *source_resolved["alias_matches"],
+            *object_resolved["alias_matches"],
+        ]),
         parser_result=parser_result,
-        parse_status=parse_status,
-        filters=parser_result["filters"],
-        filter_groups=decision.filter_groups,
-        direction=parser_result["direction"],
-        anchors=parser_result["anchors"],
-        anchor_mode=parser_result["anchor_mode"],
+        parse_status="ok",
+        return_side=parser_result["return_side"],
+        source_semantic=parser_result["source_semantic"],
+        source_filters=parser_result["source_filters"],
+        source_groups=parser_result["source_groups"],
+        source_mode=parser_result["source_mode"],
+        object_semantic=parser_result["object_semantic"],
+        object_filters=parser_result["object_filters"],
+        object_groups=parser_result["object_groups"],
+        object_mode=parser_result["object_mode"],
     )
-    return apply_anchor_year_filters(settings, enriched, warnings)
+    return apply_reference_year_filters(settings, enriched, warnings)
 
 
-def apply_anchor_year_filters(settings: Settings, decision: RouteDecision, warnings: list[str]) -> RouteDecision:
-    filters = list(decision.filters)
-    resolved_filters = resolve_paper_year_filters(settings, filters, warnings)
-    if resolved_filters == filters:
+def apply_reference_year_filters(settings: Settings, decision: RouteDecision, warnings: list[str]) -> RouteDecision:
+    source_filters = resolve_paper_year_filters(settings, list(decision.source_filters), warnings)
+    source_groups = [
+        {**group, "filters": resolve_paper_year_filters(settings, list(group.get("filters") or []), warnings)}
+        for group in decision.source_groups
+    ]
+    object_filters = resolve_paper_year_filters(settings, list(decision.object_filters), warnings)
+    object_groups = [
+        {**group, "filters": resolve_paper_year_filters(settings, list(group.get("filters") or []), warnings)}
+        for group in decision.object_groups
+    ]
+    if (
+        source_filters == decision.source_filters
+        and source_groups == decision.source_groups
+        and object_filters == decision.object_filters
+        and object_groups == decision.object_groups
+    ):
         return decision
+
     parser_result = deepcopy(decision.parser_result) if decision.parser_result is not None else None
     if parser_result is not None:
-        parser_result["filters"] = resolved_filters
+        parser_result["source_filters"] = source_filters
+        parser_result["source_groups"] = source_groups
+        parser_result["object_filters"] = object_filters
+        parser_result["object_groups"] = object_groups
     return RouteDecision(
         route=decision.route,
-        reason=decision.reason,
         intent=decision.intent,
-        extract_query=decision.extract_query,
+        original_query=decision.original_query,
         resolved_papers=decision.resolved_papers,
-        resolved_anchor_papers=decision.resolved_anchor_papers,
         alias_matches=decision.alias_matches,
         parser_result=parser_result,
         parse_status=decision.parse_status,
         parser_error=decision.parser_error,
-        filters=resolved_filters,
-        filter_groups=decision.filter_groups,
-        direction=decision.direction,
-        anchors=decision.anchors,
-        anchor_mode=decision.anchor_mode,
+        return_side=decision.return_side,
+        source_semantic=decision.source_semantic,
+        source_filters=source_filters,
+        source_groups=source_groups,
+        source_mode=decision.source_mode,
+        object_semantic=decision.object_semantic,
+        object_filters=object_filters,
+        object_groups=object_groups,
+        object_mode=decision.object_mode,
     )

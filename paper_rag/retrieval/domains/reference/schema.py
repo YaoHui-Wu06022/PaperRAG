@@ -1,35 +1,70 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from typing import Any
 
 from ..common.errors import PlanParseError
-from ..common.schema import load_payload, norm_string_list, validate_paper_filters
+from ..common.schema import (
+    load_payload,
+    validate_group_mode,
+    validate_paper_filters,
+    validate_paper_groups,
+    validate_semantic,
+)
 
 
-REFERENCE_INTENTS = {"list", "count"}
-REFERENCE_DIRECTIONS = {"cites", "cited_by", None}
-REFERENCE_ANCHOR_MODES = {"per", "or", "and"}
+REFERENCE_INTENTS = {"list", "count", "exists", None}
+REFERENCE_RETURN_SIDES = {"source", "object", None}
+REFERENCE_FIELDS = {
+    "intent",
+    "return_side",
+    "source_semantic",
+    "source_filters",
+    "source_groups",
+    "source_mode",
+    "object_semantic",
+    "object_filters",
+    "object_groups",
+    "object_mode",
+}
 PARSER_NAME = "Reference"
 
 
 def validate_reference_parse(content: str | dict[str, Any], fallback_query: str = "") -> dict[str, Any]:
     _ = fallback_query
     payload = load_payload(content, PARSER_NAME)
-    intent = payload.get("intent")
+    extra_fields = set(payload) - REFERENCE_FIELDS
+    if extra_fields:
+        fields = ", ".join(sorted(extra_fields))
+        raise PlanParseError(f"Reference parser returned unsupported fields: {fields}")
+
+    intent = normalize_nullable_enum(payload.get("intent"))
     if intent not in REFERENCE_INTENTS:
         raise PlanParseError(f"Invalid reference intent: {intent}")
-    direction = normalize_nullable_enum(payload.get("direction"))
-    if direction not in REFERENCE_DIRECTIONS:
-        raise PlanParseError(f"Invalid reference direction: {direction}")
-    anchor_mode = normalize_nullable_enum(payload.get("anchor_mode")) or "per"
-    if anchor_mode not in REFERENCE_ANCHOR_MODES:
-        raise PlanParseError(f"Invalid reference anchor_mode: {anchor_mode}")
+
+    return_side = normalize_nullable_enum(payload.get("return_side"))
+    if return_side not in REFERENCE_RETURN_SIDES:
+        raise PlanParseError(f"Invalid reference return_side: {return_side}")
+    if intent in {"list", "count"} and return_side not in {"source", "object"}:
+        raise PlanParseError("Reference list/count requires return_side=source or object")
+    if intent in {"exists", None} and return_side is not None:
+        raise PlanParseError("Reference exists/null requires return_side=null")
+
+    source_groups = validate_paper_groups(payload.get("source_groups", []), PARSER_NAME, "source_groups")
+    object_groups = validate_paper_groups(payload.get("object_groups", []), PARSER_NAME, "object_groups")
+    source_mode = validate_group_mode(payload.get("source_mode", "single"), source_groups, PARSER_NAME, "source_mode")
+    object_mode = validate_group_mode(payload.get("object_mode", "single"), object_groups, PARSER_NAME, "object_mode")
+
     return {
         "intent": intent,
-        "direction": direction,
-        "anchors": norm_string_list(payload.get("anchors") or [], f"{PARSER_NAME} anchors"),
-        "anchor_mode": anchor_mode,
-        "filters": validate_paper_filters(payload.get("filters", []), PARSER_NAME),
+        "return_side": return_side,
+        "source_semantic": validate_semantic(payload.get("source_semantic", ""), "Reference source_semantic"),
+        "source_filters": validate_paper_filters(payload.get("source_filters", []), f"{PARSER_NAME} source"),
+        "source_groups": source_groups,
+        "source_mode": source_mode,
+        "object_semantic": validate_semantic(payload.get("object_semantic", ""), "Reference object_semantic"),
+        "object_filters": validate_paper_filters(payload.get("object_filters", []), f"{PARSER_NAME} object"),
+        "object_groups": object_groups,
+        "object_mode": object_mode,
     }
 
 
@@ -38,4 +73,4 @@ def normalize_nullable_enum(value: Any) -> str | None:
         return None
     if isinstance(value, str) and value.strip().lower() == "null":
         return None
-    return value
+    return str(value)

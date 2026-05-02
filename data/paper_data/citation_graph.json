@@ -49,7 +49,7 @@
         "preprint_year": 2017,
         "publish_year": 2017
       },
-      "venue": "Neural Information Processing Systems"
+      "venue": "NeurIPS"
     },
     {
       "paper_id": "BERT_Pre_training_of_Deep_Bidirectional_Transformers_for_Language_Understanding_5692a551",
@@ -64,7 +64,7 @@
         "preprint_year": 2018,
         "publish_year": 2019
       },
-      "venue": "NAACL-HLT"
+      "venue": "ACL"
     },
     {
       "paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
@@ -123,7 +123,7 @@
         "preprint_year": 2024,
         "publish_year": 2024
       },
-      "venue": "Trans. Mach. Learn. Res."
+      "venue": "TMLR"
     },
     {
       "paper_id": "Going_deeper_with_convolutions_66a9f13f",
@@ -157,7 +157,7 @@
         "preprint_year": null,
         "publish_year": 2012
       },
-      "venue": "NIPS"
+      "venue": "NeurIPS"
     },
     {
       "paper_id": "Inception_v4_Inception_ResNet_and_the_Impact_of_Residual_Connections_on_Learning_cbf756a4",
@@ -200,7 +200,7 @@
         "preprint_year": 2017,
         "publish_year": 2017
       },
-      "venue": "ACM Multimedia"
+      "venue": "ACM MM"
     },
     {
       "paper_id": "Squeeze_and_Excitation_Networks_60e7a8e0",
@@ -216,7 +216,7 @@
         "preprint_year": 2017,
         "publish_year": 2018
       },
-      "venue": "2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition"
+      "venue": "CVPR"
     },
     {
       "paper_id": "Supervised_Contrastive_Learning_3da9d081",
@@ -236,7 +236,7 @@
         "preprint_year": 2020,
         "publish_year": 2020
       },
-      "venue": "Neural Information Processing Systems"
+      "venue": "NeurIPS"
     }
   ],
   "edges": [

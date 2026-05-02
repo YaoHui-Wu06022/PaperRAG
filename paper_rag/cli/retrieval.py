@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import argparse
-import json
 
 from ..config import Settings
 from ..retrieval.dense.service import run_index, run_search
-from ..retrieval.top_planner import run_plan
 
 
 def add_retrieval_parsers(subparsers: argparse._SubParsersAction) -> None:
@@ -17,10 +15,6 @@ def add_retrieval_parsers(subparsers: argparse._SubParsersAction) -> None:
     search.add_argument("query", help="Search query")
     search.add_argument("--top-k", type=int, default=5, help="Number of chunks to return")
     search.set_defaults(handler=handle_search)
-
-    plan = subparsers.add_parser("plan", help="Build a JSON evidence pack for a question")
-    plan.add_argument("query", help="Question to plan evidence for")
-    plan.set_defaults(handler=handle_plan)
 
 
 def handle_index(args: argparse.Namespace) -> int:
@@ -43,11 +37,4 @@ def handle_search(args: argparse.Namespace) -> int:
         print(f"    pages: {result.pages_text or '-'}")
         print(f"    chunk: {result.chunk_id}")
         print(f"    {result.snippet}")
-    return 0
-
-
-def handle_plan(args: argparse.Namespace) -> int:
-    settings = Settings.load(args.project_root)
-    evidence_pack = run_plan(settings, args.query)
-    print(json.dumps(evidence_pack, ensure_ascii=False, indent=2))
     return 0

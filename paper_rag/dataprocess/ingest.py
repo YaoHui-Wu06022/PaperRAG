@@ -17,6 +17,7 @@ from .mineru import MinerUClient, MinerUError
 from .metadata.arxiv import ArxivClient
 from .metadata.dblp import DblpClient
 from .metadata.semantic_scholar import SemanticScholarClient
+from .venues import normalize_venue_for_storage
 
 
 @dataclass(frozen=True)
@@ -127,6 +128,8 @@ def run_ingest(
             venue = None if refresh_metadata else record.venue
             if venue and not is_formal_venue(venue):
                 venue = None
+            elif venue:
+                venue = normalize_formal_venue(settings, venue)
             has_existing_metadata = bool(record.title and authors and effective_year(year))
             if not refresh_metadata and has_existing_metadata:
                 title = record.title or title
@@ -189,7 +192,7 @@ def run_ingest(
                     title = match.title
                     authors = clean_author_list(match.authors)
                     year = match.year
-                    venue = match.venue
+                    venue = normalize_formal_venue(settings, match.venue)
                     report(f"[ingest] [{ordinal}/{total}] {match.source} matched: {format_year_for_log(year)}, venue={venue or 'unresolved'}")
                 else:
                     summary.unresolved.append(f"{pdf_path.name}: ArXiv/DBLP/Semantic Scholar exact title not found")
@@ -398,6 +401,12 @@ def lookup_metadata(
 def is_formal_venue(venue: str | None) -> bool:
     normalized = normalize_text(str(venue or ""))
     return bool(normalized) and normalized not in {"arxiv", "corr"}
+
+
+def normalize_formal_venue(settings: Settings, venue: str | None) -> str | None:
+    if not is_formal_venue(venue):
+        return None
+    return normalize_venue_for_storage(settings, venue)
 
 
 def formal_publish_year(source_year: int, venue: str | None) -> int:

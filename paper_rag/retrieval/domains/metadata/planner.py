@@ -3,11 +3,11 @@ from __future__ import annotations
 from typing import Any
 
 from ....config import Settings
-from ...data.filters import match_record_filter
-from ...data.manifest_lookup import load_active_manifest_records, match_manifest_records, to_evidence_manifest_record
-from ...evidence import to_evidence_metadata_record, to_evidence_metadata_records
-from ...top_router import RouteDecision
+from ....dataprocess.venues import display_venue
 from ...data.aliases import alias_match_to_dict
+from ...evidence import to_evidence_metadata_record
+from ...route import RouteDecision
+from ...data.paper_scope import combined_semantic, record_key_from_dict, records_for_scope, unique_records
 
 
 def plan_metadata(
@@ -22,54 +22,108 @@ def plan_metadata(
             "parser_error": route.parser_error,
             "records": [],
         }
-    records: list[dict[str, Any]]
-    if route.intent == "lookup":
-        records = metadata_lookup_records(settings, route, warnings)
+
+    if route.group_mode == "per":
+        group_results = metadata_per_group_results(settings, route)
+        records = unique_records([record for group in group_results for record in group["records"]])
+        evidence = build_metadata_evidence(settings, route, records, group_results=group_results)
+    elif route.group_mode == "and":
+        group_results = metadata_per_group_results(settings, route)
+        records = unique_records([record for group in group_results for record in group["records"]])
+        evidence = build_metadata_evidence(settings, route, records, group_results=group_results)
+        evidence["exists"] = all(bool(group["records"]) for group in group_results)
     else:
-        records = metadata_records_by_parser_filters(settings, route.filters)
-    if not records:
-        warnings.append("metadata route found no matching manifest records")
-    evidence = {
-        **build_metadata_evidence_base(route),
-        "parse_status": "ok",
-        "records": records,
-    }
+        records = metadata_records_for_route(settings, route)
+        evidence = build_metadata_evidence(settings, route, records)
+        if route.intent == "exists":
+            evidence["exists"] = bool(records)
+
     if route.intent == "count":
-        evidence["count"] = len(records)
+        evidence["count"] = len(evidence["records"])
+    if not evidence["records"]:
+        warnings.append("metadata route found no matching manifest records")
     return evidence
 
 
 def build_metadata_evidence_base(route: RouteDecision) -> dict[str, Any]:
     return {
         "intent": route.intent,
-        "return_field": route.return_field,
+        "return_fields": route.return_fields,
+        "paper_semantic": route.paper_semantic,
         "filters": route.filters,
+        "paper_groups": route.paper_groups,
+        "group_mode": route.group_mode,
         "alias_matches": [alias_match_to_dict(match) for match in route.alias_matches],
     }
 
 
-def metadata_lookup_records(
+def build_metadata_evidence(
     settings: Settings,
     route: RouteDecision,
-    warnings: list[str],
+    records: list[dict[str, Any]],
+    *,
+    group_results: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    evidence: dict[str, Any] = {
+        **build_metadata_evidence_base(route),
+        "parse_status": "ok",
+        "records": [metadata_record_with_values(settings, record, route.return_fields) for record in records],
+    }
+    if group_results is not None:
+        evidence["group_results"] = [
+            {
+                **group,
+                "records": [metadata_record_with_values(settings, record, route.return_fields) for record in group["records"]],
+                "count": len(group["records"]),
+                "exists": bool(group["records"]),
+            }
+            for group in group_results
+        ]
+    return evidence
+
+
+def metadata_per_group_results(settings: Settings, route: RouteDecision) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    for group in route.paper_groups:
+        semantic = combined_semantic(route.paper_semantic, group.get("semantic") or "")
+        filters = [*route.filters, *(group.get("filters") or [])]
+        records = metadata_records_for_scope(settings, semantic, filters, route.group_mode)
+        results.append({
+            "semantic": group.get("semantic") or "",
+            "filters": group.get("filters") or [],
+            "records": records,
+        })
+    return results
+
+
+def metadata_records_for_route(settings: Settings, route: RouteDecision) -> list[dict[str, Any]]:
+    if route.group_mode == "or":
+        records = [
+            record
+            for group in route.paper_groups
+            for record in metadata_records_for_scope(
+                settings,
+                combined_semantic(route.paper_semantic, group.get("semantic") or ""),
+                [*route.filters, *(group.get("filters") or [])],
+                route.group_mode,
+            )
+        ]
+        return unique_records(records)
+    return metadata_records_for_scope(settings, route.paper_semantic, route.filters, route.group_mode)
+
+
+def metadata_records_for_scope(
+    settings: Settings,
+    paper_semantic: str,
+    filters: list[dict[str, Any]],
+    group_mode: str,
 ) -> list[dict[str, Any]]:
-    return_field = route.return_field
-    if return_field is None:
-        warnings.append("metadata lookup missing return_field")
-    records = to_evidence_metadata_records(route.resolved_papers)
-    if not records and route.extract_query:
-        records = match_manifest_records(settings, route.extract_query)
-    if return_field is None:
-        return records
-    return [
-        {**record, "return_field": return_field, "value": record.get(str(return_field))}
-        for record in records
-    ]
+    return records_for_scope(settings, paper_semantic, filters, group_mode)
 
 
-def metadata_records_by_parser_filters(settings: Settings, filters: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    records: list[dict[str, Any]] = []
-    for record in load_active_manifest_records(settings):
-        if all(match_record_filter(settings, record, filter_item) for filter_item in filters):
-            records.append(to_evidence_metadata_record(to_evidence_manifest_record(record)))
-    return records
+def metadata_record_with_values(settings: Settings, record: dict[str, Any], return_fields: list[str]) -> dict[str, Any]:
+    public_record = to_evidence_metadata_record(record)
+    public_record["venue"] = display_venue(settings, public_record.get("venue"))
+    if return_fields:
+        public_record["values"] = {field: public_record.get(field) for field in return_fields}
+    return public_record

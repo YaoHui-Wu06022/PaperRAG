@@ -8,14 +8,14 @@ from ....config import Settings
 from ...context import context_unit
 from ...data.aliases import alias_match_to_dict
 from ...data.chunks import ChunkDocument, load_chunk_documents
-from ...data.filters import match_record_filter
+from ...data.filters import match_record_filters
 from ...data.manifest_lookup import load_active_manifest_records
 from ...dense.milvus_store import SearchResult
 from ...dense.service import build_embedder, build_store
 from ...evidence import to_evidence_papers
 from ...sparse.bm25 import BM25Document, BM25Index
-from ...top_router import RouteDecision
-from ..common.text import flatten_filter_value
+from ...route import RouteDecision
+from ...data.text import flatten_filter_value
 
 
 RRF_K = 60
@@ -70,9 +70,10 @@ def plan_body(
 
 def build_content_evidence_base(route: RouteDecision, *, retrieval_source: dict[str, Any] | None) -> dict[str, Any]:
     parser_result = route.parser_result or {}
+    anchors = [str(anchor).strip() for anchor in parser_result.get("anchors") or [] if str(anchor).strip()]
     evidence: dict[str, Any] = {
         "intent": route.intent,
-        "anchors": route.anchors,
+        "anchors": anchors,
         "compare_objects": parser_result.get("compare_objects") or [],
         "objects": parser_result.get("objects") or [],
         "filters": route.filters,
@@ -86,7 +87,7 @@ def build_content_evidence_base(route: RouteDecision, *, retrieval_source: dict[
 
 def build_content_retrieval_source(route: RouteDecision) -> dict[str, Any]:
     parser_result = route.parser_result or {}
-    anchors = list(route.anchors)
+    anchors = [str(anchor).strip() for anchor in parser_result.get("anchors") or [] if str(anchor).strip()]
     compare_objects = list(parser_result.get("compare_objects") or [])
     objects = list(parser_result.get("objects") or [])
     filter_terms = build_content_filter_terms(route.filters)
@@ -98,7 +99,7 @@ def build_content_retrieval_source(route: RouteDecision) -> dict[str, Any]:
         f"anchors: {', '.join(anchors)}",
         f"papers: {', '.join(paper_titles)}",
         f"filters: {', '.join(filter_terms)}",
-        f"question: {route.extract_query}",
+        f"question: {route.original_query}",
     ]
     text = "; ".join(part for part in parts if not part.endswith(": "))
     return {
@@ -191,6 +192,6 @@ def filter_content_chunks(settings: Settings, documents: list[ChunkDocument], ro
     matched_paper_ids = {
         Path(str(record.paper_data_path)).name
         for record in load_active_manifest_records(settings)
-        if record.paper_data_path and all(match_record_filter(settings, record, filter_item) for filter_item in route.filters)
+        if record.paper_data_path and match_record_filters(settings, record, route.filters)
     }
     return [document for document in documents if document.paper_id in matched_paper_ids]

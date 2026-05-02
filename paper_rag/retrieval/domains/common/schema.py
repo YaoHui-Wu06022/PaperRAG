@@ -7,7 +7,8 @@ from .errors import PlanParseError
 
 
 PAPER_FILTER_FIELDS = {"author", "year", "venue", "title", "paper"}
-PAPER_FILTER_OPS = {"=", "in", "contains", "interval"}
+PAPER_FILTER_OPS = {"=", "in", "contains", "interval", "follow", "prior"}
+PAPER_GROUP_MODES = {"single", "per", "or", "and"}
 NEGATIVE_INFINITY = {"-inf", "-infinity"}
 POSITIVE_INFINITY = {"inf", "+inf", "infinity", "+infinity"}
 
@@ -46,6 +47,46 @@ def validate_paper_filters(value: Any, name: str) -> list[dict[str, Any]]:
     return [validate_paper_filter(item) for item in value]
 
 
+def validate_semantic(value: Any, name: str) -> str:
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        raise PlanParseError(f"{name} must be a string")
+    return value.strip()
+
+
+def validate_paper_groups(value: Any, parser_name: str, field_name: str) -> list[dict[str, Any]]:
+    if value is None:
+        value = []
+    if not isinstance(value, list):
+        raise PlanParseError(f"{parser_name} {field_name} must be a list")
+    groups: list[dict[str, Any]] = []
+    for index, item in enumerate(value, start=1):
+        if not isinstance(item, dict):
+            raise PlanParseError(f"{parser_name} {field_name} items must be objects")
+        extra_fields = set(item) - {"semantic", "filters"}
+        if extra_fields:
+            fields = ", ".join(sorted(extra_fields))
+            raise PlanParseError(f"{parser_name} {field_name}[{index}] returned unsupported fields: {fields}")
+        groups.append({
+            "semantic": validate_semantic(item.get("semantic", ""), f"{parser_name} {field_name}[{index}].semantic"),
+            "filters": validate_paper_filters(item.get("filters", []), f"{parser_name} {field_name}[{index}]"),
+        })
+    return groups
+
+
+def validate_group_mode(mode: Any, groups: list[dict[str, Any]], parser_name: str, field_name: str) -> str:
+    if mode is None:
+        mode = "single"
+    if mode not in PAPER_GROUP_MODES:
+        raise PlanParseError(f"Invalid {parser_name} {field_name}: {mode}")
+    if mode == "single" and groups:
+        raise PlanParseError(f"{parser_name} {field_name}=single requires empty groups")
+    if mode != "single" and not groups:
+        raise PlanParseError(f"{parser_name} grouped modes require non-empty groups")
+    return str(mode)
+
+
 def validate_paper_filter(value: Any) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise PlanParseError("Paper filter must be an object")
@@ -55,6 +96,7 @@ def validate_paper_filter(value: Any) -> dict[str, Any]:
     op = value.get("op")
     if op not in PAPER_FILTER_OPS:
         raise PlanParseError(f"Invalid paper filter op: {op}")
+    validate_filter_field_op(field, op)
     if "value" not in value:
         raise PlanParseError("Paper filter missing value")
     negated = value.get("negated")
@@ -66,6 +108,13 @@ def validate_paper_filter(value: Any) -> dict[str, Any]:
         "value": norm_filter_value(op, value.get("value")),
         "negated": negated,
     }
+
+
+def validate_filter_field_op(field: str, op: str) -> None:
+    if op in {"follow", "prior"} and field != "paper":
+        raise PlanParseError("follow/prior filters require field=paper")
+    if field == "paper" and op not in {"=", "follow", "prior"}:
+        raise PlanParseError(f"Invalid paper filter op for paper field: {op}")
 
 
 def norm_filter_value(op: str, value: Any) -> Any:

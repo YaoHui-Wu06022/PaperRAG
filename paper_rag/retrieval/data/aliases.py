@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 from ...config import Settings
+from ...dataprocess.annotations import load_paper_annotations
 from .manifest_lookup import match_manifest_records
 from ..sparse.bm25 import tokenize
 
@@ -18,16 +17,8 @@ class AliasMatch:
 
 
 def load_paper_annotation_aliases(settings: Settings) -> list[dict[str, Any]]:
-    path = settings.data_dir / "paper_annotations.json"
-    if not path.exists():
-        return []
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        return []
     entries: list[dict[str, Any]] = []
-    for annotation in payload.values():
-        if not isinstance(annotation, dict):
-            continue
+    for annotation in load_paper_annotations(settings).values():
         title = str(annotation.get("title") or "").strip()
         aliases = [str(alias).strip() for alias in annotation.get("aliases") or [] if str(alias).strip()]
         if title and aliases:
