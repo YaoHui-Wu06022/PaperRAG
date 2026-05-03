@@ -8,6 +8,8 @@ from typing import Any
 
 @dataclass(frozen=True)
 class ChunkDocument:
+    """召回阶段使用的 chunk 文档结构。"""
+
     chunk_id: str
     paper_id: str
     chunk_index: int
@@ -22,14 +24,17 @@ class ChunkDocument:
 
     @property
     def section_path_text(self) -> str:
+        """把 section_path 拼成便于展示/检索的文本。"""
         return " > ".join(self.section_path)
 
     @property
     def pages_text(self) -> str:
+        """把页码列表拼成短文本。"""
         return ",".join(str(page) for page in self.pages)
 
 
 def load_chunk_documents(paper_data_dir: Path) -> list[ChunkDocument]:
+    """读取所有论文目录下的 chunks.jsonl。"""
     documents: list[ChunkDocument] = []
     for directory in sorted(p for p in paper_data_dir.iterdir() if p.is_dir()):
         chunks_path = directory / "chunks.jsonl"
@@ -44,6 +49,7 @@ def load_chunk_documents(paper_data_dir: Path) -> list[ChunkDocument]:
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
+    """读取 JSONL 文件为对象列表。"""
     return [
         json.loads(line)
         for line in path.read_text(encoding="utf-8").splitlines()
@@ -52,6 +58,7 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
 
 
 def parse_chunk_row(row: dict[str, Any], title: str) -> ChunkDocument:
+    """把 chunks.jsonl 的一行转成 ChunkDocument。"""
     section_path = row.get("section_path") or []
     pages = row.get("pages") or []
     return ChunkDocument(

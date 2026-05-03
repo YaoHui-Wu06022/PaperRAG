@@ -8,6 +8,7 @@ from .filters import compare_text
 
 
 def load_citation_graph(settings: Settings) -> dict[str, Any] | None:
+    """读取本地 citation_graph.json。"""
     path = settings.paper_data_dir / "citation_graph.json"
     if not path.exists():
         return None
@@ -19,6 +20,7 @@ def load_citation_graph(settings: Settings) -> dict[str, Any] | None:
 
 
 def citation_scope_paper_ids(settings: Settings, titles: list[str], relation: str) -> set[str]:
+    """根据 paper follow/prior 关系返回候选论文 id。"""
     graph = load_citation_graph(settings)
     if not graph:
         return set()
@@ -42,12 +44,14 @@ def citation_scope_paper_ids(settings: Settings, titles: list[str], relation: st
 
 
 def record_matches_citation_scope(settings: Settings, paper_id: str, titles: list[str], relation: str) -> bool:
+    """判断某个 paper_id 是否位于 citation scope 中。"""
     if not paper_id:
         return False
     return paper_id in citation_scope_paper_ids(settings, titles, relation)
 
 
 def paper_ids_for_titles(graph: dict[str, Any], titles: list[str]) -> set[str]:
+    """根据论文标题在 citation graph nodes 中找到 paper_id。"""
     ids: set[str] = set()
     for node in graph.get("nodes") or []:
         if any(compare_text(node.get("title"), "=", title) for title in titles):
