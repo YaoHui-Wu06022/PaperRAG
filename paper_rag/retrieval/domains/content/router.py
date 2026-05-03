@@ -4,8 +4,9 @@ from copy import deepcopy
 
 from ....config import Settings
 from ..common.errors import PlanParseError
-from ..common.filter_normalizer import resolve_paper_year_filters
-from ..common.paper_resolver import dedupe_alias_matches, merge_papers, resolve_parser_papers
+from ...data.manifest_records import merge_paper_records
+from ...data.parser_scope_resolver import resolve_parser_scope, resolve_year_filter_values
+from ...data.utils import dedupe_alias_matches
 from ...route import RouteDecision
 from .parser import ContentParserClient
 
@@ -37,7 +38,7 @@ def build_content_decision(
         )
 
     combined_filters = [*decision.filters, *parser_result["filters"]]
-    resolved = resolve_parser_papers(settings, {**parser_result, "filters": combined_filters})
+    resolved = resolve_parser_scope(settings, {**parser_result, "filters": combined_filters})
     parser_result = {
         **parser_result,
         "filters": resolved["filters"],
@@ -46,7 +47,7 @@ def build_content_decision(
         route=decision.route,
         intent=parser_result["intent"],
         original_query=original_query,
-        resolved_papers=merge_papers(decision.resolved_papers, resolved["resolved_papers"]),
+        resolved_papers=merge_paper_records(decision.resolved_papers, resolved["resolved_papers"]),
         alias_matches=dedupe_alias_matches([*decision.alias_matches, *resolved["alias_matches"]]),
         parser_result=parser_result,
         parse_status="ok",
@@ -57,7 +58,7 @@ def build_content_decision(
 
 def apply_anchor_year_filters(settings: Settings, decision: RouteDecision, warnings: list[str]) -> RouteDecision:
     filters = list(decision.filters)
-    resolved_filters = resolve_paper_year_filters(settings, filters, warnings)
+    resolved_filters = resolve_year_filter_values(settings, filters, warnings)
     if resolved_filters == filters:
         return decision
     parser_result = deepcopy(decision.parser_result) if decision.parser_result is not None else None

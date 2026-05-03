@@ -1,50 +1,10 @@
 from __future__ import annotations
 
 import math
-import re
 from dataclasses import dataclass
 from typing import Any
 
-
-TOKEN_RE = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
-DASH_TRANSLATION = str.maketrans({
-    "\u2010": "-",
-    "\u2011": "-",
-    "\u2012": "-",
-    "\u2013": "-",
-    "\u2014": "-",
-    "_": "-",
-})
-
-# 停用词表保持保守：论文术语经常由普通英文词组成，不能过度过滤。
-STOPWORDS = {
-    "a",
-    "an",
-    "and",
-    "are",
-    "as",
-    "at",
-    "be",
-    "by",
-    "for",
-    "from",
-    "how",
-    "in",
-    "is",
-    "it",
-    "of",
-    "on",
-    "or",
-    "that",
-    "the",
-    "this",
-    "to",
-    "was",
-    "were",
-    "what",
-    "which",
-    "with",
-}
+from ..data.utils import tokenize
 
 
 @dataclass(frozen=True)
@@ -105,19 +65,6 @@ class BM25Index:
             denominator = freq + self.k1 * (1 - self.b + self.b * doc_len / (self.avgdl or 1))
             score += idf * (freq * (self.k1 + 1) / denominator)
         return score
-
-
-def tokenize(text: str) -> list[str]:
-    return [
-        token
-        for token in TOKEN_RE.findall(normalize_for_bm25(text))
-        if token not in STOPWORDS
-    ]
-
-
-def normalize_for_bm25(text: str) -> str:
-    """统一不会改变词义的视觉变体，减少 BM25 字面匹配噪声。"""
-    return text.lower().translate(DASH_TRANSLATION)
 
 
 def count_terms(tokens: list[str]) -> dict[str, int]:

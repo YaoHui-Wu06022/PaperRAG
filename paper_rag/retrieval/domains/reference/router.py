@@ -4,8 +4,9 @@ from copy import deepcopy
 
 from ....config import Settings
 from ..common.errors import PlanParseError
-from ..common.filter_normalizer import resolve_paper_year_filters
-from ..common.paper_resolver import dedupe_alias_matches, merge_papers, resolve_parser_paper_scope
+from ...data.manifest_records import merge_paper_records
+from ...data.parser_scope_resolver import resolve_parser_paper_scope, resolve_year_filter_values
+from ...data.utils import dedupe_alias_matches
 from ...route import RouteDecision
 from .parser import ReferenceParserClient
 
@@ -66,7 +67,7 @@ def build_reference_decision(
         route=decision.route,
         intent=parser_result["intent"],
         original_query=original_query,
-        resolved_papers=merge_papers(
+        resolved_papers=merge_paper_records(
             decision.resolved_papers,
             source_resolved["resolved_papers"],
             object_resolved["resolved_papers"],
@@ -92,14 +93,14 @@ def build_reference_decision(
 
 
 def apply_reference_year_filters(settings: Settings, decision: RouteDecision, warnings: list[str]) -> RouteDecision:
-    source_filters = resolve_paper_year_filters(settings, list(decision.source_filters), warnings)
+    source_filters = resolve_year_filter_values(settings, list(decision.source_filters), warnings)
     source_groups = [
-        {**group, "filters": resolve_paper_year_filters(settings, list(group.get("filters") or []), warnings)}
+        {**group, "filters": resolve_year_filter_values(settings, list(group.get("filters") or []), warnings)}
         for group in decision.source_groups
     ]
-    object_filters = resolve_paper_year_filters(settings, list(decision.object_filters), warnings)
+    object_filters = resolve_year_filter_values(settings, list(decision.object_filters), warnings)
     object_groups = [
-        {**group, "filters": resolve_paper_year_filters(settings, list(group.get("filters") or []), warnings)}
+        {**group, "filters": resolve_year_filter_values(settings, list(group.get("filters") or []), warnings)}
         for group in decision.object_groups
     ]
     if (

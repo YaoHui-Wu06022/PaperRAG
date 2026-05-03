@@ -7,8 +7,17 @@ from pathlib import Path
 
 from paper_rag.config import Settings
 from paper_rag.retrieval.domains.common.errors import PlanParseError
+from paper_rag.retrieval.data.aliases import resolved_paper_record, resolve_paper_queries
 from paper_rag.retrieval.data.citation_scope import citation_scope_paper_ids
-from paper_rag.retrieval.domains.common.paper_resolver import resolve_parser_papers
+from paper_rag.retrieval.data.manifest_records import (
+    dedupe_paper_records,
+    load_active_manifest_records,
+    match_manifest_records,
+    merge_paper_records,
+    paper_record_key,
+)
+from paper_rag.retrieval.data.parser_scope_resolver import resolve_parser_scope
+from paper_rag.retrieval.data.paper_scope import match_paper_filter
 from paper_rag.retrieval.domains.metadata.planner import plan_metadata
 from paper_rag.retrieval.domains.metadata.schema import validate_metadata_parse
 from paper_rag.retrieval.route import RouteDecision
@@ -65,11 +74,32 @@ class MetadataSchemaTests(unittest.TestCase):
                 "group_mode": "and",
             })
 
+    def test_rejects_invalid_filter_field_op_combinations(self) -> None:
+        invalid_filters = [
+            {"field": "paper", "op": "in", "value": ["ResNet"], "negated": False},
+            {"field": "year", "op": "contains", "value": 2018, "negated": False},
+            {"field": "author", "op": "=", "value": "He", "negated": False},
+            {"field": "title", "op": "=", "value": "ResNet", "negated": False},
+            {"field": "venue", "op": "contains", "value": "CVPR", "negated": False},
+            {"field": "year", "op": "follow", "value": "ResNet", "negated": False},
+        ]
+        for filter_item in invalid_filters:
+            with self.subTest(filter_item=filter_item):
+                with self.assertRaises(PlanParseError):
+                    validate_metadata_parse({
+                        "intent": "list",
+                        "return_fields": ["title"],
+                        "paper_semantic": "",
+                        "filters": [filter_item],
+                        "paper_groups": [],
+                        "group_mode": "single",
+                    })
+
 
 class MetadataResolverTests(unittest.TestCase):
     def test_resolves_paper_aliases_in_filters_and_interval_bounds(self) -> None:
         with metadata_fixture() as settings:
-            resolved = resolve_parser_papers(settings, {
+            resolved = resolve_parser_scope(settings, {
                 "filters": [{"field": "paper", "op": "=", "value": "ResNet", "negated": False}],
                 "paper_groups": [
                     {
@@ -83,6 +113,76 @@ class MetadataResolverTests(unittest.TestCase):
         self.assertEqual(resolved["paper_groups"][0]["filters"][0]["value"][0], RESNET_TITLE)
         self.assertEqual(resolved["alias_matches"][0].alias, "ResNet")
         self.assertEqual(resolved["resolved_papers"][0]["title"], RESNET_TITLE)
+
+    def test_paper_identity_key_uses_record_key_or_path_name(self) -> None:
+        full_path = r"E:\tmp\paper_data\ResNet"
+        self.assertEqual(paper_record_key({"paper_data_path": full_path}), "ResNet")
+        self.assertEqual(paper_record_key({"paper_id": "ResNet", "paper_data_path": r"E:\other\Path"}), "ResNet")
+        self.assertEqual(paper_record_key({"_record_key": "ResNet", "paper_id": "Other"}), "ResNet")
+
+    def test_merge_paper_records_dedupes_full_path_and_paper_id(self) -> None:
+        papers = merge_paper_records(
+            [{"title": RESNET_TITLE, "paper_data_path": r"E:\tmp\paper_data\ResNet"}],
+            [{"title": RESNET_TITLE, "paper_id": "ResNet"}],
+            [{"title": RESNET_TITLE, "_record_key": "ResNet"}],
+        )
+
+        self.assertEqual(len(papers), 1)
+
+    def test_manifest_matches_include_record_key(self) -> None:
+        with metadata_fixture() as settings:
+            matches = match_manifest_records(settings, RESNET_TITLE)
+
+        self.assertEqual(matches[0]["_record_key"], "ResNet")
+
+    def test_dedupe_paper_records_dedupes_full_path_and_paper_id(self) -> None:
+        records = dedupe_paper_records([
+            {"title": RESNET_TITLE, "paper_data_path": r"E:\tmp\paper_data\ResNet"},
+            {"title": RESNET_TITLE, "paper_id": "ResNet"},
+            {"title": RESNET_TITLE, "_record_key": "ResNet"},
+        ])
+
+        self.assertEqual(len(records), 1)
+
+    def test_resolve_paper_queries_uses_alias_without_rewritten_query(self) -> None:
+        with metadata_fixture() as settings:
+            papers, matches = resolve_paper_queries(settings, ["ResNet"])
+
+        self.assertEqual([paper["title"] for paper in papers], [RESNET_TITLE])
+        self.assertEqual(matches[0].alias, "ResNet")
+
+    def test_resolved_paper_record_preserves_manifest_record_fields(self) -> None:
+        record = {
+            "_record_key": "ResNet",
+            "title": RESNET_TITLE,
+            "paper_data_path": r"E:\tmp\paper_data\ResNet",
+            "extra": "kept",
+        }
+
+        resolved = resolved_paper_record(record, [])
+
+        self.assertEqual(resolved["extra"], "kept")
+        self.assertEqual(resolved["paper_id"], "ResNet")
+
+    def test_title_contains_is_not_resolved_as_paper_alias(self) -> None:
+        with metadata_fixture() as settings:
+            resolved = resolve_parser_scope(settings, {
+                "filters": [{"field": "title", "op": "contains", "value": "ResNet", "negated": False}],
+                "paper_groups": [],
+            })
+
+        self.assertEqual(resolved["filters"][0]["value"], "ResNet")
+        self.assertEqual(resolved["alias_matches"], [])
+
+    def test_match_paper_filter_uses_shared_flatten_behavior(self) -> None:
+        with metadata_fixture() as settings:
+            resnet_record = next(record for record in load_active_manifest_records(settings) if record.title == RESNET_TITLE)
+
+            self.assertTrue(match_paper_filter(
+                settings,
+                resnet_record,
+                {"field": "paper", "op": "=", "value": ["", RESNET_TITLE], "negated": False},
+            ))
 
 
 class CitationScopeTests(unittest.TestCase):

@@ -5,9 +5,10 @@ from typing import Any
 from ....config import Settings
 from ....dataprocess.venues import display_venue
 from ...data.aliases import alias_match_to_dict
+from ...data.manifest_records import dedupe_paper_records
+from ...data.paper_scope import combined_semantic, records_for_scope
 from ...evidence import to_evidence_metadata_record
 from ...route import RouteDecision
-from ...data.paper_scope import combined_semantic, record_key_from_dict, records_for_scope, unique_records
 
 
 def plan_metadata(
@@ -25,11 +26,11 @@ def plan_metadata(
 
     if route.group_mode == "per":
         group_results = metadata_per_group_results(settings, route)
-        records = unique_records([record for group in group_results for record in group["records"]])
+        records = dedupe_paper_records([record for group in group_results for record in group["records"]])
         evidence = build_metadata_evidence(settings, route, records, group_results=group_results)
     elif route.group_mode == "and":
         group_results = metadata_per_group_results(settings, route)
-        records = unique_records([record for group in group_results for record in group["records"]])
+        records = dedupe_paper_records([record for group in group_results for record in group["records"]])
         evidence = build_metadata_evidence(settings, route, records, group_results=group_results)
         evidence["exists"] = all(bool(group["records"]) for group in group_results)
     else:
@@ -108,7 +109,7 @@ def metadata_records_for_route(settings: Settings, route: RouteDecision) -> list
                 route.group_mode,
             )
         ]
-        return unique_records(records)
+        return dedupe_paper_records(records)
     return metadata_records_for_scope(settings, route.paper_semantic, route.filters, route.group_mode)
 
 

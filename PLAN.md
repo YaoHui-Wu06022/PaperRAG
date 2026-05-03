@@ -114,8 +114,6 @@ paper_rag/
    │  │  ├─ errors.py                # PlanParseError 等共享异常
    │  │  ├─ parser_client.py         # OpenAI-compatible parser client
    │  │  ├─ schema.py                # 校验 JSON、字符串列表规范化、转成内部稳定格式
-   │  │  ├─ paper_resolver.py        # parser anchors / title filters -> 本地 resolved_papers 的公共解析逻辑
-   │  │  ├─ filters.py               # 论文名/别名年份区间解析、合并与 warning 处理
    │  │  └─ prompt.py                # metadata/reference 共用 prompt 片段
    │  ├─ metadata/
    │  │  ├─ __init__.py              # metadata domain 包入口
@@ -367,7 +365,7 @@ CLI 行为：
   - `filters[].field` 只能是 `author / year / venue / title`。
   - `filters[].op` 只能是 `= / in / contains / interval`。
   - `filters[].value` 可以是字符串、数字、字符串列表或区间列表，例如 `"Kaiming He"`、`2015`、`["ResNet", "Transformer"]`、`[2015, 2020]`。
-  - parser 输出后统一执行一次 `resolve_parser_papers()`：`anchors` 和 `title` 字段的精确过滤在同一处解析；`title` 在 `op="="` 或 `op="in"` 时会把常用别名映射回本地规范论文标题，例如 `ResNet` -> `Deep Residual Learning for Image Recognition`；多个同类 `title = ...` 会合并为一个 `title in [...]`，避免按 AND 误筛空。归一化完成后，后续执行层只消费 `filters`、`resolved_papers` 和 reference 专用的 `resolved_anchor_papers`，不再保留单独的 paper mention 中间字段。
+  - parser 输出后统一执行一次 `resolve_parser_scope()`：`paper` 字段和 `year interval` 中的论文名边界在同一处解析；`title` 当前只允许 `contains`，不做论文别名映射。归一化完成后，后续执行层只消费 `filters` 和 `resolved_papers`，不再保留单独的 paper mention 中间字段。
   - `title contains ...` 不做论文别名映射，保留 parser 原始文本，用于“标题里包含 attention / face recognition”等模糊包含查询。
   - 年份范围统一用 `interval` 表达，闭区间写作 `[2015, 2020]`，单边区间用字符串哨兵表示，例如 `[2015, "inf"]` 表示 2015 年以后，`["-inf", 2019]` 表示 2019 年以前。
   - `filters[].negated` 必须显式输出 `true / false`，不能只靠自然语言表达否定。
@@ -495,7 +493,7 @@ CLI 行为：
   - content route 使用 `abstract + body` 的 `chunks.jsonl` 作为召回输入；不使用 reference，不默认使用 appendix。
   - Milvus dense 召回 top `PLAN_DENSE_TOP_K` chunks，默认 20。
   - 本地 BM25 在 chunks 上召回 top `PLAN_BM25_TOP_K` chunks，默认 20。
-  - parser 输出后统一执行一次 `resolve_parser_papers()`：`anchors` 和 `title` 字段的精确过滤在同一处解析；`title` 在 `op="="` 或 `op="in"` 时会把常用别名映射回本地规范论文标题，`title contains ...` 保留原始文本。
+  - parser 输出后统一执行一次 `resolve_parser_scope()`：`paper` 字段和 `year interval` 中的论文名边界在同一处解析；`title contains ...` 保留原始文本。
   - content filters 已对召回源生效：`title / year / venue / author` 会通过 active manifest 过滤候选论文，随后只对命中的论文 chunks 做 BM25；dense 搜索结果也会在融合前按同一候选 chunk 集合裁剪。
   - 如果已经解析出目标论文，则只检索这些论文的 chunks；如果同时存在 filters，则取目标论文和 filter 命中论文的交集；如果没有解析出目标论文且没有 filters，则全库检索。
   - content 也复用 `domains/common/filters.py` 的论文名/别名年份区间解析；解析后的 filters 会同步写回 route decision 和 parser result。
@@ -927,11 +925,50 @@ TOC 构建规则：
 ## 15. Retrieval data/common 边界
 
 - `paper_rag/retrieval/data` 是本地数据执行层，负责读取 manifest、paper tags、citation graph，以及判断本地 record 是否命中 filters。
-- `paper_rag/retrieval/domains/common` 是三条 domain parser/router 的共用语义层，只放 schema 校验、parser 输出归一化、paper/title/venue 解析等工具。
+- `paper_rag/retrieval/domains/common` 是三条 domain parser/router 的共用基础设施，只放 schema 校验、parser client、prompt/error 等不读取本地数据的工具。
 - `retrieval/data/filters.py` 是 manifest 元字段 filter evaluator，负责对 `author / year / venue / title` 等字段做实际匹配。
-- `retrieval/domains/common/filter_normalizer.py` 不是执行过滤，而是把 parser 输出的 filter 先规范化，例如解析 `year interval ["ResNet","inf"]` 里的论文名边界，并合并可合并的 year interval。
+- `retrieval/domains/common/filter_normalizer.py` 已移除；parser 输出里的 paper mention 和 year interval 边界解析统一放在 `retrieval/data/parser_scope_resolver.py`。
 - `retrieval/data/paper_scope.py` 负责 `semantic + filters + groups` 到候选论文 records 的构建，内部可以调用 manifest、tags、citation graph。
 - `retrieval/data/citation_scope.py` 负责基于本地 `citation_graph.json` 解析 `paper follow / paper prior` 这类本地引用范围。
 - `retrieval/data/text.py` 是底层文本规范化工具，供 data 层和上层 domain/common 使用；data 层不能反向调用 `domains/common`。
 - 旧的 `retrieval/data/references.py` 已由本地 citation graph 链路替代，不再保留旧 references.jsonl 扫描入口。
 - `domains/common` 下不再放会读取本地数据或构造候选 records 的模块，避免 common 同时承担 parser 共用和数据执行两种职责。
+- `retrieval/data/manifest_records.py` 负责 active manifest 记录读取、标题轻量召回和 manifest record 裁剪，不再使用 `manifest_lookup.py` 这个偏窄命名。
+- `retrieval/data/parser_scope_resolver.py` 负责把 parser 输出里的 `paper / venue / year interval` 范围条件解析成规范化 scope；`title` 当前只保留 `contains`，不走 paper alias 解析。
+- `retrieval/data/filters.py` 只负责本地 record filter 执行；year interval 的论文边界解析和区间合并放在 `parser_scope_resolver.py`。
+- `retrieval/sparse/bm25.py` 的通用 tokenizer 下沉到 `retrieval/data/text.py`；data 层不能调用 sparse 或 dense，依赖方向固定为 sparse/dense/domain 调用 data。
+- 论文身份 key 全项目统一使用 `retrieval/data/manifest_records.py` 的 `paper_record_key()`：优先 `_record_key`，再用 `paper_id`，再取 `paper_data_path` 的最后一级目录名，最后才退回 `title`。
+- `match_manifest_records()` 和 `to_evidence_manifest_record()` 输出内部 `_record_key`，只用于 planner/scope 去重，不进入最终 evidence。
+- filter value 展平统一使用 `retrieval/data/text.py` 的 `filter_value_to_list()`，不再在 `paper_scope.py` 里维护本地 flatten 分支。
+
+## 16. Retrieval data 模块边界细化
+
+- `aliases.py` 只负责 alias 资料和 alias match 结构；不再把原问题 query 改写成 canonical title 或扩展 token 串。
+- `parser_scope_resolver.py` 负责 parser 输出中的 paper mention 解析，包括 `paper` filter、`year interval` 里的论文名边界和 venue 规范化。
+- `paper_scope.py` 负责根据 `semantic + filters + groups` 找 manifest records；普通 record 去重统一调用 `manifest_records.py`。
+- `filters.py` 负责 metadata filter 的布尔匹配；不会反向 import `parser_scope_resolver.py`。
+- `manifest_records.py` 负责 active manifest 读取、轻量标题检索、`paper_record_key()`、`dedupe_paper_records()` 和 `merge_paper_records()`。
+- `citation_scope.py` 只负责 citation graph relation，例如 `paper follow / paper prior`。
+- `text.py` 负责文本 normalization、tokenization、`filter_value_to_list()` 和通用 list 去重工具。
+  - `normalized_text()` 用于确定性比较、`contains / in`、dedupe、`paper_title_key` 和 tag matching。
+  - `tokenize()` 用于 query expansion、alias query match、manifest search、BM25/search-like recall。
+- `dedupe_by.py` 是底层保序去重工具，只接收 key 函数，不承载 paper/alias/search term 等业务语义。
+- `chunks.py` 暂时保持独立，只负责 chunk data loading。
+- `paper_annotations.json` 通过 `annotations_index.py` 统一扫描，aliases 和 tags 都从 `PaperAnnotationEntry(title, paper_title_key, aliases, tags)` 派生。
+
+## 17. Paper Filter 合法组合
+
+- filter 字段和 op 必须按固定组合使用，不做额外宽松兼容：
+  - `paper`: `=` / `follow` / `prior`
+  - `year`: `=` / `interval`
+  - `venue`: `=` / `in`
+  - `author`: `contains`
+  - `title`: `contains`
+- 禁止组合包括：
+  - `paper in`
+  - `year contains`
+  - `author =`
+  - `title =`
+  - `venue contains`
+  - `follow / prior` 用在 `paper` 以外字段
+- `domains/common/schema.py` 负责第一层拒绝非法组合；`retrieval/data/filters.py` 也不为非法组合提供可执行语义。

@@ -24,7 +24,7 @@ def load_paper_annotations(settings: Settings) -> dict[str, dict[str, Any]]:
 def normalize_paper_annotation(value: dict[str, Any]) -> dict[str, Any]:
     return {
         "title": str(value.get("title") or "").strip(),
-        "aliases": normalize_string_list(value.get("aliases")),
+        "aliases": annotation_string_list(value.get("aliases")),
         "tags": normalize_paper_tags(value.get("tags")),
     }
 
@@ -33,12 +33,12 @@ def normalize_paper_tags(value: Any) -> dict[str, list[str]]:
     if not isinstance(value, dict):
         return {"zh": [], "en": []}
     return {
-        "zh": normalize_string_list(value.get("zh")),
-        "en": normalize_string_list(value.get("en")),
+        "zh": annotation_string_list(value.get("zh")),
+        "en": annotation_string_list(value.get("en")),
     }
 
 
-def normalize_string_list(value: Any) -> list[str]:
+def annotation_string_list(value: Any) -> list[str]:
     if not isinstance(value, list):
         return []
     items: list[str] = []

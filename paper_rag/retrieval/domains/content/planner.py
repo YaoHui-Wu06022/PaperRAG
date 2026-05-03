@@ -9,13 +9,13 @@ from ...context import context_unit
 from ...data.aliases import alias_match_to_dict
 from ...data.chunks import ChunkDocument, load_chunk_documents
 from ...data.filters import match_record_filters
-from ...data.manifest_lookup import load_active_manifest_records
+from ...data.manifest_records import load_active_manifest_records
 from ...dense.milvus_store import SearchResult
 from ...dense.service import build_embedder, build_store
 from ...evidence import to_evidence_papers
 from ...sparse.bm25 import BM25Document, BM25Index
 from ...route import RouteDecision
-from ...data.text import flatten_filter_value
+from ...data.utils import filter_value_to_list
 
 
 RRF_K = 60
@@ -120,7 +120,7 @@ def build_content_filter_terms(filters: list[dict[str, Any]]) -> list[str]:
         op = filter_item.get("op")
         value = filter_item.get("value")
         prefix = "not " if filter_item.get("negated") else ""
-        values = flatten_filter_value(value)
+        values = filter_value_to_list(value)
         if not values:
             values = [str(value)]
         terms.append(f"{prefix}{field} {op} {'/'.join(values)}")

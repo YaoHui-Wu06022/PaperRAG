@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 from typing import Any
@@ -8,9 +8,16 @@ from .errors import PlanParseError
 
 PAPER_FILTER_FIELDS = {"author", "year", "venue", "title", "paper"}
 PAPER_FILTER_OPS = {"=", "in", "contains", "interval", "follow", "prior"}
+PAPER_FILTER_FIELD_OPS = {
+    "paper": {"=", "follow", "prior"},
+    "year": {"=", "interval"},
+    "venue": {"=", "in"},
+    "author": {"contains"},
+    "title": {"contains"},
+}
 PAPER_GROUP_MODES = {"single", "per", "or", "and"}
-NEGATIVE_INFINITY = {"-inf", "-infinity"}
-POSITIVE_INFINITY = {"inf", "+inf", "infinity", "+infinity"}
+NEGATIVE_INFINITY = {"-inf"}
+POSITIVE_INFINITY = {"inf", "+inf"}
 
 
 def load_payload(content: str | dict[str, Any], name: str) -> dict[str, Any]:
@@ -111,10 +118,9 @@ def validate_paper_filter(value: Any) -> dict[str, Any]:
 
 
 def validate_filter_field_op(field: str, op: str) -> None:
-    if op in {"follow", "prior"} and field != "paper":
-        raise PlanParseError("follow/prior filters require field=paper")
-    if field == "paper" and op not in {"=", "follow", "prior"}:
-        raise PlanParseError(f"Invalid paper filter op for paper field: {op}")
+    allowed_ops = PAPER_FILTER_FIELD_OPS.get(field, set())
+    if op not in allowed_ops:
+        raise PlanParseError(f"Invalid paper filter op for {field} field: {op}")
 
 
 def norm_filter_value(op: str, value: Any) -> Any:

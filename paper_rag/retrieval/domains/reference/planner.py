@@ -7,7 +7,8 @@ from ...data.aliases import alias_match_to_dict
 from ...evidence import to_evidence_paper, to_evidence_papers
 from ...route import RouteDecision
 from ...data.citation_scope import load_citation_graph
-from ...data.paper_scope import combined_semantic, record_key_from_dict, records_for_scope, unique_records
+from ...data.manifest_records import dedupe_paper_records, paper_record_key
+from ...data.paper_scope import combined_semantic, records_for_scope
 
 
 def plan_reference(settings: Settings, route: RouteDecision, warnings: list[str]) -> dict[str, Any]:
@@ -144,9 +145,9 @@ def scope_result(
             records_for_scope(settings, combined_semantic(semantic, group.get("semantic") or ""), [*filters, *(group.get("filters") or [])], mode)
             for group in groups
         ]
-        records = unique_records([record for group in group_records for record in group])
+        records = dedupe_paper_records([record for group in group_records for record in group])
     elif mode == "or":
-        records = unique_records([
+        records = dedupe_paper_records([
             record
             for group in groups
             for record in records_for_scope(
@@ -157,7 +158,7 @@ def scope_result(
             )
         ])
     elif mode == "and":
-        records = unique_records([
+        records = dedupe_paper_records([
             record
             for group in groups
             for record in records_for_scope(
@@ -186,7 +187,7 @@ def node_index(graph: dict[str, Any], records: list[dict[str, Any]]) -> dict[str
     }
     index: dict[str, dict[str, Any]] = {}
     for record in records:
-        paper_id = record_key_from_dict(record)
+        paper_id = paper_record_key(record)
         if paper_id and paper_id in nodes_by_id:
             index[paper_id] = {
                 "paper_id": paper_id,
@@ -304,7 +305,7 @@ def intersect_group_answer_ids(group_results: list[dict[str, Any]]) -> set[str]:
 def paper_id(paper: dict[str, Any] | None) -> str:
     if not paper:
         return ""
-    return str(paper.get("paper_id") or record_key_from_dict(paper) or "")
+    return str(paper.get("paper_id") or paper_record_key(paper) or "")
 
 
 def edge_answer_paper_id(edge: dict[str, Any], return_side: str | None) -> str:
