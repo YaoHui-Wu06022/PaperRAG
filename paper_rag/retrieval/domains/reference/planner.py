@@ -3,75 +3,39 @@ from __future__ import annotations
 from typing import Any
 
 from ....config import Settings
-from ...data.aliases import alias_match_to_dict
-from ...evidence import to_evidence_paper, to_evidence_papers
+from ...evidence import build_reference_evidence
 from ...route import RouteDecision
 from ...data.citation_scope import load_citation_graph
 from ...data.manifest_records import dedupe_paper_records, paper_record_key
 from ...data.paper_scope import combined_semantic, records_for_scope
 
 
-def plan_reference(settings: Settings, route: RouteDecision, warnings: list[str]) -> dict[str, Any]:
+def plan_reference(settings: Settings, route: RouteDecision, warnings: list[str], *, debug: bool = False) -> dict[str, Any]:
     if route.parse_status == "parse_failed":
-        return {
-            **build_reference_evidence_base(route),
-            "parse_status": "parse_failed",
-            "parser_error": route.parser_error,
-            "answer_papers": [],
-            "edges": [],
-        }
+        return build_reference_evidence(
+            route,
+            status="parse_failed",
+            warnings=warnings,
+            answer_papers=[],
+            edges=[],
+            parser_error=route.parser_error,
+            debug=debug,
+        )
 
     graph = load_citation_graph(settings)
     if not graph:
         warnings.append("reference route requires data/paper_data/citation_graph.json; run paper-rag ingest first")
-        return {
-            **build_reference_evidence_base(route),
-            "parse_status": "graph_missing",
-            "answer_papers": [],
-            "edges": [],
-        }
+        return build_reference_evidence(
+            route,
+            status="graph_missing",
+            warnings=warnings,
+            answer_papers=[],
+            edges=[],
+            debug=debug,
+        )
 
     source_scope = scope_result(settings, route.source_semantic, route.source_filters, route.source_groups, route.source_mode)
     object_scope = scope_result(settings, route.object_semantic, route.object_filters, route.object_groups, route.object_mode)
-    evidence = build_reference_evidence(settings, route, graph, source_scope, object_scope)
-    if route.intent == "count":
-        evidence["count"] = len(evidence["answer_papers"])
-    if route.intent == "exists":
-        evidence["exists"] = bool(evidence["edges"])
-    if not evidence["answer_papers"] and route.intent != "exists":
-        warnings.append("reference route found no matching citation edges")
-    if not evidence["edges"]:
-        warnings.append("reference route found no matching citation edges")
-    return evidence
-
-
-def build_reference_evidence_base(route: RouteDecision) -> dict[str, Any]:
-    return {
-        "intent": route.intent,
-        "return_side": route.return_side,
-        "source_scope": {
-            "semantic": route.source_semantic,
-            "filters": route.source_filters,
-            "groups": route.source_groups,
-            "mode": route.source_mode,
-        },
-        "object_scope": {
-            "semantic": route.object_semantic,
-            "filters": route.object_filters,
-            "groups": route.object_groups,
-            "mode": route.object_mode,
-        },
-        "alias_matches": [alias_match_to_dict(match) for match in route.alias_matches],
-    }
-
-
-def build_reference_evidence(
-    settings: Settings,
-    route: RouteDecision,
-    graph: dict[str, Any],
-    source_scope: dict[str, Any],
-    object_scope: dict[str, Any],
-) -> dict[str, Any]:
     source_nodes = node_index(graph, source_scope["records"])
     object_nodes = node_index(graph, object_scope["records"])
     edges = matching_edges(graph, source_nodes, object_nodes)
@@ -83,17 +47,25 @@ def build_reference_evidence(
     )
     if group_results:
         answer_papers, edges = fold_group_results(route, group_results, answer_papers, edges)
-    evidence: dict[str, Any] = {
-        **build_reference_evidence_base(route),
-        "parse_status": "ok",
-        "source_records": to_evidence_papers(source_scope["records"]),
-        "object_records": to_evidence_papers(object_scope["records"]),
-        "answer_papers": to_evidence_papers(answer_papers),
-        "edges": [to_evidence_edge(edge) for edge in edges],
-    }
-    if group_results:
-        evidence["group_results"] = group_results
-    return evidence
+    count = len(answer_papers) if route.intent == "count" else None
+    exists = bool(edges) if route.intent == "exists" else None
+    if not answer_papers and route.intent != "exists":
+        warnings.append("reference route found no matching citation edges")
+    if not edges:
+        warnings.append("reference route found no matching citation edges")
+    return build_reference_evidence(
+        route,
+        status="ok",
+        warnings=warnings,
+        source_records=source_scope["records"],
+        object_records=object_scope["records"],
+        answer_papers=answer_papers,
+        edges=edges,
+        group_results=group_results or None,
+        count=count,
+        exists=exists,
+        debug=debug,
+    )
 
 
 def build_group_results(settings: Settings, route: RouteDecision, graph: dict[str, Any]) -> list[dict[str, Any]]:
@@ -125,10 +97,8 @@ def side_group_results(settings: Settings, route: RouteDecision, graph: dict[str
         results.append({
             "semantic": group.get("semantic") or "",
             "filters": group.get("filters") or [],
-            "answer_papers": to_evidence_papers(answer_papers),
-            "edges": [to_evidence_edge(edge) for edge in edges],
-            "count": len(answer_papers),
-            "exists": bool(edges),
+            "answer_papers": answer_papers,
+            "edges": edges,
         })
     return results
 
@@ -284,7 +254,7 @@ def unique_edges_from_groups(group_results: list[dict[str, Any]]) -> list[dict[s
             key = (
                 paper_id(edge.get("source_paper")),
                 paper_id(edge.get("object_paper")),
-                edge.get("ref_index"),
+                (edge.get("edge") or {}).get("ref_index"),
             )
             if key not in seen:
                 seen.add(key)
@@ -312,16 +282,3 @@ def edge_answer_paper_id(edge: dict[str, Any], return_side: str | None) -> str:
     if return_side == "source":
         return paper_id(edge.get("source_paper"))
     return paper_id(edge.get("object_paper"))
-
-
-def to_evidence_edge(entry: dict[str, Any]) -> dict[str, Any]:
-    edge = entry.get("edge") or {}
-    return {
-        "source_paper": to_evidence_paper(entry.get("source_paper")),
-        "object_paper": to_evidence_paper(entry.get("object_paper")),
-        "ref_index": edge.get("ref_index"),
-        "raw_text": edge.get("raw_text"),
-        "page": edge.get("page"),
-        "source_block_id": edge.get("source_block_id"),
-        "match_type": edge.get("match_type"),
-    }

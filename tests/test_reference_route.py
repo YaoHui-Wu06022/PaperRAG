@@ -81,7 +81,7 @@ class ReferenceRouterTests(unittest.TestCase):
             })
             route = build_reference_decision(
                 settings,
-                RouteDecision(route="reference", original_query="ResNet之后，有哪些论文引用ResNet？", parse_status="ok"),
+                RouteDecision(route="reference", query="ResNet之后，有哪些论文引用ResNet？", parse_status="ok"),
                 [],
                 plan_parser=parser,
             )
@@ -102,8 +102,17 @@ class ReferencePlannerTests(unittest.TestCase):
             )
             evidence = plan_reference(settings, route, [])
 
-        titles = {paper["title"] for paper in evidence["answer_papers"]}
+        self.assertEqual(evidence["status"], "ok")
+        self.assertNotIn("resolved", evidence)
+        self.assertNotIn("warnings", evidence)
+        self.assertNotIn("answer_papers", evidence)
+        titles = set(evidence["results"]["papers"])
         self.assertEqual(titles, {ATTN_TITLE, SUPCON_TITLE})
+        edge = evidence["results"]["edges"][0]
+        self.assertIn("source", edge)
+        self.assertIn("object", edge)
+        self.assertNotIn("source_paper", edge)
+        self.assertNotIn("object_paper", edge)
 
     def test_returns_object_side_papers(self) -> None:
         with reference_fixture() as settings:
@@ -117,7 +126,7 @@ class ReferencePlannerTests(unittest.TestCase):
             evidence = plan_reference(settings, route, [])
 
         self.assertEqual(
-            {paper["title"] for paper in evidence["answer_papers"]},
+            set(evidence["results"]["papers"]),
             {VIT_TITLE, RESNET_TITLE},
         )
 
@@ -135,7 +144,7 @@ class ReferencePlannerTests(unittest.TestCase):
             )
             evidence = plan_reference(settings, route, [])
 
-        self.assertEqual([paper["title"] for paper in evidence["answer_papers"]], [ARXIV_2013_TITLE])
+        self.assertEqual(evidence["results"]["papers"], [ARXIV_2013_TITLE])
 
     def test_count_counts_unique_answer_papers(self) -> None:
         with reference_fixture() as settings:
@@ -148,7 +157,9 @@ class ReferencePlannerTests(unittest.TestCase):
             )
             evidence = plan_reference(settings, route, [])
 
-        self.assertEqual(evidence["count"], 2)
+        self.assertEqual(evidence["results"]["count"], 2)
+        self.assertNotIn("papers", evidence["results"])
+        self.assertNotIn("edges", evidence["results"])
 
     def test_exists_checks_edges_between_scopes(self) -> None:
         with reference_fixture() as settings:
@@ -161,7 +172,9 @@ class ReferencePlannerTests(unittest.TestCase):
             )
             evidence = plan_reference(settings, route, [])
 
-        self.assertTrue(evidence["exists"])
+        self.assertTrue(evidence["results"]["exists"])
+        self.assertIn("edges", evidence["results"])
+        self.assertLessEqual(len(evidence["results"]["edges"]), 3)
 
     def test_graph_missing_returns_warning_status(self) -> None:
         with reference_fixture(write_graph=False) as settings:
@@ -174,7 +187,8 @@ class ReferencePlannerTests(unittest.TestCase):
             warnings: list[str] = []
             evidence = plan_reference(settings, route, warnings)
 
-        self.assertEqual(evidence["parse_status"], "graph_missing")
+        self.assertEqual(evidence["status"], "graph_missing")
+        self.assertTrue(evidence["warnings"])
         self.assertTrue(warnings)
 
 

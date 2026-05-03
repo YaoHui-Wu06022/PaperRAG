@@ -19,18 +19,18 @@ def build_metadata_decision(
     *,
     plan_parser=None,
 ) -> RouteDecision:
-    original_query = decision.original_query
+    query = decision.query
     try:
         parser = plan_parser or MetadataParserClient.from_settings(settings)
         if not hasattr(parser, "parse_metadata"):
             raise PlanParseError("plan_parser must provide parse_metadata(query)")
-        parser_result = parser.parse_metadata(original_query)
+        parser_result = parser.parse_metadata(query)
     except (PlanParseError, OSError, ValueError) as exc:
         warnings.append(f"metadata_parse_failed: {exc}")
         return RouteDecision(
             route=decision.route,
             intent=None,
-            original_query=original_query,
+            query=query,
             resolved_papers=decision.resolved_papers,
             alias_matches=decision.alias_matches,
             parser_result=decision.parser_result,
@@ -56,7 +56,7 @@ def build_metadata_decision(
     enriched = RouteDecision(
         route=decision.route,
         intent=parser_result["intent"],
-        original_query=original_query,
+        query=query,
         resolved_papers=merge_paper_records(decision.resolved_papers, resolved["resolved_papers"]),
         alias_matches=dedupe_alias_matches([*decision.alias_matches, *resolved["alias_matches"]]),
         parser_result=parser_result,
@@ -86,7 +86,7 @@ def apply_paper_year_filters(settings: Settings, decision: RouteDecision, warnin
     return RouteDecision(
         route=decision.route,
         intent=decision.intent,
-        original_query=decision.original_query,
+        query=decision.query,
         resolved_papers=decision.resolved_papers,
         alias_matches=decision.alias_matches,
         parser_result=parser_result,

@@ -7,7 +7,12 @@ from ...dataprocess.manifest import ManifestRecord
 from .annotations_index import PaperTags, load_paper_annotation_entries, paper_title_key
 from .citation_scope import record_matches_citation_scope
 from .filters import compare_text, match_record_filters
-from .manifest_records import load_active_manifest_records, match_manifest_records, paper_record_key, to_evidence_manifest_record
+from .manifest_records import (
+    load_active_manifest_records,
+    match_manifest_records,
+    paper_record_key,
+    to_evidence_manifest_record,
+)
 from .utils import filter_value_to_list, normalized_text
 
 

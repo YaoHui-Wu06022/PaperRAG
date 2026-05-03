@@ -33,12 +33,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Probe metadata planner evidence outputs.")
     parser.add_argument("query", nargs="*", help="Optional single query. Defaults to the first DEFAULT_QUERIES item.")
     parser.add_argument("--project-root", type=Path, default=find_project_root(), help="Project root containing .env")
+    parser.add_argument("--debug", action="store_true", help="Include planner debug details")
     parser.add_argument("--show-route", action="store_true", help="Include the parsed RouteDecision summary")
     args = parser.parse_args()
 
     settings = Settings.load(args.project_root)
-    original_query = " ".join(args.query).strip() if args.query else (DEFAULT_QUERIES[0] if DEFAULT_QUERIES else "")
-    if not original_query:
+    query = " ".join(args.query).strip() if args.query else (DEFAULT_QUERIES[0] if DEFAULT_QUERIES else "")
+    if not query:
         print(json.dumps({"error": "No query provided. Add an item to DEFAULT_QUERIES or pass one on the command line."}, ensure_ascii=False, indent=2))
         return 1
 
@@ -46,20 +47,15 @@ def main() -> int:
     try:
         route = build_metadata_decision(
             settings,
-            RouteDecision(route="metadata", original_query=original_query, parse_status="ok"),
+            RouteDecision(route="metadata", query=query, parse_status="ok"),
             warnings,
         )
-        evidence = plan_metadata(settings, route, warnings)
-        payload: dict[str, object] = {
-            "original_query": original_query,
-            "evidence": evidence,
-            "warnings": warnings,
-        }
+        payload: dict[str, object] = plan_metadata(settings, route, warnings, debug=args.debug)
         if args.show_route:
-            payload["route"] = route_summary(route)
+            payload["route_summary"] = route_summary(route)
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     except Exception as exc:
-        print(json.dumps({"original_query": original_query, "error": str(exc), "warnings": warnings}, ensure_ascii=False, indent=2))
+        print(json.dumps({"query": query, "error": str(exc), "warnings": warnings}, ensure_ascii=False, indent=2))
         return 1
     return 0
 

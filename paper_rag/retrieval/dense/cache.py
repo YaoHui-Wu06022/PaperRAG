@@ -6,6 +6,8 @@ from pathlib import Path
 
 
 class EmbeddingCache:
+    """把 embedding 向量按稳定 key 缓存在本地 jsonl 文件中。"""
+
     def __init__(self, path: Path):
         self.path = path
         self._vectors: dict[str, list[float]] = {}
@@ -13,13 +15,16 @@ class EmbeddingCache:
         self._load()
 
     def get(self, key: str) -> list[float] | None:
+        """按 cache key 读取已缓存向量。"""
         return self._vectors.get(key)
 
     def set(self, key: str, vector: list[float]) -> None:
+        """写入向量并标记缓存需要落盘。"""
         self._vectors[key] = vector
         self._dirty = True
 
     def save(self) -> None:
+        """如果缓存有更新，将全部向量按 key 排序写回 jsonl。"""
         if not self._dirty:
             return
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -31,6 +36,7 @@ class EmbeddingCache:
         self._dirty = False
 
     def _load(self) -> None:
+        """启动时读取已有 jsonl 缓存，坏行直接交给 json 解析抛错。"""
         if not self.path.exists():
             return
         for line in self.path.read_text(encoding="utf-8").splitlines():
@@ -44,6 +50,7 @@ class EmbeddingCache:
 
 
 def embedding_cache_key(model: str, dimensions: int, text: str) -> str:
+    """用模型、维度和文本生成稳定 cache key。"""
     payload = json.dumps(
         {"model": model, "dimensions": dimensions, "text": text},
         ensure_ascii=False,
@@ -53,6 +60,8 @@ def embedding_cache_key(model: str, dimensions: int, text: str) -> str:
 
 
 class CachedEmbedder:
+    """先查本地缓存，只对未命中文本批量请求 embedding。"""
+
     def __init__(self, client, cache: EmbeddingCache, *, model: str, dimensions: int, batch_size: int):
         self.client = client
         self.cache = cache
@@ -61,6 +70,7 @@ class CachedEmbedder:
         self.batch_size = max(1, batch_size)
 
     def embed_texts(self, texts: list[str]) -> list[list[float]]:
+        """返回与输入 texts 顺序一致的向量列表。"""
         output: list[list[float] | None] = [None] * len(texts)
         misses: list[tuple[int, str, str]] = []
         for index, text in enumerate(texts):
@@ -78,4 +88,3 @@ class CachedEmbedder:
                 output[index] = vector
         self.cache.save()
         return [vector for vector in output if vector is not None]
-

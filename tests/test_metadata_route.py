@@ -209,9 +209,14 @@ class MetadataPlannerTests(unittest.TestCase):
             )
             evidence = plan_metadata(settings, route, [])
 
-        self.assertEqual(evidence["records"][0]["title"], RESNET_TITLE)
-        self.assertEqual(evidence["records"][0]["values"]["author"], ["Kaiming He"])
-        self.assertEqual(evidence["records"][0]["values"]["year"]["preprint_year"], 2015)
+        self.assertEqual(evidence["status"], "ok")
+        self.assertNotIn("resolved", evidence)
+        self.assertNotIn("warnings", evidence)
+        self.assertNotIn("records", evidence)
+        self.assertNotIn("records", evidence["results"])
+        self.assertEqual(evidence["results"]["items"][0]["title"], RESNET_TITLE)
+        self.assertEqual(evidence["results"]["items"][0]["values"]["author"], ["Kaiming He"])
+        self.assertEqual(evidence["results"]["items"][0]["values"]["year"]["preprint_year"], 2015)
 
     def test_count_uses_manifest_filters(self) -> None:
         with metadata_fixture() as settings:
@@ -222,9 +227,26 @@ class MetadataPlannerTests(unittest.TestCase):
             )
             evidence = plan_metadata(settings, route, [])
 
-        self.assertEqual(evidence["count"], 1)
-        self.assertEqual(evidence["records"][0]["title"], RESNET_TITLE)
-        self.assertEqual(evidence["records"][0]["venue"], "CVPR")
+        self.assertEqual(evidence["results"]["count"], 1)
+        self.assertNotIn("records", evidence["results"])
+        self.assertNotIn("items", evidence["results"])
+        self.assertEqual(evidence["plan"]["scope"], ["venue=CVPR"])
+
+    def test_parse_failed_status_and_debug_mode(self) -> None:
+        with metadata_fixture() as settings:
+            route = RouteDecision(
+                route="metadata",
+                query="BERT 的作者是谁？",
+                parse_status="parse_failed",
+                parser_error="bad json",
+                parser_result={"raw": "bad"},
+            )
+            evidence = plan_metadata(settings, route, [], debug=True)
+
+        self.assertEqual(evidence["status"], "parse_failed")
+        self.assertEqual(evidence["parser_error"], "bad json")
+        self.assertIn("debug", evidence)
+        self.assertEqual(evidence["debug"]["parser_result"], {"raw": "bad"})
 
     def test_venue_aliases_match_canonical_aliases_and_display_values(self) -> None:
         with metadata_fixture() as settings:
@@ -236,10 +258,18 @@ class MetadataPlannerTests(unittest.TestCase):
                     filters=[{"field": "venue", "op": "=", "value": venue, "negated": False}],
                 )
                 evidence = plan_metadata(settings, route, [])
-                counts.append(evidence["count"])
-                self.assertEqual(evidence["records"][0]["venue"], "NeurIPS")
+                counts.append(evidence["results"]["count"])
 
-        self.assertEqual(counts, [1, 1, 1])
+            self.assertEqual(counts, [1, 1, 1])
+
+            route = RouteDecision(
+                route="metadata",
+                intent="list",
+                return_fields=["venue"],
+                filters=[{"field": "venue", "op": "=", "value": "NIPS", "negated": False}],
+            )
+            evidence = plan_metadata(settings, route, [])
+            self.assertEqual(evidence["results"]["items"][0]["values"]["venue"], "NeurIPS")
 
     def test_venue_in_and_negation_use_alias_expansion(self) -> None:
         with metadata_fixture() as settings:
@@ -250,7 +280,7 @@ class MetadataPlannerTests(unittest.TestCase):
                 filters=[{"field": "venue", "op": "in", "value": ["CVPR", "NIPS"], "negated": False}],
             )
             evidence = plan_metadata(settings, route, [])
-            titles = {record["title"] for record in evidence["records"]}
+            titles = {record["title"] for record in evidence["results"]["items"]}
             self.assertEqual(titles, {RESNET_TITLE, SUPCON_TITLE})
 
             route = RouteDecision(
@@ -260,7 +290,7 @@ class MetadataPlannerTests(unittest.TestCase):
                 filters=[{"field": "venue", "op": "=", "value": "NIPS", "negated": True}],
             )
             evidence = plan_metadata(settings, route, [])
-            titles = {record["title"] for record in evidence["records"]}
+            titles = {record["title"] for record in evidence["results"]["items"]}
             self.assertEqual(titles, {RESNET_TITLE, BERT_TITLE})
 
     def test_follow_prior_filters_limit_metadata_scope(self) -> None:
@@ -272,7 +302,7 @@ class MetadataPlannerTests(unittest.TestCase):
                 filters=[{"field": "paper", "op": "follow", "value": RESNET_TITLE, "negated": False}],
             )
             follow_evidence = plan_metadata(settings, follow_route, [])
-            self.assertEqual([record["title"] for record in follow_evidence["records"]], [SUPCON_TITLE])
+            self.assertEqual([record["title"] for record in follow_evidence["results"]["items"]], [SUPCON_TITLE])
 
             prior_route = RouteDecision(
                 route="metadata",
@@ -281,7 +311,7 @@ class MetadataPlannerTests(unittest.TestCase):
                 filters=[{"field": "paper", "op": "prior", "value": SUPCON_TITLE, "negated": False}],
             )
             prior_evidence = plan_metadata(settings, prior_route, [])
-            self.assertEqual([record["title"] for record in prior_evidence["records"]], [RESNET_TITLE])
+            self.assertEqual([record["title"] for record in prior_evidence["results"]["items"]], [RESNET_TITLE])
 
     def test_paper_semantic_uses_annotation_tags_for_candidate_recall(self) -> None:
         with metadata_fixture() as settings:
@@ -292,7 +322,7 @@ class MetadataPlannerTests(unittest.TestCase):
                 paper_semantic="残差连接",
             )
             evidence = plan_metadata(settings, route, [])
-            self.assertEqual([record["title"] for record in evidence["records"]], [RESNET_TITLE])
+            self.assertEqual([record["title"] for record in evidence["results"]["items"]], [RESNET_TITLE])
 
             route = RouteDecision(
                 route="metadata",
@@ -301,7 +331,7 @@ class MetadataPlannerTests(unittest.TestCase):
                 paper_semantic="CNN",
             )
             evidence = plan_metadata(settings, route, [])
-            self.assertEqual({record["title"] for record in evidence["records"]}, {RESNET_TITLE, SUPCON_TITLE})
+            self.assertEqual({record["title"] for record in evidence["results"]["items"]}, {RESNET_TITLE, SUPCON_TITLE})
 
     def test_title_semantic_recall_is_still_available(self) -> None:
         with metadata_fixture() as settings:
@@ -312,7 +342,7 @@ class MetadataPlannerTests(unittest.TestCase):
                 paper_semantic=RESNET_TITLE,
             )
             evidence = plan_metadata(settings, route, [])
-            self.assertEqual([record["title"] for record in evidence["records"]], [RESNET_TITLE])
+            self.assertEqual([record["title"] for record in evidence["results"]["items"]], [RESNET_TITLE])
 
     def test_metadata_filters_narrow_semantic_tag_candidates(self) -> None:
         with metadata_fixture() as settings:
@@ -324,7 +354,7 @@ class MetadataPlannerTests(unittest.TestCase):
                 filters=[{"field": "venue", "op": "=", "value": "CVPR", "negated": False}],
             )
             evidence = plan_metadata(settings, route, [])
-            self.assertEqual([record["title"] for record in evidence["records"]], [RESNET_TITLE])
+            self.assertEqual([record["title"] for record in evidence["results"]["items"]], [RESNET_TITLE])
 
     def test_exists_and_requires_every_group_to_match(self) -> None:
         with metadata_fixture() as settings:
@@ -340,9 +370,9 @@ class MetadataPlannerTests(unittest.TestCase):
             )
             evidence = plan_metadata(settings, route, [])
 
-        self.assertFalse(evidence["exists"])
-        self.assertEqual(evidence["group_results"][0]["count"], 1)
-        self.assertEqual(evidence["group_results"][1]["count"], 0)
+        self.assertFalse(evidence["results"]["exists"])
+        self.assertEqual(evidence["results"]["groups"][0]["count"], 1)
+        self.assertEqual(evidence["results"]["groups"][1]["count"], 0)
 
     def test_per_mode_keeps_group_results_separate(self) -> None:
         with metadata_fixture() as settings:
@@ -358,9 +388,9 @@ class MetadataPlannerTests(unittest.TestCase):
             )
             evidence = plan_metadata(settings, route, [])
 
-        self.assertEqual([group["count"] for group in evidence["group_results"]], [1, 1])
-        self.assertEqual(evidence["group_results"][0]["records"][0]["title"], RESNET_TITLE)
-        self.assertEqual(evidence["group_results"][1]["records"][0]["title"], SUPCON_TITLE)
+        self.assertEqual([group["count"] for group in evidence["results"]["groups"]], [1, 1])
+        self.assertEqual(evidence["results"]["groups"][0]["items"][0]["title"], RESNET_TITLE)
+        self.assertEqual(evidence["results"]["groups"][1]["items"][0]["title"], SUPCON_TITLE)
 
     def test_year_filters_use_preprint_year_inside_arxiv_scope(self) -> None:
         with metadata_fixture() as settings:
@@ -383,8 +413,8 @@ class MetadataPlannerTests(unittest.TestCase):
             )
             published_evidence = plan_metadata(settings, route, [])
 
-        self.assertEqual([record["title"] for record in arxiv_evidence["records"]], [BERT_TITLE])
-        self.assertEqual(published_evidence["records"], [])
+        self.assertEqual([record["title"] for record in arxiv_evidence["results"]["items"]], [BERT_TITLE])
+        self.assertEqual(published_evidence["results"], {})
 
 
 class metadata_fixture:

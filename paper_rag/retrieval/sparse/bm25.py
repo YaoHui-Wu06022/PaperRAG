@@ -4,6 +4,8 @@ import math
 from dataclasses import dataclass
 from typing import Any
 
+from ..chunk_fusion import RRF_K
+from ..data.chunks import ChunkDocument
 from ..data.utils import tokenize
 
 
@@ -72,3 +74,27 @@ def count_terms(tokens: list[str]) -> dict[str, int]:
     for token in tokens:
         counts[token] = counts.get(token, 0) + 1
     return counts
+
+
+def search_bm25_chunks(documents: list[ChunkDocument], queries: list[str], top_k: int) -> list[BM25Hit]:
+    """对多个 BM25 query 分别检索，再用 RRF 合并为 chunk 候选。"""
+    bm25_documents = [
+        BM25Document(
+            document.chunk_id,
+            f"{document.text}\n{document.embedding_text}",
+            {"document": document},
+        )
+        for document in documents
+    ]
+    index = BM25Index(bm25_documents)
+    by_id: dict[str, dict[str, Any]] = {}
+    for query in queries:
+        for rank, hit in enumerate(index.search(query, top_k), start=1):
+            slot = by_id.setdefault(hit.doc_id, {"hit": hit, "score": 0.0})
+            slot["score"] += 1 / (RRF_K + rank)
+    fused = [
+        BM25Hit(value["hit"].doc_id, value["score"], value["hit"].text, value["hit"].payload)
+        for value in by_id.values()
+    ]
+    fused.sort(key=lambda hit: hit.score, reverse=True)
+    return fused[:top_k]

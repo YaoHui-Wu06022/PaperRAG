@@ -8,11 +8,15 @@ from typing import Any
 
 
 class EmbeddingError(RuntimeError):
+    """Embedding 请求或响应解析失败。"""
+
     pass
 
 
 @dataclass(frozen=True)
 class EmbeddingClient:
+    """OpenAI-compatible embedding HTTP 客户端。"""
+
     base_url: str
     api_key: str | None
     model: str
@@ -20,6 +24,7 @@ class EmbeddingClient:
     timeout: int = 60
 
     def embed_texts(self, texts: list[str]) -> list[list[float]]:
+        """批量请求 embedding，并保持返回顺序与输入文本一致。"""
         if not texts:
             return []
         if not self.api_key:
@@ -51,6 +56,7 @@ class EmbeddingClient:
 
 
 def parse_embedding_response(data: dict[str, Any], expected_count: int) -> list[list[float]]:
+    """解析 OpenAI-compatible embedding 响应中的向量列表。"""
     rows = data.get("data")
     if not isinstance(rows, list):
         raise EmbeddingError("Embedding response missing data list")
@@ -69,4 +75,3 @@ def parse_embedding_response(data: dict[str, Any], expected_count: int) -> list[
     if len(vectors) != expected_count:
         raise EmbeddingError(f"Expected {expected_count} embedding(s), got {len(vectors)}")
     return vectors
-

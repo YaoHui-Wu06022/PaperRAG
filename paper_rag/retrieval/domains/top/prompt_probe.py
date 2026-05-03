@@ -38,16 +38,16 @@ def main() -> int:
 
     settings = Settings.load(args.project_root)
     client = PlanParserClient.from_settings(settings)
-    original_query = " ".join(args.query).strip() if args.query else (DEFAULT_QUERIES[0] if DEFAULT_QUERIES else "")
-    if not original_query:
+    query = " ".join(args.query).strip() if args.query else (DEFAULT_QUERIES[0] if DEFAULT_QUERIES else "")
+    if not query:
         print(json.dumps({"error": "No query provided. Add an item to DEFAULT_QUERIES or pass one on the command line."}, ensure_ascii=False, indent=2))
         return 1
 
     content = ""
     try:
-        content = parse_once(client, original_query)
+        content = parse_once(client, query)
         if args.validated:
-            print(json.dumps({"original_query": original_query, "router": validate_top_parse(strip_code_fence(content))}, ensure_ascii=False, indent=2))
+            print(json.dumps({"query": query, "router": validate_top_parse(strip_code_fence(content))}, ensure_ascii=False, indent=2))
         else:
             print(pretty_json_or_raw(content))
     except Exception as exc:
@@ -59,8 +59,8 @@ def main() -> int:
     return 0
 
 
-def parse_once(client: PlanParserClient, original_query: str) -> str:
-    return client.complete_json(top_route_prompt(), original_query)
+def parse_once(client: PlanParserClient, query: str) -> str:
+    return client.complete_json(top_route_prompt(), query)
 
 
 def pretty_json_or_raw(content: str) -> str:

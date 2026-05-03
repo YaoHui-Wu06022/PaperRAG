@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .manifest_records import paper_record_key
+
 
 @dataclass(frozen=True)
 class ChunkDocument:
@@ -74,3 +76,14 @@ def parse_chunk_row(row: dict[str, Any], title: str) -> ChunkDocument:
         text=str(row.get("text") or ""),
         embedding_text=str(row.get("embedding_text") or ""),
     )
+
+
+def filter_chunks_by_paper_records(
+    documents: list[ChunkDocument],
+    paper_records: list[dict[str, Any]],
+) -> list[ChunkDocument]:
+    """按论文记录身份过滤 chunk 文档。"""
+    if not paper_records:
+        return []
+    paper_ids = {paper_record_key(record) for record in paper_records if paper_record_key(record)}
+    return [document for document in documents if document.paper_id in paper_ids]

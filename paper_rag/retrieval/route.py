@@ -9,7 +9,7 @@ from .data.aliases import AliasMatch
 @dataclass(frozen=True)
 class RouteDecision:
     route: str
-    original_query: str = ""
+    query: str = ""
     intent: str | None = None
     resolved_papers: list[dict[str, Any]] = field(default_factory=list)
     alias_matches: list[AliasMatch] = field(default_factory=list)

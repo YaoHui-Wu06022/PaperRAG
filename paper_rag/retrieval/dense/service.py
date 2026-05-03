@@ -11,11 +11,14 @@ from .milvus_store import MilvusStore, SearchResult
 
 @dataclass(frozen=True)
 class IndexSummary:
+    """一次向量索引构建的简要结果。"""
+
     chunk_count: int
     collection_name: str
 
 
 def build_embedder(settings: Settings) -> CachedEmbedder:
+    """按配置组装带本地缓存的 embedding 客户端。"""
     client = EmbeddingClient(
         base_url=settings.embedding_base_url,
         api_key=settings.embedding_api_key,
@@ -33,6 +36,7 @@ def build_embedder(settings: Settings) -> CachedEmbedder:
 
 
 def build_store(settings: Settings) -> MilvusStore:
+    """按配置创建 Milvus/Zilliz collection 访问对象。"""
     if not settings.milvus_uri:
         raise ValueError("MILVUS_URI is missing in .env")
     return MilvusStore(
@@ -45,6 +49,7 @@ def build_store(settings: Settings) -> MilvusStore:
 
 
 def run_index(settings: Settings, *, reporter=print, embedder=None, store=None) -> IndexSummary:
+    """读取所有 chunks，生成向量并重建 Milvus collection。"""
     documents = load_chunk_documents(settings.paper_data_dir)
     if not documents:
         raise ValueError(f"No chunks.jsonl found in {settings.paper_data_dir}")
@@ -61,7 +66,16 @@ def run_index(settings: Settings, *, reporter=print, embedder=None, store=None) 
 
 
 def run_search(settings: Settings, query: str, *, top_k: int = 5, embedder=None, store=None) -> list[SearchResult]:
+    """把用户 query 向量化后在 Milvus 中召回 chunk。"""
     embedder = embedder or build_embedder(settings)
     store = store or build_store(settings)
     query_vector = embedder.embed_texts([query])[0]
     return store.search(query_vector, top_k)
+
+
+def search_dense_chunks(settings: Settings, query: str, *, embedder=None, store=None) -> list[SearchResult]:
+    """content planner 用的 dense chunk 检索薄封装。"""
+    embedder = embedder or build_embedder(settings)
+    store = store or build_store(settings)
+    query_vector = embedder.embed_texts([query])[0]
+    return store.search(query_vector, settings.plan_dense_top_k)
