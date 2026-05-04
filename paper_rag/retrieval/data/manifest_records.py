@@ -8,7 +8,7 @@ from typing import Any
 
 from ...config import Settings
 from ...dataprocess.manifest import Manifest, ManifestRecord
-from .utils import dedupe_by, tokenize
+from .utils import dedupe_by, normalize_bm25_token
 
 
 def load_active_manifest_records(settings: Settings) -> list[ManifestRecord]:
@@ -24,17 +24,17 @@ def load_active_manifest_records(settings: Settings) -> list[ManifestRecord]:
 def match_manifest_records(settings: Settings, query: str) -> list[dict]:
     """用标题轻量召回匹配 query 的 manifest records。"""
     records = load_active_manifest_records(settings)
-    query_token_list = tokenize(query)
+    query_token_list = normalize_bm25_token(query)
     query_tokens = set(query_token_list)
     query_compact = "".join(query_token_list)
     matches: list[tuple[float, ManifestRecord]] = []
     for record in records:
         title = record.title or ""
-        title_tokens = set(tokenize(title))
+        title_tokens = set(normalize_bm25_token(title))
         if not title_tokens:
             continue
         # 轻量召回只看标题 token，不改写原始 query，也不读取正文索引。
-        title_compact = "".join(tokenize(title))
+        title_compact = "".join(normalize_bm25_token(title))
         overlap = title_tokens & query_tokens
         score = 0.0
         if title_compact and title_compact in query_compact:

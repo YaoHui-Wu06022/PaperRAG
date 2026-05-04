@@ -1,4 +1,4 @@
-"""manifest record 的布尔 filter evaluator。"""
+"""manifest record 的 filter evaluator，只做最终布尔匹配。"""
 
 from __future__ import annotations
 
@@ -7,7 +7,13 @@ from typing import Any
 from ...config import Settings
 from ...dataprocess.manifest import normalize_year
 from ...dataprocess.venues import expand_venue_query_terms, expand_venue_record_terms, venue_key, venue_keys_match
-from .utils import filter_value_to_list, normalized_text
+from .utils import (
+    interval_bound_as_int,
+    is_negative_infinity,
+    is_positive_infinity,
+    normalize_token,
+    value_to_text_list,
+)
 
 
 ARXIV_VALUES = {"arxiv", "arxiv preprint"}
@@ -15,32 +21,9 @@ ARXIV_VALUES = {"arxiv", "arxiv preprint"}
 
 def match_record_filters(settings: Settings, record, filters: list[dict[str, Any]]) -> bool:
     """判断单条 manifest record 是否满足全部 metadata filters。"""
-    # ArXiv 是特殊范围：同组出现 venue=ArXiv 时，year 改用 preprint_year。
+    # 同组出现 venue=ArXiv 时，year 改用 preprint_year；其它情况用 publish_year。
     year_source = "preprint" if has_arxiv_filter(filters) else "publish"
     return all(match_record_filter(settings, record, filter_item, year_source=year_source) for filter_item in filters)
-
-
-def normalized_bound_text(value: Any) -> str:
-    """规范化 year interval 的无穷边界文本。"""
-    return value.strip().lower() if isinstance(value, str) else ""
-
-
-def is_negative_infinity(value: Any) -> bool:
-    """判断 interval 下界是否为 -inf。"""
-    return normalized_bound_text(value) == "-inf"
-
-
-def is_positive_infinity(value: Any) -> bool:
-    """判断 interval 上界是否为 inf/+inf。"""
-    return normalized_bound_text(value) in {"inf", "+inf"}
-
-
-def bound_as_int(value: Any) -> int | None:
-    """把区间边界转成 int，失败时返回 None。"""
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
 
 
 def match_record_filter(
@@ -62,7 +45,7 @@ def match_record_positive_filter(
     *,
     year_source: str = "publish",
 ) -> bool:
-    """按 field 分派到具体的正向匹配函数。"""
+    """按 field 分发到具体的正向匹配函数。"""
     field = filter_item.get("field")
     op = filter_item.get("op")
     value = filter_item.get("value")
@@ -77,7 +60,7 @@ def match_record_positive_filter(
     if field == "venue":
         if op not in {"=", "in"}:
             return False
-        # venue=ArXiv 不要求 manifest.venue 写成 ArXiv，只看是否有 preprint_year。
+        # venue=ArXiv 不要求 manifest.venue 写成 ArXiv，只看是否存在 preprint_year。
         if matches_arxiv_preprint(record, value, op):
             return True
         return compare_venue(settings, record.venue, op, value)
@@ -89,7 +72,7 @@ def match_record_positive_filter(
 
 
 def compare_number(actual: Any, op: str, expected: Any, *, year_source: str = "publish") -> bool:
-    """比较 year 字段，支持 = 和 interval。"""
+    """比较 year 字段；parser 层应已经把论文边界解析成 int/-inf/inf。"""
     actual_year = filter_year(actual, year_source)
     if actual_year is None:
         return False
@@ -100,13 +83,13 @@ def compare_number(actual: Any, op: str, expected: Any, *, year_source: str = "p
             return False
         lower_bound, upper_bound = bounds
         if not is_negative_infinity(lower_bound):
-            lower_number = bound_as_int(lower_bound)
+            lower_number = interval_bound_as_int(lower_bound)
             if lower_number is None:
                 return False
             if actual_number < lower_number:
                 return False
         if not is_positive_infinity(upper_bound):
-            upper_number = bound_as_int(upper_bound)
+            upper_number = interval_bound_as_int(upper_bound)
             if upper_number is None:
                 return False
             if actual_number > upper_number:
@@ -120,7 +103,7 @@ def compare_number(actual: Any, op: str, expected: Any, *, year_source: str = "p
 
 def compare_authors(authors: list[str], op: str, expected: Any) -> bool:
     """比较 author 字段，目前只支持 contains。"""
-    values = filter_value_to_list(expected)
+    values = value_to_text_list(expected)
     if not values:
         return False
     if op == "contains":
@@ -131,11 +114,11 @@ def compare_authors(authors: list[str], op: str, expected: Any) -> bool:
 def compare_text(actual: Any, op: str, expected: Any) -> bool:
     """比较 title/paper 等文本字段。"""
     actual_text = str(actual or "")
-    actual_key = normalized_text(actual_text)
-    values = filter_value_to_list(expected)
+    actual_key = normalize_token(actual_text)
+    values = value_to_text_list(expected)
     if not values:
         return False
-    value_keys = [normalized_text(value) for value in values]
+    value_keys = [normalize_token(value) for value in values]
     if op == "=":
         return actual_key == value_keys[0]
     if op == "in":
@@ -149,7 +132,7 @@ def compare_venue(settings: Settings, actual: Any, op: str, expected: Any) -> bo
     """比较 venue 字段，带 venue aliases 规范化。"""
     actual_keys = [venue_key(value) for value in expand_venue_record_terms(settings, actual)]
     actual_keys = [key for key in actual_keys if key]
-    expected_keys = [venue_key(value) for value in expand_venue_query_terms(settings, filter_value_to_list(expected))]
+    expected_keys = [venue_key(value) for value in expand_venue_query_terms(settings, value_to_text_list(expected))]
     expected_keys = [key for key in expected_keys if key]
     if not actual_keys or not expected_keys:
         return False
@@ -178,7 +161,7 @@ def has_arxiv_filter(filters: list[dict[str, Any]]) -> bool:
 
 def value_is_arxiv(value: Any) -> bool:
     """纯判断：filter value 是否表达 ArXiv。"""
-    values = [str(item).strip().lower() for item in filter_value_to_list(value) if str(item).strip()]
+    values = [str(item).strip().lower() for item in value_to_text_list(value) if str(item).strip()]
     return any(item in ARXIV_VALUES for item in values)
 
 
@@ -192,10 +175,10 @@ def filter_year(value: Any, year_source: str) -> int | None:
 
 def matching_author(authors: list[str], author_query: str) -> str | None:
     """在作者列表中查找与查询文本规范化后相同的作者。"""
-    query_text = normalized_text(author_query)
+    query_text = normalize_token(author_query)
     if not query_text:
         return None
     for author in authors:
-        if normalized_text(author) == query_text:
+        if normalize_token(author) == query_text:
             return author
     return None

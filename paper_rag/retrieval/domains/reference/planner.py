@@ -9,7 +9,7 @@ from ...evidence import build_reference_evidence
 from ...route import RouteDecision
 from ...data.citation_scope import load_citation_graph
 from ...data.manifest_records import dedupe_paper_records, paper_record_key
-from ...data.paper_scope import combined_semantic, records_for_scope
+from ...data.paper_scope_records import combined_semantic, records_for_scope
 
 
 def plan_reference(settings: Settings, route: RouteDecision, warnings: list[str], *, debug: bool = False) -> dict[str, Any]:

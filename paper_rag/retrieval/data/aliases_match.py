@@ -8,7 +8,7 @@ from typing import Any
 from ...config import Settings
 from .annotations_index import load_paper_annotation_entries
 from .manifest_records import match_manifest_records, paper_record_key
-from .utils import dedupe_alias_matches, dedupe_text_values_for_search, normalized_text, tokenize
+from .utils import dedupe_bm25_text, dedupe_by, normalize_bm25_token, normalize_token
 
 
 @dataclass(frozen=True)
@@ -29,13 +29,13 @@ def load_paper_annotation_aliases(settings: Settings) -> list[dict[str, Any]]:
 
 def find_alias_matches(entries: list[dict[str, Any]], query: str) -> list[AliasMatch]:
     """用搜索 token 判断 query 是否命中某个论文别名。"""
-    query_tokens = set(tokenize(query))
+    query_tokens = set(normalize_bm25_token(query))
     matches: list[AliasMatch] = []
     for entry in entries:
         canonical = str(entry.get("canonical") or "").strip()
         aliases = [str(alias).strip() for alias in entry.get("aliases") or [] if str(alias).strip()]
         for alias in aliases:
-            alias_tokens = set(tokenize(alias))
+            alias_tokens = set(normalize_bm25_token(alias))
             if alias_tokens and alias_tokens.issubset(query_tokens):
                 matches.append(AliasMatch(alias, canonical))
                 break
@@ -48,6 +48,11 @@ def alias_match_to_dict(match: AliasMatch) -> dict[str, Any]:
         "alias": match.alias,
         "canonical": match.canonical,
     }
+
+
+def dedupe_alias_matches(matches: list[AliasMatch]) -> list[AliasMatch]:
+    """按 alias/canonical 对 alias match 保序去重。"""
+    return dedupe_by(matches, lambda match: (match.alias, match.canonical))
 
 
 def resolve_paper_queries(settings: Settings, queries: list[str]) -> tuple[list[dict[str, Any]], list[AliasMatch]]:
@@ -63,7 +68,7 @@ def resolve_paper_queries(settings: Settings, queries: list[str]) -> tuple[list[
         matches = find_alias_matches(alias_entries, query_text)
         alias_matches.extend(matches)
         # 先用用户原始 mention 直接搜 manifest，再用 alias 映射出的 canonical title 搜。
-        candidate_queries = dedupe_text_values_for_search([
+        candidate_queries = dedupe_bm25_text([
             query_text,
             *[match.canonical for match in matches if match.canonical],
         ])
@@ -90,8 +95,8 @@ def resolved_paper_record(record: dict[str, Any], matches: list[AliasMatch]) -> 
 
 def matched_alias_for_record(title: Any, matches: list[AliasMatch]) -> str | None:
     """如果 record 标题等于 canonical，返回触发它的 alias。"""
-    title_text = normalized_text(str(title or ""))
+    title_text = normalize_token(str(title or ""))
     for match in matches:
-        if normalized_text(match.canonical) == title_text:
+        if normalize_token(match.canonical) == title_text:
             return match.alias
     return None

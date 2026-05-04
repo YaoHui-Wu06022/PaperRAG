@@ -7,8 +7,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..chunk_fusion import RRF_K
-from ..data.chunks import ChunkDocument
-from ..data.utils import tokenize
+from ..data.chunks_load import ChunkDocument
+from ..data.utils import normalize_bm25_token
 
 
 @dataclass(frozen=True)
@@ -37,7 +37,7 @@ class BM25Index:
         self.documents = documents
         self.k1 = k1
         self.b = b
-        self.doc_tokens = [tokenize(document.text) for document in documents]
+        self.doc_tokens = [normalize_bm25_token(document.text) for document in documents]
         self.doc_lengths = [len(tokens) for tokens in self.doc_tokens]
         self.avgdl = sum(self.doc_lengths) / len(self.doc_lengths) if self.doc_lengths else 0.0
         self.term_freqs = [count_terms(tokens) for tokens in self.doc_tokens]
@@ -48,7 +48,7 @@ class BM25Index:
 
     def search(self, query: str, top_k: int) -> list[BM25Hit]:
         """对单个 query 执行 BM25 检索。"""
-        query_tokens = tokenize(query)
+        query_tokens = normalize_bm25_token(query)
         if not query_tokens or not self.documents:
             return []
         scored: list[BM25Hit] = []

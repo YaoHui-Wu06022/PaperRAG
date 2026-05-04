@@ -36,7 +36,7 @@ def load_payload(content: str | dict[str, Any], name: str) -> dict[str, Any]:
     return payload
 
 
-def norm_string_list(value: Any, name: str) -> list[str]:
+def normalize_string_list(value: Any, name: str) -> list[str]:
     """校验字符串列表，并过滤空字符串。"""
     if not isinstance(value, list):
         raise PlanParseError(f"{name} must be a list")
@@ -66,6 +66,15 @@ def validate_semantic(value: Any, name: str) -> str:
     if not isinstance(value, str):
         raise PlanParseError(f"{name} must be a string")
     return value.strip()
+
+
+def normalize_nullable_enum(value: Any) -> str | None:
+    """把 JSON null 或字符串 'null' 统一成 None。"""
+    if value is None:
+        return None
+    if isinstance(value, str) and value.strip().lower() == "null":
+        return None
+    return str(value)
 
 
 def validate_paper_groups(value: Any, parser_name: str, field_name: str) -> list[dict[str, Any]]:
@@ -121,7 +130,7 @@ def validate_paper_filter(value: Any) -> dict[str, Any]:
     return {
         "field": field,
         "op": op,
-        "value": norm_filter_value(op, value.get("value")),
+        "value": normalize_filter_value(op, value.get("value")),
         "negated": negated,
     }
 
@@ -133,16 +142,16 @@ def validate_filter_field_op(field: str, op: str) -> None:
         raise PlanParseError(f"Invalid paper filter op for {field} field: {op}")
 
 
-def norm_filter_value(op: str, value: Any) -> Any:
+def normalize_filter_value(op: str, value: Any) -> Any:
     """只对 interval value 做边界规范化，其它 value 原样保留。"""
     if op != "interval":
         return value
     if isinstance(value, list) and len(value) == 2:
-        return [norm_interval_bound(value[0]), norm_interval_bound(value[1])]
+        return [normalize_interval_bound(value[0]), normalize_interval_bound(value[1])]
     raise PlanParseError("Plan interval filter requires a two-item range")
 
 
-def norm_interval_bound(value: Any) -> int | str:
+def normalize_interval_bound(value: Any) -> int | str:
     """把 interval 边界转成 int、inf 标记或论文 mention 文本。"""
     if isinstance(value, str):
         text = value.strip()

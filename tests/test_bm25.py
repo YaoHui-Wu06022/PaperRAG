@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import unittest
 
-from paper_rag.retrieval.sparse.bm25 import BM25Document, BM25Index, tokenize
+from paper_rag.retrieval.sparse.bm25 import BM25Document, BM25Index, normalize_bm25_token
 
 
 class BM25Tests(unittest.TestCase):
     def test_tokenize_normalizes_dash_variants_and_filters_stopwords(self) -> None:
-        tokens = tokenize("How does intra_class and long\u2013short-term memory work?")
+        tokens = normalize_bm25_token("How does intra_class and long\u2013short-term memory work?")
         self.assertNotIn("how", tokens)
         self.assertNotIn("and", tokens)
         self.assertIn("intra-class", tokens)

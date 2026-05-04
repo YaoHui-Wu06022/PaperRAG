@@ -7,7 +7,7 @@ from typing import Any
 
 from ...config import Settings
 from ...dataprocess.annotations import load_paper_annotations
-from .utils import normalized_text
+from .utils import normalize_token
 
 
 PaperTags = dict[str, list[str]]
@@ -59,4 +59,4 @@ def annotation_string_list(value: Any) -> list[str]:
 def paper_title_key(title: Any) -> str:
     """生成 annotation 和 manifest 标题对齐用的稳定 key。"""
     text = str(title or "").strip()
-    return normalized_text(text) or " ".join(text.lower().split())
+    return normalize_token(text) or " ".join(text.lower().split())

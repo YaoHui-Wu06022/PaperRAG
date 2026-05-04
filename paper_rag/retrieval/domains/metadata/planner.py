@@ -6,7 +6,7 @@ from typing import Any
 
 from ....config import Settings
 from ...data.manifest_records import dedupe_paper_records
-from ...data.paper_scope import combined_semantic, records_for_scope
+from ...data.paper_scope_records import combined_semantic, records_for_scope
 from ...evidence import build_metadata_evidence
 from ...route import RouteDecision
 
@@ -41,7 +41,7 @@ def plan_metadata(
         records = dedupe_paper_records([record for group in group_results for record in group["records"]])
         exists = all(bool(group["records"]) for group in group_results)
     else:
-        records = metadata_records_for_route(settings, route)
+        records = metadata_scope_records(settings, route)
         if route.intent == "exists":
             exists = bool(records)
 
@@ -76,8 +76,8 @@ def metadata_per_group_results(settings: Settings, route: RouteDecision) -> list
     return results
 
 
-def metadata_records_for_route(settings: Settings, route: RouteDecision) -> list[dict[str, Any]]:
-    """按 group_mode 执行 metadata scope 查询。"""
+def metadata_scope_records(settings: Settings, route: RouteDecision) -> list[dict[str, Any]]:
+    """执行 metadata scope 查询，返回扁平去重后的 records。"""
     if route.group_mode == "or":
         records = [
             record

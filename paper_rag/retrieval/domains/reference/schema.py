@@ -7,6 +7,7 @@ from typing import Any
 from ..common.errors import PlanParseError
 from ..common.schema import (
     load_payload,
+    normalize_nullable_enum,
     validate_group_mode,
     validate_paper_filters,
     validate_paper_groups,
@@ -69,12 +70,3 @@ def validate_reference_parse(content: str | dict[str, Any], fallback_query: str 
         "object_groups": object_groups,
         "object_mode": object_mode,
     }
-
-
-def normalize_nullable_enum(value: Any) -> str | None:
-    """把 JSON null 或字符串 'null' 统一成 None。"""
-    if value is None:
-        return None
-    if isinstance(value, str) and value.strip().lower() == "null":
-        return None
-    return str(value)

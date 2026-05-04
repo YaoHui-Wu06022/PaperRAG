@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any
-
 from ....config import Settings
 from ..common.errors import PlanParseError
+from ...data.aliases_match import dedupe_alias_matches
 from ...data.manifest_records import merge_paper_records
 from ...data.parser_scope_resolver import resolve_parser_scope, resolve_year_filter_values
-from ...data.utils import dedupe_alias_matches
 from ...route import RouteDecision
 from .parser import MetadataParserClient
 
@@ -103,8 +101,3 @@ def apply_paper_year_filters(settings: Settings, decision: RouteDecision, warnin
         paper_groups=paper_groups,
         group_mode=decision.group_mode,
     )
-
-
-def effective_group_filters(route: RouteDecision, group: dict[str, Any]) -> list[dict[str, Any]]:
-    """生成 group 执行时实际使用的全局 filters + 局部 filters。"""
-    return [*route.filters, *(group.get("filters") or [])]

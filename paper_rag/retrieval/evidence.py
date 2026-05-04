@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..dataprocess.venues import display_venue
-from .data.aliases import alias_match_to_dict
+from .data.aliases_match import alias_match_to_dict
 from .route import RouteDecision
 
 
@@ -400,27 +400,6 @@ def route_debug(route: RouteDecision, **extra: Any) -> dict[str, Any]:
     return debug
 
 
-def to_evidence_papers(papers: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """批量裁剪论文字段。"""
-    return [paper for paper in (to_evidence_paper(paper) for paper in papers) if paper is not None]
-
-
-def to_evidence_paper(paper: dict[str, Any] | None) -> dict[str, Any] | None:
-    """裁剪单篇论文，只保留对外可展示字段。"""
-    if not paper:
-        return None
-    result = {
-        "title": paper.get("title"),
-        "author": paper.get("author"),
-        "year": paper.get("year"),
-        "venue": paper.get("venue"),
-    }
-    matched_alias = paper.get("matched_alias")
-    if matched_alias:
-        result["matched_alias"] = matched_alias
-    return result
-
-
 def compact_reference_edge(entry: dict[str, Any]) -> dict[str, Any]:
     """把 citation edge 压缩成 source/object/ref/page/block。"""
     edge = entry.get("edge") or {}
@@ -463,8 +442,3 @@ def to_evidence_metadata_record(record: dict[str, Any]) -> dict[str, Any]:
         "venue": record.get("venue"),
         "pdf_path": record.get("pdf_path"),
     }
-
-
-def to_evidence_metadata_records(resolved_papers: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """批量裁剪 metadata records。"""
-    return [to_evidence_metadata_record(paper) for paper in resolved_papers]

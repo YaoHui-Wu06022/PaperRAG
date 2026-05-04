@@ -5,7 +5,14 @@ from __future__ import annotations
 from typing import Any
 
 from ..common.errors import PlanParseError
-from ..common.schema import load_payload, validate_group_mode, validate_paper_filters, validate_paper_groups, validate_semantic
+from ..common.schema import (
+    load_payload,
+    normalize_nullable_enum,
+    validate_group_mode,
+    validate_paper_filters,
+    validate_paper_groups,
+    validate_semantic,
+)
 
 
 METADATA_INTENTS = {"lookup", "list", "count", "exists", None}
@@ -53,15 +60,6 @@ def validate_metadata_parse(content: str | dict[str, Any], fallback_query: str =
         "paper_groups": paper_groups,
         "group_mode": group_mode,
     }
-
-
-def normalize_nullable_enum(value: Any) -> str | None:
-    """把 JSON null 或字符串 'null' 统一成 None。"""
-    if value is None:
-        return None
-    if isinstance(value, str) and value.strip().lower() == "null":
-        return None
-    return str(value)
 
 
 def validate_return_fields(value: Any) -> list[str]:

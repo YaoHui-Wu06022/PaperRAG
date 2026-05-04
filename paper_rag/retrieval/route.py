@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from .data.aliases import AliasMatch
+from .data.aliases_match import AliasMatch
 
 
 @dataclass(frozen=True)

@@ -1,4 +1,4 @@
-"""retrieval/data 层通用文本规范化、tokenize 和去重工具。"""
+"""retrieval/data 层的轻量工具函数。"""
 
 from __future__ import annotations
 
@@ -51,36 +51,32 @@ STOPWORDS = {
 }
 
 
-def tokenize(text: str) -> list[str]:
-    """把文本切成搜索/BM25 使用的 token。"""
+def normalize_bm25_token(text: str) -> list[str]:
+    """把文本切成 BM25/search 使用的 token，会移除英文停用词。"""
+    text = text.lower().translate(DASH_TRANSLATION)
     return [
         token
-        for token in TOKEN_RE.findall(normalize_for_bm25(text))
+        for token in TOKEN_RE.findall(text)
         if token not in STOPWORDS
     ]
 
 
-def normalize_for_bm25(text: str) -> str:
-    """执行 BM25/tokenize 前的大小写和连字符规范化。"""
-    return text.lower().translate(DASH_TRANSLATION)
+def normalize_token(value: str) -> str:
+    """生成确定性比较用的 token key，不删除停用词。"""
+    # 适合 contains/in/tag/alias 这类确定性判断。
+    return " ".join(re.findall(r"[a-z0-9]+", value.lower()))
 
 
-def filter_value_to_list(value: Any) -> list[str]:
-    """把 filter value 统一转成非空字符串列表。"""
+def value_to_text_list(value: Any) -> list[str]:
+    """把单值或列表统一整理成非空字符串列表。"""
     if isinstance(value, list):
         return [str(item).strip() for item in value if str(item).strip()]
     text = str(value or "").strip()
     return [text] if text else []
 
 
-def normalized_text(value: str) -> str:
-    """生成确定性比较使用的规整文本。"""
-    # 与 tokenize 不同，这里不移除停用词，适合 contains/in/dedupe 等确定性判断。
-    return " ".join(re.findall(r"[a-z0-9]+", value.lower()))
-
-
 def dedupe_by(values: Iterable[T], key_fn: Callable[[T], K | None]) -> list[T]:
-    """按 key 函数对列表保序去重。"""
+    """按外部提供的 key 函数保序去重。"""
     seen: set[K] = set()
     result: list[T] = []
     for value in values:
@@ -92,18 +88,35 @@ def dedupe_by(values: Iterable[T], key_fn: Callable[[T], K | None]) -> list[T]:
     return result
 
 
-def dedupe_alias_matches(matches: Iterable[T]) -> list[T]:
-    """按 alias/canonical 对 alias match 保序去重。"""
-    return dedupe_by(matches, lambda match: (getattr(match, "alias", ""), getattr(match, "canonical", "")))
+def dedupe_text(values: Iterable[Any]) -> list[str]:
+    """按原始文本去重：只 strip 和大小写折叠，不切词、不删停用词。"""
+    texts = (str(value or "").strip() for value in values)
+    return dedupe_by(texts, lambda text: text.casefold() if text else None)
 
 
-def dedupe_text_values_for_search(values: list[str]) -> list[str]:
-    """按搜索 token 语义对文本列表保序去重。"""
-    seen: set[str] = set()
-    result: list[str] = []
-    for value in values:
-        key = " ".join(tokenize(value))
-        if key and key not in seen:
-            seen.add(key)
-            result.append(value)
-    return result
+def dedupe_bm25_text(values: list[str]) -> list[str]:
+    """按 BM25 token 去重：会切词、统一连字符并删除英文停用词。"""
+    return dedupe_by(values, lambda value: " ".join(normalize_bm25_token(value)) or None)
+
+
+def normalize_interval_bound_text(value: Any) -> str:
+    """规范化 year interval 的无穷边界文本。"""
+    return value.strip().lower() if isinstance(value, str) else ""
+
+
+def is_negative_infinity(value: Any) -> bool:
+    """判断 interval 下界是否为 -inf。"""
+    return normalize_interval_bound_text(value) == "-inf"
+
+
+def is_positive_infinity(value: Any) -> bool:
+    """判断 interval 上界是否为 inf/+inf。"""
+    return normalize_interval_bound_text(value) in {"inf", "+inf"}
+
+
+def interval_bound_as_int(value: Any) -> int | None:
+    """把区间边界转成 int，失败时返回 None。"""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None

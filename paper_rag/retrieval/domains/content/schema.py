@@ -7,7 +7,8 @@ from typing import Any
 from ..common.errors import PlanParseError
 from ..common.schema import (
     load_payload,
-    norm_string_list,
+    normalize_nullable_enum,
+    normalize_string_list,
     validate_group_mode,
     validate_paper_filters,
     validate_paper_groups,
@@ -48,8 +49,8 @@ def validate_content_parse(content: str | dict[str, Any], fallback_query: str = 
     if group_mode == "and" and intent != "exists":
         raise PlanParseError('Content group_mode="and" requires intent="exists"')
 
-    content_objects = norm_string_list(payload.get("content_objects") or [], f"{PARSER_NAME} content_objects")
-    compare_objects = norm_string_list(payload.get("compare_objects") or [], f"{PARSER_NAME} compare_objects")
+    content_objects = normalize_string_list(payload.get("content_objects") or [], f"{PARSER_NAME} content_objects")
+    compare_objects = normalize_string_list(payload.get("compare_objects") or [], f"{PARSER_NAME} compare_objects")
     if intent == "compare":
         if len(compare_objects) < 2:
             raise PlanParseError("Content compare requires at least two compare_objects")
@@ -67,12 +68,3 @@ def validate_content_parse(content: str | dict[str, Any], fallback_query: str = 
         "content_objects": content_objects,
         "compare_objects": compare_objects,
     }
-
-
-def normalize_nullable_enum(value: Any) -> str | None:
-    """把 JSON null 或字符串 'null' 统一成 None。"""
-    if value is None:
-        return None
-    if isinstance(value, str) and value.strip().lower() == "null":
-        return None
-    return str(value)

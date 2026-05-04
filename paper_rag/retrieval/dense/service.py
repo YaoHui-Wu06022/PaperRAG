@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from ...config import Settings
-from ..data.chunks import ChunkDocument, load_chunk_documents
+from ..data.chunks_load import ChunkDocument, load_chunk_documents
 from .cache import CachedEmbedder, EmbeddingCache
 from .embedding import EmbeddingClient
 from .milvus_store import MilvusStore, SearchResult

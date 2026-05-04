@@ -20,7 +20,6 @@ def find_project_root() -> Path:
 PROJECT_ROOT = find_project_root()
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-
 from paper_rag.config import Settings
 from paper_rag.retrieval.domains.metadata.planner import plan_metadata
 from paper_rag.retrieval.domains.metadata.router import build_metadata_decision
@@ -36,7 +35,7 @@ def main() -> int:
     """解析命令行参数并输出 metadata planner evidence。"""
     parser = argparse.ArgumentParser(description="Probe metadata planner evidence outputs.")
     parser.add_argument("query", nargs="*", help="Optional single query. Defaults to the first DEFAULT_QUERIES item.")
-    parser.add_argument("--project-root", type=Path, default=find_project_root(), help="Project root containing .env")
+    parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT, help="Project root containing .env")
     parser.add_argument("--debug", action="store_true", help="Include planner debug details")
     parser.add_argument("--show-route", action="store_true", help="Include the parsed RouteDecision summary")
     args = parser.parse_args()

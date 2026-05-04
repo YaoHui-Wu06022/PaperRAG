@@ -52,15 +52,15 @@ paper_rag/
    ├─ evidence_probe.py              # evidence 调试脚本
    ├─ chunk_fusion.py                # dense/BM25 RRF 融合
    ├─ data/
-   │  ├─ aliases.py                  # annotation aliases 到 canonical paper match
+   │  ├─ aliases_match.py            # annotation aliases 到 canonical paper match
    │  ├─ annotations_index.py        # paper_annotations.json 统一扫描入口
-   │  ├─ chunks.py                   # chunks.jsonl 读取与按论文记录过滤
+   │  ├─ chunks_load.py              # chunks.jsonl 读取与按论文记录过滤
    │  ├─ citation_scope.py           # paper follow/prior citation 范围
    │  ├─ filters.py                  # manifest record filter evaluator
    │  ├─ manifest_records.py         # active manifest 读取、匹配、record key
-   │  ├─ paper_scope.py              # semantic + filters + groups 到候选论文 records
+   │  ├─ paper_scope_records.py      # semantic + filters + groups 到候选论文 records
    │  ├─ parser_scope_resolver.py    # parser scope/filter value 解析
-   │  └─ utils.py                    # tokenize、normalized_text、dedupe、filter value 工具
+   │  └─ utils.py                    # normalize token、dedupe、interval boundary 工具
    ├─ dense/
    │  ├─ service.py                  # index/search 接线与 dense chunk search
    │  ├─ embedding.py                # OpenAI-compatible embedding client
@@ -137,15 +137,18 @@ paper_rag/
 
 - `retrieval/data` 是本地数据执行层：读取 manifest/chunks/annotations/citation graph，做 record/filter/scope/chunk 级处理。
 - `retrieval/domains/common` 是 parser/domain 共用基础设施：schema 校验、parser client、prompt/error，不读取本地数据。
-- `data/utils.py` 中的 `tokenize()` 和英文 `STOPWORDS` 保留：
+- `data/utils.py` 中的 `normalize_bm25_token()` 和英文 `STOPWORDS` 保留：
   - 用于 BM25 英文 chunk
   - 用于英文 title/alias/manifest search
   - 用于翻译候选去重
   - 不作为中文问句的主解析工具
 - 论文身份 key 全项目统一用 `manifest_records.paper_record_key()`。
-- filter value 展平统一用 `data.utils.filter_value_to_list()`。
+- filter value 展平统一用 `data.utils.value_to_text_list()`。
 - `parser_scope_resolver.py` 负责把 parser 输出中的 `paper` mention、`venue` alias、`year interval` 论文边界解析成规范值。
-- `paper_scope.py` 负责 `semantic + filters + groups` 到候选论文 records。
+- `paper_scope_records.py` 负责 `semantic + filters + groups` 到候选论文 records。
+- `filters.py` 只做单条 manifest record 的最终布尔匹配，不做 parser mention 解析。
+- `aliases_match.py` 只做结构化 paper mention 的别名匹配，不改写用户 query。
+- `chunks_load.py` 只负责 chunk 数据加载与按论文候选过滤。
 - `citation_scope.py` 负责 `paper follow / paper prior` 这类基于 citation graph 的本地关系范围。
 
 ## 5. Parser Schema 与 Filter 规则
@@ -208,7 +211,7 @@ Schema 字段：
 - `list` 没有 `return_fields` 时默认返回 `title`。
 - `count/exists/null` 要求 `return_fields=[]`。
 - `group_mode="and"` 只允许用于 `exists`。
-- 执行层通过 `paper_scope.records_for_scope()` 查 manifest records。
+- 执行层通过 `paper_scope_records.records_for_scope()` 查 manifest records。
 
 ### Reference
 
@@ -240,7 +243,7 @@ Schema 字段：
 - `return_side="source"` 返回引用发出方论文。
 - `return_side="object"` 返回被引用方论文。
 - 执行层优先使用本地 `citation_graph.json`；图缺失时返回 `status="graph_missing"` 和 warning，不临时扫描全库兜底。
-- source/object 两侧的 filters 都先经过 `parser_scope_resolver` 标准化，再用 `paper_scope` 得到候选论文集合。
+- source/object 两侧的 filters 都先经过 `parser_scope_resolver` 标准化，再用 `paper_scope_records` 得到候选论文集合。
 
 ### Content
 
@@ -262,7 +265,7 @@ Schema 字段：
 - 非 `compare` intent 要求 `compare_objects=[]`。
 - `count/exists` 要求 `content_objects` 非空。
 - `group_mode="and"` 只允许用于 `exists`。
-- content 先用 `paper_scope` 限制候选论文，再只对命中论文的 chunks 做 dense/BM25。
+- content 先用 `paper_scope_records` 限制候选论文，再只对命中论文的 chunks 做 dense/BM25。
 
 ### Content Retrieval Query
 
@@ -418,7 +421,7 @@ python paper_rag/retrieval/evidence_probe.py --route content --debug --show-rout
 ## 11. 命名规范
 
 - `validate_*`：schema / parser payload 校验，失败抛 `PlanParseError`。
-- `norm_*`：纯归一化，不读本地数据，不做检索。
+- `normalize_*`：纯归一化，不读本地数据，不做检索。
 - `resolve_*`：把 parser mention、别名、venue、年份边界解析成内部稳定值。
 - `match_*`：布尔匹配。
 - `filter_*`：集合过滤并返回子集。

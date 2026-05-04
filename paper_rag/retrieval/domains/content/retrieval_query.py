@@ -6,9 +6,10 @@ import re
 from typing import Any
 
 from ....config import Settings
-from ...data.utils import filter_value_to_list
+from ...data.utils import value_to_text_list
+from ...data.utils import dedupe_text
 from ...route import RouteDecision
-from .translation import KeywordTranslator, translate_bm25_terms
+from .translation import KeywordTranslatorProtocol, translate_bm25_terms
 
 
 QUERY_STOP_PHRASES = (
@@ -34,7 +35,7 @@ def build_content_retrieval_query(
     route: RouteDecision,
     warnings: list[str],
     *,
-    translator: KeywordTranslator | None = None,
+    translator: KeywordTranslatorProtocol | None = None,
 ) -> dict[str, Any]:
     """根据 content parser 结果组装 dense/BM25 两套检索 query。"""
     parser_result = route.parser_result or {}
@@ -50,9 +51,9 @@ def build_content_retrieval_query(
         "query_terms": query_terms,
         "excluded_scope_terms": excluded_scope_terms,
     }
-    base_bm25_terms = dedupe_bm25_query_texts([*content_objects, *compare_objects, *query_terms])
+    base_bm25_terms = dedupe_text([*content_objects, *compare_objects, *query_terms])
     translated_terms = translate_bm25_terms(settings, base_bm25_terms, translator=translator, warnings=warnings)
-    bm25_queries = dedupe_bm25_query_texts([*base_bm25_terms, *translated_terms]) or [route.query]
+    bm25_queries = dedupe_text([*base_bm25_terms, *translated_terms]) or [route.query]
     return {
         "dense_query": build_dense_query(route.query, route.intent, content_objects, compare_objects),
         "bm25_queries": bm25_queries,
@@ -99,7 +100,7 @@ def query_keyword_terms(query: str) -> list[str]:
         cleaned = cleaned.replace(phrase, " ")
     cleaned = re.sub(r"[，。！？?；;：:、（）()【】\\[\\]\"'“”‘’]", " ", cleaned)
     terms.extend(part.strip() for part in cleaned.split() if part.strip())
-    return dedupe_bm25_query_texts(terms)
+    return dedupe_text(terms)
 
 
 def scope_query_exclusion_terms(route: RouteDecision) -> list[str]:
@@ -117,14 +118,14 @@ def scope_query_exclusion_terms(route: RouteDecision) -> list[str]:
         ])
     for match in route.alias_matches:
         terms.extend([match.alias, match.canonical])
-    return dedupe_bm25_query_texts(terms)
+    return dedupe_text(terms)
 
 
 def scope_filter_values(filters: list[dict[str, Any]]) -> list[str]:
     """把 filters 中的结构化范围值展开成可从 query 中扣掉的文本。"""
     values: list[str] = []
     for filter_item in filters:
-        values.extend(filter_value_to_list(filter_item.get("value")))
+        values.extend(value_to_text_list(filter_item.get("value")))
     return values
 
 
@@ -138,17 +139,3 @@ def remove_scope_terms_from_query(query: str, scope_terms: list[str]) -> str:
             continue
         cleaned = re.sub(re.escape(text), " ", cleaned, flags=re.IGNORECASE)
     return cleaned
-
-
-def dedupe_bm25_query_texts(values: list[str]) -> list[str]:
-    """按大小写折叠对 BM25 query 文本保序去重。"""
-    seen: set[str] = set()
-    result: list[str] = []
-    for value in values:
-        text = str(value or "").strip()
-        key = text.lower()
-        if not text or key in seen:
-            continue
-        seen.add(key)
-        result.append(text)
-    return result

@@ -15,7 +15,7 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 from ....config import Settings
-from ...data.utils import dedupe_text_values_for_search
+from ...data.utils import dedupe_bm25_text
 
 
 CHINESE_RE = re.compile(r"[\u4e00-\u9fff]")
@@ -25,7 +25,7 @@ TENCENT_VERSION = "2018-03-21"
 ALIYUN_ACTION = "TranslateGeneral"
 
 
-class KeywordTranslator(Protocol):
+class KeywordTranslatorProtocol(Protocol):
     """BM25 关键词翻译器协议，便于测试时注入 mock translator。"""
 
     def translate(self, text: str, provider: str, settings: Settings) -> str | list[str] | None:
@@ -55,7 +55,7 @@ def translate_bm25_terms(
     settings: Settings,
     terms: list[str],
     *,
-    translator: KeywordTranslator | None = None,
+    translator: KeywordTranslatorProtocol | None = None,
     warnings: list[str] | None = None,
 ) -> list[str]:
     """用可插拔翻译器为 BM25 中文关键词补充英文候选。"""
@@ -72,7 +72,7 @@ def translate_bm25_terms(
             except Exception as exc:
                 if warnings is not None:
                     warnings.append(f"{provider} translation failed for BM25 term {term!r}: {exc}")
-    return dedupe_text_values_for_search(translated)
+    return dedupe_bm25_text(translated)
 
 
 def configured_translation_providers(settings: Settings) -> list[str]:

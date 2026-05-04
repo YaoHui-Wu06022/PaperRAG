@@ -30,7 +30,7 @@ DEFAULT_QUERIES = [
 def main() -> int:
     parser = argparse.ArgumentParser(description="Probe content parser prompt outputs.")
     parser.add_argument("queries", nargs="*", help="Optional queries. Defaults to representative content examples.")
-    parser.add_argument("--project-root", type=Path, default=find_project_root(), help="Project root containing .env")
+    parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT, help="Project root containing .env")
     args = parser.parse_args()
 
     settings = Settings.load(args.project_root)

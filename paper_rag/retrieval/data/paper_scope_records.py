@@ -1,4 +1,4 @@
-"""把 semantic + filters + groups 转成候选论文 records。"""
+"""把 paper scope 转成候选论文 records。"""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from .manifest_records import (
     paper_record_key,
     to_evidence_manifest_record,
 )
-from .utils import filter_value_to_list, normalized_text
+from .utils import normalize_token, value_to_text_list
 
 
 def records_for_scope(
@@ -24,19 +24,18 @@ def records_for_scope(
     filters: list[dict[str, Any]],
     group_mode: str = "single",
 ) -> list[dict[str, Any]]:
-    """根据 semantic 和 filters 找到候选论文 records。"""
+    """根据 semantic 和已解析 filters 找到候选论文 records。"""
     semantic = paper_semantic.strip()
     semantic_keys = semantic_candidate_keys(settings, semantic)
     if semantic and not semantic_keys:
-        # 有 semantic 但没有任何标题/tag 召回时，直接返回空范围。
+        # 有 semantic 但没有任何标题/tag 召回时，直接返回空候选集。
         return []
     records: list[dict[str, Any]] = []
     for record in load_active_manifest_records(settings):
         if semantic and paper_record_key(record) not in semantic_keys:
             continue
         if match_scope_filters(settings, record, filters):
-            evidence = to_evidence_manifest_record(record)
-            records.append(evidence)
+            records.append(to_evidence_manifest_record(record))
     return records
 
 
@@ -64,7 +63,7 @@ def match_paper_filter(
 ) -> bool:
     """匹配 paper = / follow / prior 三类论文范围条件。"""
     op = filter_item.get("op")
-    values = filter_value_to_list(filter_item.get("value"))
+    values = value_to_text_list(filter_item.get("value"))
     if not values:
         return False
     if op == "=":
@@ -84,7 +83,7 @@ def semantic_candidate_keys(settings: Settings, paper_semantic: str) -> set[str]
     keys.update(paper_record_key(record) for record in matches if paper_record_key(record))
     tag_title_keys = semantic_tag_title_keys(settings, semantic)
     if tag_title_keys:
-        # tags 用 title_key 对齐 annotation 与 manifest，再转成统一 paper_record_key。
+        # tags 先按 title key 对齐 annotation 和 manifest，再转成统一 paper_record_key。
         keys.update(
             paper_record_key(record)
             for record in load_active_manifest_records(settings)
@@ -117,7 +116,7 @@ def semantic_tag_title_keys(settings: Settings, paper_semantic: str) -> set[str]
 def semantic_matches_tags(semantic: str, tags: PaperTags) -> bool:
     """判断 semantic 是否命中一篇论文的中英文标签。"""
     semantic_text = compact_text(semantic)
-    semantic_key = normalized_text(semantic)
+    semantic_key = normalize_token(semantic)
     for tag in [*tags.get("zh", []), *tags.get("en", [])]:
         if semantic_matches_tag(semantic_text, semantic_key, tag):
             return True
@@ -129,14 +128,14 @@ def semantic_matches_tag(semantic_text: str, semantic_key: str, tag: str) -> boo
     tag_text = compact_text(tag)
     if tag_text and semantic_text and (tag_text in semantic_text or semantic_text in tag_text):
         return True
-    tag_key = normalized_text(tag)
+    tag_key = normalize_token(tag)
     if tag_key and semantic_key:
         return tag_key in semantic_key or semantic_key in tag_key
     return False
 
 
 def compact_text(value: Any) -> str:
-    """生成中文/英文标签包含判断用的紧凑文本。"""
+    """生成中英文标签包含判断用的紧凑文本。"""
     return "".join(str(value or "").lower().split())
 
 

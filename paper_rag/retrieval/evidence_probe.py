@@ -21,7 +21,6 @@ def find_project_root() -> Path:
 PROJECT_ROOT = find_project_root()
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-
 from paper_rag.config import Settings
 from paper_rag.retrieval.domains.content.planner import plan_body
 from paper_rag.retrieval.domains.content.router import build_content_decision
@@ -44,7 +43,7 @@ def main() -> int:
     """解析命令行参数并输出 evidence JSON。"""
     parser = argparse.ArgumentParser(description="Probe unified planner evidence outputs.")
     parser.add_argument("query", nargs="*", help="Optional single query. Defaults depend on --route.")
-    parser.add_argument("--project-root", type=Path, default=find_project_root(), help="Project root containing .env")
+    parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT, help="Project root containing .env")
     parser.add_argument(
         "--route",
         choices=["auto", "metadata", "reference", "content"],

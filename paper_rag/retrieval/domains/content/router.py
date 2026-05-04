@@ -6,9 +6,9 @@ from copy import deepcopy
 
 from ....config import Settings
 from ..common.errors import PlanParseError
+from ...data.aliases_match import dedupe_alias_matches
 from ...data.manifest_records import merge_paper_records
 from ...data.parser_scope_resolver import resolve_parser_scope, resolve_year_filter_values
-from ...data.utils import dedupe_alias_matches
 from ...route import RouteDecision
 from .parser import ContentParserClient
 

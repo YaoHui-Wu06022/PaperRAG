@@ -32,7 +32,7 @@ DEFAULT_QUERIES = [
 def main() -> int:
     parser = argparse.ArgumentParser(description="Probe metadata route parser prompt outputs.")
     parser.add_argument("query", nargs="*", help="Optional single query. Defaults to the first DEFAULT_QUERIES item.")
-    parser.add_argument("--project-root", type=Path, default=find_project_root(), help="Project root containing .env")
+    parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT, help="Project root containing .env")
     parser.add_argument("--validated", action="store_true", help="Print validated parser payload instead of raw model output")
     args = parser.parse_args()
 

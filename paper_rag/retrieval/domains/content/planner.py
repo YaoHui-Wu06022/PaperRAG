@@ -6,16 +6,16 @@ from typing import Any
 
 from ....config import Settings
 from ...chunk_fusion import fuse_chunk_hits
-from ...data.chunks import filter_chunks_by_paper_records, load_chunk_documents
+from ...data.chunks_load import filter_chunks_by_paper_records, load_chunk_documents
 from ...data.manifest_records import dedupe_paper_records
-from ...data.paper_scope import combined_semantic, records_for_scope
+from ...data.paper_scope_records import combined_semantic, records_for_scope
 from ...dense.service import search_dense_chunks
 from ...evidence import build_content_evidence
 from ...route import RouteDecision
 from ...sparse.bm25 import search_bm25_chunks
 from .context import context_unit
 from .retrieval_query import build_content_retrieval_query
-from .translation import CloudKeywordTranslator, KeywordTranslator
+from .translation import CloudKeywordTranslator, KeywordTranslatorProtocol
 
 
 def plan_body(
@@ -25,7 +25,7 @@ def plan_body(
     *,
     embedder=None,
     store=None,
-    translator: KeywordTranslator | None = None,
+    translator: KeywordTranslatorProtocol | None = None,
     debug: bool = False,
 ) -> dict[str, Any]:
     """执行正文检索计划，并构造 content evidence。"""

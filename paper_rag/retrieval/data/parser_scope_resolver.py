@@ -8,10 +8,9 @@ from typing import Any
 from ...config import Settings
 from ...dataprocess.manifest import normalize_year
 from ...dataprocess.venues import normalize_venue_for_storage
-from .aliases import AliasMatch, resolve_paper_queries
-from .filters import is_negative_infinity, is_positive_infinity, normalized_bound_text
+from .aliases_match import AliasMatch, dedupe_alias_matches, resolve_paper_queries
 from .manifest_records import merge_paper_records
-from .utils import dedupe_alias_matches, filter_value_to_list
+from .utils import is_negative_infinity, is_positive_infinity, normalize_interval_bound_text, value_to_text_list
 
 
 def resolve_parser_scope(
@@ -66,7 +65,7 @@ def resolve_filter_values(
     settings: Settings,
     filters: list[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], list[AliasMatch], list[dict[str, Any]]]:
-    """规范化 filters 中的 paper、venue 和 year interval value。"""
+    """规范化 parser filters 中的 paper、venue 和 year interval value。"""
     resolved_filters: list[dict[str, Any]] = []
     alias_matches: list[AliasMatch] = []
     resolved_papers: list[dict[str, Any]] = []
@@ -74,7 +73,7 @@ def resolve_filter_values(
         item = deepcopy(filter_item)
         field = item.get("field")
         if field == "paper":
-            # paper = / follow / prior 都先把 value 解析成 canonical title。
+            # paper = / follow / prior 都先把 value 解析成本地 canonical title。
             value, matches, papers = resolve_paper_filter_value(settings, item.get("value"))
             item["value"] = value
             alias_matches.extend(matches)
@@ -94,7 +93,7 @@ def resolve_filter_values(
 
 def resolve_paper_filter_value(settings: Settings, value: Any) -> tuple[Any, list[AliasMatch], list[dict[str, Any]]]:
     """把 paper filter value 解析为本地规范论文标题。"""
-    values = filter_value_to_list(value)
+    values = value_to_text_list(value)
     titles, matches, papers = resolve_paper_mentions_to_titles(settings, values)
     if not isinstance(value, list):
         return (titles[0] if titles else str(value or "").strip()), matches, papers
@@ -175,7 +174,7 @@ def resolve_year_interval_filter(
         return filter_item
     if not has_resolved_interval_bounds(left, right):
         return {**filter_item, "value": [left, right]}
-    return {**filter_item, "value": norm_interval_filter_bounds(left, right)}
+    return {**filter_item, "value": normalize_interval_filter_bounds(left, right)}
 
 
 def resolve_year_boundary(settings: Settings, boundary: Any, warnings: list[str]) -> Any:
@@ -203,12 +202,12 @@ def resolve_year_boundary(settings: Settings, boundary: Any, warnings: list[str]
 
 
 def publish_or_preprint_year(value: Any) -> int | None:
-    """从 year 字段中取正式年份，缺失时退到预印本年份。"""
+    """从 year 字段中取 publish_year，缺失时退到 preprint_year。"""
     year = normalize_year(value)
     return year.get("publish_year") or year.get("preprint_year")
 
 
-def norm_interval_filter_bounds(left: Any, right: Any) -> list[Any]:
+def normalize_interval_filter_bounds(left: Any, right: Any) -> list[Any]:
     """规范化区间边界和方向。"""
     if isinstance(left, int) and is_positive_infinity(right):
         # “X 之后”转成开区间，因此下界 +1。
@@ -218,7 +217,7 @@ def norm_interval_filter_bounds(left: Any, right: Any) -> list[Any]:
         return ["-inf", right - 1]
     if isinstance(left, int) and isinstance(right, int) and left > right:
         return [right, left]
-    return [left, "inf" if normalized_bound_text(right) == "+inf" else right]
+    return [left, "inf" if normalize_interval_bound_text(right) == "+inf" else right]
 
 
 def merge_year_interval_filters(filters: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -276,9 +275,9 @@ def max_lower_bound(left: Any, right: Any) -> Any:
 def min_upper_bound(left: Any, right: Any) -> Any:
     """取两个 interval 上界中更严格的一个。"""
     if is_positive_infinity(left):
-        return "inf" if normalized_bound_text(right) == "+inf" else right
+        return "inf" if normalize_interval_bound_text(right) == "+inf" else right
     if is_positive_infinity(right):
-        return "inf" if normalized_bound_text(left) == "+inf" else left
+        return "inf" if normalize_interval_bound_text(left) == "+inf" else left
     return min(left, right)
 
 

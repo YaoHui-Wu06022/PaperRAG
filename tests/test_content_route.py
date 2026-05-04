@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from paper_rag.config import Settings
-from paper_rag.retrieval.data.aliases import AliasMatch
+from paper_rag.retrieval.data.aliases_match import AliasMatch
 from paper_rag.retrieval.domains.common.errors import PlanParseError
 from paper_rag.retrieval.domains.content.planner import plan_body
 from paper_rag.retrieval.domains.content.retrieval_query import build_content_retrieval_query
