@@ -25,7 +25,8 @@ from paper_rag.retrieval.domains.top.schema import validate_top_parse
 
 
 DEFAULT_QUERIES = [
-    "Transformer 后续论文中有哪些发表在 CVPR？",
+    # "Transformer 后续论文中有哪些发表在 CVPR？",
+    "ResNet 和 Transformer 分别是哪一年发表的？"
 ]
 
 

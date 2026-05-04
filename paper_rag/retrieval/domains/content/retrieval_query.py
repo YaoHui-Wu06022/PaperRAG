@@ -42,16 +42,18 @@ def build_content_retrieval_query(
     compare_objects = list(parser_result.get("compare_objects") or [])
     content_objects = list(parser_result.get("content_objects") or [])
     excluded_scope_terms = scope_query_exclusion_terms(route)
+    compare_terms = non_scope_compare_objects(compare_objects, excluded_scope_terms)
     cleaned_query = remove_scope_terms_from_query(route.query, excluded_scope_terms)
-    query_terms = query_keyword_terms(cleaned_query)
+    query_terms = query_keyword_terms(cleaned_query) if not content_objects and not compare_terms else []
     source_terms = {
         # source_terms 只用于 debug，帮助检查哪些词被纳入或排除。
         "content_objects": content_objects,
         "compare_objects": compare_objects,
+        "compare_terms": compare_terms,
         "query_terms": query_terms,
         "excluded_scope_terms": excluded_scope_terms,
     }
-    base_bm25_terms = dedupe_text([*content_objects, *compare_objects, *query_terms])
+    base_bm25_terms = dedupe_text([*content_objects, *compare_terms, *query_terms])
     translated_terms = translate_bm25_terms(settings, base_bm25_terms, translator=translator, warnings=warnings)
     bm25_queries = dedupe_text([*base_bm25_terms, *translated_terms]) or [route.query]
     return {
@@ -80,11 +82,11 @@ def build_dense_query(
     if intent == "exists" and object_text:
         return f"判断论文中是否提到、使用或包含{object_text}"
     if intent == "count" and object_text:
-        return f"查找与{object_text}数量、统计或计数相关的信息"
+        return f"查找与{object_text}数量和统计相关的信息"
     if object_text:
-        return f"查找论文中关于{object_text}的说明、方法、设置、结果或相关条目"
+        return f"查找论文中关于{object_text}的相关内容"
     if compare_text:
-        return f"查找论文中关于{compare_text}的说明和相关内容"
+        return f"查找论文中关于{compare_text}的相关内容"
     return query
 
 
@@ -101,6 +103,21 @@ def query_keyword_terms(query: str) -> list[str]:
     cleaned = re.sub(r"[，。！？?；;：:、（）()【】\\[\\]\"'“”‘’]", " ", cleaned)
     terms.extend(part.strip() for part in cleaned.split() if part.strip())
     return dedupe_text(terms)
+
+
+def non_scope_compare_objects(compare_objects: list[str], scope_terms: list[str]) -> list[str]:
+    """保留正文比较对象，过滤掉已作为论文 scope 的 compare_objects。"""
+    scope_keys = {scope_term_key(term) for term in scope_terms if scope_term_key(term)}
+    return [
+        compare_object
+        for compare_object in dedupe_text(compare_objects)
+        if scope_term_key(compare_object) not in scope_keys
+    ]
+
+
+def scope_term_key(value: str) -> str:
+    """用于判断 compare_object 是否已经被论文 scope 吸收。"""
+    return str(value or "").strip().casefold()
 
 
 def scope_query_exclusion_terms(route: RouteDecision) -> list[str]:

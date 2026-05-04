@@ -4,6 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from .ask import add_ask_parser
 from .ingest import add_ingest_parser
 from .retrieval import add_retrieval_parsers
 
@@ -14,6 +15,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
     add_ingest_parser(subparsers)
     add_retrieval_parsers(subparsers)
+    add_ask_parser(subparsers)
     return parser
 
 

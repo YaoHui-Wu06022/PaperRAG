@@ -89,6 +89,31 @@ class ReferenceRouterTests(unittest.TestCase):
         self.assertEqual(route.object_filters[0]["value"], RESNET_TITLE)
         self.assertEqual(route.source_filters[0]["value"], [2017, "inf"])
 
+    def test_corrects_active_cites_paper_scope_before_resolution(self) -> None:
+        with reference_fixture() as settings:
+            warnings: list[str] = []
+            parser = StaticReferenceParser({
+                "intent": "list",
+                "return_side": "object",
+                "source_semantic": "",
+                "source_filters": [],
+                "source_groups": [],
+                "source_mode": "single",
+                "object_semantic": "",
+                "object_filters": [{"field": "paper", "op": "=", "value": "VIT", "negated": False}],
+                "object_groups": [],
+                "object_mode": "single",
+            })
+            route = build_reference_decision(
+                settings,
+                RouteDecision(route="reference", query="VIT引用的论文有哪些", parse_status="ok"),
+                warnings,
+                plan_parser=parser,
+            )
+
+        self.assertEqual(route.source_filters[0]["value"], VIT_TITLE)
+        self.assertEqual(route.object_filters, [])
+        self.assertIn("reference parser corrected active cites paper scope from object to source", warnings)
 
 class ReferencePlannerTests(unittest.TestCase):
     def test_returns_source_side_papers(self) -> None:
@@ -158,8 +183,27 @@ class ReferencePlannerTests(unittest.TestCase):
             evidence = plan_reference(settings, route, [])
 
         self.assertEqual(evidence["results"]["count"], 2)
-        self.assertNotIn("papers", evidence["results"])
-        self.assertNotIn("edges", evidence["results"])
+        self.assertEqual(set(evidence["results"]["papers"]), {ATTN_TITLE, SUPCON_TITLE})
+        self.assertIn("edges", evidence["results"])
+        self.assertLessEqual(len(evidence["results"]["edges"]), 3)
+
+    def test_object_and_groups_return_intersecting_source_papers(self) -> None:
+        with reference_fixture() as settings:
+            route = RouteDecision(
+                route="reference",
+                intent="list",
+                return_side="source",
+                object_groups=[
+                    {"semantic": "", "filters": [{"field": "paper", "op": "=", "value": VIT_TITLE, "negated": False}]},
+                    {"semantic": "", "filters": [{"field": "paper", "op": "=", "value": RESNET_TITLE, "negated": False}]},
+                ],
+                object_mode="and",
+            )
+            evidence = plan_reference(settings, route, [])
+
+        self.assertEqual(evidence["results"]["papers"], [ATTN_TITLE])
+        self.assertEqual(evidence["plan"]["object_mode"], "and")
+        self.assertIn("groups", evidence["results"])
 
     def test_exists_checks_edges_between_scopes(self) -> None:
         with reference_fixture() as settings:

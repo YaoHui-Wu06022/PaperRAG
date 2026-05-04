@@ -18,6 +18,7 @@ from paper_rag.retrieval.route import RouteDecision
 
 RESNET_TITLE = "Deep Residual Learning for Image Recognition"
 BERT_TITLE = "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding"
+VIT_TITLE = "An Image is Worth 16x16 Words"
 
 
 class ContentSchemaTests(unittest.TestCase):
@@ -211,6 +212,46 @@ class ContentPlannerTests(unittest.TestCase):
 
         self.assertIn("模型结构", retrieval_query["bm25_queries"])
         self.assertNotIn("VIT", retrieval_query["bm25_queries"])
+
+    def test_bm25_queries_keep_non_scope_compare_objects(self) -> None:
+        with content_fixture() as settings:
+            route = RouteDecision(
+                route="content",
+                intent="compare",
+                query="ResNet 里的 BasicBlock 和 Bottleneck 有什么区别？",
+                parse_status="ok",
+                parser_result={"content_objects": ["模型结构"], "compare_objects": ["BasicBlock", "Bottleneck"]},
+                filters=[{"field": "paper", "op": "=", "value": RESNET_TITLE, "negated": False}],
+                resolved_papers=[{"title": RESNET_TITLE, "matched_alias": "ResNet"}],
+            )
+            retrieval_query = build_content_retrieval_query(settings, route, [], translator=None)
+
+        self.assertIn("模型结构", retrieval_query["bm25_queries"])
+        self.assertIn("BasicBlock", retrieval_query["bm25_queries"])
+        self.assertIn("Bottleneck", retrieval_query["bm25_queries"])
+        self.assertNotIn("ResNet", retrieval_query["bm25_queries"])
+
+    def test_bm25_queries_omit_scope_compare_objects(self) -> None:
+        with content_fixture() as settings:
+            route = RouteDecision(
+                route="content",
+                intent="compare",
+                query="ResNet和VIT的模型结构有什么区别？",
+                parse_status="ok",
+                parser_result={"content_objects": ["模型结构"], "compare_objects": ["ResNet", "VIT"]},
+                paper_groups=[
+                    {"semantic": "", "filters": [{"field": "paper", "op": "=", "value": RESNET_TITLE, "negated": False}]},
+                    {"semantic": "", "filters": [{"field": "paper", "op": "=", "value": VIT_TITLE, "negated": False}]},
+                ],
+                alias_matches=[],
+                resolved_papers=[
+                    {"title": RESNET_TITLE, "matched_alias": "ResNet"},
+                    {"title": VIT_TITLE, "matched_alias": "VIT"},
+                ],
+            )
+            retrieval_query = build_content_retrieval_query(settings, route, [], translator=None)
+
+        self.assertEqual(retrieval_query["bm25_queries"], ["模型结构"])
 
     def test_bm25_queries_include_translation_candidates(self) -> None:
         with content_fixture(env_text=translation_env()) as settings:

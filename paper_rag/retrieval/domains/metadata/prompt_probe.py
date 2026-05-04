@@ -25,7 +25,7 @@ from paper_rag.retrieval.domains.metadata.schema import validate_metadata_parse
 
 
 DEFAULT_QUERIES = [
-    "ResNet 和 Transformer 分别是哪一年发表的？",
+    "ResNet后续有哪些论文标题里带Resnet",
 ]
 
 

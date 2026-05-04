@@ -49,6 +49,8 @@ def build_reference_decision(
             object_mode=decision.object_mode,
         )
 
+    parser_result = correct_active_cites_scope(query, parser_result, warnings)
+
     source_resolved = resolve_parser_paper_scope(settings, {
         "filters": parser_result["source_filters"],
         "paper_groups": parser_result["source_groups"],
@@ -94,6 +96,62 @@ def build_reference_decision(
         object_mode=parser_result["object_mode"],
     )
     return apply_reference_year_filters(settings, enriched, warnings)
+
+
+def correct_active_cites_scope(query: str, parser_result: dict[str, object], warnings: list[str]) -> dict[str, object]:
+    """修正“X 引用的论文”这类主动句中 paper=X 被放到 object 侧的情况。"""
+    if parser_result.get("return_side") != "object" or parser_result.get("intent") not in {"list", "count"}:
+        return parser_result
+    if not is_active_cites_query(query) or not source_scope_is_empty(parser_result):
+        return parser_result
+
+    object_filters = list(parser_result.get("object_filters") or [])
+    moved_filters, remaining_filters = split_positive_paper_equals(object_filters)
+    if not moved_filters:
+        return parser_result
+
+    warnings.append("reference parser corrected active cites paper scope from object to source")
+    return {
+        **parser_result,
+        "source_filters": [*list(parser_result.get("source_filters") or []), *moved_filters],
+        "object_filters": remaining_filters,
+    }
+
+
+def is_active_cites_query(query: str) -> bool:
+    """判断表面句式是否像“X 引用/参考了哪些论文”。"""
+    compact_query = "".join(str(query or "").split()).casefold()
+    return any(pattern in compact_query for pattern in ("引用的", "引用了", "参考文献"))
+
+
+def source_scope_is_empty(parser_result: dict[str, object]) -> bool:
+    """source 侧完全为空时，才允许把 paper 约束从 object 侧挪回来。"""
+    return not (
+        str(parser_result.get("source_semantic") or "").strip()
+        or parser_result.get("source_filters")
+        or parser_result.get("source_groups")
+    )
+
+
+def split_positive_paper_equals(filters: list[object]) -> tuple[list[dict[str, object]], list[object]]:
+    """拆出非 negated 的 paper=... filter，其它 object 条件保留在 object 侧。"""
+    moved: list[dict[str, object]] = []
+    remaining: list[object] = []
+    for filter_item in filters:
+        if isinstance(filter_item, dict) and is_positive_paper_equals(filter_item):
+            moved.append(filter_item)
+        else:
+            remaining.append(filter_item)
+    return moved, remaining
+
+
+def is_positive_paper_equals(filter_item: dict[str, object]) -> bool:
+    """只移动 paper=...，不碰 follow/prior、title/year/venue/author 条件。"""
+    return (
+        filter_item.get("field") == "paper"
+        and filter_item.get("op") == "="
+        and not bool(filter_item.get("negated", False))
+    )
 
 
 def apply_reference_year_filters(settings: Settings, decision: RouteDecision, warnings: list[str]) -> RouteDecision:

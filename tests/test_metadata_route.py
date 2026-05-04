@@ -229,7 +229,7 @@ class MetadataPlannerTests(unittest.TestCase):
 
         self.assertEqual(evidence["results"]["count"], 1)
         self.assertNotIn("records", evidence["results"])
-        self.assertNotIn("items", evidence["results"])
+        self.assertEqual([item["title"] for item in evidence["results"]["items"]], [RESNET_TITLE])
         self.assertEqual(evidence["plan"]["scope"], ["venue=CVPR"])
 
     def test_parse_failed_status_and_debug_mode(self) -> None:
@@ -373,6 +373,24 @@ class MetadataPlannerTests(unittest.TestCase):
         self.assertFalse(evidence["results"]["exists"])
         self.assertEqual(evidence["results"]["groups"][0]["count"], 1)
         self.assertEqual(evidence["results"]["groups"][1]["count"], 0)
+
+    def test_exists_false_includes_actual_metadata_for_resolved_paper(self) -> None:
+        with metadata_fixture() as settings:
+            bert = match_manifest_records(settings, BERT_TITLE)[0]
+            route = RouteDecision(
+                route="metadata",
+                intent="exists",
+                resolved_papers=[bert],
+                filters=[
+                    {"field": "paper", "op": "=", "value": BERT_TITLE, "negated": False},
+                    {"field": "venue", "op": "=", "value": "CVPR", "negated": False},
+                ],
+            )
+            evidence = plan_metadata(settings, route, [])
+
+        self.assertFalse(evidence["results"]["exists"])
+        self.assertEqual(evidence["results"]["actual"][0]["title"], BERT_TITLE)
+        self.assertEqual(evidence["results"]["actual"][0]["values"]["venue"], "NAACL")
 
     def test_per_mode_keeps_group_results_separate(self) -> None:
         with metadata_fixture() as settings:

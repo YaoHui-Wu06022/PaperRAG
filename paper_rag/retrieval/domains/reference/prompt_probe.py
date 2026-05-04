@@ -24,7 +24,7 @@ from paper_rag.retrieval.domains.reference.prompt import reference_parser_prompt
 
 
 DEFAULT_QUERIES = [
-    "VIT 被哪些 2020 年以后的论文引用？",
+    "VIT之前，有哪些论文引用了Transformer"  ,
 ]
 
 

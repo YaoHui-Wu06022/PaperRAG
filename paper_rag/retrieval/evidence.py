@@ -200,8 +200,15 @@ def metadata_results(
     results: dict[str, Any] = {}
     if route.intent == "count":
         results["count"] = count if count is not None else len(records)
+        items = [metadata_item(settings, record, route.return_fields) for record in records]
+        if items:
+            results["items"] = items
     elif route.intent == "exists":
         results["exists"] = bool(exists)
+        if not exists:
+            actual_items = metadata_actual_items(settings, route)
+            if actual_items:
+                results["actual"] = actual_items
     else:
         items = [metadata_item(settings, record, route.return_fields) for record in records]
         if items:
@@ -209,6 +216,24 @@ def metadata_results(
     if group_results:
         results["groups"] = [compact_metadata_group(settings, route, group) for group in group_results]
     return results
+
+
+def metadata_actual_items(settings, route: RouteDecision) -> list[dict[str, Any]]:
+    """metadata exists=false 时展示被判断论文的真实字段。"""
+    if not route.resolved_papers:
+        return []
+    fields = metadata_actual_fields(route.filters)
+    return [metadata_item(settings, record, fields) for record in route.resolved_papers]
+
+
+def metadata_actual_fields(filters: list[dict[str, Any]]) -> list[str]:
+    """从失败的 metadata filters 中推断需要展示的真实字段。"""
+    fields: list[str] = []
+    for filter_item in filters:
+        field = filter_item.get("field")
+        if field in {"author", "year", "venue", "title"} and field not in fields:
+            fields.append(field)
+    return fields or ["title"]
 
 
 def compact_metadata_group(settings, route: RouteDecision, group: dict[str, Any]) -> dict[str, Any]:
@@ -219,7 +244,7 @@ def compact_metadata_group(settings, route: RouteDecision, group: dict[str, Any]
         "count": len(records),
         "exists": bool(records),
     }
-    if route.intent not in {"count", "exists"}:
+    if route.intent != "exists":
         items = [metadata_item(settings, record, route.return_fields) for record in records]
         if items:
             result["items"] = items
@@ -297,6 +322,12 @@ def reference_results(
     results: dict[str, Any] = {}
     if route.intent == "count":
         results["count"] = count if count is not None else len(answer_papers)
+        papers = [paper_label(paper) for paper in answer_papers if paper_label(paper)]
+        compact_edges = [compact_reference_edge(edge) for edge in edges[:COMPACT_EDGE_LIMIT]]
+        if papers:
+            results["papers"] = papers
+        if compact_edges:
+            results["edges"] = compact_edges
     elif route.intent == "exists":
         results["exists"] = bool(exists)
         compact_edges = [compact_reference_edge(edge) for edge in edges[:COMPACT_EDGE_LIMIT]]

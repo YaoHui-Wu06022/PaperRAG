@@ -2,8 +2,8 @@
 
 ## 0. 当前状态
 
-- 当前 CLI：`paper-rag ingest`、`paper-rag index`、`paper-rag search`、`paper-rag plan`。
-- `paper-rag ask` 当前不注册；后续等 answer composer 稳定后再接回。
+- 当前 CLI：`paper-rag ingest`、`paper-rag index`、`paper-rag search`、`paper-rag plan`、`paper-rag ask`。
+- `paper-rag ask` 第一版链路：先执行 `run_plan()` 得到 composer evidence，再交给 answer composer LLM 生成最终回答。
 - 用户输入统一称为 `query`；历史输入命名全部废弃。
 - 顶层 parser 只做路由分类：`{"router": "metadata|reference|content|unclear"}`，不抽 filters，不裁剪 query，不生成 evidence。
 - `paper-rag plan` 是薄编排：top route -> domain router -> domain planner -> 统一 evidence。
@@ -27,11 +27,15 @@
 paper_rag/
 ├─ __main__.py                       # `python -m paper_rag` 入口
 ├─ config.py                         # Settings 与 .env 读取
+├─ answer.py                         # ask 薄编排：plan evidence -> local/LLM answer
+├─ answer_local.py                   # metadata/reference 本地确定性回答
+├─ answer_llm.py                     # content route 的 LLM 回答生成
 ├─ utils.py                          # 根包通用小工具
 ├─ cli/
 │  ├─ main.py                        # CLI 总入口
 │  ├─ ingest.py                      # `paper-rag ingest`
-│  └─ retrieval.py                   # `index/search/plan`
+│  ├─ retrieval.py                   # `index/search/plan`
+│  └─ ask.py                         # `paper-rag ask`
 ├─ dataprocess/
 │  ├─ ingest.py                      # 全量 PDF 同步、metadata、extract、citation graph 主流程
 │  ├─ manifest.py                    # manifest 结构、读写、状态管理
@@ -326,7 +330,20 @@ Schema 字段：
 
 无结果只写 warnings，不改变 `status`。
 
-## 8. Dense / Sparse / Fusion
+## 8. Ask 回答生成
+
+- `paper-rag ask` 只消费默认 composer evidence，不依赖 planner debug 内部态。
+- `metadata/reference/unclear/失败状态` 由本地规则直接组织答案，不调用回答 LLM。
+- 只有 `content` route 且命中正文 contexts 时，才调用 answer composer LLM。
+- 默认输出最终回答文本；`--json` 输出：
+  ```json
+  {"query": "...", "answer": "...", "evidence": {}, "warnings": []}
+  ```
+- `--debug` 只影响 plan evidence 是否包含 debug 字段，方便排查检索链路。
+- 回答 LLM 必须基于 content evidence 作答；证据不足时应明确说明无法确定。
+- Answer composer 配置使用 `ANSWER_*`；未设置时默认回退到 `PLAN_PARSER_*`。
+
+## 9. Dense / Sparse / Fusion
 
 - `dense/service.py`：
   - `run_index()`：读取 chunks、请求 embedding、重建 Milvus collection
@@ -339,7 +356,7 @@ Schema 字段：
   - `RRF_K=60`
   - `fuse_chunk_hits()`：合并 dense 和 BM25 命中，按 `chunk_id` 去重
 
-## 9. 配置
+## 10. 配置
 
 主要 `.env` 字段：
 
@@ -359,6 +376,12 @@ Schema 字段：
   - `PLAN_PARSER_API_KEY`
   - `PLAN_PARSER_MODEL`
   - `PLAN_PARSER_TIMEOUT_SECONDS`
+- Answer composer：
+  - `ANSWER_BASE_URL`
+  - `ANSWER_API_KEY`
+  - `ANSWER_MODEL`
+  - `ANSWER_TIMEOUT_SECONDS`
+  - `ANSWER_TEMPERATURE`
 - Content retrieval：
   - `PLAN_DENSE_TOP_K`
   - `PLAN_BM25_TOP_K`
@@ -390,7 +413,7 @@ Schema 字段：
 
 密钥文件夹必须被 `.gitignore` 忽略，不进入 Git。
 
-## 10. 测试与调试入口
+## 11. 测试与调试入口
 
 常用测试：
 
@@ -406,6 +429,7 @@ CLI smoke：
 python -m paper_rag --help
 python -m paper_rag plan "BERT 是谁写的？"
 python -m paper_rag plan "ResNet 的模型结构是什么？" --debug
+python -m paper_rag ask "BERT 是谁写的？" --json
 ```
 
 Prompt / planner probe：
@@ -418,7 +442,7 @@ python paper_rag/retrieval/domains/content/planner_probe.py --debug --show-route
 python paper_rag/retrieval/evidence_probe.py --route content --debug --show-route
 ```
 
-## 11. 命名规范
+## 12. 命名规范
 
 - `validate_*`：schema / parser payload 校验，失败抛 `PlanParseError`。
 - `normalize_*`：纯归一化，不读本地数据，不做检索。
@@ -439,8 +463,21 @@ python paper_rag/retrieval/evidence_probe.py --route content --debug --show-rout
 - `paper_semantic / filters / paper_groups / group_mode`：单侧论文范围结构。
 - `source_* / object_*`：reference 两侧 scope。
 
-## 12. 待接入
+## 13. README 前收尾状态
 
-- `paper-rag ask` 和 answer composer。
-- content context 到回答 LLM 的最终 prompt 组织。
-- 腾讯/阿里翻译真实调用已接通，但仍需要在真实 plan 场景中继续观察 warning、配额和候选词质量。
+- `ask` 已重新接回 CLI：metadata / reference 走本地答案组织，content 走 LLM 回答组织。
+- 本地答案输出保持轻量：list 用 `[1]` / `[2]` 编号，lookup / count / exists 按 intent 输出必要证据，不把 planner debug 中间态塞给用户。
+- content 的回答链路为：先按 `paper_semantic / filters / paper_groups` 收缩论文范围，再过滤 chunks，最后用 `dense_query` 和 `bm25_queries` 做 dense / BM25 检索并融合 context。
+- `dense_query` 保持中文自然语言语义句，不拼结构化筛选条件；`bm25_queries` 只从 `content_objects / compare_objects` 及必要关键词生成，翻译候选只服务 BM25。
+- `paper_rag/retrieval/domains/content/prompt_probe.py` 继续用于测试 content parser；默认把成功解析结果按 `query` 写入 `retrieval_probe_cases.json`，同一 query 会覆盖旧记录，`--no-save` 可只看输出。
+- `retrieval_probe_cases.json` 当前保持空数组，后续调 prompt 时由 probe 逐条积累，不再维护 `name` 字段。
+- `paper_rag/retrieval/domains/content/retrieval_probe.py` 用于跳过 prompt、直接拿 `{query, parser_result}` 测 dense / BM25 / fusion 召回质量。
+- content prompt 的论文绑定边界收紧为强 paper scope：只有“X 这篇论文 / X 论文中 / X 的模型结构”等明确论文范围才绑定 `paper`，像“ResNet 的发展 / 应用 / 趋势”这类弱主题留在 `paper_semantic`。
+- `.env` 和本地密匙目录不入库；根目录下 `密匙/`、`密钥/`、`keys/`、`secrets/` 均加入忽略规则。
+
+## 14. 后续 README 重点
+
+- README 需要优先说明当前可用命令：`ingest`、`index`、`search`、`plan`、`ask`。
+- README 需要区分 composer 输出与 `--debug` 输出：默认结果给回答链路，debug 才看 parser_result、scope、retrieval_query、raw records。
+- README 需要注明 reference 只回答本地 citation graph 覆盖的库内引用关系，图由 `ingest` 构建。
+- README 需要注明 content 的 BM25 翻译依赖 `.env` 中腾讯 / 阿里配置，未配置时自动退回原关键词，不影响 dense 检索。
