@@ -7,12 +7,12 @@ from pathlib import Path
 from typing import Any
 
 from paper_rag.config import Settings
-from paper_rag.retrieval.data.aliases_match import AliasMatch
-from paper_rag.retrieval.domains.common.errors import PlanParseError
-from paper_rag.retrieval.domains.content.planner import plan_body
-from paper_rag.retrieval.domains.content.retrieval_query import build_content_retrieval_query
-from paper_rag.retrieval.domains.content.router import build_content_decision
-from paper_rag.retrieval.domains.content.schema import validate_content_parse
+from paper_rag.corpus.aliases import AliasMatch
+from paper_rag.retrieval.routes.common.errors import PlanParseError
+from paper_rag.retrieval.routes.content.planner import plan_body
+from paper_rag.retrieval.routes.content.retrieval_query import build_content_retrieval_query
+from paper_rag.retrieval.routes.content.router import build_content_decision
+from paper_rag.retrieval.routes.content.schema import validate_content_parse
 from paper_rag.retrieval.route import RouteDecision
 
 

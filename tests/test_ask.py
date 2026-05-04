@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 from paper_rag.answer import run_ask
-from paper_rag.answer_llm import build_answer_user_prompt
+from paper_rag.answer.llm import build_answer_user_prompt
 from paper_rag.cli.main import build_parser
 from paper_rag.config import Settings
 

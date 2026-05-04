@@ -5,14 +5,14 @@ from __future__ import annotations
 from typing import Any
 
 from ..config import Settings
-from .domains.common.errors import PlanParseError
-from .domains.content.planner import plan_body
-from .domains.content.router import build_content_decision
-from .domains.metadata.planner import plan_metadata
-from .domains.metadata.router import build_metadata_decision
-from .domains.reference.planner import plan_reference
-from .domains.reference.router import build_reference_decision
-from .domains.top.parser import TopParserClient
+from .routes.common.errors import PlanParseError
+from .routes.content.planner import plan_body
+from .routes.content.router import build_content_decision
+from .routes.metadata.planner import plan_metadata
+from .routes.metadata.router import build_metadata_decision
+from .routes.reference.planner import plan_reference
+from .routes.reference.router import build_reference_decision
+from .routes.top.parser import TopParserClient
 from .route import RouteDecision
 
 

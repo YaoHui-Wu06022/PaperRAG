@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from .data.aliases_match import AliasMatch
+from paper_rag.corpus.aliases import AliasMatch
 
 
 @dataclass(frozen=True)

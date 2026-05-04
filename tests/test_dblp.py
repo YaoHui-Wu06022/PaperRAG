@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 from urllib.parse import parse_qs
 
-from paper_rag.dataprocess.metadata.dblp import build_query, select_exact_match
+from paper_rag.ingest.metadata_sources.dblp import build_query, select_exact_match
 
 
 def hit(title: str, year: int, venue: str, authors: list[str] | None = None) -> dict:

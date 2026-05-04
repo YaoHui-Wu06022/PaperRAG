@@ -6,20 +6,20 @@ import unittest
 from pathlib import Path
 
 from paper_rag.config import Settings
-from paper_rag.retrieval.domains.common.errors import PlanParseError
-from paper_rag.retrieval.data.aliases_match import resolved_paper_record, resolve_paper_queries
-from paper_rag.retrieval.data.citation_scope import citation_scope_paper_ids
-from paper_rag.retrieval.data.manifest_records import (
+from paper_rag.retrieval.routes.common.errors import PlanParseError
+from paper_rag.corpus.aliases import resolved_paper_record, resolve_paper_queries
+from paper_rag.corpus.citations import citation_scope_paper_ids
+from paper_rag.corpus.records import (
     dedupe_paper_records,
     load_active_manifest_records,
     match_manifest_records,
     merge_paper_records,
     paper_record_key,
 )
-from paper_rag.retrieval.data.parser_scope_resolver import resolve_parser_scope
-from paper_rag.retrieval.data.paper_scope_records import match_paper_filter
-from paper_rag.retrieval.domains.metadata.planner import plan_metadata
-from paper_rag.retrieval.domains.metadata.schema import validate_metadata_parse
+from paper_rag.corpus.resolver import resolve_parser_scope
+from paper_rag.corpus.scope import match_paper_filter
+from paper_rag.retrieval.routes.metadata.planner import plan_metadata
+from paper_rag.retrieval.routes.metadata.schema import validate_metadata_parse
 from paper_rag.retrieval.route import RouteDecision
 
 

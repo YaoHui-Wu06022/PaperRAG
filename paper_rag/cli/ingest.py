@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 
 from ..config import Settings
-from ..dataprocess.ingest import IngestSummary, run_ingest
+from paper_rag.ingest.pipeline import IngestSummary, run_ingest
 
 
 def add_ingest_parser(subparsers: argparse._SubParsersAction) -> None:

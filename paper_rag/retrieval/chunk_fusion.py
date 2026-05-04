@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from .data.chunks_load import ChunkDocument
+from paper_rag.corpus.chunks import ChunkDocument
 from .dense.milvus_store import SearchResult
 
 

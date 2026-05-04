@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from paper_rag.dataprocess.metadata.semantic_scholar import select_exact_match
+from paper_rag.ingest.metadata_sources.semantic_scholar import select_exact_match
 
 
 def paper(

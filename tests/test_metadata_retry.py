@@ -5,7 +5,7 @@ import urllib.request
 import unittest
 from unittest.mock import patch
 
-from paper_rag.dataprocess.metadata.retry import urlopen_with_retry
+from paper_rag.ingest.metadata_sources.retry import urlopen_with_retry
 
 
 class Response:
@@ -21,7 +21,7 @@ class MetadataRetryTests(unittest.TestCase):
         request = urllib.request.Request("https://example.test")
         response = Response()
         with patch(
-            "paper_rag.dataprocess.metadata.retry.urllib.request.urlopen",
+            "paper_rag.ingest.metadata_sources.retry.urllib.request.urlopen",
             side_effect=[TimeoutError("timed out"), response],
         ) as urlopen:
             self.assertIs(urlopen_with_retry(request, timeout=1, delay_seconds=0), response)
@@ -32,7 +32,7 @@ class MetadataRetryTests(unittest.TestCase):
         response = Response()
         error = urllib.error.HTTPError("https://example.test", 429, "Too Many Requests", {}, None)
         with patch(
-            "paper_rag.dataprocess.metadata.retry.urllib.request.urlopen",
+            "paper_rag.ingest.metadata_sources.retry.urllib.request.urlopen",
             side_effect=[error, response],
         ) as urlopen:
             self.assertIs(urlopen_with_retry(request, timeout=1, delay_seconds=0), response)
@@ -42,7 +42,7 @@ class MetadataRetryTests(unittest.TestCase):
         request = urllib.request.Request("https://example.test")
         error = urllib.error.HTTPError("https://example.test", 404, "Not Found", {}, None)
         with patch(
-            "paper_rag.dataprocess.metadata.retry.urllib.request.urlopen",
+            "paper_rag.ingest.metadata_sources.retry.urllib.request.urlopen",
             side_effect=error,
         ) as urlopen:
             with self.assertRaises(urllib.error.HTTPError):

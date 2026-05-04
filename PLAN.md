@@ -27,44 +27,45 @@
 paper_rag/
 ├─ __main__.py                       # `python -m paper_rag` 入口
 ├─ config.py                         # Settings 与 .env 读取
-├─ answer.py                         # ask 薄编排：plan evidence -> local/LLM answer
-├─ answer_local.py                   # metadata/reference 本地确定性回答
-├─ answer_llm.py                     # content route 的 LLM 回答生成
+├─ answer/
+│  ├─ service.py                     # ask 薄编排：plan evidence -> local/LLM answer
+│  ├─ local.py                       # metadata/reference 本地确定性回答
+│  └─ llm.py                         # content route 的 LLM 回答生成
 ├─ utils.py                          # 根包通用小工具
 ├─ cli/
 │  ├─ main.py                        # CLI 总入口
 │  ├─ ingest.py                      # `paper-rag ingest`
 │  ├─ retrieval.py                   # `index/search/plan`
 │  └─ ask.py                         # `paper-rag ask`
-├─ dataprocess/
-│  ├─ ingest.py                      # 全量 PDF 同步、metadata、extract、citation graph 主流程
+├─ ingest/
+│  ├─ pipeline.py                    # 全量 PDF 同步、metadata、extract、citation graph 主流程
 │  ├─ manifest.py                    # manifest 结构、读写、状态管理
 │  ├─ mineru.py                      # MinerU API 上传、轮询、下载、解压
 │  ├─ extract.py                     # 从 MinerU 输出构建 metadata/toc/blocks/references/chunks
 │  ├─ citation_graph.py              # 本地 citation graph 构建
 │  ├─ annotations.py                 # paper_annotations.json 生成与维护
 │  ├─ venues.py                      # venue alias/display 规范化
-│  └─ metadata/
+│  └─ metadata_sources/
 │     ├─ arxiv.py                    # ArXiv 精确标题查询
 │     ├─ dblp.py                     # DBLP 精确标题查询
 │     ├─ semantic_scholar.py         # Semantic Scholar 正式发表信息补充
 │     └─ retry.py                    # 外部请求重试/延迟
+├─ corpus/
+│  ├─ aliases.py                     # annotation aliases 到 canonical paper match
+│  ├─ annotations.py                 # paper_annotations.json 统一扫描入口
+│  ├─ chunks.py                      # chunks.jsonl 读取与按论文记录过滤
+│  ├─ citations.py                   # paper follow/prior citation 范围
+│  ├─ filters.py                     # manifest record filter evaluator
+│  ├─ records.py                     # active manifest 读取、匹配、record key
+│  ├─ scope.py                       # semantic + filters + groups 到候选论文 records
+│  ├─ resolver.py                    # parser scope/filter value 解析
+│  └─ utils.py                       # normalize token、dedupe、interval boundary 工具
 └─ retrieval/
    ├─ plan.py                        # `paper-rag plan` 薄编排
    ├─ route.py                       # RouteDecision
    ├─ evidence.py                    # composer/debug evidence 构建
    ├─ evidence_probe.py              # evidence 调试脚本
    ├─ chunk_fusion.py                # dense/BM25 RRF 融合
-   ├─ data/
-   │  ├─ aliases_match.py            # annotation aliases 到 canonical paper match
-   │  ├─ annotations_index.py        # paper_annotations.json 统一扫描入口
-   │  ├─ chunks_load.py              # chunks.jsonl 读取与按论文记录过滤
-   │  ├─ citation_scope.py           # paper follow/prior citation 范围
-   │  ├─ filters.py                  # manifest record filter evaluator
-   │  ├─ manifest_records.py         # active manifest 读取、匹配、record key
-   │  ├─ paper_scope_records.py      # semantic + filters + groups 到候选论文 records
-   │  ├─ parser_scope_resolver.py    # parser scope/filter value 解析
-   │  └─ utils.py                    # normalize token、dedupe、interval boundary 工具
    ├─ dense/
    │  ├─ service.py                  # index/search 接线与 dense chunk search
    │  ├─ embedding.py                # OpenAI-compatible embedding client
@@ -72,7 +73,7 @@ paper_rag/
    │  └─ milvus_store.py             # Milvus/Zilliz collection 管理
    ├─ sparse/
    │  └─ bm25.py                     # BM25 index 与多 query RRF 合并
-   └─ domains/
+   └─ routes/
       ├─ common/
       │  ├─ errors.py                # PlanParseError
       │  ├─ parser_client.py         # OpenAI-compatible parser client
@@ -137,23 +138,23 @@ paper_rag/
 - 年份候选包括 `preprint_year`、`publish_year`、venue 字符串中的四位年份。
 - `references.jsonl` 保留为原始引用证据；citation graph 是派生索引。
 
-## 4. Retrieval Data/Common 边界
+## 4. Corpus/Common 边界
 
-- `retrieval/data` 是本地数据执行层：读取 manifest/chunks/annotations/citation graph，做 record/filter/scope/chunk 级处理。
-- `retrieval/domains/common` 是 parser/domain 共用基础设施：schema 校验、parser client、prompt/error，不读取本地数据。
-- `data/utils.py` 中的 `normalize_bm25_token()` 和英文 `STOPWORDS` 保留：
+- `corpus` 是本地数据执行层：读取 manifest/chunks/annotations/citation graph，做 record/filter/scope/chunk 级处理。
+- `retrieval/routes/common` 是 parser/domain 共用基础设施：schema 校验、parser client、prompt/error，不读取本地数据。
+- `corpus/utils.py` 中的 `normalize_bm25_token()` 和英文 `STOPWORDS` 保留：
   - 用于 BM25 英文 chunk
   - 用于英文 title/alias/manifest search
   - 用于翻译候选去重
   - 不作为中文问句的主解析工具
-- 论文身份 key 全项目统一用 `manifest_records.paper_record_key()`。
-- filter value 展平统一用 `data.utils.value_to_text_list()`。
-- `parser_scope_resolver.py` 负责把 parser 输出中的 `paper` mention、`venue` alias、`year interval` 论文边界解析成规范值。
-- `paper_scope_records.py` 负责 `semantic + filters + groups` 到候选论文 records。
+- 论文身份 key 全项目统一用 `records.paper_record_key()`。
+- filter value 展平统一用 `corpus.utils.value_to_text_list()`。
+- `resolver.py` 负责把 parser 输出中的 `paper` mention、`venue` alias、`year interval` 论文边界解析成规范值。
+- `scope.py` 负责 `semantic + filters + groups` 到候选论文 records。
 - `filters.py` 只做单条 manifest record 的最终布尔匹配，不做 parser mention 解析。
-- `aliases_match.py` 只做结构化 paper mention 的别名匹配，不改写用户 query。
-- `chunks_load.py` 只负责 chunk 数据加载与按论文候选过滤。
-- `citation_scope.py` 负责 `paper follow / paper prior` 这类基于 citation graph 的本地关系范围。
+- `aliases.py` 只做结构化 paper mention 的别名匹配，不改写用户 query。
+- `chunks.py` 只负责 chunk 数据加载与按论文候选过滤。
+- `citations.py` 负责 `paper follow / paper prior` 这类基于 citation graph 的本地关系范围。
 
 ## 5. Parser Schema 与 Filter 规则
 
@@ -273,7 +274,7 @@ Schema 字段：
 
 ### Content Retrieval Query
 
-`domains/content/retrieval_query.py` 负责：
+`retrieval/routes/content/retrieval_query.py` 负责：
 
 - `dense_query`：中文自然语言句子，服务 embedding，不拼接 paper/title/year/venue/author scope。
 - `bm25_queries`：关键词候选列表，来源于：
@@ -435,10 +436,10 @@ python -m paper_rag ask "BERT 是谁写的？" --json
 Prompt / planner probe：
 
 ```powershell
-python paper_rag/retrieval/domains/top/prompt_probe.py
-python paper_rag/retrieval/domains/metadata/planner_probe.py --debug --show-route
-python paper_rag/retrieval/domains/reference/planner_probe.py --debug --show-route
-python paper_rag/retrieval/domains/content/planner_probe.py --debug --show-route
+python paper_rag/retrieval/routes/top/prompt_probe.py
+python paper_rag/retrieval/routes/metadata/planner_probe.py --debug --show-route
+python paper_rag/retrieval/routes/reference/planner_probe.py --debug --show-route
+python paper_rag/retrieval/routes/content/planner_probe.py --debug --show-route
 python paper_rag/retrieval/evidence_probe.py --route content --debug --show-route
 ```
 
@@ -469,9 +470,9 @@ python paper_rag/retrieval/evidence_probe.py --route content --debug --show-rout
 - 本地答案输出保持轻量：list 用 `[1]` / `[2]` 编号，lookup / count / exists 按 intent 输出必要证据，不把 planner debug 中间态塞给用户。
 - content 的回答链路为：先按 `paper_semantic / filters / paper_groups` 收缩论文范围，再过滤 chunks，最后用 `dense_query` 和 `bm25_queries` 做 dense / BM25 检索并融合 context。
 - `dense_query` 保持中文自然语言语义句，不拼结构化筛选条件；`bm25_queries` 只从 `content_objects / compare_objects` 及必要关键词生成，翻译候选只服务 BM25。
-- `paper_rag/retrieval/domains/content/prompt_probe.py` 继续用于测试 content parser；默认把成功解析结果按 `query` 写入 `retrieval_probe_cases.json`，同一 query 会覆盖旧记录，`--no-save` 可只看输出。
+- `paper_rag/retrieval/routes/content/prompt_probe.py` 继续用于测试 content parser；默认把成功解析结果按 `query` 写入 `retrieval_probe_cases.json`，同一 query 会覆盖旧记录，`--no-save` 可只看输出。
 - `retrieval_probe_cases.json` 当前保持空数组，后续调 prompt 时由 probe 逐条积累，不再维护 `name` 字段。
-- `paper_rag/retrieval/domains/content/retrieval_probe.py` 用于跳过 prompt、直接拿 `{query, parser_result}` 测 dense / BM25 / fusion 召回质量。
+- `paper_rag/retrieval/routes/content/retrieval_probe.py` 用于跳过 prompt、直接拿 `{query, parser_result}` 测 dense / BM25 / fusion 召回质量。
 - content prompt 的论文绑定边界收紧为强 paper scope：只有“X 这篇论文 / X 论文中 / X 的模型结构”等明确论文范围才绑定 `paper`，像“ResNet 的发展 / 应用 / 趋势”这类弱主题留在 `paper_semantic`。
 - `.env` 和本地密匙目录不入库；根目录下 `密匙/`、`密钥/`、`keys/`、`secrets/` 均加入忽略规则。
 

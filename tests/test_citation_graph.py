@@ -6,8 +6,8 @@ import unittest
 from pathlib import Path
 
 from paper_rag.config import Settings
-from paper_rag.dataprocess.citation_graph import build_citation_graph
-from paper_rag.dataprocess.manifest import Manifest
+from paper_rag.ingest.citation_graph import build_citation_graph
+from paper_rag.ingest.manifest import Manifest
 
 
 class CitationGraphTests(unittest.TestCase):

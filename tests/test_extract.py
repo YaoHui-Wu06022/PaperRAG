@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from paper_rag.dataprocess.extract import extract_paper_data
+from paper_rag.ingest.extract import extract_paper_data
 from paper_rag.utils import normalize_text
 
 

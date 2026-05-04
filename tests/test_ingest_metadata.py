@@ -8,8 +8,8 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from paper_rag.config import Settings
-from paper_rag.dataprocess.annotations import normalize_paper_annotation, upsert_paper_annotation
-from paper_rag.dataprocess.ingest import MetadataMatch, clean_author_list, clean_author_name, lookup_metadata, run_ingest
+from paper_rag.ingest.annotations import normalize_paper_annotation, upsert_paper_annotation
+from paper_rag.ingest.pipeline import MetadataMatch, clean_author_list, clean_author_name, lookup_metadata, run_ingest
 from paper_rag.utils import sha256_file
 
 
@@ -271,12 +271,12 @@ class IngestMetadataLookupTests(unittest.TestCase):
                 )
 
             with (
-                patch("paper_rag.dataprocess.ingest.ensure_mineru_output", return_value=mineru_dir),
-                patch("paper_rag.dataprocess.ingest.title_from_output", return_value="Some Paper"),
-                patch("paper_rag.dataprocess.ingest.rename_pdf_if_needed", return_value=pdf_path),
-                patch("paper_rag.dataprocess.ingest.rename_mineru_output_if_needed", return_value=mineru_dir),
-                patch("paper_rag.dataprocess.ingest.extract_paper_data", side_effect=fake_extract),
-                patch("paper_rag.dataprocess.ingest.build_citation_graph", return_value=SimpleNamespace(node_count=1, edge_count=0, path=settings.paper_data_dir / "citation_graph.json")),
+                patch("paper_rag.ingest.pipeline.ensure_mineru_output", return_value=mineru_dir),
+                patch("paper_rag.ingest.pipeline.title_from_output", return_value="Some Paper"),
+                patch("paper_rag.ingest.pipeline.rename_pdf_if_needed", return_value=pdf_path),
+                patch("paper_rag.ingest.pipeline.rename_mineru_output_if_needed", return_value=mineru_dir),
+                patch("paper_rag.ingest.pipeline.extract_paper_data", side_effect=fake_extract),
+                patch("paper_rag.ingest.pipeline.build_citation_graph", return_value=SimpleNamespace(node_count=1, edge_count=0, path=settings.paper_data_dir / "citation_graph.json")),
             ):
                 run_ingest(settings)
 
@@ -327,13 +327,13 @@ class IngestMetadataLookupTests(unittest.TestCase):
                 source="Semantic Scholar",
             )
             with (
-                patch("paper_rag.dataprocess.ingest.ensure_mineru_output", return_value=mineru_dir),
-                patch("paper_rag.dataprocess.ingest.title_from_output", return_value="Some Paper"),
-                patch("paper_rag.dataprocess.ingest.lookup_metadata", return_value=match),
-                patch("paper_rag.dataprocess.ingest.rename_pdf_if_needed", return_value=pdf_path),
-                patch("paper_rag.dataprocess.ingest.rename_mineru_output_if_needed", return_value=mineru_dir),
-                patch("paper_rag.dataprocess.ingest.extract_paper_data", side_effect=fake_extract),
-                patch("paper_rag.dataprocess.ingest.build_citation_graph", return_value=SimpleNamespace(node_count=1, edge_count=0, path=settings.paper_data_dir / "citation_graph.json")),
+                patch("paper_rag.ingest.pipeline.ensure_mineru_output", return_value=mineru_dir),
+                patch("paper_rag.ingest.pipeline.title_from_output", return_value="Some Paper"),
+                patch("paper_rag.ingest.pipeline.lookup_metadata", return_value=match),
+                patch("paper_rag.ingest.pipeline.rename_pdf_if_needed", return_value=pdf_path),
+                patch("paper_rag.ingest.pipeline.rename_mineru_output_if_needed", return_value=mineru_dir),
+                patch("paper_rag.ingest.pipeline.extract_paper_data", side_effect=fake_extract),
+                patch("paper_rag.ingest.pipeline.build_citation_graph", return_value=SimpleNamespace(node_count=1, edge_count=0, path=settings.paper_data_dir / "citation_graph.json")),
             ):
                 run_ingest(settings)
 
@@ -391,12 +391,12 @@ class IngestMetadataLookupTests(unittest.TestCase):
                 )
 
             with (
-                patch("paper_rag.dataprocess.ingest.ensure_mineru_output", return_value=mineru_dir),
-                patch("paper_rag.dataprocess.ingest.title_from_output", return_value="Some Paper"),
-                patch("paper_rag.dataprocess.ingest.rename_pdf_if_needed", return_value=pdf_path),
-                patch("paper_rag.dataprocess.ingest.rename_mineru_output_if_needed", return_value=mineru_dir),
-                patch("paper_rag.dataprocess.ingest.extract_paper_data", side_effect=fake_extract),
-                patch("paper_rag.dataprocess.ingest.build_citation_graph", return_value=SimpleNamespace(node_count=1, edge_count=0, path=settings.paper_data_dir / "citation_graph.json")),
+                patch("paper_rag.ingest.pipeline.ensure_mineru_output", return_value=mineru_dir),
+                patch("paper_rag.ingest.pipeline.title_from_output", return_value="Some Paper"),
+                patch("paper_rag.ingest.pipeline.rename_pdf_if_needed", return_value=pdf_path),
+                patch("paper_rag.ingest.pipeline.rename_mineru_output_if_needed", return_value=mineru_dir),
+                patch("paper_rag.ingest.pipeline.extract_paper_data", side_effect=fake_extract),
+                patch("paper_rag.ingest.pipeline.build_citation_graph", return_value=SimpleNamespace(node_count=1, edge_count=0, path=settings.paper_data_dir / "citation_graph.json")),
             ):
                 run_ingest(settings)
 

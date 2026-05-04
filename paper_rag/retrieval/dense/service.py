@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ...config import Settings
-from ..data.chunks_load import ChunkDocument, load_chunk_documents
+from paper_rag.config import Settings
+from paper_rag.corpus.chunks import ChunkDocument, load_chunk_documents
 from .cache import CachedEmbedder, EmbeddingCache
 from .embedding import EmbeddingClient
 from .milvus_store import MilvusStore, SearchResult

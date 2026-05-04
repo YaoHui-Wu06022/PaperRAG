@@ -6,10 +6,10 @@ import unittest
 from pathlib import Path
 
 from paper_rag.config import Settings
-from paper_rag.retrieval.domains.common.errors import PlanParseError
-from paper_rag.retrieval.domains.reference.planner import plan_reference
-from paper_rag.retrieval.domains.reference.router import build_reference_decision
-from paper_rag.retrieval.domains.reference.schema import validate_reference_parse
+from paper_rag.retrieval.routes.common.errors import PlanParseError
+from paper_rag.retrieval.routes.reference.planner import plan_reference
+from paper_rag.retrieval.routes.reference.router import build_reference_decision
+from paper_rag.retrieval.routes.reference.schema import validate_reference_parse
 from paper_rag.retrieval.route import RouteDecision
 
 

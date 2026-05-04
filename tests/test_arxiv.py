@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from paper_rag.dataprocess.metadata.arxiv import select_exact_match
+from paper_rag.ingest.metadata_sources.arxiv import select_exact_match
 
 
 def feed(*entries: str) -> str:
