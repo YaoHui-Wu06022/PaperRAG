@@ -1,3 +1,5 @@
+"""content parser schema 校验。"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -27,6 +29,7 @@ PARSER_NAME = "Content"
 
 
 def validate_content_parse(content: str | dict[str, Any], fallback_query: str = "") -> dict[str, Any]:
+    """校验 content 输出，并约束 compare/count/exists 的对象字段。"""
     _ = fallback_query
     payload = load_payload(content, PARSER_NAME)
     extra_fields = set(payload) - CONTENT_FIELDS
@@ -67,6 +70,7 @@ def validate_content_parse(content: str | dict[str, Any], fallback_query: str = 
 
 
 def normalize_nullable_enum(value: Any) -> str | None:
+    """把 JSON null 或字符串 'null' 统一成 None。"""
     if value is None:
         return None
     if isinstance(value, str) and value.strip().lower() == "null":

@@ -1,3 +1,5 @@
+"""基于本地 citation graph 计算 paper follow/prior 范围。"""
+
 from __future__ import annotations
 
 import json
@@ -29,12 +31,14 @@ def citation_scope_paper_ids(settings: Settings, titles: list[str], relation: st
         return set()
     edges = graph.get("edges") or []
     if relation == "follow":
+        # follow: 当前论文在目标论文之后，即它引用了目标论文。
         return {
             str(edge.get("source_paper_id"))
             for edge in edges
             if edge.get("target_paper_id") in target_ids and edge.get("source_paper_id")
         }
     if relation == "prior":
+        # prior: 当前论文在目标论文之前，即被目标论文引用。
         return {
             str(edge.get("target_paper_id"))
             for edge in edges

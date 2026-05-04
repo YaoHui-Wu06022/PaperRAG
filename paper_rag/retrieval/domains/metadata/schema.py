@@ -1,3 +1,5 @@
+"""metadata parser schema 校验。"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -14,6 +16,7 @@ PARSER_NAME = "Metadata"
 
 
 def validate_metadata_parse(content: str | dict[str, Any], fallback_query: str = "") -> dict[str, Any]:
+    """校验 metadata 输出，并补齐 list 默认返回 title 的约定。"""
     _ = fallback_query
     payload = load_payload(content, PARSER_NAME)
     extra_fields = set(payload) - METADATA_FIELDS
@@ -53,6 +56,7 @@ def validate_metadata_parse(content: str | dict[str, Any], fallback_query: str =
 
 
 def normalize_nullable_enum(value: Any) -> str | None:
+    """把 JSON null 或字符串 'null' 统一成 None。"""
     if value is None:
         return None
     if isinstance(value, str) and value.strip().lower() == "null":
@@ -61,6 +65,7 @@ def normalize_nullable_enum(value: Any) -> str | None:
 
 
 def validate_return_fields(value: Any) -> list[str]:
+    """校验 metadata lookup/list 允许返回的字段列表。"""
     if value is None:
         value = []
     if not isinstance(value, list):
@@ -77,4 +82,3 @@ def validate_return_fields(value: Any) -> list[str]:
             seen.add(field)
             fields.append(field)
     return fields
-

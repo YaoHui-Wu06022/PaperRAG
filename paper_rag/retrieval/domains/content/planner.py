@@ -1,3 +1,5 @@
+"""content planner：先收缩论文范围，再做 dense/BM25 chunk 检索。"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -26,6 +28,7 @@ def plan_body(
     translator: KeywordTranslator | None = None,
     debug: bool = False,
 ) -> dict[str, Any]:
+    """执行正文检索计划，并构造 content evidence。"""
     if route.parse_status == "parse_failed":
         return build_content_evidence(
             route,
@@ -38,6 +41,7 @@ def plan_body(
         )
 
     if route.group_mode in {"per", "or", "and"}:
+        # content 的 group 当前只影响论文范围；chunk 检索仍在合并后的候选论文内执行。
         scope_records = dedupe_paper_records([
             record
             for group in route.paper_groups
@@ -84,6 +88,7 @@ def plan_body(
             warnings.append(f"dense retrieval failed: {exc}; using BM25 candidates only")
             dense_results = []
     bm25_results = search_bm25_chunks(documents, retrieval_query["bm25_queries"], settings.plan_bm25_top_k)
+    # dense 与 BM25 各自召回后，用 RRF 在 chunk 粒度做最终排序。
     fused = fuse_chunk_hits(documents_by_id, dense_results, bm25_results)
     context_units = [
         context_unit(settings, candidate, settings.plan_block_window)

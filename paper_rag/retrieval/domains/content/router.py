@@ -1,3 +1,5 @@
+"""content router：调用 parser，并解析正文检索前的论文范围。"""
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -18,6 +20,7 @@ def build_content_decision(
     *,
     plan_parser=None,
 ) -> RouteDecision:
+    """把 content parser result 归一化成 RouteDecision。"""
     query = decision.query
     try:
         parser = plan_parser or ContentParserClient.from_settings(settings)
@@ -43,6 +46,7 @@ def build_content_decision(
 
     parser_result = {
         **parser_result,
+        # 顶层若将来带公共 filters，也在这里并入 content scope。
         "filters": [*decision.filters, *parser_result["filters"]],
     }
     resolved = resolve_parser_scope(settings, parser_result)
@@ -68,6 +72,7 @@ def build_content_decision(
 
 
 def apply_content_year_filters(settings: Settings, decision: RouteDecision, warnings: list[str]) -> RouteDecision:
+    """解析 content scope 中 year interval 的论文边界。"""
     filters = resolve_year_filter_values(settings, list(decision.filters), warnings)
     paper_groups = [
         {**group, "filters": resolve_year_filter_values(settings, list(group.get("filters") or []), warnings)}

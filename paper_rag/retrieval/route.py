@@ -1,3 +1,5 @@
+"""RouteDecision 保存 parser 归一化后的路由状态，供 planner 和 evidence 共用。"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -8,6 +10,11 @@ from .data.aliases import AliasMatch
 
 @dataclass(frozen=True)
 class RouteDecision:
+    """三条 domain 共享的不可变决策对象。
+
+    metadata/content 使用 paper_* 字段，reference 使用 source_* / object_* 字段。
+    """
+
     route: str
     query: str = ""
     intent: str | None = None

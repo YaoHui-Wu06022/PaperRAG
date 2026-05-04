@@ -1,3 +1,5 @@
+"""把 semantic + filters + groups 转成候选论文 records。"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -26,6 +28,7 @@ def records_for_scope(
     semantic = paper_semantic.strip()
     semantic_keys = semantic_candidate_keys(settings, semantic)
     if semantic and not semantic_keys:
+        # 有 semantic 但没有任何标题/tag 召回时，直接返回空范围。
         return []
     records: list[dict[str, Any]] = []
     for record in load_active_manifest_records(settings):
@@ -81,6 +84,7 @@ def semantic_candidate_keys(settings: Settings, paper_semantic: str) -> set[str]
     keys.update(paper_record_key(record) for record in matches if paper_record_key(record))
     tag_title_keys = semantic_tag_title_keys(settings, semantic)
     if tag_title_keys:
+        # tags 用 title_key 对齐 annotation 与 manifest，再转成统一 paper_record_key。
         keys.update(
             paper_record_key(record)
             for record in load_active_manifest_records(settings)

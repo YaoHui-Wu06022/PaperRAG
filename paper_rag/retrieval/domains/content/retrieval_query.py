@@ -1,3 +1,5 @@
+"""content 专用检索 query 生成：dense 自然语言，BM25 关键词候选。"""
+
 from __future__ import annotations
 
 import re
@@ -42,6 +44,7 @@ def build_content_retrieval_query(
     cleaned_query = remove_scope_terms_from_query(route.query, excluded_scope_terms)
     query_terms = query_keyword_terms(cleaned_query)
     source_terms = {
+        # source_terms 只用于 debug，帮助检查哪些词被纳入或排除。
         "content_objects": content_objects,
         "compare_objects": compare_objects,
         "query_terms": query_terms,
@@ -87,6 +90,7 @@ def build_dense_query(
 def query_keyword_terms(query: str) -> list[str]:
     """从剩余原问题中抽取 BM25 fallback 关键词。"""
     terms: list[str] = []
+    # 英文缩写/术语通常直接能命中论文正文，因此先保留连续 latin phrase。
     latin_phrase = " ".join(re.findall(r"[A-Za-z][A-Za-z0-9-]*", query))
     if latin_phrase:
         terms.append(latin_phrase)
@@ -127,6 +131,7 @@ def scope_filter_values(filters: list[dict[str, Any]]) -> list[str]:
 def remove_scope_terms_from_query(query: str, scope_terms: list[str]) -> str:
     """从原问题中删除已进入 scope 的短语，剩余部分再抽 BM25 关键词。"""
     cleaned = query
+    # 长词优先删除，避免先删短 alias 破坏完整标题/术语。
     for term in sorted(scope_terms, key=len, reverse=True):
         text = str(term or "").strip()
         if len(text) <= 1:

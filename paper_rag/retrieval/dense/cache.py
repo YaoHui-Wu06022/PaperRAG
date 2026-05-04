@@ -1,3 +1,5 @@
+"""embedding 本地缓存，减少重复向量化请求。"""
+
 from __future__ import annotations
 
 import hashlib
@@ -80,6 +82,7 @@ class CachedEmbedder:
                 misses.append((index, key, text))
             else:
                 output[index] = cached
+        # 只对未命中的文本分批请求 embedding，避免破坏输出顺序。
         for start in range(0, len(misses), self.batch_size):
             batch = misses[start:start + self.batch_size]
             vectors = self.client.embed_texts([text for _, _, text in batch])

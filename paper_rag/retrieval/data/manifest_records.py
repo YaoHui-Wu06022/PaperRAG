@@ -1,3 +1,5 @@
+"""active manifest records 的读取、轻量召回和统一身份 key。"""
+
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -31,6 +33,7 @@ def match_manifest_records(settings: Settings, query: str) -> list[dict]:
         title_tokens = set(tokenize(title))
         if not title_tokens:
             continue
+        # 轻量召回只看标题 token，不改写原始 query，也不读取正文索引。
         title_compact = "".join(tokenize(title))
         overlap = title_tokens & query_tokens
         score = 0.0

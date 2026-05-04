@@ -1,3 +1,5 @@
+"""解析 parser 输出里的 paper/venue/year scope value。"""
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -72,12 +74,14 @@ def resolve_filter_values(
         item = deepcopy(filter_item)
         field = item.get("field")
         if field == "paper":
+            # paper = / follow / prior 都先把 value 解析成 canonical title。
             value, matches, papers = resolve_paper_filter_value(settings, item.get("value"))
             item["value"] = value
             alias_matches.extend(matches)
             if not item.get("negated"):
                 resolved_papers = merge_paper_records(resolved_papers, papers)
         elif field == "year" and item.get("op") == "interval":
+            # year interval 允许边界写论文名，例如 ["ResNet", "inf"]。
             value, matches, papers = resolve_interval_paper_bounds(settings, item.get("value"))
             item["value"] = value
             alias_matches.extend(matches)
@@ -207,8 +211,10 @@ def publish_or_preprint_year(value: Any) -> int | None:
 def norm_interval_filter_bounds(left: Any, right: Any) -> list[Any]:
     """规范化区间边界和方向。"""
     if isinstance(left, int) and is_positive_infinity(right):
+        # “X 之后”转成开区间，因此下界 +1。
         return [left + 1, "inf"]
     if is_negative_infinity(left) and isinstance(right, int):
+        # “X 之前”同样转成开区间，因此上界 -1。
         return ["-inf", right - 1]
     if isinstance(left, int) and isinstance(right, int) and left > right:
         return [right, left]

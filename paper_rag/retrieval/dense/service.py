@@ -1,3 +1,5 @@
+"""dense retrieval 高层服务：index/search/content dense search。"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -57,6 +59,7 @@ def run_index(settings: Settings, *, reporter=print, embedder=None, store=None) 
     embedder = embedder or build_embedder(settings)
     store = store or build_store(settings)
     reporter("[index] Embedding chunks")
+    # index 使用 chunk.embedding_text，里面通常包含标题/section/text 的稳定组合。
     vectors = embedder.embed_texts([document.embedding_text for document in documents])
     reporter(f"[index] Recreating Milvus collection: {settings.milvus_collection}")
     store.recreate_collection()

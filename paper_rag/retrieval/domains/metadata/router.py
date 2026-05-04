@@ -1,3 +1,5 @@
+"""metadata router：调用 parser，并解析 paper/venue/year scope。"""
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -19,6 +21,7 @@ def build_metadata_decision(
     *,
     plan_parser=None,
 ) -> RouteDecision:
+    """把 metadata parser result 归一化成 RouteDecision。"""
     query = decision.query
     try:
         parser = plan_parser or MetadataParserClient.from_settings(settings)
@@ -45,6 +48,7 @@ def build_metadata_decision(
 
     parser_result = {
         **parser_result,
+        # 顶层未来如带公共 filters，也在这里和二层 filters 合并。
         "filters": [*decision.filters, *parser_result["filters"]],
     }
     resolved = resolve_parser_scope(settings, parser_result)
@@ -71,6 +75,7 @@ def build_metadata_decision(
 
 
 def apply_paper_year_filters(settings: Settings, decision: RouteDecision, warnings: list[str]) -> RouteDecision:
+    """解析 year interval 中的论文边界，并同步 parser_result。"""
     filters = resolve_year_filter_values(settings, list(decision.filters), warnings)
     paper_groups = [
         {**group, "filters": resolve_year_filter_values(settings, list(group.get("filters") or []), warnings)}
@@ -101,4 +106,5 @@ def apply_paper_year_filters(settings: Settings, decision: RouteDecision, warnin
 
 
 def effective_group_filters(route: RouteDecision, group: dict[str, Any]) -> list[dict[str, Any]]:
+    """生成 group 执行时实际使用的全局 filters + 局部 filters。"""
     return [*route.filters, *(group.get("filters") or [])]

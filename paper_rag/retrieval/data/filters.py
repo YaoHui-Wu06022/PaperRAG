@@ -1,3 +1,5 @@
+"""manifest record 的布尔 filter evaluator。"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -8,8 +10,12 @@ from ...dataprocess.venues import expand_venue_query_terms, expand_venue_record_
 from .utils import filter_value_to_list, normalized_text
 
 
+ARXIV_VALUES = {"arxiv", "arxiv preprint"}
+
+
 def match_record_filters(settings: Settings, record, filters: list[dict[str, Any]]) -> bool:
     """判断单条 manifest record 是否满足全部 metadata filters。"""
+    # ArXiv 是特殊范围：同组出现 venue=ArXiv 时，year 改用 preprint_year。
     year_source = "preprint" if has_arxiv_filter(filters) else "publish"
     return all(match_record_filter(settings, record, filter_item, year_source=year_source) for filter_item in filters)
 
@@ -71,6 +77,7 @@ def match_record_positive_filter(
     if field == "venue":
         if op not in {"=", "in"}:
             return False
+        # venue=ArXiv 不要求 manifest.venue 写成 ArXiv，只看是否有 preprint_year。
         if matches_arxiv_preprint(record, value, op):
             return True
         return compare_venue(settings, record.venue, op, value)
@@ -156,10 +163,7 @@ def matches_arxiv_preprint(record, expected: Any, op: str) -> bool:
     if op not in {"=", "in"}:
         return False
     actual_year = normalize_year(record.year)
-    if actual_year.get("preprint_year") is None:
-        return False
-    values = [str(value).strip().lower() for value in filter_value_to_list(expected) if str(value).strip()]
-    return any(value in {"arxiv", "arxiv preprint"} for value in values)
+    return actual_year.get("preprint_year") is not None and value_is_arxiv(expected)
 
 
 def has_arxiv_filter(filters: list[dict[str, Any]]) -> bool:
@@ -167,15 +171,15 @@ def has_arxiv_filter(filters: list[dict[str, Any]]) -> bool:
     return any(
         filter_item.get("field") == "venue"
         and not filter_item.get("negated")
-        and expected_is_arxiv(filter_item.get("value"))
+        and value_is_arxiv(filter_item.get("value"))
         for filter_item in filters
     )
 
 
-def expected_is_arxiv(value: Any) -> bool:
-    """判断 filter value 是否表达 ArXiv。"""
+def value_is_arxiv(value: Any) -> bool:
+    """纯判断：filter value 是否表达 ArXiv。"""
     values = [str(item).strip().lower() for item in filter_value_to_list(value) if str(item).strip()]
-    return any(item in {"arxiv", "arxiv preprint"} for item in values)
+    return any(item in ARXIV_VALUES for item in values)
 
 
 def filter_year(value: Any, year_source: str) -> int | None:

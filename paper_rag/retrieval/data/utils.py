@@ -1,3 +1,5 @@
+"""retrieval/data 层通用文本规范化、tokenize 和去重工具。"""
+
 from __future__ import annotations
 
 import re
@@ -73,6 +75,7 @@ def filter_value_to_list(value: Any) -> list[str]:
 
 def normalized_text(value: str) -> str:
     """生成确定性比较使用的规整文本。"""
+    # 与 tokenize 不同，这里不移除停用词，适合 contains/in/dedupe 等确定性判断。
     return " ".join(re.findall(r"[a-z0-9]+", value.lower()))
 
 

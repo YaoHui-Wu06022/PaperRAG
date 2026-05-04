@@ -1,3 +1,5 @@
+"""content BM25 关键词翻译，当前接入腾讯云和阿里云。"""
+
 from __future__ import annotations
 
 import base64
@@ -24,14 +26,18 @@ ALIYUN_ACTION = "TranslateGeneral"
 
 
 class KeywordTranslator(Protocol):
+    """BM25 关键词翻译器协议，便于测试时注入 mock translator。"""
+
     def translate(self, text: str, provider: str, settings: Settings) -> str | list[str] | None:
         """把一个关键词短语翻译成英文候选。"""
+        ...
 
 
 class CloudKeywordTranslator:
     """调用腾讯云和阿里云翻译接口，为 BM25 关键词生成英文候选。"""
 
     def translate(self, text: str, provider: str, settings: Settings) -> str | list[str] | None:
+        """按 provider 名称分派到具体云厂商翻译实现。"""
         name = provider.strip().lower()
         if name == "tencent":
             return translate_with_tencent(settings, text)
@@ -61,6 +67,7 @@ def translate_bm25_terms(
             continue
         for provider in configured_translation_providers(settings):
             try:
+                # 翻译失败只写 warning，不阻断 dense/BM25 主检索链路。
                 translated.extend(normalize_translation_result(translator.translate(term, provider, settings)))
             except Exception as exc:
                 if warnings is not None:
@@ -144,6 +151,7 @@ def tencent_headers(
         credential_scope,
         sha256_hex(canonical_request.encode("utf-8")),
     ])
+    # 腾讯 TC3 签名按 date -> service -> tc3_request 逐级派生密钥。
     secret_date = hmac_sha256(("TC3" + secret_key).encode("utf-8"), date)
     secret_service = hmac_sha256(secret_date, TENCENT_SERVICE)
     secret_signing = hmac_sha256(secret_service, "tc3_request")
@@ -266,6 +274,7 @@ def sha256_hex(value: bytes) -> str:
 def aliyun_rpc_signature(method: str, params: dict[str, str], access_key_secret: str) -> str:
     """生成阿里云 RPC 风格公共参数签名。"""
     query = canonical_query(params)
+    # 阿里云 RPC 签名要求对 canonical query 再做一次百分号编码。
     string_to_sign = f"{method}&%2F&{aliyun_percent_encode(query)}"
     digest = hmac.new(
         (access_key_secret + "&").encode("utf-8"),

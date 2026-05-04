@@ -1,3 +1,5 @@
+"""跨 dense/BM25 的 chunk 融合逻辑。"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -36,6 +38,7 @@ def fuse_chunk_hits(
         slot["sources"]["dense"] = {"rank": rank, "score": result.score}
         slot["dense_result"] = result
     for rank, hit in enumerate(bm25_results, start=1):
+        # BM25 命中已经带回 ChunkDocument，这里只负责和 dense 分数同口径累加。
         document = hit.payload["document"]
         slot = by_id.setdefault(hit.doc_id, {"document": document, "score": 0.0, "sources": {}})
         slot["score"] += 1 / (RRF_K + rank)

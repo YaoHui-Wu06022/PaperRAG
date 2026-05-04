@@ -1,3 +1,5 @@
+"""reference router：分别解析 source/object 两侧 scope。"""
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -18,6 +20,7 @@ def build_reference_decision(
     *,
     plan_parser=None,
 ) -> RouteDecision:
+    """把 reference parser result 归一化成 RouteDecision。"""
     query = decision.query
     try:
         parser = plan_parser or ReferenceParserClient.from_settings(settings)
@@ -56,6 +59,7 @@ def build_reference_decision(
     })
     parser_result = {
         **parser_result,
+        # parser_result 中保留两侧 resolved_papers，debug 时能看 source/object 是否放反。
         "source_filters": source_resolved["filters"],
         "source_groups": source_resolved["paper_groups"],
         "object_filters": object_resolved["filters"],
@@ -93,6 +97,7 @@ def build_reference_decision(
 
 
 def apply_reference_year_filters(settings: Settings, decision: RouteDecision, warnings: list[str]) -> RouteDecision:
+    """解析 source/object 两侧 year interval 中的论文边界。"""
     source_filters = resolve_year_filter_values(settings, list(decision.source_filters), warnings)
     source_groups = [
         {**group, "filters": resolve_year_filter_values(settings, list(group.get("filters") or []), warnings)}

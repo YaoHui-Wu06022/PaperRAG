@@ -1,3 +1,5 @@
+"""论文别名解析：把 parser 中的 paper mention 映射到本地 canonical title。"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -60,6 +62,7 @@ def resolve_paper_queries(settings: Settings, queries: list[str]) -> tuple[list[
             continue
         matches = find_alias_matches(alias_entries, query_text)
         alias_matches.extend(matches)
+        # 先用用户原始 mention 直接搜 manifest，再用 alias 映射出的 canonical title 搜。
         candidate_queries = dedupe_text_values_for_search([
             query_text,
             *[match.canonical for match in matches if match.canonical],
@@ -83,6 +86,7 @@ def resolved_paper_record(record: dict[str, Any], matches: list[AliasMatch]) -> 
         "paper_id": key,
         "matched_alias": matched_alias_for_record(record.get("title"), matches),
     }
+
 
 def matched_alias_for_record(title: Any, matches: list[AliasMatch]) -> str | None:
     """如果 record 标题等于 canonical，返回触发它的 alias。"""

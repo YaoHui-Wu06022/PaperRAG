@@ -1,4 +1,6 @@
-﻿from __future__ import annotations
+"""chunk 数据读取与按论文范围过滤。"""
+
+from __future__ import annotations
 
 import json
 from dataclasses import dataclass
@@ -85,5 +87,6 @@ def filter_chunks_by_paper_records(
     """按论文记录身份过滤 chunk 文档。"""
     if not paper_records:
         return []
+    # paper_records 可能来自 manifest 或 citation graph，统一走 paper_record_key 对齐 chunk.paper_id。
     paper_ids = {paper_record_key(record) for record in paper_records if paper_record_key(record)}
     return [document for document in documents if document.paper_id in paper_ids]

@@ -1,3 +1,5 @@
+"""统一构建 planner 输出的 composer/debug evidence。"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -23,6 +25,7 @@ def build_metadata_evidence(
     parser_error: str | None = None,
     debug: bool = False,
 ) -> dict[str, Any]:
+    """构建 metadata route 的默认压缩 evidence，debug 时附加完整中间态。"""
     records = records or []
     results = metadata_results(
         settings,
@@ -63,6 +66,7 @@ def build_content_evidence(
     parser_error: str | None = None,
     debug: bool = False,
 ) -> dict[str, Any]:
+    """构建 content route evidence，默认只暴露检索 query 和精简 contexts。"""
     parser_result = route.parser_result or {}
     scope_records = scope_records or []
     context_units = context_units or []
@@ -109,6 +113,7 @@ def build_reference_evidence(
     parser_error: str | None = None,
     debug: bool = False,
 ) -> dict[str, Any]:
+    """构建 reference route evidence，默认输出答案论文和精简边证据。"""
     source_records = source_records or []
     object_records = object_records or []
     answer_papers = answer_papers or []
@@ -160,6 +165,7 @@ def build_base_evidence(
     results: dict[str, Any],
     parser_error: str | None = None,
 ) -> dict[str, Any]:
+    """三条 route 共享的 evidence 骨架，负责移除空字段。"""
     evidence = compact_payload({
         "query": route.query,
         "route": route.route,
@@ -176,6 +182,7 @@ def build_base_evidence(
 
 
 def common_resolved(route: RouteDecision) -> dict[str, Any]:
+    """生成三条 route 共用的 resolved 摘要，目前只保留 alias 命中。"""
     aliases = [alias_match_to_dict(match) for match in route.alias_matches]
     return {"aliases": aliases} if aliases else {}
 
@@ -189,6 +196,7 @@ def metadata_results(
     count: int | None,
     exists: bool | None,
 ) -> dict[str, Any]:
+    """按 metadata intent 压缩 records/count/exists/group results。"""
     results: dict[str, Any] = {}
     if route.intent == "count":
         results["count"] = count if count is not None else len(records)
@@ -204,6 +212,7 @@ def metadata_results(
 
 
 def compact_metadata_group(settings, route: RouteDecision, group: dict[str, Any]) -> dict[str, Any]:
+    """把 metadata group 命中压缩成 scope/count/items。"""
     records = group.get("records") or []
     result: dict[str, Any] = {
         "scope": compact_scope_terms(group.get("semantic") or "", group.get("filters") or []),
@@ -218,6 +227,7 @@ def compact_metadata_group(settings, route: RouteDecision, group: dict[str, Any]
 
 
 def metadata_item(settings, record: dict[str, Any], return_fields: list[str]) -> dict[str, Any]:
+    """把单条 metadata record 转为 composer 需要的 item。"""
     public_record = to_evidence_metadata_record(record)
     public_record["venue"] = display_venue(settings, public_record.get("venue"))
     item: dict[str, Any] = {"title": public_record.get("title")}
@@ -232,6 +242,7 @@ def content_results(
     *,
     group_results: list[dict[str, Any]] | None,
 ) -> dict[str, Any]:
+    """压缩 content 命中的 contexts 和 group records。"""
     results: dict[str, Any] = {}
     contexts = [compact_context_unit(unit) for unit in context_units]
     if contexts:
@@ -242,6 +253,7 @@ def content_results(
 
 
 def compact_retrieval_query(retrieval_query: dict[str, Any] | None) -> dict[str, Any]:
+    """默认 evidence 只展示 dense_query 和 bm25_queries。"""
     if not retrieval_query:
         return {}
     return compact_payload({
@@ -251,6 +263,7 @@ def compact_retrieval_query(retrieval_query: dict[str, Any] | None) -> dict[str,
 
 
 def compact_context_unit(unit: dict[str, Any]) -> dict[str, Any]:
+    """裁剪 context_unit，隐藏 expanded blocks、scores 等 debug 信息。"""
     return compact_payload({
         "chunk_id": unit.get("chunk_id"),
         "title": unit.get("title"),
@@ -261,6 +274,7 @@ def compact_context_unit(unit: dict[str, Any]) -> dict[str, Any]:
 
 
 def compact_record_group(group: dict[str, Any]) -> dict[str, Any]:
+    """把 content group 的论文 records 压成标题列表和计数。"""
     records = group.get("records") or []
     return compact_payload({
         "scope": compact_scope_terms(group.get("semantic") or "", group.get("filters") or []),
@@ -279,6 +293,7 @@ def reference_results(
     count: int | None,
     exists: bool | None,
 ) -> dict[str, Any]:
+    """按 reference intent 压缩答案论文、边证据和分组结果。"""
     results: dict[str, Any] = {}
     if route.intent == "count":
         results["count"] = count if count is not None else len(answer_papers)
@@ -300,6 +315,7 @@ def reference_results(
 
 
 def compact_reference_group(group: dict[str, Any]) -> dict[str, Any]:
+    """把 reference group 输出压成 scope/papers/count/exists。"""
     papers = [paper_label(paper) for paper in group.get("answer_papers") or [] if paper_label(paper)]
     edges = group.get("edges") or []
     return compact_payload({
@@ -311,12 +327,14 @@ def compact_reference_group(group: dict[str, Any]) -> dict[str, Any]:
 
 
 def compact_scope_terms(semantic: str, filters: list[dict[str, Any]]) -> list[str]:
+    """把 semantic + filter dict 转成短文本 scope 列表。"""
     terms = [str(semantic or "").strip()]
     terms.extend(format_filter(filter_item) for filter_item in filters)
     return [term for term in terms if term]
 
 
 def compact_groups(groups: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """把 paper_groups 压缩为仅含 scope 的列表。"""
     compacted: list[dict[str, Any]] = []
     for group in groups:
         payload = compact_payload({
@@ -328,6 +346,7 @@ def compact_groups(groups: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def format_filter(filter_item: dict[str, Any]) -> str:
+    """把一个结构化 filter 格式化成 composer 可读短文本。"""
     field = str(filter_item.get("field") or "").strip()
     op = str(filter_item.get("op") or "").strip()
     value = filter_item.get("value")
@@ -346,6 +365,7 @@ def format_filter(filter_item: dict[str, Any]) -> str:
 
 
 def format_value(value: Any) -> str:
+    """把 filter value 转成稳定的短文本。"""
     if isinstance(value, list):
         return "/".join(format_value(item) for item in value)
     if isinstance(value, dict):
@@ -354,6 +374,7 @@ def format_value(value: Any) -> str:
 
 
 def route_debug(route: RouteDecision, **extra: Any) -> dict[str, Any]:
+    """生成 debug 模式下完整 route/parser/result 中间态。"""
     debug = {
         "parser_result": route.parser_result,
         "parse_status": route.parse_status,
@@ -380,10 +401,12 @@ def route_debug(route: RouteDecision, **extra: Any) -> dict[str, Any]:
 
 
 def to_evidence_papers(papers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """批量裁剪论文字段。"""
     return [paper for paper in (to_evidence_paper(paper) for paper in papers) if paper is not None]
 
 
 def to_evidence_paper(paper: dict[str, Any] | None) -> dict[str, Any] | None:
+    """裁剪单篇论文，只保留对外可展示字段。"""
     if not paper:
         return None
     result = {
@@ -399,6 +422,7 @@ def to_evidence_paper(paper: dict[str, Any] | None) -> dict[str, Any] | None:
 
 
 def compact_reference_edge(entry: dict[str, Any]) -> dict[str, Any]:
+    """把 citation edge 压缩成 source/object/ref/page/block。"""
     edge = entry.get("edge") or {}
     return compact_payload({
         "source": paper_label(entry.get("source_paper")),
@@ -410,12 +434,14 @@ def compact_reference_edge(entry: dict[str, Any]) -> dict[str, Any]:
 
 
 def paper_label(paper: dict[str, Any] | None) -> str:
+    """取 composer 中展示论文时使用的短标签。"""
     if not paper:
         return ""
     return str(paper.get("title") or paper.get("paper_id") or paper.get("_record_key") or "").strip()
 
 
 def compact_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """移除空值字段，控制默认 evidence 体积。"""
     return {
         key: value
         for key, value in payload.items()
@@ -424,35 +450,12 @@ def compact_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def is_empty_value(value: Any) -> bool:
+    """判断某个字段是否应该从默认 evidence 中省略。"""
     return value is None or value == "" or value == [] or value == {}
 
 
-def to_evidence_reference_entry(entry: dict[str, Any]) -> dict[str, Any]:
-    result = {
-        "anchor_mention": entry.get("anchor_mention"),
-    }
-    if entry.get("reference") is not None:
-        result["reference"] = entry.get("reference")
-    if entry.get("anchor_terms"):
-        result["anchor_terms"] = entry.get("anchor_terms")
-    if entry.get("anchor_paper"):
-        result["anchor_paper"] = to_evidence_paper(entry.get("anchor_paper"))
-    if entry.get("citing_paper"):
-        result["citing_paper"] = to_evidence_paper(entry.get("citing_paper"))
-    if entry.get("target_paper"):
-        result["target_paper"] = to_evidence_paper(entry.get("target_paper"))
-    return result
-
-
-def to_evidence_anchor_result(result: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "anchor_mention": result.get("anchor_mention"),
-        "resolved_papers": to_evidence_papers(result.get("resolved_papers") or []),
-        "count": result.get("count"),
-    }
-
-
 def to_evidence_metadata_record(record: dict[str, Any]) -> dict[str, Any]:
+    """裁剪 metadata record，隐藏 hash 和内部路径。"""
     return {
         "title": record.get("title"),
         "author": record.get("author"),
@@ -463,4 +466,5 @@ def to_evidence_metadata_record(record: dict[str, Any]) -> dict[str, Any]:
 
 
 def to_evidence_metadata_records(resolved_papers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """批量裁剪 metadata records。"""
     return [to_evidence_metadata_record(paper) for paper in resolved_papers]

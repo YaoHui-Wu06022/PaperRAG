@@ -1,3 +1,5 @@
+"""检索 plan 的顶层薄编排：只分路由，再交给各 domain 执行。"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -21,6 +23,7 @@ def run_plan(
     debug: bool = False,
     top_parser=None,
 ) -> dict[str, Any]:
+    """执行一次完整 plan：top router -> domain router -> domain planner。"""
     warnings: list[str] = []
     route = build_plan_route(settings, query, warnings, top_parser=top_parser)
     if route.route == "metadata":
@@ -42,6 +45,7 @@ def build_plan_route(
     *,
     top_parser=None,
 ) -> RouteDecision:
+    """调用 top parser，把 query 分类成 metadata/reference/content/unclear。"""
     try:
         parser = top_parser or TopParserClient.from_settings(settings)
         if not hasattr(parser, "parse_top"):
@@ -73,6 +77,7 @@ def unclear_plan(
     *,
     debug: bool = False,
 ) -> dict[str, Any]:
+    """把 top 层失败或 unclear 结果包装成统一 evidence 骨架。"""
     evidence: dict[str, Any] = {
         "query": query,
         "route": "unclear",

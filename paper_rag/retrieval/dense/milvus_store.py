@@ -1,4 +1,6 @@
-﻿from __future__ import annotations
+"""Milvus/Zilliz 向量库读写封装。"""
+
+from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
@@ -50,6 +52,7 @@ class MilvusStore:
         client: Any | None = None,
     ) -> None:
         if client is None:
+            # 延迟导入 pymilvus，避免只跑 schema/router 测试时要求安装 Milvus 依赖。
             from pymilvus import MilvusClient
             client = MilvusClient(uri=uri, token=token or "", db_name=db_name or "")
         self.client = client

@@ -1,3 +1,5 @@
+"""top parser schema：只允许 router 字段。"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -11,6 +13,7 @@ PARSER_NAME = "Top"
 
 
 def validate_top_parse(content: str | dict[str, Any], fallback_query: str = "") -> dict[str, Any]:
+    """校验 top parser 输出并拒绝旧 filters/query 字段残留。"""
     _ = fallback_query
     payload = load_payload(content, PARSER_NAME)
     extra_fields = set(payload) - {"router"}

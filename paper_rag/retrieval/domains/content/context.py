@@ -1,3 +1,5 @@
+"""content 命中 chunk 后的 block 窗口扩展。"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -39,6 +41,7 @@ def expand_blocks(settings: Settings, document: ChunkDocument, block_window: int
     ]
     if not hit_positions:
         return []
+    # 只在同一 section 内扩展，避免把相邻页面但语义无关的段落混入 context。
     start = max(0, min(hit_positions) - block_window)
     end = min(len(section_blocks), max(hit_positions) + block_window + 1)
     return [

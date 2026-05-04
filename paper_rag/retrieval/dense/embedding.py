@@ -1,3 +1,5 @@
+"""OpenAI-compatible embedding 请求与响应解析。"""
+
 from __future__ import annotations
 
 import json
@@ -70,6 +72,7 @@ def parse_embedding_response(data: dict[str, Any], expected_count: int) -> list[
         vector = [float(value) for value in embedding]
         index = row.get("index")
         indexed.append((index if isinstance(index, int) else position, vector))
+    # 服务端可能按 index 返回，先排序再恢复输入顺序。
     indexed.sort(key=lambda item: item[0])
     vectors = [vector for _, vector in indexed]
     if len(vectors) != expected_count:

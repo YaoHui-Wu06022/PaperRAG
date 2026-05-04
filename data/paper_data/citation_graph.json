@@ -33,6 +33,29 @@
       "venue": "CVPR"
     },
     {
+      "paper_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839",
+      "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+      "author": [
+        "Alexey Dosovitskiy",
+        "Lucas Beyer",
+        "Alexander Kolesnikov",
+        "Dirk Weissenborn",
+        "Xiaohua Zhai",
+        "Thomas Unterthiner",
+        "Mostafa Dehghani",
+        "Matthias Minderer",
+        "Georg Heigold",
+        "Sylvain Gelly",
+        "Jakob Uszkoreit",
+        "Neil Houlsby"
+      ],
+      "year": {
+        "preprint_year": 2020,
+        "publish_year": 2021
+      },
+      "venue": "ICLR"
+    },
+    {
       "paper_id": "Attention_is_All_you_Need_d87d482d",
       "title": "Attention is All you Need",
       "author": [
@@ -301,6 +324,42 @@
       "raw_text": "[38] C. Szegedy, W. Liu, Y. Jia, P. Sermanet, S. Reed, D. Anguelov, D. Erhan, V. Vanhoucke, and A. Rabinovich. Going deeper with convolutions. In CVPR, 2015.",
       "page": 9,
       "source_block_id": "b000141",
+      "match_type": "canonical_title"
+    },
+    {
+      "source_paper_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839",
+      "target_paper_id": "BERT_Pre_training_of_Deep_Bidirectional_Transformers_for_Language_Understanding_5692a551",
+      "ref_index": 12,
+      "raw_text": "Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. BERT: Pre-training of deep bidirectional transformers for language understanding. In NAACL, 2019.",
+      "page": 10,
+      "source_block_id": "b000107",
+      "match_type": "canonical_title"
+    },
+    {
+      "source_paper_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839",
+      "target_paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+      "ref_index": 14,
+      "raw_text": "Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In CVPR, 2016.",
+      "page": 10,
+      "source_block_id": "b000107",
+      "match_type": "canonical_title"
+    },
+    {
+      "source_paper_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839",
+      "target_paper_id": "ImageNet_Classification_with_Deep_Convolutional_Neural_Networks_90137160",
+      "ref_index": 25,
+      "raw_text": "Alex Krizhevsky, Ilya Sutskever, and Geoffrey E. Hinton. Imagenet classification with deep convolutional neural networks. In NIPS, 2012.",
+      "page": 11,
+      "source_block_id": "b000110",
+      "match_type": "canonical_title"
+    },
+    {
+      "source_paper_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839",
+      "target_paper_id": "Attention_is_All_you_Need_d87d482d",
+      "ref_index": 45,
+      "raw_text": "Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin. Attention is all you need. In NIPS, 2017.",
+      "page": 12,
+      "source_block_id": "b000113",
       "match_type": "canonical_title"
     },
     {

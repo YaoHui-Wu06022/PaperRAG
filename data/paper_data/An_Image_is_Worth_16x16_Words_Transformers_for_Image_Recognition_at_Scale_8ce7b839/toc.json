@@ -1,0 +1,444 @@
+{
+  "sections": [
+    {
+      "section_id": "sec_abstract",
+      "parent_id": null,
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 4,
+      "end_block_index": 4
+    },
+    {
+      "section_id": "sec_1",
+      "parent_id": null,
+      "number": "1",
+      "title": "INTRODUCTION",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 INTRODUCTION"
+      ],
+      "start_block_index": 5,
+      "end_block_index": 15
+    },
+    {
+      "section_id": "sec_2",
+      "parent_id": null,
+      "number": "2",
+      "title": "RELATED WORK",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 RELATED WORK"
+      ],
+      "start_block_index": 16,
+      "end_block_index": 26
+    },
+    {
+      "section_id": "sec_3",
+      "parent_id": null,
+      "number": "3",
+      "title": "METHOD",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 METHOD"
+      ],
+      "start_block_index": 27,
+      "end_block_index": 44
+    },
+    {
+      "section_id": "sec_3_1",
+      "parent_id": "sec_3",
+      "number": "3.1",
+      "title": "VISION TRANSFORMER (VIT)",
+      "region": "body",
+      "order": 4,
+      "level": 2,
+      "path": [
+        "3 METHOD",
+        "3.1 VISION TRANSFORMER (VIT)"
+      ],
+      "start_block_index": 29,
+      "end_block_index": 42
+    },
+    {
+      "section_id": "sec_3_2",
+      "parent_id": "sec_3",
+      "number": "3.2",
+      "title": "FINE-TUNING AND HIGHER RESOLUTION",
+      "region": "body",
+      "order": 5,
+      "level": 2,
+      "path": [
+        "3 METHOD",
+        "3.2 FINE-TUNING AND HIGHER RESOLUTION"
+      ],
+      "start_block_index": 43,
+      "end_block_index": 44
+    },
+    {
+      "section_id": "sec_4",
+      "parent_id": null,
+      "number": "4",
+      "title": "EXPERIMENTS",
+      "region": "body",
+      "order": 6,
+      "level": 1,
+      "path": [
+        "4 EXPERIMENTS"
+      ],
+      "start_block_index": 45,
+      "end_block_index": 96
+    },
+    {
+      "section_id": "sec_4_1",
+      "parent_id": "sec_4",
+      "number": "4.1",
+      "title": "SETUP",
+      "region": "body",
+      "order": 7,
+      "level": 2,
+      "path": [
+        "4 EXPERIMENTS",
+        "4.1 SETUP"
+      ],
+      "start_block_index": 47,
+      "end_block_index": 56
+    },
+    {
+      "section_id": "sec_4_2",
+      "parent_id": "sec_4",
+      "number": "4.2",
+      "title": "COMPARISON TO STATE OF THE ART",
+      "region": "body",
+      "order": 8,
+      "level": 2,
+      "path": [
+        "4 EXPERIMENTS",
+        "4.2 COMPARISON TO STATE OF THE ART"
+      ],
+      "start_block_index": 57,
+      "end_block_index": 65
+    },
+    {
+      "section_id": "sec_4_3",
+      "parent_id": "sec_4",
+      "number": "4.3",
+      "title": "PRE-TRAINING DATA REQUIREMENTS",
+      "region": "body",
+      "order": 9,
+      "level": 2,
+      "path": [
+        "4 EXPERIMENTS",
+        "4.3 PRE-TRAINING DATA REQUIREMENTS"
+      ],
+      "start_block_index": 66,
+      "end_block_index": 79
+    },
+    {
+      "section_id": "sec_4_4",
+      "parent_id": "sec_4",
+      "number": "4.4",
+      "title": "SCALING STUDY",
+      "region": "body",
+      "order": 10,
+      "level": 2,
+      "path": [
+        "4 EXPERIMENTS",
+        "4.4 SCALING STUDY"
+      ],
+      "start_block_index": 80,
+      "end_block_index": 82
+    },
+    {
+      "section_id": "sec_4_5",
+      "parent_id": "sec_4",
+      "number": "4.5",
+      "title": "INSPECTING VISION TRANSFORMER",
+      "region": "body",
+      "order": 11,
+      "level": 2,
+      "path": [
+        "4 EXPERIMENTS",
+        "4.5 INSPECTING VISION TRANSFORMER"
+      ],
+      "start_block_index": 83,
+      "end_block_index": 88
+    },
+    {
+      "section_id": "sec_4_6",
+      "parent_id": "sec_4",
+      "number": "4.6",
+      "title": "SELF-SUPERVISION",
+      "region": "body",
+      "order": 12,
+      "level": 2,
+      "path": [
+        "4 EXPERIMENTS",
+        "4.6 SELF-SUPERVISION"
+      ],
+      "start_block_index": 89,
+      "end_block_index": 96
+    },
+    {
+      "section_id": "sec_5",
+      "parent_id": null,
+      "number": "5",
+      "title": "CONCLUSION",
+      "region": "body",
+      "order": 13,
+      "level": 1,
+      "path": [
+        "5 CONCLUSION"
+      ],
+      "start_block_index": 97,
+      "end_block_index": 99
+    },
+    {
+      "section_id": "sec_appendix",
+      "parent_id": null,
+      "number": null,
+      "title": "Appendix",
+      "region": "appendix",
+      "order": 14,
+      "level": 1,
+      "path": [
+        "Appendix"
+      ],
+      "start_block_index": 117,
+      "end_block_index": 212
+    }
+  ],
+  "tree": [
+    {
+      "section_id": "sec_abstract",
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 4,
+      "end_block_index": 4,
+      "children": []
+    },
+    {
+      "section_id": "sec_1",
+      "number": "1",
+      "title": "INTRODUCTION",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 INTRODUCTION"
+      ],
+      "start_block_index": 5,
+      "end_block_index": 15,
+      "children": []
+    },
+    {
+      "section_id": "sec_2",
+      "number": "2",
+      "title": "RELATED WORK",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 RELATED WORK"
+      ],
+      "start_block_index": 16,
+      "end_block_index": 26,
+      "children": []
+    },
+    {
+      "section_id": "sec_3",
+      "number": "3",
+      "title": "METHOD",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 METHOD"
+      ],
+      "start_block_index": 27,
+      "end_block_index": 44,
+      "children": [
+        {
+          "section_id": "sec_3_1",
+          "number": "3.1",
+          "title": "VISION TRANSFORMER (VIT)",
+          "region": "body",
+          "order": 4,
+          "level": 2,
+          "path": [
+            "3 METHOD",
+            "3.1 VISION TRANSFORMER (VIT)"
+          ],
+          "start_block_index": 29,
+          "end_block_index": 42,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_2",
+          "number": "3.2",
+          "title": "FINE-TUNING AND HIGHER RESOLUTION",
+          "region": "body",
+          "order": 5,
+          "level": 2,
+          "path": [
+            "3 METHOD",
+            "3.2 FINE-TUNING AND HIGHER RESOLUTION"
+          ],
+          "start_block_index": 43,
+          "end_block_index": 44,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_4",
+      "number": "4",
+      "title": "EXPERIMENTS",
+      "region": "body",
+      "order": 6,
+      "level": 1,
+      "path": [
+        "4 EXPERIMENTS"
+      ],
+      "start_block_index": 45,
+      "end_block_index": 96,
+      "children": [
+        {
+          "section_id": "sec_4_1",
+          "number": "4.1",
+          "title": "SETUP",
+          "region": "body",
+          "order": 7,
+          "level": 2,
+          "path": [
+            "4 EXPERIMENTS",
+            "4.1 SETUP"
+          ],
+          "start_block_index": 47,
+          "end_block_index": 56,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_2",
+          "number": "4.2",
+          "title": "COMPARISON TO STATE OF THE ART",
+          "region": "body",
+          "order": 8,
+          "level": 2,
+          "path": [
+            "4 EXPERIMENTS",
+            "4.2 COMPARISON TO STATE OF THE ART"
+          ],
+          "start_block_index": 57,
+          "end_block_index": 65,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_3",
+          "number": "4.3",
+          "title": "PRE-TRAINING DATA REQUIREMENTS",
+          "region": "body",
+          "order": 9,
+          "level": 2,
+          "path": [
+            "4 EXPERIMENTS",
+            "4.3 PRE-TRAINING DATA REQUIREMENTS"
+          ],
+          "start_block_index": 66,
+          "end_block_index": 79,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_4",
+          "number": "4.4",
+          "title": "SCALING STUDY",
+          "region": "body",
+          "order": 10,
+          "level": 2,
+          "path": [
+            "4 EXPERIMENTS",
+            "4.4 SCALING STUDY"
+          ],
+          "start_block_index": 80,
+          "end_block_index": 82,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_5",
+          "number": "4.5",
+          "title": "INSPECTING VISION TRANSFORMER",
+          "region": "body",
+          "order": 11,
+          "level": 2,
+          "path": [
+            "4 EXPERIMENTS",
+            "4.5 INSPECTING VISION TRANSFORMER"
+          ],
+          "start_block_index": 83,
+          "end_block_index": 88,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_6",
+          "number": "4.6",
+          "title": "SELF-SUPERVISION",
+          "region": "body",
+          "order": 12,
+          "level": 2,
+          "path": [
+            "4 EXPERIMENTS",
+            "4.6 SELF-SUPERVISION"
+          ],
+          "start_block_index": 89,
+          "end_block_index": 96,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_5",
+      "number": "5",
+      "title": "CONCLUSION",
+      "region": "body",
+      "order": 13,
+      "level": 1,
+      "path": [
+        "5 CONCLUSION"
+      ],
+      "start_block_index": 97,
+      "end_block_index": 99,
+      "children": []
+    },
+    {
+      "section_id": "sec_appendix",
+      "number": null,
+      "title": "Appendix",
+      "region": "appendix",
+      "order": 14,
+      "level": 1,
+      "path": [
+        "Appendix"
+      ],
+      "start_block_index": 117,
+      "end_block_index": 212,
+      "children": []
+    }
+  ]
+}

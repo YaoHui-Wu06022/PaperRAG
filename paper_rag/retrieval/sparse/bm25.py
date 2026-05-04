@@ -1,3 +1,5 @@
+"""本地 BM25 检索与多 query RRF 合并。"""
+
 from __future__ import annotations
 
 import math
@@ -11,6 +13,8 @@ from ..data.utils import tokenize
 
 @dataclass(frozen=True)
 class BM25Document:
+    """BM25 索引中的文档条目。"""
+
     doc_id: str
     text: str
     payload: dict[str, Any]
@@ -18,6 +22,8 @@ class BM25Document:
 
 @dataclass(frozen=True)
 class BM25Hit:
+    """一次 BM25 命中的轻量结果。"""
+
     doc_id: str
     score: float
     text: str
@@ -25,6 +31,8 @@ class BM25Hit:
 
 
 class BM25Index:
+    """极简 BM25 实现，只服务本地 chunk 候选召回。"""
+
     def __init__(self, documents: list[BM25Document], *, k1: float = 1.5, b: float = 0.75) -> None:
         self.documents = documents
         self.k1 = k1
@@ -39,6 +47,7 @@ class BM25Index:
                 self.doc_freqs[token] = self.doc_freqs.get(token, 0) + 1
 
     def search(self, query: str, top_k: int) -> list[BM25Hit]:
+        """对单个 query 执行 BM25 检索。"""
         query_tokens = tokenize(query)
         if not query_tokens or not self.documents:
             return []
@@ -51,6 +60,7 @@ class BM25Index:
         return scored[:top_k]
 
     def _score(self, query_tokens: list[str], doc_index: int) -> float:
+        """计算单篇文档的 BM25 分数。"""
         tokens = self.doc_tokens[doc_index]
         if not tokens:
             return 0.0
@@ -70,6 +80,7 @@ class BM25Index:
 
 
 def count_terms(tokens: list[str]) -> dict[str, int]:
+    """统计 token 词频。"""
     counts: dict[str, int] = {}
     for token in tokens:
         counts[token] = counts.get(token, 0) + 1
@@ -89,6 +100,7 @@ def search_bm25_chunks(documents: list[ChunkDocument], queries: list[str], top_k
     index = BM25Index(bm25_documents)
     by_id: dict[str, dict[str, Any]] = {}
     for query in queries:
+        # 多个关键词候选各自检索，再用 RRF 合并，避免某个翻译候选独占结果。
         for rank, hit in enumerate(index.search(query, top_k), start=1):
             slot = by_id.setdefault(hit.doc_id, {"hit": hit, "score": 0.0})
             slot["score"] += 1 / (RRF_K + rank)

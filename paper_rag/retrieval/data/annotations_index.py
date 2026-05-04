@@ -1,3 +1,5 @@
+"""paper_annotations.json 的统一索引入口，供 aliases 和 tags 共用。"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

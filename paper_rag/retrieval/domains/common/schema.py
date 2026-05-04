@@ -1,3 +1,5 @@
+"""三条 domain 共用的 parser payload 与 paper filter 校验工具。"""
+
 from __future__ import annotations
 
 import json
@@ -21,6 +23,7 @@ POSITIVE_INFINITY = {"inf", "+inf"}
 
 
 def load_payload(content: str | dict[str, Any], name: str) -> dict[str, Any]:
+    """把 parser 返回的 JSON 字符串或 dict 规整成对象根。"""
     if isinstance(content, str):
         try:
             payload = json.loads(content)
@@ -34,6 +37,7 @@ def load_payload(content: str | dict[str, Any], name: str) -> dict[str, Any]:
 
 
 def norm_string_list(value: Any, name: str) -> list[str]:
+    """校验字符串列表，并过滤空字符串。"""
     if not isinstance(value, list):
         raise PlanParseError(f"{name} must be a list")
     items: list[str] = []
@@ -47,6 +51,7 @@ def norm_string_list(value: Any, name: str) -> list[str]:
 
 
 def validate_paper_filters(value: Any, name: str) -> list[dict[str, Any]]:
+    """校验一组 paper scope filters。"""
     if value is None:
         value = []
     if not isinstance(value, list):
@@ -55,6 +60,7 @@ def validate_paper_filters(value: Any, name: str) -> list[dict[str, Any]]:
 
 
 def validate_semantic(value: Any, name: str) -> str:
+    """校验 semantic 文本字段。"""
     if value is None:
         return ""
     if not isinstance(value, str):
@@ -63,6 +69,7 @@ def validate_semantic(value: Any, name: str) -> str:
 
 
 def validate_paper_groups(value: Any, parser_name: str, field_name: str) -> list[dict[str, Any]]:
+    """校验 paper_groups/source_groups/object_groups 的统一结构。"""
     if value is None:
         value = []
     if not isinstance(value, list):
@@ -83,6 +90,7 @@ def validate_paper_groups(value: Any, parser_name: str, field_name: str) -> list
 
 
 def validate_group_mode(mode: Any, groups: list[dict[str, Any]], parser_name: str, field_name: str) -> str:
+    """校验 group_mode 和 groups 是否成对出现。"""
     if mode is None:
         mode = "single"
     if mode not in PAPER_GROUP_MODES:
@@ -95,6 +103,7 @@ def validate_group_mode(mode: Any, groups: list[dict[str, Any]], parser_name: st
 
 
 def validate_paper_filter(value: Any) -> dict[str, Any]:
+    """校验单个 filter，并按 op 规范化 value。"""
     if not isinstance(value, dict):
         raise PlanParseError("Paper filter must be an object")
     field = value.get("field")
@@ -118,12 +127,14 @@ def validate_paper_filter(value: Any) -> dict[str, Any]:
 
 
 def validate_filter_field_op(field: str, op: str) -> None:
+    """拒绝 field/op 非法组合，避免执行层出现隐式宽容语义。"""
     allowed_ops = PAPER_FILTER_FIELD_OPS.get(field, set())
     if op not in allowed_ops:
         raise PlanParseError(f"Invalid paper filter op for {field} field: {op}")
 
 
 def norm_filter_value(op: str, value: Any) -> Any:
+    """只对 interval value 做边界规范化，其它 value 原样保留。"""
     if op != "interval":
         return value
     if isinstance(value, list) and len(value) == 2:
@@ -132,6 +143,7 @@ def norm_filter_value(op: str, value: Any) -> Any:
 
 
 def norm_interval_bound(value: Any) -> int | str:
+    """把 interval 边界转成 int、inf 标记或论文 mention 文本。"""
     if isinstance(value, str):
         text = value.strip()
         normalized = text.lower()

@@ -179,6 +179,25 @@
       ]
     }
   },
+  "8ce7b83971a14508ca711a27c875c9b6914c4f6767cf3150fb1ca6c07aa056d6": {
+    "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+    "aliases": [
+      "ViT",
+      "Vision Transformer"
+    ],
+    "tags": {
+      "zh": [
+        "图像识别",
+        "视觉Transformer",
+        "自注意力"
+      ],
+      "en": [
+        "image classification",
+        "Vision Transformer",
+        "self-attention"
+      ]
+    }
+  },
   "90137160c57217953d5f61857e64ca58e85f06e1b13b4f475c918b1b582b9771": {
     "title": "ImageNet Classification with Deep Convolutional Neural Networks",
     "aliases": [

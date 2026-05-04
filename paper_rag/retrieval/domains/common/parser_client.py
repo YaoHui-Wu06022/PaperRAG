@@ -1,3 +1,5 @@
+"""OpenAI-compatible parser client，供 top/metadata/reference/content 共用。"""
+
 from __future__ import annotations
 
 import json
@@ -12,6 +14,8 @@ from .errors import PlanParseError
 
 @dataclass(frozen=True)
 class PlanParserClient:
+    """封装 chat/completions 请求和 JSON 内容提取。"""
+
     base_url: str
     api_key: str | None
     model: str
@@ -19,6 +23,7 @@ class PlanParserClient:
 
     @classmethod
     def from_settings(cls, settings: Settings) -> "PlanParserClient":
+        """从 Settings 构造 parser client。"""
         return cls(
             base_url=settings.plan_parser_base_url,
             api_key=settings.plan_parser_api_key,
@@ -27,6 +32,7 @@ class PlanParserClient:
         )
 
     def complete_json(self, system_prompt: str, query: str) -> str:
+        """发送一次 parser 请求，优先要求 JSON object 格式返回。"""
         if not self.base_url or not self.api_key or not self.model:
             raise PlanParseError("PLAN_PARSER_BASE_URL, PLAN_PARSER_API_KEY or PLAN_PARSER_MODEL is missing")
         payload = {
@@ -41,6 +47,7 @@ class PlanParserClient:
         try:
             data = self.chat_completion(payload)
         except PlanParseError as exc:
+            # 部分 OpenAI-compatible 服务不支持 response_format，失败时退回普通 JSON prompt。
             if "response_format" not in str(exc):
                 raise
             fallback_payload = dict(payload)
@@ -49,6 +56,7 @@ class PlanParserClient:
         return chat_completion_content(data)
 
     def chat_completion(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """执行底层 HTTP chat/completions 请求。"""
         request = urllib.request.Request(
             f"{self.base_url.rstrip('/')}/chat/completions",
             data=json.dumps(payload).encode("utf-8"),
@@ -71,6 +79,7 @@ class PlanParserClient:
 
 
 def chat_completion_content(data: dict[str, Any]) -> str:
+    """从 chat/completions 响应中取第一条 message.content。"""
     choices = data.get("choices")
     if not isinstance(choices, list) or not choices:
         raise PlanParseError("Plan parser response missing choices")

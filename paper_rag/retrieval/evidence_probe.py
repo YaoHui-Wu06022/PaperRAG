@@ -1,3 +1,5 @@
+"""手动查看三条 route 默认/调试 evidence 的 probe。"""
+
 from __future__ import annotations
 
 import argparse
@@ -8,6 +10,7 @@ from typing import Any
 
 
 def find_project_root() -> Path:
+    """向上寻找项目根目录，支持直接运行本文件。"""
     path = Path(__file__).resolve()
     for parent in path.parents:
         if (parent / "pyproject.toml").exists() or (parent / ".env").exists():
@@ -38,6 +41,7 @@ DEFAULT_QUERIES = {
 
 
 def main() -> int:
+    """解析命令行参数并输出 evidence JSON。"""
     parser = argparse.ArgumentParser(description="Probe unified planner evidence outputs.")
     parser.add_argument("query", nargs="*", help="Optional single query. Defaults depend on --route.")
     parser.add_argument("--project-root", type=Path, default=find_project_root(), help="Project root containing .env")
@@ -84,6 +88,7 @@ def run_domain_probe(
     debug: bool,
     show_route: bool,
 ) -> dict[str, Any]:
+    """绕过 top router，直接测试某一条 domain 的 router + planner。"""
     warnings: list[str] = []
     try:
         route = build_domain_decision(settings, route_name, query, warnings)
@@ -102,6 +107,7 @@ def run_domain_probe(
 
 
 def build_domain_decision(settings: Settings, route_name: str, query: str, warnings: list[str]) -> RouteDecision:
+    """按 route 名称分派到对应 domain router。"""
     base = RouteDecision(route=route_name, query=query, parse_status="ok")
     if route_name == "metadata":
         return build_metadata_decision(settings, base, warnings)
@@ -113,6 +119,7 @@ def build_domain_decision(settings: Settings, route_name: str, query: str, warni
 
 
 def plan_domain(settings: Settings, route: RouteDecision, warnings: list[str], *, debug: bool) -> dict[str, Any]:
+    """按 RouteDecision.route 分派到对应 domain planner。"""
     if route.route == "metadata":
         return plan_metadata(settings, route, warnings, debug=debug)
     if route.route == "reference":
@@ -123,6 +130,7 @@ def plan_domain(settings: Settings, route: RouteDecision, warnings: list[str], *
 
 
 def route_summary(route: RouteDecision) -> dict[str, Any]:
+    """输出 route 的关键字段，方便检查 parser 归一化结果。"""
     return {
         "route": route.route,
         "intent": route.intent,
