@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from paper_rag.ingest.venues import display_venue
+from paper_rag.corpus.venues import display_venue
 from paper_rag.corpus.aliases import alias_match_to_dict
 from paper_rag.retrieval.route import RouteDecision
 

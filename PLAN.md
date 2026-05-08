@@ -44,7 +44,6 @@ paper_rag/
 │  ├─ extract.py                     # 从 MinerU 输出构建 metadata/toc/blocks/references/chunks
 │  ├─ citation_graph.py              # 本地 citation graph 构建
 │  ├─ annotations.py                 # paper_annotations.json 生成与维护
-│  ├─ venues.py                      # venue alias/display 规范化
 │  └─ metadata_sources/
 │     ├─ arxiv.py                    # ArXiv 精确标题查询
 │     ├─ dblp.py                     # DBLP 精确标题查询
@@ -52,13 +51,14 @@ paper_rag/
 │     └─ retry.py                    # 外部请求重试/延迟
 ├─ corpus/
 │  ├─ aliases.py                     # annotation aliases 到 canonical paper match
-│  ├─ annotations.py                 # paper_annotations.json 统一扫描入口
+│  ├─ annotation_index.py            # paper_annotations.json 统一扫描入口
 │  ├─ chunks.py                      # chunks.jsonl 读取与按论文记录过滤
-│  ├─ citations.py                   # paper follow/prior citation 范围
+│  ├─ citation_index.py              # paper follow/prior citation 范围
 │  ├─ filters.py                     # manifest record filter evaluator
 │  ├─ records.py                     # active manifest 读取、匹配、record key
 │  ├─ scope.py                       # semantic + filters + groups 到候选论文 records
 │  ├─ resolver.py                    # parser scope/filter value 解析
+│  ├─ venues.py                      # venue alias/display 规范化
 │  └─ utils.py                       # normalize token、dedupe、interval boundary 工具
 └─ retrieval/
    ├─ plan.py                        # `paper-rag plan` 薄编排
@@ -154,7 +154,7 @@ paper_rag/
 - `filters.py` 只做单条 manifest record 的最终布尔匹配，不做 parser mention 解析。
 - `aliases.py` 只做结构化 paper mention 的别名匹配，不改写用户 query。
 - `chunks.py` 只负责 chunk 数据加载与按论文候选过滤。
-- `citations.py` 负责 `paper follow / paper prior` 这类基于 citation graph 的本地关系范围。
+- `citation_index.py` 负责 `paper follow / paper prior` 这类基于 citation graph 的本地关系范围。
 
 ## 5. Parser Schema 与 Filter 规则
 

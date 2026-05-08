@@ -8,7 +8,7 @@ from pathlib import Path
 from paper_rag.config import Settings
 from paper_rag.retrieval.routes.common.errors import PlanParseError
 from paper_rag.corpus.aliases import resolved_paper_record, resolve_paper_queries
-from paper_rag.corpus.citations import citation_scope_paper_ids
+from paper_rag.corpus.citation_index import citation_scope_paper_ids
 from paper_rag.corpus.records import (
     dedupe_paper_records,
     load_active_manifest_records,

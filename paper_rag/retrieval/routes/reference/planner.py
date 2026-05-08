@@ -7,7 +7,7 @@ from typing import Any
 from paper_rag.config import Settings
 from paper_rag.retrieval.evidence import build_reference_evidence
 from paper_rag.retrieval.route import RouteDecision
-from paper_rag.corpus.citations import load_citation_graph
+from paper_rag.corpus.citation_index import load_citation_graph
 from paper_rag.corpus.records import dedupe_paper_records, paper_record_key
 from paper_rag.corpus.scope import combined_semantic, records_for_scope
 

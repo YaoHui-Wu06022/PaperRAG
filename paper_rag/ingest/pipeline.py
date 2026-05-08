@@ -19,7 +19,7 @@ from paper_rag.ingest.mineru import MinerUClient, MinerUError
 from paper_rag.ingest.metadata_sources.arxiv import ArxivClient
 from paper_rag.ingest.metadata_sources.dblp import DblpClient
 from paper_rag.ingest.metadata_sources.semantic_scholar import SemanticScholarClient
-from paper_rag.ingest.venues import normalize_venue_for_storage
+from paper_rag.corpus.venues import normalize_venue_for_storage
 
 
 @dataclass(frozen=True)

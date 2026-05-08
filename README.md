@@ -82,7 +82,6 @@ paper_rag/ingest/
 ├─ extract.py                        # 从 MinerU 输出构建 metadata/toc/blocks/references/chunks
 ├─ citation_graph.py                 # 从 references 构建本地库内 citation graph
 ├─ annotations.py                    # paper_annotations.json 生成、规范化与保存
-├─ venues.py                         # venue canonical/display/aliases 规范化与匹配
 └─ metadata_sources/
    ├─ __init__.py                    # 元数据检索子包标记
    ├─ arxiv.py                       # ArXiv 精确标题查询与 preprint metadata
@@ -99,13 +98,14 @@ paper_rag/ingest/
 paper_rag/corpus/
 ├─ __init__.py                       # 本地结构化论文库访问层
 ├─ aliases.py                        # 论文 mention/alias 到 canonical paper 的匹配
-├─ annotations.py                    # paper_annotations.json 的统一扫描入口
+├─ annotation_index.py               # paper_annotations.json 的统一扫描入口
 ├─ chunks.py                         # chunks.jsonl 加载、ChunkDocument、按论文过滤
-├─ citations.py                      # paper follow/prior 基于 citation graph 的范围解析
+├─ citation_index.py                 # paper follow/prior 基于 citation graph 的范围解析
 ├─ filters.py                        # 单条 manifest record 的 filter 布尔匹配
 ├─ records.py                        # active manifest 读取、论文匹配、record key、去重
 ├─ scope.py                          # semantic + filters + groups 到候选论文 records
 ├─ resolver.py                       # parser 输出中的 paper/year/venue scope 标准化
+├─ venues.py                         # venue canonical/display/aliases 规范化与匹配
 └─ utils.py                          # token 规范化、去重、interval boundary、value 展平
 ```
 
@@ -624,7 +624,7 @@ citation graph 只覆盖本地 active 论文之间的引用关系
 
 ### 别名与标签
 
-`annotations.py` 管理 `data/paper_annotations.json`
+`ingest/annotations.py` 管理 `data/paper_annotations.json`
 
 该文件用于人工扩展论文别名和标签
 
@@ -635,11 +635,45 @@ citation graph 只覆盖本地 active 论文之间的引用关系
 
 其它字段应由 ingest/API 生成，避免人工编辑与自动流程冲突
 
-`venues.py` 管理 `data/venue_aliases.json`，使用 `canonical / display / aliases` 三层设计，匹配时使用 canonical 和 aliases，展示时使用 display
+`corpus/venues.py` 管理 `data/venue_aliases.json`，使用 `canonical / display / aliases` 三层设计，匹配时使用 canonical 和 aliases，展示时使用 display
+
+## Corpus
+
+`corpus/` 是本地数据执行层，负责把 parser 输出落到本地数据上
+
+主要职责：
+
+- 读取 active manifest records
+- 解析 paper mention、venue alias、year interval
+- 按 metadata filters 收缩论文范围
+- 加载 chunk 文档并按论文范围过滤
+- 读取 annotation aliases/tags
+- 读取 citation graph 并计算 follow/prior 范围
+
+filter 合法组合固定为：
+
+- `paper`: `=` / `follow` / `prior`
+- `year`: `=` / `interval`
+- `venue`: `=` / `in`
+- `author`: `contains`
+- `title`: `contains`
+
+禁止组合包括：
+
+- `paper in`
+- `year contains`
+- `author =`
+- `title =`
+- `venue contains`
+- `follow/prior` 用在 `paper` 以外字段
+
+`filters` 数组内多个条件默认是 AND
+
+OR/PER/AND 分组通过 `paper_groups + group_mode` 表示，不用多个同字段 `=` filter 表达 OR
 
 ## 检索
 
-检索链路从 `paper_rag/retrieval/plan.py` 开始：
+检索链路：
 
 ```text
 query
@@ -661,20 +695,10 @@ query
 
 `retrieval/routes/common/` 放 parser 共享能力：
 
-- `parser_client.py`：OpenAI-compatible chat completion client。
-- `schema.py`：paper filters、groups、nullable enum 等共享校验。
-- `prompt.py`：共享 prompt 片段。
-- `errors.py`：`PlanParseError`。
-
-`corpus/` 是本地数据执行层，负责把 parser 输出落到本地数据上：
-
-- `resolver.py`：解析 paper mention、venue alias、year interval。
-- `scope.py`：把 semantic、filters、groups 转成候选论文 records。
-- `records.py`：读取 active manifest、匹配论文、生成统一 record key。
-- `filters.py`：单条 manifest record 的最终布尔匹配。
-- `aliases.py`：结构化 paper mention 的别名匹配，不改写用户 query。
-- `chunks.py`：加载 chunk 并按候选论文过滤。
-- `citations.py`：基于 citation graph 处理 `paper follow/prior`。
+- `parser_client.py`：OpenAI-compatible chat completion client
+- `schema.py`：paper filters、groups、nullable enum 等共享校验
+- `prompt.py`：共享 prompt 片段
+- `errors.py`：`PlanParseError`
 
 ### Metadata
 

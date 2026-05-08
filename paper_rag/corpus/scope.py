@@ -6,8 +6,8 @@ from typing import Any
 
 from paper_rag.config import Settings
 from paper_rag.ingest.manifest import ManifestRecord
-from paper_rag.corpus.annotations import PaperTags, load_paper_annotation_entries, paper_title_key
-from paper_rag.corpus.citations import record_matches_citation_scope
+from paper_rag.corpus.annotation_index import PaperTags, load_paper_annotation_entries, paper_title_key
+from paper_rag.corpus.citation_index import record_matches_citation_scope
 from paper_rag.corpus.filters import compare_text, match_record_filters
 from paper_rag.corpus.records import (
     load_active_manifest_records,

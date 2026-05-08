@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from paper_rag.config import Settings
-from paper_rag.corpus.annotations import load_paper_annotation_entries
+from paper_rag.corpus.annotation_index import load_paper_annotation_entries
 from paper_rag.corpus.records import match_manifest_records, paper_record_key
 from paper_rag.corpus.utils import dedupe_bm25_text, dedupe_by, normalize_bm25_token, normalize_token
 
