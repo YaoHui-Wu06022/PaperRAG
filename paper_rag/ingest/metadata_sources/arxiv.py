@@ -9,8 +9,8 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from typing import Iterable
 
-from ...utils import normalize_text
-from .retry import urlopen_with_retry
+from paper_rag.utils import normalize_text
+from paper_rag.ingest.metadata_sources.retry import urlopen_with_retry
 
 
 ATOM_NS = {"atom": "http://www.w3.org/2005/Atom"}
@@ -18,11 +18,12 @@ ATOM_NS = {"atom": "http://www.w3.org/2005/Atom"}
 
 @dataclass(frozen=True)
 class ArxivMatch:
-    """ArXiv 只作为预印本信息来源。"""
+    """ArXiv 的预印本 metadata 候选。"""
 
     title: str
     authors: list[str]
     preprint_year: int
+    venue: str
 
 
 class ArxivClient:
@@ -65,6 +66,7 @@ def select_exact_match(title: str, xml_text: str) -> ArxivMatch | None:
             title=candidate_title.rstrip(".").strip(),
             authors=[author for author in authors if author],
             preprint_year=year,
+            venue="ArXiv",
         )
     return None
 

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from ....config import Settings
-from ..common.parser_client import PlanParserClient
-from .prompt import content_parser_system_prompt
-from .schema import validate_content_parse
+from paper_rag.config import Settings
+from paper_rag.retrieval.routes.common.parser_client import PlanParserClient
+from paper_rag.retrieval.routes.content.prompt import content_parser_system_prompt
+from paper_rag.retrieval.routes.content.schema import validate_content_parse
 
 
 class ContentParserClient:

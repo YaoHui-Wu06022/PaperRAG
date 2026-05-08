@@ -1,4 +1,4 @@
-"""把 MinerU 原始内容清洗成 Paper_RAG 的 metadata/toc/blocks/chunks/references。"""
+"""把 MinerU 原始内容清洗成 Paper_RAG 的结构化论文数据"""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
-from ..utils import normalize_text, slugify_title
+from paper_rag.utils import normalize_text, slugify_title
 
 
 SPECIAL_TITLE_NORMALIZED = {
@@ -36,7 +36,7 @@ KEYWORD_TITLE_NORMALIZED = {
     "ccsconcepts",
 }
 
-# 这些标题通常不是正文 section，边界识别时需要单独处理。
+# 这些标题通常不是正文 section，区域边界识别时单独处理
 ACKNOWLEDGEMENT_PREFIXES = (
     "acknowledg",
     "funding",
@@ -46,8 +46,9 @@ ACKNOWLEDGEMENT_PREFIXES = (
 DEFAULT_CHUNK_TARGET_CHARS = 1400
 DEFAULT_CHUNK_OVERLAP_CHARS = 200
 MAX_CHUNK_EQUATION_CHARS = 500
+LIST_LIKE_TITLE_PREFIXES = ("•", "-", "*")
 
-# 页眉页脚等版面噪声保留在 MinerU 原始输出中，结构化正文阶段直接跳过。
+# 页眉页脚等版面噪声仍可用于标题兜底，但不会进入结构化正文
 IGNORED_TYPES = {
     "page_footnote",
     "page_aside_text",
@@ -56,9 +57,10 @@ IGNORED_TYPES = {
     "page_footer",
 }
 
+
 @dataclass
 class FlatBlock:
-    """带全局顺序和页码的 MinerU block。"""
+    """带全局顺序和页码的 MinerU block"""
 
     index: int
     page: int
@@ -71,7 +73,7 @@ class FlatBlock:
 
 @dataclass
 class ExtractionResult:
-    """单篇论文结构化输出的路径和统计信息。"""
+    """单篇论文结构化输出的路径和统计信息"""
 
     title: str
     paper_data_dir: Path
@@ -87,23 +89,98 @@ class ExtractionResult:
     warnings: list[str]
 
 
+# 入口流程 ---------------------------------------------------------------------
+def extract_paper_data(
+    mineru_output_dir: Path,
+    paper_data_dir: Path,
+    metadata: dict[str, Any],
+    *,
+    chunk_target_chars: int = DEFAULT_CHUNK_TARGET_CHARS,
+    chunk_overlap_chars: int = DEFAULT_CHUNK_OVERLAP_CHARS,
+) -> ExtractionResult:
+    """从一个 MinerU 输出目录生成项目内部结构化论文数据"""
+    content_path = mineru_output_dir / "content_list_v2.json"
+    pages = load_content_list_v2(content_path)
+    flat_blocks = flatten_pages(pages)
+    title = metadata.get("title") or extract_title(flat_blocks)
+    if not title:
+        raise ValueError(f"No title found in {content_path}")
+
+    boundaries = find_region_boundaries(flat_blocks)
+    warnings = extraction_warnings(boundaries)
+    sections, tree = build_toc(flat_blocks, boundaries)
+    blocks = build_blocks(flat_blocks, boundaries, sections)
+    references = build_references(flat_blocks, boundaries)
+    chunks = build_chunks(
+        blocks,
+        {"title": title},
+        paper_data_dir.name,
+        target_chars=chunk_target_chars,
+        overlap_chars=chunk_overlap_chars,
+    )
+
+    if paper_data_dir.exists():
+        # 单篇论文输出目录整体替换，避免旧 chunks/references 残留
+        shutil.rmtree(paper_data_dir)
+    paper_data_dir.mkdir(parents=True, exist_ok=True)
+
+    metadata_out = {
+        "title": title,
+        "author": metadata.get("author") or [],
+        "year": metadata.get("year"),
+        "venue": metadata.get("venue"),
+        "pdf_path": metadata.get("pdf_path"),
+    }
+    toc = {"sections": sections, "tree": tree}
+    write_json(paper_data_dir / "metadata.json", metadata_out)
+    write_json(paper_data_dir / "toc.json", toc)
+    write_jsonl(paper_data_dir / "blocks.jsonl", blocks)
+    write_jsonl(paper_data_dir / "chunks.jsonl", chunks)
+    write_jsonl(paper_data_dir / "references.jsonl", references)
+
+    return ExtractionResult(
+        title=title,
+        paper_data_dir=paper_data_dir,
+        metadata_path=paper_data_dir / "metadata.json",
+        toc_path=paper_data_dir / "toc.json",
+        blocks_path=paper_data_dir / "blocks.jsonl",
+        chunks_path=paper_data_dir / "chunks.jsonl",
+        references_path=paper_data_dir / "references.jsonl",
+        sections=sections,
+        block_count=len(blocks),
+        chunk_count=len(chunks),
+        reference_count=len(references),
+        warnings=warnings,
+    )
+
+
+def extraction_warnings(boundaries: dict[str, int | None]) -> list[str]:
+    warnings: list[str] = []
+    if boundaries.get("abstract_title") is None and boundaries.get("abstract_paragraph") is None:
+        warnings.append("Abstract marker not found")
+    return warnings
+
+
+# MinerU 输入读取与页面展平 -----------------------------------------------------
+
+
 def load_content_list_v2(path: Path) -> list[list[dict[str, Any]]]:
-    """兼容 MinerU content_list_v2 的 list/dict 两种页面形态。"""
+    """兼容 MinerU content_list_v2 的 list/dict 两种页面形态"""
     data = json.loads(path.read_text(encoding="utf-8"))
     pages: list[list[dict[str, Any]]] = []
     for page in data:
         if isinstance(page, list):
-            pages.append([b for b in page if isinstance(b, dict)])
+            pages.append([block for block in page if isinstance(block, dict)])
         elif isinstance(page, dict):
             blocks = page.get("value") or page.get("blocks") or page.get("content") or []
-            pages.append([b for b in blocks if isinstance(b, dict)])
+            pages.append([block for block in blocks if isinstance(block, dict)])
         else:
             pages.append([])
     return pages
 
 
 def flatten_pages(pages: list[list[dict[str, Any]]]) -> list[FlatBlock]:
-    """给跨页 block 分配稳定全局顺序，后续边界识别都基于这个顺序。"""
+    """给跨页 block 分配稳定全局顺序，后续边界识别都基于这个顺序"""
     blocks: list[FlatBlock] = []
     order = 0
     for page_index, page in enumerate(pages, start=1):
@@ -123,41 +200,78 @@ def flatten_pages(pages: list[list[dict[str, Any]]]) -> list[FlatBlock]:
     return blocks
 
 
+# Block 文本抽取 ---------------------------------------------------------------
+
+
 def block_to_text(block: dict[str, Any]) -> str:
-    """按 block 类型抽取可检索文本。"""
-    block_type = block.get("type")
+    """按 MinerU block 类型抽取稳定文本
+
+    不同 block 的内容字段不同
+    table 还需要转成半结构化文本，避免原始 HTML 直接进入 chunk
+    """
+    block_type = str(block.get("type") or "")
     content = block.get("content") or {}
     if block_type == "title":
-        return pieces_to_text(content.get("title_content")).strip()
+        return title_block_text(content)
     if block_type == "paragraph":
-        return pieces_to_text(content.get("paragraph_content")).strip()
+        return paragraph_block_text(content)
     if block_type == "list":
-        lines = []
-        for item in content.get("list_items") or []:
-            if not isinstance(item, dict):
-                continue
-            text = pieces_to_text(item.get("item_content")).strip()
-            if text:
-                lines.append(text)
-        return "\n".join(lines)
+        return list_block_text(content)
     if block_type == "image":
-        return pieces_to_text(content.get("image_caption")).strip()
+        return image_block_text(content)
     if block_type == "table":
-        caption = pieces_to_text(content.get("table_caption")).strip()
-        return table_to_semistructured_text(caption, str(content.get("html") or ""))
+        return table_block_text(content)
     if block_type == "equation_interline":
-        return str(content.get("math_content") or "").strip()
+        return equation_block_text(content)
     if block_type == "code":
         return pieces_to_text(content).strip()
-    if block_type in {"page_header", "page_footer", "page_number", "page_aside_text", "page_footnote"}:
-        return pieces_to_text(content.get(f"{block_type}_content")).strip()
     if block_type in IGNORED_TYPES:
-        return ""
+        return layout_block_text(block_type, content)
     return pieces_to_text(content).strip()
 
 
+def title_block_text(content: dict[str, Any]) -> str:
+    return pieces_to_text(content.get("title_content")).strip()
+
+
+def paragraph_block_text(content: dict[str, Any]) -> str:
+    return pieces_to_text(content.get("paragraph_content")).strip()
+
+
+def list_block_text(content: dict[str, Any]) -> str:
+    lines: list[str] = []
+    for item in content.get("list_items") or []:
+        if not isinstance(item, dict):
+            continue
+        text = pieces_to_text(item.get("item_content")).strip()
+        if text:
+            lines.append(text)
+    return "\n".join(lines)
+
+
+def image_block_text(content: dict[str, Any]) -> str:
+    return pieces_to_text(content.get("image_caption")).strip()
+
+
+def table_block_text(content: dict[str, Any]) -> str:
+    caption = pieces_to_text(content.get("table_caption")).strip()
+    return table_to_semistructured_text(caption, str(content.get("html") or ""))
+
+
+def equation_block_text(content: dict[str, Any]) -> str:
+    return str(content.get("math_content") or "").strip()
+
+
+def layout_block_text(block_type: str, content: dict[str, Any]) -> str:
+    return pieces_to_text(content.get(f"{block_type}_content")).strip()
+
+
 def pieces_to_text(value: Any) -> str:
-    """递归抽取 MinerU piece 中的文本，兼容字符串、列表和 dict。"""
+    """递归抽取 MinerU piece 文本
+
+    MinerU 的 content 可能是字符串、piece 列表或嵌套 dict
+    这里只收集可读文本，不保留 piece 级样式
+    """
     if value is None:
         return ""
     if isinstance(value, str):
@@ -175,21 +289,17 @@ def pieces_to_text(value: Any) -> str:
     return ""
 
 
-def html_to_text(html: str) -> str:
-    """退化的 HTML 文本抽取，主要用于非表格块兜底。"""
-    html = re.sub(r"</t[dh]>\s*<t[dh][^>]*>", " | ", html, flags=re.I)
-    html = re.sub(r"</tr>\s*<tr[^>]*>", "\n", html, flags=re.I)
-    html = re.sub(r"<[^>]+>", " ", html)
-    return re.sub(r"\s+", " ", html).strip()
+# Table block 处理 -------------------------------------------------------------
 
 
 class TableHTMLParser(HTMLParser):
+    """只抽取 table 行列文本，忽略 HTML 样式和复杂结构"""
+
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.rows: list[list[str]] = []
         self._current_row: list[str] | None = None
         self._current_cell: list[str] | None = None
-        self._cell_tag: str | None = None
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         tag = tag.lower()
@@ -197,15 +307,13 @@ class TableHTMLParser(HTMLParser):
             self._current_row = []
         elif tag in {"td", "th"} and self._current_row is not None:
             self._current_cell = []
-            self._cell_tag = tag
 
     def handle_endtag(self, tag: str) -> None:
         tag = tag.lower()
         if tag in {"td", "th"} and self._current_row is not None and self._current_cell is not None:
-            text = normalize_whitespace("".join(self._current_cell))
+            text = re.sub(r"\s+", " ", "".join(self._current_cell)).strip()
             self._current_row.append(text)
             self._current_cell = None
-            self._cell_tag = None
         elif tag == "tr" and self._current_row is not None:
             if any(cell for cell in self._current_row):
                 self.rows.append(self._current_row)
@@ -216,29 +324,18 @@ class TableHTMLParser(HTMLParser):
             self._current_cell.append(data)
 
 
-def normalize_whitespace(text: str) -> str:
-    return re.sub(r"\s+", " ", text).strip()
+def table_to_semistructured_text(caption: str, html: str) -> str:
+    """把表格转成轻量半结构化文本
 
-
-def html_table_rows(html: str) -> list[list[str]]:
+    chunk 更适合消费稳定的行列文本
+    原始 HTML 保留在 blocks.jsonl 的结构化字段里
+    """
     parser = TableHTMLParser()
     parser.feed(html)
-    return parser.rows
-
-
-def is_probable_header_row(row: list[str]) -> bool:
-    non_empty = [cell for cell in row if cell]
-    if len(non_empty) < 2:
-        return False
-    numeric_cells = sum(1 for cell in non_empty if re.fullmatch(r"[\d\s.,%≈<>≤≥+\-–—/]+", cell))
-    return numeric_cells / len(non_empty) < 0.5
-
-
-def table_to_semistructured_text(caption: str, html: str) -> str:
-    """把表格转成轻量半结构化文本，避免 HTML 直接进入 chunk。"""
-    rows = html_table_rows(html)
+    rows = parser.rows
     if not rows:
         return " ".join(part for part in [caption, html_to_text(html)] if part).strip()
+
     lines: list[str] = []
     if caption:
         lines.append(f"Table: {caption}")
@@ -266,6 +363,186 @@ def table_to_semistructured_text(caption: str, html: str) -> str:
         lines.append(f"Row {row_number}: " + "; ".join(pairs) + ".")
         row_number += 1
     return "\n".join(lines).strip()
+
+
+def html_to_text(html: str) -> str:
+    """表格解析失败时的 HTML 文本兜底"""
+    html = re.sub(r"</t[dh]>\s*<t[dh][^>]*>", " | ", html, flags=re.I)
+    html = re.sub(r"</tr>\s*<tr[^>]*>", "\n", html, flags=re.I)
+    html = re.sub(r"<[^>]+>", " ", html)
+    return re.sub(r"\s+", " ", html).strip()
+
+
+def is_probable_header_row(row: list[str]) -> bool:
+    non_empty = [cell for cell in row if cell]
+    if len(non_empty) < 2:
+        return False
+    numeric_cells = sum(1 for cell in non_empty if re.fullmatch(r"[\d\s.,%＞<>≒≡+\-每〞/]+", cell))
+    return numeric_cells / len(non_empty) < 0.5
+
+
+# 标题与区域边界识别 -----------------------------------------------------------
+
+
+def extract_title(blocks: list[FlatBlock]) -> str | None:
+    """优先取摘要前的 title，缺失时退回第一页页眉"""
+    title_blocks = [block for block in blocks if block.type == "title" and block.text]
+    abstract = abstract_marker(blocks)
+    candidates = [
+        block for block in title_blocks
+        if (abstract is None or block.index < abstract.index) and not is_special_title(block.text)
+    ]
+    if candidates:
+        return candidates[0].text.strip()
+    header = next((block for block in blocks if block.page == 1 and block.type == "page_header" and block.text), None)
+    if header:
+        return header.text.strip()
+    return None
+
+
+def find_region_boundaries(blocks: list[FlatBlock]) -> dict[str, int | None]:
+    """识别 abstract/body/references/appendix 的起点
+
+    references 是强边界
+    appendix 和 acknowledgement 会截断 body
+    abstract 可以由标题行或段首 Abstract 前缀触发
+    """
+    abstract_title = next((block for block in blocks if block.type == "title" and is_abstract_title(block.text)), None)
+    abstract_para = None
+    if abstract_title is None:
+        # 如果没有直接的abstract，找开头为abstract的段落
+        abstract_para = next((block for block in blocks if block.type == "paragraph" and starts_with_abstract(block.text)), None)
+    abstract_start = (abstract_title.index + 1) if abstract_title else (abstract_para.index if abstract_para else None)
+
+    references_title = next((block for block in blocks if block.type == "title" and is_references_title(block.text)), None)
+    appendix_before_ref = None
+    if references_title is not None:
+        appendix_before_ref = next(
+            (
+                block for block in blocks
+                if block.type == "title" and is_appendix_title(block.text) and block.index < references_title.index
+            ),
+            None,
+        )
+    appendix_after_ref = None
+    if references_title is not None:
+        appendix_after_ref = next(
+            (
+                block for block in blocks
+                if block.type == "title" and block.index > references_title.index and not is_references_title(block.text)
+            ),
+            None,
+        )
+    acknowledgement_before_ref = None
+    if references_title is not None:
+        acknowledgement_before_ref = next(
+            (
+                block for block in blocks
+                if block.type == "title"
+                and is_acknowledgement_title(block.text)
+                and block.index < references_title.index
+                and (abstract_start is None or block.index > abstract_start)
+            ),
+            None,
+        )
+    search_end = min(
+        value
+        for value in [
+            appendix_before_ref.index if appendix_before_ref is not None else None,
+            acknowledgement_before_ref.index if acknowledgement_before_ref is not None else None,
+            references_title.index if references_title is not None else None,
+            len(blocks),
+        ]
+        if value is not None
+    )
+
+    # 正文标题只在 abstract 与 references/appendix/acknowledgement 之间搜索
+    body_start = None
+    search_start = abstract_start if abstract_start is not None else 0
+    title_candidates = []
+    for block in blocks:
+        if block.index <= search_start:
+            continue
+        if block.index >= search_end:
+            break
+        if block.type == "title" and is_valid_body_title(block):
+            title_candidates.append(block)
+
+    # 优先使用带编号的标题作为正文起点，无编号论文退回第一个有效标题
+    numbered_candidate = next((block for block in title_candidates if heading_number(block.text)), None)
+    if numbered_candidate is not None:
+        body_start = numbered_candidate.index
+    elif title_candidates:
+        body_start = title_candidates[0].index
+
+    keyword_start = None
+    if abstract_start is not None and body_start is not None:
+        keyword = next(
+            (
+                block for block in blocks
+                if abstract_start <= block.index < body_start and is_keyword_like_block(block)
+            ),
+            None,
+        )
+        keyword_start = keyword.index if keyword else None
+
+    return {
+        "abstract_title": abstract_title.index if abstract_title else None,
+        "abstract_paragraph": abstract_para.index if abstract_para else None,
+        "abstract_start": abstract_start,
+        "body_start": body_start,
+        "keyword_start": keyword_start,
+        "appendix_before_references_start": appendix_before_ref.index if appendix_before_ref else None,
+        "appendix_after_references_start": appendix_after_ref.index if appendix_after_ref else None,
+        "appendix_start": (
+            appendix_before_ref.index
+            if appendix_before_ref
+            else appendix_after_ref.index if appendix_after_ref else None
+        ),
+        "acknowledgement_start": acknowledgement_before_ref.index if acknowledgement_before_ref else None,
+        "references_start": references_title.index if references_title else None,
+    }
+
+
+def region_for_block(block: FlatBlock, boundaries: dict[str, int | None]) -> str | None:
+    """根据边界给 block 标注区域
+
+    区域优先级是 abstract、references 前 appendix、body、references 后 appendix、reference
+    """
+    idx = block.index
+    abstract_start = boundaries["abstract_start"]
+    body_start = boundaries["body_start"]
+    keyword_start = boundaries["keyword_start"]
+    appendix_before_ref = boundaries["appendix_before_references_start"]
+    appendix_after_ref = boundaries["appendix_after_references_start"]
+    acknowledgement_start = boundaries["acknowledgement_start"]
+    references_start = boundaries["references_start"]
+
+    if abstract_start is not None and idx >= abstract_start:
+        abstract_end = first_existing_boundary(
+            keyword_start,
+            body_start,
+            appendix_before_ref,
+            acknowledgement_start,
+            references_start,
+        )
+        if idx < abstract_end:
+            return "abstract"
+    if appendix_before_ref is not None and idx >= appendix_before_ref:
+        app_end = references_start or 10**12
+        if idx < app_end:
+            return "appendix"
+    if body_start is not None and idx >= body_start:
+        body_end = first_existing_boundary(appendix_before_ref, acknowledgement_start, references_start)
+        if idx < body_end:
+            return "body"
+    if appendix_after_ref is not None and idx >= appendix_after_ref:
+        return "appendix"
+    if references_start is not None and idx > references_start:
+        if appendix_after_ref is not None and idx >= appendix_after_ref:
+            return "appendix"
+        return "reference"
+    return None
 
 
 def structural_title_text(text: str) -> str:
@@ -326,121 +603,10 @@ def block_level(block: FlatBlock, fallback: int = 1) -> int:
 
 
 def abstract_marker(blocks: list[FlatBlock]) -> FlatBlock | None:
-    title = next((b for b in blocks if b.type == "title" and is_abstract_title(b.text)), None)
+    title = next((block for block in blocks if block.type == "title" and is_abstract_title(block.text)), None)
     if title is not None:
         return title
-    return next((b for b in blocks if b.type == "paragraph" and starts_with_abstract(b.text)), None)
-
-
-def extract_title(blocks: list[FlatBlock]) -> str | None:
-    """优先取摘要前的 title，缺失时退回第一页页眉。"""
-    title_blocks = [b for b in blocks if b.type == "title" and b.text]
-    abstract = abstract_marker(blocks)
-    candidates = [
-        b for b in title_blocks
-        if (abstract is None or b.index < abstract.index) and not is_special_title(b.text)
-    ]
-    if candidates:
-        return candidates[0].text.strip()
-    header = next((b for b in blocks if b.page == 1 and b.type == "page_header" and b.text), None)
-    if header:
-        return header.text.strip()
-    return None
-
-
-def find_region_boundaries(blocks: list[FlatBlock]) -> dict[str, int | None]:
-    """识别论文区域边界，用来区分摘要、正文、附录和参考文献。"""
-    abstract_title = next((b for b in blocks if b.type == "title" and is_abstract_title(b.text)), None)
-    abstract_para = None
-    if abstract_title is None:
-        abstract_para = next((b for b in blocks if b.type == "paragraph" and starts_with_abstract(b.text)), None)
-    abstract_start = (abstract_title.index + 1) if abstract_title else (abstract_para.index if abstract_para else None)
-    references_title = next((b for b in blocks if b.type == "title" and is_references_title(b.text)), None)
-    appendix_before_ref = None
-    if references_title is not None:
-        appendix_before_ref = next(
-            (
-                b for b in blocks
-                if b.type == "title" and is_appendix_title(b.text) and b.index < references_title.index
-            ),
-            None,
-        )
-    appendix_after_ref = None
-    if references_title is not None:
-        appendix_after_ref = next(
-            (
-                b for b in blocks
-                if b.type == "title" and b.index > references_title.index and not is_references_title(b.text)
-            ),
-            None,
-        )
-    acknowledgement_before_ref = None
-    if references_title is not None:
-        acknowledgement_before_ref = next(
-            (
-                b for b in blocks
-                if b.type == "title"
-                and is_acknowledgement_title(b.text)
-                and b.index < references_title.index
-                and (abstract_start is None or b.index > abstract_start)
-            ),
-            None,
-        )
-    search_end = (
-        min(
-            value
-            for value in [
-                appendix_before_ref.index if appendix_before_ref is not None else None,
-                acknowledgement_before_ref.index if acknowledgement_before_ref is not None else None,
-                references_title.index if references_title is not None else None,
-                len(blocks),
-            ]
-            if value is not None
-        )
-    )
-    # 正文标题只在 abstract 和 references/appendix/acknowledgement 之间搜索。
-    body_start = None
-    search_start = abstract_start if abstract_start is not None else 0
-    title_candidates = []
-    for block in blocks:
-        if block.index <= search_start:
-            continue
-        if block.index >= search_end:
-            break
-        if block.type == "title" and is_valid_body_title(block):
-            title_candidates.append(block)
-    # 优先使用带编号的标题作为正文起点；无编号论文退回到第一个有效标题。
-    numbered_candidate = next((b for b in title_candidates if heading_number(b.text)), None)
-    if numbered_candidate is not None:
-        body_start = numbered_candidate.index
-    elif title_candidates:
-        body_start = title_candidates[0].index
-    keyword_start = None
-    if abstract_start is not None and body_start is not None:
-        keyword = next(
-            (
-                b for b in blocks
-                if abstract_start <= b.index < body_start and is_keyword_like_block(b)
-            ),
-            None,
-        )
-        keyword_start = keyword.index if keyword else None
-    return {
-        "abstract_title": abstract_title.index if abstract_title else None,
-        "abstract_paragraph": abstract_para.index if abstract_para else None,
-        "abstract_start": abstract_start,
-        "body_start": body_start,
-        "keyword_start": keyword_start,
-        "appendix_before_references_start": appendix_before_ref.index if appendix_before_ref else None,
-        "appendix_after_references_start": appendix_after_ref.index if appendix_after_ref else None,
-        "appendix_start": (
-            appendix_before_ref.index
-            if appendix_before_ref
-            else appendix_after_ref.index if appendix_after_ref else None
-        ),
-        "acknowledgement_start": acknowledgement_before_ref.index if acknowledgement_before_ref else None,
-        "references_start": references_title.index if references_title else None,
-    }
+    return next((block for block in blocks if block.type == "paragraph" and starts_with_abstract(block.text)), None)
 
 
 def is_valid_body_title(block: FlatBlock) -> bool:
@@ -460,55 +626,21 @@ def first_existing_boundary(*values: int | None, default: int = 10**12) -> int:
     return min(candidates) if candidates else default
 
 
-def region_for_block(block: FlatBlock, boundaries: dict[str, int | None]) -> str | None:
-    """根据边界把 block 标到 abstract/body/reference/appendix。"""
-    idx = block.index
-    abstract_start = boundaries["abstract_start"]
-    body_start = boundaries["body_start"]
-    keyword_start = boundaries["keyword_start"]
-    appendix_before_ref = boundaries["appendix_before_references_start"]
-    appendix_after_ref = boundaries["appendix_after_references_start"]
-    acknowledgement_start = boundaries["acknowledgement_start"]
-    references_start = boundaries["references_start"]
-    if abstract_start is not None and idx >= abstract_start:
-        abstract_end = first_existing_boundary(
-            keyword_start,
-            body_start,
-            appendix_before_ref,
-            acknowledgement_start,
-            references_start,
-        )
-        if idx < abstract_end:
-            return "abstract"
-    if appendix_before_ref is not None and idx >= appendix_before_ref:
-        app_end = references_start or 10**12
-        if idx < app_end:
-            return "appendix"
-    if body_start is not None and idx >= body_start:
-        body_end = first_existing_boundary(appendix_before_ref, acknowledgement_start, references_start)
-        if idx < body_end:
-            return "body"
-    if appendix_after_ref is not None and idx >= appendix_after_ref:
-        return "appendix"
-    if references_start is not None and idx > references_start:
-        if appendix_after_ref is not None and idx >= appendix_after_ref:
-            return "appendix"
-        return "reference"
-    return None
+# TOC / section 构建 -----------------------------------------------------------
 
 
 def build_toc(blocks: list[FlatBlock], boundaries: dict[str, int | None]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    """从正文标题生成扁平 sections 和树形 toc。"""
+    """从正文标题生成扁平 sections 和树形 toc"""
     sections: list[dict[str, Any]] = []
     used_section_ids: set[str] = set()
     abstract_start = boundaries["abstract_start"]
     body_start = boundaries["body_start"]
     keyword_start = boundaries["keyword_start"]
     appendix_before_ref = boundaries["appendix_before_references_start"]
-    appendix_after_ref = boundaries["appendix_after_references_start"]
     appendix_start = boundaries["appendix_start"]
     acknowledgement_start = boundaries["acknowledgement_start"]
     references_start = boundaries["references_start"]
+
     if abstract_start is not None:
         section = {
             "section_id": "sec_abstract",
@@ -532,19 +664,20 @@ def build_toc(blocks: list[FlatBlock], boundaries: dict[str, int | None]) -> tup
         }
         sections.append(section)
         used_section_ids.add(section["section_id"])
+
     if body_start is not None:
         body_end = first_existing_boundary(appendix_before_ref, acknowledgement_start, references_start, default=len(blocks))
         body_titles = [
-            b for b in blocks
-            if body_start <= b.index < body_end and is_valid_body_title(b)
+            block for block in blocks
+            if body_start <= block.index < body_end and is_valid_body_title(block)
         ]
-        has_numbered_system = any(heading_number(b.text) for b in body_titles)
+        has_numbered_system = any(heading_number(block.text) for block in body_titles)
         number_to_section: dict[str, dict[str, Any]] = {}
         for block in body_titles:
             number = heading_number(block.text)
             if has_numbered_system and not number:
                 continue
-            # 有编号标题按编号层级建树；无编号标题用 MinerU block level 兜底。
+            # 有编号标题按编号层级建树，无编号标题用 MinerU block level 兜底
             base_section_id = section_id_for_title(block.text, len(sections))
             section_id = unique_section_id(base_section_id, used_section_ids)
             parent_id = None
@@ -574,6 +707,7 @@ def build_toc(blocks: list[FlatBlock], boundaries: dict[str, int | None]) -> tup
             used_section_ids.add(section_id)
             if number:
                 number_to_section[number] = section
+
     if appendix_start is not None:
         section = {
             "section_id": unique_section_id("sec_appendix", used_section_ids),
@@ -593,13 +727,14 @@ def build_toc(blocks: list[FlatBlock], boundaries: dict[str, int | None]) -> tup
         }
         sections.append(section)
         used_section_ids.add(section["section_id"])
+
     finalize_section_ends(sections)
     return sections, sections_to_tree(sections)
 
 
 def finalize_section_ends(sections: list[dict[str, Any]]) -> None:
-    """用下一节起点回填当前 section 结束位置。"""
-    ordered = sorted(sections, key=lambda s: s["start_block_index"])
+    """用后续同级或更高层级 section 回填当前 section 结束位置"""
+    ordered = sorted(sections, key=lambda section: section["start_block_index"])
     for index, section in enumerate(ordered):
         current_end = section["end_block_index"]
         section_level = int(section.get("level") or 1)
@@ -635,8 +770,8 @@ def section_id_for_title(text: str, order: int) -> str:
 
 def sections_to_tree(sections: list[dict[str, Any]]) -> list[dict[str, Any]]:
     nodes = {
-        s["section_id"]: {k: v for k, v in s.items() if k != "parent_id"} | {"children": []}
-        for s in sections
+        section["section_id"]: {key: value for key, value in section.items() if key != "parent_id"} | {"children": []}
+        for section in sections
     }
     roots: list[dict[str, Any]] = []
     for section in sections:
@@ -653,20 +788,27 @@ def current_section_id(block: FlatBlock, sections: list[dict[str, Any]], region:
     if region == "abstract":
         return "sec_abstract"
     region_sections = [
-        s for s in sections
-        if s["region"] == region and s["start_block_index"] <= block.index
+        section for section in sections
+        if section["region"] == region and section["start_block_index"] <= block.index
     ]
     if not region_sections:
         return None
-    return max(region_sections, key=lambda s: s["start_block_index"])["section_id"]
+    return max(region_sections, key=lambda section: section["start_block_index"])["section_id"]
 
 
 def section_paths(sections: list[dict[str, Any]]) -> dict[str, list[str]]:
     return {section["section_id"]: list(section.get("path") or []) for section in sections}
 
 
+# blocks.jsonl 构建 ------------------------------------------------------------
+
+
 def build_blocks(blocks: list[FlatBlock], boundaries: dict[str, int | None], sections: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """生成最终 blocks.jsonl，只保留后续检索和证据定位需要的字段。"""
+    """生成 blocks.jsonl
+
+    blocks.jsonl 保留 abstract/body/appendix
+    references 另走 references.jsonl，避免正文检索混入引用列表
+    """
     output: list[dict[str, Any]] = []
     section_start_blocks = {section["start_block_index"] for section in sections}
     paths_by_id = section_paths(sections)
@@ -683,6 +825,7 @@ def build_blocks(blocks: list[FlatBlock], boundaries: dict[str, int | None], sec
         if block.type == "title" and region == "body" and block.index not in section_start_blocks:
             if heading_number(block.text):
                 continue
+
         text = block_text_for_output(block, boundaries).strip()
         if not text:
             continue
@@ -711,36 +854,29 @@ def block_text_for_output(block: FlatBlock, boundaries: dict[str, int | None]) -
     return block.text
 
 
-def source_path_from_content(content: dict[str, Any]) -> str | None:
-    source = content.get("image_source")
-    if isinstance(source, dict) and isinstance(source.get("path"), str):
-        return source["path"]
-    return None
-
-
 def structured_block_fields(block: FlatBlock) -> dict[str, Any]:
-    """图片和表格保留结构化字段，正文检索仍主要使用 text。"""
+    """图片和表格额外保留结构化字段，正文检索仍主要使用 text"""
     content = block.raw.get("content") or {}
     if block.type == "image":
         caption = pieces_to_text(content.get("image_caption")).strip()
         fields: dict[str, Any] = {"caption": caption}
-        source_path = source_path_from_content(content)
-        if source_path:
-            fields["source_path"] = source_path
-        return fields
-    if block.type == "table":
+    elif block.type == "table":
         caption = pieces_to_text(content.get("table_caption")).strip()
         html = str(content.get("html") or "")
         fields = {"caption": caption, "html": html}
-        source_path = source_path_from_content(content)
-        if source_path:
-            fields["source_path"] = source_path
-        return fields
-    return {}
+    else:
+        return {}
+    source = content.get("image_source")
+    if isinstance(source, dict) and isinstance(source.get("path"), str):
+        fields["source_path"] = source["path"]
+    return fields
+
+
+# references.jsonl 构建 --------------------------------------------------------
 
 
 def build_references(blocks: list[FlatBlock], boundaries: dict[str, int | None]) -> list[dict[str, Any]]:
-    """抽取 references 区域的原始引用证据。"""
+    """只从 references 区域的 reference_list block 抽取原始引用证据"""
     output: list[dict[str, Any]] = []
     for block in blocks:
         if region_for_block(block, boundaries) != "reference":
@@ -772,15 +908,7 @@ def reference_index(raw_text: str, fallback_index: int) -> int:
     return int(number)
 
 
-def write_json(path: Path, data: Any) -> None:
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-
-
-def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
-    path.write_text(
-        "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows),
-        encoding="utf-8",
-    )
+# chunks.jsonl 构建 ------------------------------------------------------------
 
 
 def build_chunks(
@@ -791,7 +919,7 @@ def build_chunks(
     target_chars: int = DEFAULT_CHUNK_TARGET_CHARS,
     overlap_chars: int = DEFAULT_CHUNK_OVERLAP_CHARS,
 ) -> list[dict[str, Any]]:
-    """按 section 把 abstract/body blocks 切成检索 chunk。"""
+    """按 section 把 abstract/body/appendix blocks 切成检索 chunk"""
     target_chars = max(1, target_chars)
     overlap_chars = max(0, overlap_chars)
     chunks: list[dict[str, Any]] = []
@@ -805,7 +933,7 @@ def build_chunks(
                 continue
             block_len = len(block_text)
             if current and current_len + block_len + 2 > target_chars:
-                # 达到目标长度时切 chunk，下一段 embedding 会带上一段尾部 overlap。
+                # 达到目标长度时切 chunk，下一个 chunk 的 embedding 会带上一段尾部 overlap
                 chunk = make_chunk(chunks, paper_id, metadata, current, previous_text, overlap_chars)
                 chunks.append(chunk)
                 previous_text = chunk["text"]
@@ -814,7 +942,7 @@ def build_chunks(
             current.append(block | {"_chunk_text": block_text})
             current_len += block_len + (2 if current_len else 0)
             if block_len > target_chars:
-                # 单个超长 block 不再硬切，保持表格/公式/段落的来源边界完整。
+                # 单个超长 block 不再硬切，保持表格/公式/段落的来源边界完整
                 chunk = make_chunk(chunks, paper_id, metadata, current, previous_text, overlap_chars)
                 chunks.append(chunk)
                 previous_text = chunk["text"]
@@ -827,18 +955,22 @@ def build_chunks(
 
 
 def group_chunk_blocks(blocks: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
-    """chunk 不跨 region/section，减少检索上下文混杂。"""
+    """chunk 不跨 region/section，appendix 内部标题也作为软边界"""
     groups: list[list[dict[str, Any]]] = []
     current_key: tuple[str | None, str | None] | None = None
     current: list[dict[str, Any]] = []
-    for block in sorted(blocks, key=lambda b: int(b.get("order") or 0)):
+    for block in sorted(blocks, key=lambda item: int(item.get("order") or 0)):
         region = block.get("region")
-        if region not in {"abstract", "body"}:
+        if region not in {"abstract", "body", "appendix"}:
             continue
         key = (str(region), str(block.get("section_id") or ""))
         if current and key != current_key:
             groups.append(current)
             current = []
+        if current and key == current_key and is_appendix_chunk_boundary(block):
+            if not is_appendix_marker_group(current):
+                groups.append(current)
+                current = []
         current_key = key
         current.append(block)
     if current:
@@ -846,8 +978,27 @@ def group_chunk_blocks(blocks: list[dict[str, Any]]) -> list[list[dict[str, Any]
     return groups
 
 
+def is_appendix_chunk_boundary(block: dict[str, Any]) -> bool:
+    """appendix 内的标题可以切开 chunk，但列表项误识别标题不切"""
+    if block.get("region") != "appendix" or block.get("type") != "title":
+        return False
+    text = str(block.get("text") or "").lstrip()
+    return bool(text) and not text.startswith(LIST_LIKE_TITLE_PREFIXES)
+
+
+def is_appendix_marker_group(blocks: list[dict[str, Any]]) -> bool:
+    """避免把单独的 Appendix 区域标题切成无信息量 chunk"""
+    if not blocks:
+        return False
+    return all(
+        block.get("type") == "title"
+        and normalize_text(str(block.get("text") or "")) in {"appendix", "appendices"}
+        for block in blocks
+    )
+
+
 def chunk_block_text(block: dict[str, Any]) -> str:
-    """过滤不适合进入 chunk 的空文本和超长公式。"""
+    """过滤不适合进入 chunk 的空文本和超长公式"""
     text = str(block.get("text") or "").strip()
     if not text:
         return ""
@@ -866,7 +1017,7 @@ def make_chunk(
     previous_text: str,
     overlap_chars: int,
 ) -> dict[str, Any]:
-    """组装单个 chunk，并为 embedding 加上标题、section 和 overlap 上下文。"""
+    """组装单个 chunk，并为 embedding 加上标题、section 和 overlap 上下文"""
     chunk_index = len(chunks)
     text = "\n\n".join(str(block.get("_chunk_text") or "").strip() for block in blocks).strip()
     section_path = list(blocks[0].get("section_path") or [])
@@ -874,11 +1025,13 @@ def make_chunk(
     block_ids = [str(block["block_id"]) for block in blocks if block.get("block_id")]
     overlap_text = previous_text[-overlap_chars:].strip() if overlap_chars and previous_text else ""
     embedding_body = "\n\n".join(part for part in [overlap_text, text] if part)
-    embedding_text = build_embedding_text(
-        title=str(metadata.get("title") or ""),
-        section_path=section_path,
-        text=embedding_body,
-    )
+
+    # embedding_text 是给 dense 检索的输入，不影响展示用 text
+    embedding_prefix = [f"Paper: {str(metadata.get('title') or '').strip()}"]
+    section = " > ".join(str(part) for part in section_path if part)
+    if section:
+        embedding_prefix.append(f"Section: {section}")
+    embedding_text = "\n".join(embedding_prefix).strip() + "\n\n" + embedding_body.strip()
     return {
         "chunk_id": f"{paper_id}::chunk_{chunk_index:04d}",
         "paper_id": paper_id,
@@ -894,81 +1047,15 @@ def make_chunk(
     }
 
 
-def build_embedding_text(title: str, section_path: list[Any], text: str) -> str:
-    """embedding 输入显式带论文标题和 section，提升跨论文检索可辨性。"""
-    section = " > ".join(str(part) for part in section_path if part)
-    prefix = [f"Paper: {title.strip()}"]
-    if section:
-        prefix.append(f"Section: {section}")
-    return "\n".join(prefix).strip() + "\n\n" + text.strip()
+# JSON 写出工具 ----------------------------------------------------------------
 
 
-def extract_paper_data(
-    mineru_output_dir: Path,
-    paper_data_dir: Path,
-    metadata: dict[str, Any],
-    *,
-    chunk_target_chars: int = DEFAULT_CHUNK_TARGET_CHARS,
-    chunk_overlap_chars: int = DEFAULT_CHUNK_OVERLAP_CHARS,
-) -> ExtractionResult:
-    """从一个 MinerU 输出目录生成项目内部结构化论文数据。"""
-    content_path = mineru_output_dir / "content_list_v2.json"
-    pages = load_content_list_v2(content_path)
-    flat_blocks = flatten_pages(pages)
-    title = metadata.get("title") or extract_title(flat_blocks)
-    if not title:
-        raise ValueError(f"No title found in {content_path}")
-    boundaries = find_region_boundaries(flat_blocks)
-    warnings = extraction_warnings(boundaries)
-    sections, tree = build_toc(flat_blocks, boundaries)
-    blocks = build_blocks(flat_blocks, boundaries, sections)
-    paper_id = paper_data_dir.name
-    metadata_for_chunks = {"title": title}
-    chunks = build_chunks(
-        blocks,
-        metadata_for_chunks,
-        paper_id,
-        target_chars=chunk_target_chars,
-        overlap_chars=chunk_overlap_chars,
+def write_json(path: Path, data: Any) -> None:
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.write_text(
+        "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows),
+        encoding="utf-8",
     )
-    references = build_references(flat_blocks, boundaries)
-
-    if paper_data_dir.exists():
-        # 单篇论文输出目录整体替换，保证旧 chunks/references 不会残留。
-        shutil.rmtree(paper_data_dir)
-    paper_data_dir.mkdir(parents=True, exist_ok=True)
-
-    metadata_out = {
-        "title": title,
-        "author": metadata.get("author") or [],
-        "year": metadata.get("year"),
-        "venue": metadata.get("venue"),
-        "pdf_path": metadata.get("pdf_path"),
-    }
-    toc = {"sections": sections, "tree": tree}
-    write_json(paper_data_dir / "metadata.json", metadata_out)
-    write_json(paper_data_dir / "toc.json", toc)
-    write_jsonl(paper_data_dir / "blocks.jsonl", blocks)
-    write_jsonl(paper_data_dir / "chunks.jsonl", chunks)
-    write_jsonl(paper_data_dir / "references.jsonl", references)
-    return ExtractionResult(
-        title=title,
-        paper_data_dir=paper_data_dir,
-        metadata_path=paper_data_dir / "metadata.json",
-        toc_path=paper_data_dir / "toc.json",
-        blocks_path=paper_data_dir / "blocks.jsonl",
-        chunks_path=paper_data_dir / "chunks.jsonl",
-        references_path=paper_data_dir / "references.jsonl",
-        sections=sections,
-        block_count=len(blocks),
-        chunk_count=len(chunks),
-        reference_count=len(references),
-        warnings=warnings,
-    )
-
-
-def extraction_warnings(boundaries: dict[str, int | None]) -> list[str]:
-    warnings: list[str] = []
-    if boundaries.get("abstract_title") is None and boundaries.get("abstract_paragraph") is None:
-        warnings.append("Abstract marker not found")
-    return warnings

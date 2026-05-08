@@ -7,7 +7,7 @@ from typing import Any
 from paper_rag.config import Settings
 from paper_rag.ingest.manifest import normalize_year
 from paper_rag.ingest.venues import expand_venue_query_terms, expand_venue_record_terms, venue_key, venue_keys_match
-from .utils import (
+from paper_rag.corpus.utils import (
     interval_bound_as_int,
     is_negative_infinity,
     is_positive_infinity,

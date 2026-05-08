@@ -7,7 +7,7 @@ from typing import Any
 
 from paper_rag.config import Settings
 from paper_rag.ingest.annotations import load_paper_annotations
-from .utils import normalize_token
+from paper_rag.corpus.utils import normalize_token
 
 
 PaperTags = dict[str, list[str]]

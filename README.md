@@ -25,7 +25,7 @@ RAG_project/
 └─ paper_rag/                        # 核心 Python 包
 ```
 
-`data/` 的约定结构：
+### 本地数据目录
 
 ```text
 data/
@@ -44,173 +44,236 @@ data/
 └─ venue_aliases.json                # venue canonical/display/aliases 规则
 ```
 
-`paper_rag/` 的模块职责：
+### 基础入口与配置
+
+这一组只负责包入口、配置读取和跨子系统通用工具，不承载具体业务流程
 
 ```text
 paper_rag/
 ├─ __init__.py                       # 包标记
 ├─ __main__.py                       # `python -m paper_rag` 入口
 ├─ config.py                         # Settings 与 .env 读取、路径解析、默认配置
-├─ utils.py                          # 根包通用工具：hash、slug、文本规范化、安全目录替换
-├─ answer/
-│  ├─ __init__.py                    # answer 包入口，re-export run_ask
-│  ├─ service.py                     # ask 薄编排：plan evidence -> local/LLM answer
-│  ├─ local.py                       # metadata/reference 的本地确定性回答
-│  └─ llm.py                         # content route 的回答 LLM 客户端与 prompt 组装
-├─ cli/
-│  ├─ __init__.py                    # CLI 子包标记
-│  ├─ main.py                        # CLI 总入口与全局参数
-│  ├─ ingest.py                      # `paper-rag ingest`
-│  ├─ retrieval.py                   # `paper-rag index/search/plan`
-│  └─ ask.py                         # `paper-rag ask`
-├─ ingest/
-│  ├─ __init__.py                    # 入库子包标记
-│  ├─ pipeline.py                    # 全量 PDF 同步、metadata 补全、extract、citation graph 主流程
-│  ├─ manifest.py                    # ManifestRecord/Manifest、状态管理、年份规范化
-│  ├─ mineru.py                      # MinerU API 上传、轮询、下载、解压
-│  ├─ extract.py                     # 从 MinerU 输出构建 metadata/toc/blocks/references/chunks
-│  ├─ citation_graph.py              # 从 references 构建本地库内 citation graph
-│  ├─ annotations.py                 # paper_annotations.json 生成、规范化与保存
-│  ├─ venues.py                      # venue canonical/display/aliases 规范化与匹配
-│  └─ metadata_sources/
-│     ├─ __init__.py                 # 元数据检索子包标记
-│     ├─ arxiv.py                    # ArXiv 精确标题查询与 preprint metadata
-│     ├─ dblp.py                     # DBLP 精确标题查询与正式发表 metadata
-│     ├─ semantic_scholar.py         # Semantic Scholar 正式发表信息补充
-│     └─ retry.py                    # 外部元数据请求的重试、退避、延迟
-├─ corpus/
-│  ├─ __init__.py                    # 本地结构化论文库访问层
-│  ├─ aliases.py                     # 论文 mention/alias 到 canonical paper 的匹配
-│  ├─ annotations.py                 # paper_annotations.json 的统一扫描入口
-│  ├─ chunks.py                      # chunks.jsonl 加载、ChunkDocument、按论文过滤
-│  ├─ citations.py                   # `paper follow/prior` 基于 citation graph 的范围解析
-│  ├─ filters.py                     # 单条 manifest record 的 filter 布尔匹配
-│  ├─ records.py                     # active manifest 读取、论文匹配、record key、去重
-│  ├─ scope.py                       # semantic + filters + groups 到候选论文 records
-│  ├─ resolver.py                    # parser 输出中的 paper/year/venue scope 标准化
-│  └─ utils.py                       # token 规范化、去重、interval boundary、value 展平
-└─ retrieval/
-   ├─ __init__.py                    # 检索子包标记
-   ├─ plan.py                        # `paper-rag plan` 编排：top route -> domain router -> planner
-   ├─ route.py                       # RouteDecision，保存 parser 归一化后的路由状态
-   ├─ evidence.py                    # composer/debug evidence 统一构建
-   ├─ evidence_probe.py              # evidence 调试入口
-   ├─ chunk_fusion.py                # dense/BM25 命中结果的 RRF 融合
-   ├─ dense/
-   │  ├─ __init__.py                 # dense 子包标记
-   │  ├─ service.py                  # index/search/content dense search 高层服务
-   │  ├─ embedding.py                # OpenAI-compatible embedding HTTP 客户端
-   │  ├─ cache.py                    # embedding 本地缓存
-   │  └─ milvus_store.py             # Milvus/Zilliz collection 重建、插入、向量搜索
-   ├─ sparse/
-   │  ├─ __init__.py                 # sparse 子包标记
-   │  └─ bm25.py                     # BM25 索引、英文 token 规范化、多 query RRF 合并
-   └─ routes/
-      ├─ __init__.py                 # route 子包标记
-      ├─ common/
-      │  ├─ __init__.py              # common 子包标记
-      │  ├─ errors.py                # PlanParseError
-      │  ├─ parser_client.py         # OpenAI-compatible planner parser client
-      │  ├─ prompt.py                # 三条 route 共用 prompt 片段
-      │  └─ schema.py                # 三条 route 共用 schema/filter/group 校验
-      ├─ top/
-      │  ├─ __init__.py              # top route 子包标记
-      │  ├─ parser.py                # 顶层路由 parser client
-      │  ├─ prompt.py                # 顶层 route prompt，只分类 metadata/reference/content/unclear
-      │  ├─ schema.py                # top schema: 只允许 router 字段
-      │  └─ prompt_probe.py          # top prompt 调试入口
-      ├─ metadata/
-      │  ├─ __init__.py              # metadata route 子包标记
-      │  ├─ parser.py                # metadata parser client
-      │  ├─ prompt.py                # metadata parser prompt
-      │  ├─ schema.py                # metadata parser 输出校验
-      │  ├─ router.py                # parser_result -> RouteDecision
-      │  ├─ planner.py               # metadata 本地查询执行与 evidence 组装
-      │  ├─ prompt_probe.py          # metadata prompt 调试入口
-      │  └─ planner_probe.py         # metadata planner 调试入口
-      ├─ reference/
-      │  ├─ __init__.py              # reference route 子包标记
-      │  ├─ parser.py                # reference parser client
-      │  ├─ prompt.py                # reference parser prompt
-      │  ├─ schema.py                # reference parser 输出校验
-      │  ├─ router.py                # source/object scope 修正与 RouteDecision 构建
-      │  ├─ planner.py               # citation graph 查询执行与 evidence 组装
-      │  ├─ prompt_probe.py          # reference prompt 调试入口
-      │  └─ planner_probe.py         # reference planner 调试入口
-      └─ content/
-         ├─ __init__.py              # content route 子包标记
-         ├─ parser.py                # content parser client
-         ├─ prompt.py                # content parser prompt
-         ├─ schema.py                # content parser 输出校验
-         ├─ router.py                # content scope 修正与 RouteDecision 构建
-         ├─ planner.py               # content 检索执行、融合、上下文扩展与 evidence 组装
-         ├─ retrieval_query.py       # dense_query / bm25_queries 构建
-         ├─ context.py               # chunk 命中后扩展 block 窗口
-         ├─ translation.py           # BM25 中文关键词翻译：腾讯/阿里
-         ├─ prompt_probe.py          # content prompt 调试，并可写入 retrieval_probe_cases.json
-         ├─ retrieval_probe.py       # 跳过 prompt，用固定 case 调试 dense/BM25/fusion 召回
-         ├─ retrieval_probe_cases.json # content retrieval 调试样例
-         └─ planner_probe.py         # content planner 调试入口
+└─ utils.py                          # 根包通用工具：hash、slug、文本规范化、安全目录替换
+```
+
+### CLI 命令层
+
+`cli/` 把命令行参数转换成内部服务调用，尽量保持薄封装，业务逻辑放回 `ingest/`、`retrieval/` 和 `answer/`
+
+```text
+paper_rag/cli/
+├─ __init__.py                       # CLI 子包标记
+├─ main.py                           # CLI 总入口与全局参数
+├─ ingest.py                         # `paper-rag ingest`
+├─ retrieval.py                      # `paper-rag index/search/plan`
+└─ ask.py                            # `paper-rag ask`
+```
+
+### 入库处理
+
+`ingest/` 负责把 PDF 和 MinerU 输出变成项目内部稳定数据结构
+
+```text
+paper_rag/ingest/
+├─ __init__.py                       # 入库子包标记
+├─ pipeline.py                       # 全量 PDF 同步、metadata 补全、extract、citation graph 主流程
+├─ manifest.py                       # ManifestRecord/Manifest、状态管理、年份规范化
+├─ mineru.py                         # MinerU API 上传、轮询、下载、解压
+├─ extract.py                        # 从 MinerU 输出构建 metadata/toc/blocks/references/chunks
+├─ citation_graph.py                 # 从 references 构建本地库内 citation graph
+├─ annotations.py                    # paper_annotations.json 生成、规范化与保存
+├─ venues.py                         # venue canonical/display/aliases 规范化与匹配
+└─ metadata_sources/
+   ├─ __init__.py                    # 元数据检索子包标记
+   ├─ arxiv.py                       # ArXiv 精确标题查询与 preprint metadata
+   ├─ dblp.py                        # DBLP 精确标题查询与正式发表 metadata
+   ├─ semantic_scholar.py            # Semantic Scholar 正式发表信息补充
+   └─ retry.py                       # 外部元数据请求的重试、退避、延迟
+```
+
+### 本地论文库访问层
+
+`corpus/` 是检索和回答读取本地结构化数据的统一入口，负责本地数据文件加载成可查询的记录和范围
+
+```text
+paper_rag/corpus/
+├─ __init__.py                       # 本地结构化论文库访问层
+├─ aliases.py                        # 论文 mention/alias 到 canonical paper 的匹配
+├─ annotations.py                    # paper_annotations.json 的统一扫描入口
+├─ chunks.py                         # chunks.jsonl 加载、ChunkDocument、按论文过滤
+├─ citations.py                      # paper follow/prior 基于 citation graph 的范围解析
+├─ filters.py                        # 单条 manifest record 的 filter 布尔匹配
+├─ records.py                        # active manifest 读取、论文匹配、record key、去重
+├─ scope.py                          # semantic + filters + groups 到候选论文 records
+├─ resolver.py                       # parser 输出中的 paper/year/venue scope 标准化
+└─ utils.py                          # token 规范化、去重、interval boundary、value 展平
+```
+
+### 检索与路由
+
+`retrieval/` 负责把自然语言问题拆成可执行计划，并产出回答层消费的 evidence
+
+包含三块：顶层编排、dense/BM25 召回、metadata/reference/content 三条语义路由
+
+```text
+paper_rag/retrieval/
+├─ __init__.py                       # 检索子包标记
+├─ plan.py                           # 编排：top route -> domain router -> planner
+├─ route.py                          # RouteDecision，保存 parser 归一化后的路由状态
+├─ evidence.py                       # composer/debug evidence 统一构建
+├─ evidence_probe.py                 # evidence 调试入口
+└─ chunk_fusion.py                   # dense/BM25 命中结果的 RRF 融合
+```
+
+```text
+paper_rag/retrieval/dense/
+├─ __init__.py                       # dense 子包标记
+├─ service.py                        # index/search/content dense search 高层服务
+├─ embedding.py                      # OpenAI-compatible embedding HTTP 客户端
+├─ cache.py                          # embedding 本地缓存
+└─ milvus_store.py                   # Milvus/Zilliz collection 重建、插入、向量搜索
+
+paper_rag/retrieval/sparse/
+├─ __init__.py                       # sparse 子包标记
+└─ bm25.py                           # BM25 索引、英文 token 规范化、多 query RRF 合并
+```
+
+```text
+paper_rag/retrieval/routes/
+├─ __init__.py                       # route 子包标记
+├─ common/                           # route 共用 parser client、prompt 片段、schema/filter/group 校验
+├─ top/                              # 顶层路由，只分类 metadata/reference/content/unclear
+├─ metadata/                         # 元数据问题：parser/router/planner/prompt probe
+├─ reference/                        # 引用关系问题：source/object scope 修正与 citation graph 查询
+└─ content/                          # 内容问题：检索 query 构建、dense/BM25/fusion、上下文扩展
+```
+
+### 答案生成
+
+`answer/` 消费 retrieval evidence
+
+metadata/reference 优先走本地确定性回答，content route 使用 LLM 基于证据生成自然语言答案
+
+```text
+paper_rag/answer/
+├─ __init__.py                       # answer 包入口，re-export run_ask
+├─ service.py                        # ask 薄编排：plan evidence -> local/LLM answer
+├─ local.py                          # metadata/reference 的本地确定性回答
+└─ llm.py                            # content route 的回答 LLM 客户端与 prompt 组装
 ```
 
 ## 配置
 
-推荐 Python 3.10+。本地开发安装：
+复制 `.env.example` 为 `.env`
 
-```powershell
-pip install -e .
-```
+主要分为几类配置
 
-复制 `.env.example` 为 `.env`：
+- `MinerU`
+- `metadata`查询
+- `Plan parser`
+- `Answer composer`
+- `Content retrieval`
+- `Dense index`
+- `BM25 keyword translation`
 
-```powershell
-Copy-Item .env.example .env
-```
-
-常用配置分组：
-
-- MinerU：`MINERU_API_KEY`、`MINERU_API_BASE_URL`、`MINERU_MODEL_VERSION`、`MINERU_LANGUAGE`
-- 外部元数据：`DBLP_DELAY_SECONDS`、`DBLP_CANDIDATE_LIMIT`、`SEMANTIC_SCHOLAR_API_KEY`、`SEMANTIC_SCHOLAR_DELAY_SECONDS`、`ARXIV_DELAY_SECONDS`
-- Planner LLM：`PLAN_PARSER_BASE_URL`、`PLAN_PARSER_API_KEY`、`PLAN_PARSER_MODEL`、`PLAN_PARSER_TIMEOUT_SECONDS`
-- Answer LLM：`ANSWER_BASE_URL`、`ANSWER_API_KEY`、`ANSWER_MODEL`、`ANSWER_TIMEOUT_SECONDS`、`ANSWER_TEMPERATURE`
-- 目录：`PDF_DIR`、`MINERU_DIR`、`PAPER_DIR`
-- Chunk：`CHUNK_TARGET_CHARS`、`CHUNK_OVERLAP_CHARS`
-- Milvus/Zilliz：`MILVUS_URI`、`MILVUS_TOKEN`、`MILVUS_DB_NAME`、`MILVUS_COLLECTION`
-- Embedding：`EMBEDDING_BASE_URL`、`EMBEDDING_API_KEY`、`EMBEDDING_MODEL`、`EMBEDDING_DIM`、`EMBEDDING_BATCH_SIZE`、`EMBEDDING_CACHE_PATH`
-- BM25 关键词翻译：`PLAN_BM25_TRANSLATE_PROVIDERS`、`TENCENT_TRANSLATE_*`、`ALIYUN_TRANSLATE_*`
-
-`ANSWER_*` 默认可复用 `PLAN_PARSER_*`，即没有单独配置回答模型时，会回退到 planner parser 的 base URL、API key 和 model。
-
-密钥不要提交到 Git。当前仓库忽略了 `.env` 和 `密匙/`，如需使用 `keys/`、`secrets/`、`密钥/` 等目录，也应同步加入 `.gitignore`。
-
-Windows PowerShell 中文输出异常时可以先设置：
-
-```powershell
-$OutputEncoding=[System.Text.Encoding]::UTF8
-[Console]::InputEncoding=[System.Text.Encoding]::UTF8
-[Console]::OutputEncoding=[System.Text.Encoding]::UTF8
-$env:PYTHONIOENCODING='utf-8'
-```
+`ANSWER_*` 默认可复用 `PLAN_PARSER_*`
 
 ## CLI
 
-包安装后可使用 `paper-rag`，也可以直接使用 `python -m paper_rag`。两者入口相同。
+`paper-rag` 和 `python -m paper_rag` 走同一套入口
 
-全局参数：
+命令形式：
 
 ```text
 paper-rag [--project-root PROJECT_ROOT] <command>
 ```
 
+- `--project-root PROJECT_ROOT`：指定项目根目录，用来定位 `.env`、`data/` 和索引配置
+
 子命令：
 
 ```text
-paper-rag ingest [--refresh] [--quiet]
-paper-rag index [--quiet]
+paper-rag ingest [--refresh]
+paper-rag index
 paper-rag search [--top-k TOP_K] <query>
 paper-rag plan [--debug] <query>
 paper-rag ask [--debug] [--json] <query>
 ```
+
+### ingest
+
+同步 `data/pdf/` 到本地结构化论文库
+
+主要职责：
+
+- 维护 `manifest.jsonl`
+- 调用或复用 MinerU 输出
+- 生成 `metadata.json`、`toc.json`、`blocks.jsonl`、`chunks.jsonl`、`references.jsonl`
+- 更新 `citation_graph.json` 和 `paper_annotations.json`
+
+参数：
+
+- `--refresh`：重新刷新 active PDF 的外部 metadata
+
+### index
+
+根据 `data/paper_data/*/chunks.jsonl` 重建 dense 向量索引
+
+只处理向量库，不重新解析 PDF，不刷新 metadata
+
+主要职责：
+
+- 新增或刷新论文后同步 dense index
+- 修改 embedding 或 Milvus/Zilliz collection 配置后重建索引
+
+### search
+
+直接对 dense 向量索引做 chunk 搜索
+
+参数：
+
+- `<query>`：检索文本
+- `--top-k TOP_K`：返回 chunk 数量，默认 `5`
+
+输出包含 score、论文标题、section path、页码、chunk id 和 snippet
+
+不经过 planner，不做 metadata/reference/content 路由
+
+### plan
+
+把用户问题解析成检索计划，并输出 answer 层消费的 evidence JSON
+
+执行过程：
+
+```text
+query
+  -> top route parser
+  -> metadata/reference/content router
+  -> route planner
+  -> evidence
+```
+
+参数：
+
+- `<query>`：要规划的问题
+- `--debug`：输出中间状态
+
+### ask
+
+面向最终使用的问答入口
+
+回答策略：
+
+- `metadata`：本地确定性回答
+- `reference`：本地 citation graph 回答
+- `content`：基于 evidence 调用回答 LLM
+- `unclear` 或无证据：返回降级说明
+
+参数：
+
+- `<query>`：要回答的问题
+- `--debug`：在 answer payload 中保留 planner debug 信息
+- `--json`：输出完整 JSON payload，不传时只打印 `answer`
 
 常用命令示例：
 
@@ -224,107 +287,315 @@ python -m paper_rag ask "发表在 CVPR 上的论文有哪些？"
 python -m paper_rag ask "哪些论文引用了 ResNet？" --json
 ```
 
-`plan` 输出给回答链路消费的 evidence。加 `--debug` 后会输出 parser result、scope、retrieval query、raw records、context units 等中间状态。
+## 命名规范
 
-`ask` 会先执行 `run_plan()`，再根据 route 选择本地回答或 LLM 回答。`--json` 输出完整 payload，包括 `answer`、`answer_mode`、`evidence` 和 warnings。
+### 函数命名
 
-## 命名约定
+- `validate_*`：schema / parser payload 校验，失败抛 `PlanParseError`
+- `normalize_*`：规范化内容，不读本地数据，不做检索
+- `resolve_*`：把 parser mention、别名、venue、年份边界解析成内部稳定值
+- `match_*`：布尔匹配
+- `filter_*`：集合过滤并返回子集
+- `search_*`：执行检索
+- `build_*`：组装结构化对象或 evidence
+- `to_evidence_*`：内部对象裁剪成对外 evidence 字段
+- `dedupe_*`：按明确 key 保序去重
 
-- `query`：用户原始问题，全链路统一使用这个名字。
-- `route`：顶层语义路由，取值为 `metadata`、`reference`、`content`、`unclear`。
-- `parser_result`：LLM parser 的结构化输出。
-- `RouteDecision`：parser 结果经本地规范化后的不可变决策对象。
-- `paper_semantic`：单侧论文范围的自然语言语义描述。
-- `filters`：单侧论文范围的结构化过滤条件。
-- `paper_groups` / `group_mode`：论文范围分组，用于表达 per/or/and 等关系。
-- `source_*` / `object_*`：reference route 的两侧 scope；统一理解为 `source --cites--> object`。
-- `retrieval_query`：content route 内部检索输入对象。
-- `dense_query`：embedding 使用的中文自然语言语义句。
-- `bm25_queries`：BM25 使用的关键词候选列表。
-- `context_units`：content 检索命中 chunk 后扩展出的上下文单元。
-- `evidence`：planner 输出给 answer 层消费的压缩证据。
-- `debug`：只在调试模式下保留的内部状态。
+### 变量命名
 
-通用 paper filter 的合法组合：
-
-```text
-paper:  = | follow | prior
-year:   = | interval
-venue:  = | in
-author: contains
-title:  contains
-```
-
-禁止组合包括 `paper in`、`year contains`、`author =`、`title =`、`venue contains`，以及把 `follow/prior` 用在 `paper` 以外字段。
+- `query`：用户原始问题
+- `retrieval_query`：content route 内部检索输入对象
+- `dense_query`：embedding 使用的中文自然语言语义句
+- `bm25_queries`：BM25 使用的关键词候选列表
+- `route`：顶层语义路由，取值为 `metadata`、`reference`、`content`、`unclear`
+- `parser_result`：LLM parser 的结构化输出
+- `RouteDecision`：parser 结果经本地规范化后的不可变决策对象
+- `paper_semantic / filters / paper_groups / group_mode`：单侧论文范围结构
+- `source_*` / `object_*`：reference route 的两侧 scope，规范为 `source --cites--> object`
+- `context_units`：content 检索命中 chunk 后扩展出的上下文单元
+- `evidence`：planner 输出给 answer 层消费的压缩证据
 
 ## 本地数据处理
 
 ### 数据导入
 
-入口是 `paper_rag/ingest/pipeline.py`，CLI 对应 `paper-rag ingest`。
-
 入库主流程：
 
-1. 扫描 `PDF_DIR`，默认是 `data/pdf/`。
-2. 计算 PDF hash，用 `data/manifest.jsonl` 维护论文状态。
-3. 对新增或需要刷新的 PDF 调用 MinerU，得到原始解析目录。
-4. 从 MinerU 输出提取项目内部结构：`metadata`、`toc`、`blocks`、`chunks`、`references`。
-5. 查询外部元数据源，补全 title、authors、year、venue。
-6. 写回 `data/paper_data/<paper_id>/` 和 `manifest.jsonl`。
-7. 更新 `paper_annotations.json`。
-8. 全量同步末尾构建 `citation_graph.json`。
+1. 扫描 `PDF_DIR`，默认是 `data/pdf/`
+2. 计算 PDF hash，用 `data/manifest.jsonl` 维护论文状态
+3. 对新增或需要刷新的 PDF 调用 MinerU，得到原始解析目录
+4. 从 MinerU 输出提取项目内部结构：`metadata`、`toc`、`blocks`、`chunks`、`references`
+5. 查询外部元数据源，补全 title、authors、year、venue
+6. 写回 `data/paper_data/<paper_id>/` 和 `manifest.jsonl`
+7. 更新 `paper_annotations.json`
+8. 全量同步末尾构建 `citation_graph.json`
 
-`manifest` 负责记录本地论文库的事实状态。状态包括 `active`、`deleted`、`duplicate`、`error` 等。每条 active record 通常包含 `file_hash`、PDF 路径、title、authors、year、venue、paper_data_path。
+`manifest` 负责记录本地论文库的状态，包括 `active`、`deleted`、`duplicate`、`error` 等
+
+每条 active record 通常包含 `file_hash`、PDF 路径、title、authors、year、venue、paper_data_path
 
 ### 元数据检索
 
-元数据补全位于 `paper_rag/ingest/metadata_sources/`。
+元数据补全位于 `paper_rag/ingest/metadata_sources/`
 
-- `arxiv.py`：根据标题做 ArXiv 精确匹配，主要补充 preprint 信息。
-- `dblp.py`：根据标题做 DBLP 精确匹配，偏正式发表信息。
-- `semantic_scholar.py`：补充 Semantic Scholar 中的正式发表信息。
-- `retry.py`：统一外部请求重试、延迟和 429/timeout 处理。
+以 MinerU 抽取出的标题作为锚点，用标题精确匹配去外部源补全论文 metadata，拒绝模糊匹配
 
-合并规则偏保守：外部候选必须与论文标题精确归一化匹配；ArXiv 命中只写 `preprint_year`，不把 `venue` 写成 `ArXiv`；正式发表年份优先使用 venue 字符串中明确的四位年份，其次使用 DBLP/Semantic Scholar 返回的年份。
+- `arxiv.py`：根据标题做 ArXiv 精确匹配，提供 preprint 信息
 
-作者名在 ingest 合并层清洗，例如删除 DBLP 作者末尾的消歧编号：`Yu Qiao 0001 -> Yu Qiao`。
+  ```python
+  class ArxivMatch:
+      title: str
+      authors: list[str]
+      preprint_year: int
+      venue: str
+  ```
+
+- `dblp.py`：根据标题做 DBLP 精确匹配，提供正式发表信息
+
+  ```python
+  class DblpMatch:
+      title: str
+      authors: list[str]
+      year: int
+      venue: str
+  ```
+
+- `semantic_scholar.py`：补充正式发表信息
+
+  ```python
+  class SemanticScholarMatch:
+      title: str
+      authors: list[str]
+      year: int
+      venue: str
+  ```
+
+- `retry.py`：统一外部请求重试、延迟和 429/timeout 处理
+
+按 `ArXiv -> DBLP -> Semantic Scholar` 的顺序补全
+
+`publish_year`优先使用 venue 字符串中明确的四位年份，其次使用 DBLP/Semantic Scholar 返回的年份
+
+作者名在 ingest 合并层清洗，例如删除 DBLP 作者末尾的消歧编号：`Yu Qiao 0001 -> Yu Qiao`
+
+最终合并结果
+
+```python
+class MetadataMatch:
+    title: str
+    authors: list[str]
+    year: dict[str, int | None]
+    venue: str | None
+    source: str  # 信息检索来源
+```
 
 ### MinerU 识别与清洗
 
-`mineru.py` 封装 MinerU API 的上传、任务轮询、结果下载和解压。`extract.py` 负责把 MinerU 的原始输出转换成项目内部稳定格式。
+`mineru.py` 封装 MinerU API 的上传、任务轮询、结果下载和解压
 
-主要输入通常来自 MinerU 输出中的 `content_list_v2.json`。清洗阶段会处理：
+`extract.py` 负责把 MinerU 的原始输出转换成项目内部稳定格式
 
-- 页面级内容展平。
-- 正文、标题、表格、图片等 block 文本抽取。
-- HTML table 转半结构化文本。
-- abstract、references、appendix、acknowledgement 等区域边界识别。
-- 目录树 `toc.json` 构建。
-- 原始 references 抽取到 `references.jsonl`。
+主要输入通常来自 MinerU 输出中的 `content_list_v2.json`
 
-MinerU 原始结果保留在 `data/mineru_output/`，项目内部数据写入 `data/paper_data/<paper_id>/`。这使得解析过程可追溯，也便于未来重新清洗而不必重新上传 PDF。
+清洗阶段会处理：
 
-### Block -> Chunk
+- 页面级内容展平
+- 正文、标题、表格、图片等 block 文本抽取
+- HTML table 转半结构化文本
+- abstract、references、appendix、acknowledgement 等区域边界识别
+- 目录树 `toc.json` 构建
+- 原始 references 抽取到 `references.jsonl`
 
-`extract.py` 中的 block 是从 PDF 版面解析结果清洗得到的结构化单元，chunk 是面向检索的文本窗口。
+MinerU 原始结果保留在 `data/mineru_output/`，项目内部数据写入 `data/paper_data/<paper_id>/`
 
-block 层保留更多结构信息，例如页码、区域、section、block 类型、原始 source path、媒体字段等。chunk 层则面向检索，通常包含：
+#### MinerU介绍
 
-- `chunk_id`
-- `paper_id`
-- `chunk_index`
-- `title`
-- `section_path`
-- `pages`
-- `text`
-- `embedding_text`
-- chunk 覆盖的 block 范围
+MinerU框架
 
-chunk 构建受 `CHUNK_TARGET_CHARS` 和 `CHUNK_OVERLAP_CHARS` 控制。`embedding_text` 会把标题、section path 和正文文本组合成更稳定的 embedding 输入。
+- 预处理：使用 PyMuPDF 读取 PDF 文件，判断是否可解析、是否扫描、是否乱码、语言、页面尺寸
+- 内容解析：采用 PDF 文档提取算法库 `PDF-Extract-Kit`，将不同的识别器应用于不同的区域，得到页面的语义 block 边界
+- 后处理：根据第二阶段的输出，处理 bbox 包含/重叠，排序，删除无效区域
+- 格式转换：生成中间 JSON、Markdown、最终 JSON
+
+**预处理**
+
+解析页面元数据，包括语言类型、总页数、页面尺寸
+
+PDF 常见三类情况：
+
+- Born-digital PDF：原生 LaTeX/Word 生成，文字层存在，可以直接用 PyMuPDF 抽文本
+- 扫描 PDF：本质是图片，没有可靠文字层，需要启用 OCR
+- 乱码 PDF：有文字层，但复制出来是 CID/乱码，直接抽文本会污染后续分割，需要提前进行识别，后续使用OCR进行文字识别
+
+**内容解析**
+
+不是先读出所有文字再猜段落，而是先在页面图像上检测不同区域
+
+layout 标注类型包括标题、正文段落、图像、图像说明、表格、表说明、内联公式、公式标签和丢弃类型(页眉、页脚、页码和页注释)
+
+先得到每个区域的 `bbox` 和类别，再基于几何关系重建阅读顺序
+
+避免了直接 OCR 或直接抽 PDF 文本，公式变成乱码进而破坏句子、段落和 token 边界
+
+`PDF-Extract-Kit`提到把任务拆成 layout detection、formula detection、formula recognition、OCR、table recognition 等模块
+
+**后处理**
+
+把整页切成若干 region，每个 region 最多包含一栏，这样可以保证文本在每个 region 内逐行自上而下读取
+
+再根据 region 的位置关系排序，确定 PDF 中每个元素的阅读顺序
+
+#### 数据清洗
+
+总体流程如下
+
+```
+读取 MinerU JSON
+  -> 扁平化，把二维结构 page -> blocks 变成一维
+  -> 区域识别
+  -> 目录识别
+  -> 正文 block 输出
+  -> chunk 输出
+  -> reference 输出
+  -> 落盘
+```
+
+特殊内容：
+
+- 图片本身不做OCR，只使用 caption 作为检索文本
+
+- 表格将识别出来的 HTML 转成半结构化文本
+
+  举例：
+
+  ```
+  Table: Results on ImageNet.
+  Columns: Method, Top-1, Top-5.
+  Row 1: Method = ResNet-50; Top-1 = 76.1; Top-5 = 92.9.
+  Row 2: Method = ViT-B; Top-1 = 81.8; Top-5 = 95.6.
+  ```
+
+**标题识别**
+
+1. 找所有 `type == "title"` 且有文本的 block
+2. 找 abstract marker
+3. 优先取 abstract 之前的第一个非特殊 title
+4. 找不到，就退回第一页 `page_header`
+
+**区域边界识别**
+
+1. `Abstract` 边界：找 title 型 abstract，如果没有找段落开头是`Abstract:`的 paragraph
+
+2. `References` 边界：找第一个 title 型 References
+
+3. `Appendix` 边界：兼容两种论文结构
+
+   ```
+   正文 -> Appendix -> References
+   正文 -> References -> Appendix
+   ```
+
+4. `Acknowledgement` 边界：识别在 references 前、abstract 后的，作为正文结束的边界之一
+
+5. `body` 边界：在摘要之后，references / appendix / acknowledgement 之前，找正文内容标题
+
+   如果有编号标题，优先取第一个带编号标题作为正文起点；否则退回第一个有效标题
+
+**区域判定**
+
+把每个 `FlatBlock` 标成
+
+```
+abstract
+body
+appendix
+reference
+None
+```
+
+```
+abstract_start <= idx < abstract_end       -> abstract
+appendix_before_ref <= idx < references    -> appendix
+body_start <= idx < body_end               -> body
+idx >= appendix_after_ref                  -> appendix
+idx > references_start                     -> reference
+```
+
+**TOC 构建**
+
+从正文标题生成两套结构
+
+```
+sections: 扁平 section 列表
+tree:     树形 toc
+```
+
+正文区域，如果整篇正文里存在编号标题，那么未编号标题会被跳过
+
+Appendix区域，创建一个整体 appendix section
+
+**References输出**
+
+只从 references 区域的 reference_list block 抽取原始引用证据
+
+抽出每条引用的 `raw_text`，输出格式是：
+
+```
+{
+    "reference_id": "ref_001",
+    "ref_index": 1,
+    "raw_text": "...",
+    "page": 12,
+    "source_block_id": "b000456"
+}
+```
+
+支持两类编号格式 `[1]` / `(1)`
+
+#### block生成
+
+生成最终的 `blocks.jsonl`，只保留后续检索和证据定位需要的字段
+
+```
+{
+    "block_id": "b000123",
+    "order": 57,
+    "region": "body",
+    "type": "paragraph",
+    "text": "...",
+    "page": 4,
+    "bbox": [...],
+    "section_id": "sec_2_1",
+    "section_path": ["2 Method", "2.1 Architecture"]
+}
+```
+
+### Chunk 生成
+
+chunk 是面向检索的文本窗口
+
+设置参数
+
+```
+DEFAULT_CHUNK_TARGET_CHARS = 1400  # chunk 最长长度
+DEFAULT_CHUNK_OVERLAP_CHARS = 200  # chunk 重叠部分长度
+MAX_CHUNK_EQUATION_CHARS = 500     # 单个 chunk 中允许保留的公式文本总字符数上限
+```
+
+每组 section blocks 内部，按 `target_chars` 累积
+
+在组装 chunk 时，overlap 只进入 embedding_text，不进入 text
+
+```
+text           给用户展示 / 证据引用
+embedding_text 给向量化使用，带 overlap 上下文
+```
+
+并且embedding_text 加 Paper 和 Section 前缀，可以提升跨论文检索的可辨性
 
 ### Citation Graph
 
-`citation_graph.py` 在 ingest 全量同步末尾生成：
+在 ingest 全量同步末尾生成：
 
 ```text
 data/paper_data/citation_graph.json
@@ -336,25 +607,35 @@ data/paper_data/citation_graph.json
 source -> target
 ```
 
-- `source`：引用发出论文。
-- `target`：被引用的本地论文。
+- `source`：引用发出论文
+- `target`：被引用的本地论文
 
-当前 citation graph 只覆盖本地 active 论文之间的引用关系。匹配规则偏保守，需要 reference raw text 同时命中目标论文 canonical title、第一作者姓氏和年份候选，避免短标题或常见词造成误配。
+citation graph 只覆盖本地 active 论文之间的引用关系
 
-年份候选包括 `preprint_year`、`publish_year` 和 venue 字符串中的四位年份。`references.jsonl` 保留原始引用证据，`citation_graph.json` 是派生索引。
+匹配条件同时满足：
+
+- target canonical title 出现在 reference raw text 的 normalized 文本中
+- target 第一作者姓氏出现在 reference raw text token 中
+- reference raw text 中出现 target 年份候选之一
+
+避免短标题或常见词造成误配，年份候选包括 `preprint_year`、`publish_year`
+
+`references.jsonl` 保留原始引用证据，`citation_graph.json` 是派生索引
 
 ### 别名与标签
 
-`annotations.py` 管理 `data/paper_annotations.json`。该文件用于人工扩展论文别名和标签。
+`annotations.py` 管理 `data/paper_annotations.json`
 
-当前建议人工维护：
+该文件用于人工扩展论文别名和标签
 
-- `aliases`：论文简称、常用名、大小写变体等。
-- `tags`：面向语义召回的人工标签。
+人工维护：
 
-其它字段应由 ingest/API 生成，避免人工编辑与自动流程冲突。
+- `aliases`：论文简称、常用名、大小写变体等
+- `tags`：面向语义召回的人工标签
 
-`venues.py` 管理 `data/venue_aliases.json`，使用 `canonical / display / aliases` 三层设计：匹配时使用 canonical 和 aliases，展示时使用 display。
+其它字段应由 ingest/API 生成，避免人工编辑与自动流程冲突
+
+`venues.py` 管理 `data/venue_aliases.json`，使用 `canonical / display / aliases` 三层设计，匹配时使用 canonical 和 aliases，展示时使用 display
 
 ## 检索
 
@@ -374,7 +655,7 @@ query
 {"router": "metadata|reference|content|unclear"}
 ```
 
-它不抽 filters，不裁剪 query，也不生成 evidence。具体语义解析交给三条 domain parser。
+具体语义解析交给三条 domain parser
 
 ### Common
 

@@ -4,18 +4,18 @@ from __future__ import annotations
 
 from typing import Any
 
-from ....config import Settings
-from ...chunk_fusion import fuse_chunk_hits
+from paper_rag.config import Settings
+from paper_rag.retrieval.chunk_fusion import fuse_chunk_hits
 from paper_rag.corpus.chunks import filter_chunks_by_paper_records, load_chunk_documents
 from paper_rag.corpus.records import dedupe_paper_records
 from paper_rag.corpus.scope import combined_semantic, records_for_scope
-from ...dense.service import search_dense_chunks
-from ...evidence import build_content_evidence
-from ...route import RouteDecision
-from ...sparse.bm25 import search_bm25_chunks
-from .context import context_unit
-from .retrieval_query import build_content_retrieval_query
-from .translation import CloudKeywordTranslator, KeywordTranslatorProtocol
+from paper_rag.retrieval.dense.service import search_dense_chunks
+from paper_rag.retrieval.evidence import build_content_evidence
+from paper_rag.retrieval.route import RouteDecision
+from paper_rag.retrieval.sparse.bm25 import search_bm25_chunks
+from paper_rag.retrieval.routes.content.context import context_unit
+from paper_rag.retrieval.routes.content.retrieval_query import build_content_retrieval_query
+from paper_rag.retrieval.routes.content.translation import CloudKeywordTranslator, KeywordTranslatorProtocol
 
 
 def plan_body(

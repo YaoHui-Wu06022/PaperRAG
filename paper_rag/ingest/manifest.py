@@ -102,9 +102,3 @@ class Manifest:
             for record in sorted(self.records.values(), key=lambda r: r.file_hash)
         ]
         self.path.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
-
-    def get(self, file_hash: str) -> ManifestRecord | None:
-        return self.records.get(file_hash)
-
-    def upsert(self, record: ManifestRecord) -> None:
-        self.records[record.file_hash] = record

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ..common.prompt import PAPER_FILTER_RULES, PAPER_FILTER_SCHEMA
+from paper_rag.retrieval.routes.common.prompt import PAPER_FILTER_RULES, PAPER_FILTER_SCHEMA
 
 
 def reference_parser_prompt() -> str:

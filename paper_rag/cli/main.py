@@ -4,9 +4,9 @@ import argparse
 import sys
 from pathlib import Path
 
-from .ask import add_ask_parser
-from .ingest import add_ingest_parser
-from .retrieval import add_retrieval_parsers
+from paper_rag.cli.ask import add_ask_parser
+from paper_rag.cli.ingest import add_ingest_parser
+from paper_rag.cli.retrieval import add_retrieval_parsers
 
 
 def build_parser() -> argparse.ArgumentParser:

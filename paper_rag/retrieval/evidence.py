@@ -6,7 +6,7 @@ from typing import Any
 
 from paper_rag.ingest.venues import display_venue
 from paper_rag.corpus.aliases import alias_match_to_dict
-from .route import RouteDecision
+from paper_rag.retrieval.route import RouteDecision
 
 
 COMPACT_EDGE_LIMIT = 3

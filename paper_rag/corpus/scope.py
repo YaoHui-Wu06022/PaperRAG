@@ -6,16 +6,16 @@ from typing import Any
 
 from paper_rag.config import Settings
 from paper_rag.ingest.manifest import ManifestRecord
-from .annotations import PaperTags, load_paper_annotation_entries, paper_title_key
-from .citations import record_matches_citation_scope
-from .filters import compare_text, match_record_filters
-from .records import (
+from paper_rag.corpus.annotations import PaperTags, load_paper_annotation_entries, paper_title_key
+from paper_rag.corpus.citations import record_matches_citation_scope
+from paper_rag.corpus.filters import compare_text, match_record_filters
+from paper_rag.corpus.records import (
     load_active_manifest_records,
     match_manifest_records,
     paper_record_key,
     to_evidence_manifest_record,
 )
-from .utils import normalize_token, value_to_text_list
+from paper_rag.corpus.utils import normalize_token, value_to_text_list
 
 
 def records_for_scope(

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .records import paper_record_key
+from paper_rag.corpus.records import paper_record_key
 
 
 @dataclass(frozen=True)

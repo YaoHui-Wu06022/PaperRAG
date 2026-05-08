@@ -9,17 +9,17 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-from ..config import Settings
-from ..utils import infer_title_from_pdf_name, normalize_text, replace_dir, safe_move_dir, sha256_file, slugify_title
-from .annotations import load_paper_annotations, save_paper_annotations, upsert_paper_annotation
-from .citation_graph import build_citation_graph
-from .extract import extract_paper_data, extract_title, flatten_pages, load_content_list_v2
-from .manifest import Manifest, ManifestRecord, effective_year, normalize_year
-from .mineru import MinerUClient, MinerUError
-from .metadata_sources.arxiv import ArxivClient
-from .metadata_sources.dblp import DblpClient
-from .metadata_sources.semantic_scholar import SemanticScholarClient
-from .venues import normalize_venue_for_storage
+from paper_rag.config import Settings
+from paper_rag.utils import infer_title_from_pdf_name, normalize_text, replace_dir, safe_move_dir, sha256_file, slugify_title
+from paper_rag.ingest.annotations import load_paper_annotations, save_paper_annotations, upsert_paper_annotation
+from paper_rag.ingest.citation_graph import build_citation_graph
+from paper_rag.ingest.extract import extract_paper_data, extract_title, flatten_pages, load_content_list_v2
+from paper_rag.ingest.manifest import Manifest, ManifestRecord, effective_year, normalize_year
+from paper_rag.ingest.mineru import MinerUClient, MinerUError
+from paper_rag.ingest.metadata_sources.arxiv import ArxivClient
+from paper_rag.ingest.metadata_sources.dblp import DblpClient
+from paper_rag.ingest.metadata_sources.semantic_scholar import SemanticScholarClient
+from paper_rag.ingest.venues import normalize_venue_for_storage
 
 
 @dataclass(frozen=True)
@@ -30,7 +30,6 @@ class MetadataMatch:
     authors: list[str]
     year: dict[str, int | None]
     venue: str | None
-    source: str
 
 
 @dataclass
@@ -46,15 +45,8 @@ class IngestSummary:
     duplicates: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
 
-    def has_errors(self) -> bool:
-        return bool(self.errors)
-
 
 Reporter = Callable[[str], None]
-
-
-def noop_reporter(_: str) -> None:
-    return None
 
 
 def clean_author_name(name: str) -> str:
@@ -79,7 +71,7 @@ def run_ingest(
     reporter: Reporter | None = None,
 ) -> IngestSummary:
     """执行一次全量同步，把 PDF 目录重建为本地结构化论文库。"""
-    report = reporter or noop_reporter
+    report = reporter or (lambda _: None)
     # 入库流程对目录是增量同步，对 paper_data 是按单篇论文可重建输出。
     report("[ingest] Preparing data directories")
     settings.pdf_dir.mkdir(parents=True, exist_ok=True)
@@ -106,7 +98,7 @@ def run_ingest(
             record.status = "deleted"
             record.pdf_path = None
             summary.deleted.append(record.title or file_hash[:8])
-            manifest.upsert(record)
+            manifest.records[record.file_hash] = record
 
     report(f"[ingest] Indexing existing MinerU output: {settings.mineru_output_dir}")
     # 先尝试复用本地 MinerU 输出，避免无谓重复上传和等待解析。
@@ -116,13 +108,11 @@ def run_ingest(
     semantic_scholar = SemanticScholarClient(settings.semantic_scholar_api_key)
     arxiv = ArxivClient()
     # 外部源的节流状态放在 run_ingest 内，避免不同命令执行之间互相影响。
-    last_dblp_request = 0.0
-    last_semantic_scholar_request = 0.0
-    last_arxiv_request = 0.0
+    last_lookup_at = {"arxiv": 0.0, "dblp": 0.0, "semantic_scholar": 0.0}
     total = len(pdf_by_hash)
     for ordinal, (file_hash, pdf_path) in enumerate(pdf_by_hash.items(), start=1):
         report(f"[ingest] [{ordinal}/{total}] Processing {pdf_path.name}")
-        record = manifest.get(file_hash) or ManifestRecord(file_hash=file_hash, status="new")
+        record = manifest.records.get(file_hash) or ManifestRecord(file_hash=file_hash, status="new")
         try:
             mineru_output = ensure_mineru_output(settings, record, pdf_path, file_hash, output_index, summary, report)
             report(f"[ingest] [{ordinal}/{total}] MinerU output: {mineru_output.name}")
@@ -133,16 +123,12 @@ def run_ingest(
                 record.pdf_path = str(pdf_path)
                 record.message = "No paper title found"
                 summary.unresolved.append(f"{pdf_path.name}: no title")
-                manifest.upsert(record)
+                manifest.records[record.file_hash] = record
                 report(f"[ingest] [{ordinal}/{total}] Title unresolved; skipped paper_data generation")
                 continue
             authors: list[str] = [] if refresh_metadata else clean_author_list(record.author or [])
             year = normalize_year(None if refresh_metadata else record.year)
-            venue = None if refresh_metadata else record.venue
-            if venue and not is_formal_venue(venue):
-                venue = None
-            elif venue:
-                venue = normalize_formal_venue(settings, venue)
+            venue = None if refresh_metadata else normalize_venue_for_storage(settings, record.venue)
             # 非 refresh 模式下，已有完整 metadata 的记录不重复打外部 API。
             has_existing_metadata = bool(record.title and authors and effective_year(year))
             if not refresh_metadata and has_existing_metadata:
@@ -150,42 +136,6 @@ def run_ingest(
             report(f"[ingest] [{ordinal}/{total}] Title: {title}")
             if not (authors and effective_year(year)):
                 # 三个外部源都有速率限制，闭包让每个源各自维护上次请求时间。
-                def wait_before_semantic_scholar_lookup() -> None:
-                    nonlocal last_semantic_scholar_request
-                    elapsed = time.monotonic() - last_semantic_scholar_request
-                    if last_semantic_scholar_request and elapsed < settings.semantic_scholar_delay_seconds:
-                        wait_seconds = settings.semantic_scholar_delay_seconds - elapsed
-                        report(f"[ingest] [{ordinal}/{total}] Waiting {wait_seconds:.1f}s before Semantic Scholar lookup")
-                        time.sleep(wait_seconds)
-
-                def mark_semantic_scholar_lookup() -> None:
-                    nonlocal last_semantic_scholar_request
-                    last_semantic_scholar_request = time.monotonic()
-
-                def wait_before_arxiv_lookup() -> None:
-                    nonlocal last_arxiv_request
-                    elapsed = time.monotonic() - last_arxiv_request
-                    if last_arxiv_request and elapsed < settings.arxiv_delay_seconds:
-                        wait_seconds = settings.arxiv_delay_seconds - elapsed
-                        report(f"[ingest] [{ordinal}/{total}] Waiting {wait_seconds:.1f}s before ArXiv lookup")
-                        time.sleep(wait_seconds)
-
-                def mark_arxiv_lookup() -> None:
-                    nonlocal last_arxiv_request
-                    last_arxiv_request = time.monotonic()
-
-                def wait_before_dblp_lookup() -> None:
-                    nonlocal last_dblp_request
-                    elapsed = time.monotonic() - last_dblp_request
-                    if last_dblp_request and elapsed < settings.dblp_delay_seconds:
-                        wait_seconds = settings.dblp_delay_seconds - elapsed
-                        report(f"[ingest] [{ordinal}/{total}] Waiting {wait_seconds:.1f}s before DBLP lookup")
-                        time.sleep(wait_seconds)
-
-                def mark_dblp_lookup() -> None:
-                    nonlocal last_dblp_request
-                    last_dblp_request = time.monotonic()
-
                 match = lookup_metadata(
                     title,
                     dblp,
@@ -196,19 +146,18 @@ def run_ingest(
                     semantic_scholar_retry_delay_seconds=settings.semantic_scholar_delay_seconds,
                     arxiv_retry_delay_seconds=settings.arxiv_delay_seconds,
                     report=lambda message: report(f"[ingest] [{ordinal}/{total}] {message}"),
-                    before_dblp_lookup=wait_before_dblp_lookup,
-                    after_dblp_lookup=mark_dblp_lookup,
-                    before_semantic_scholar_lookup=wait_before_semantic_scholar_lookup,
-                    after_semantic_scholar_lookup=mark_semantic_scholar_lookup,
-                    before_arxiv_lookup=wait_before_arxiv_lookup,
-                    after_arxiv_lookup=mark_arxiv_lookup,
+                    last_lookup_at=last_lookup_at,
                 )
                 if match:
                     title = match.title
                     authors = clean_author_list(match.authors)
                     year = match.year
-                    venue = normalize_formal_venue(settings, match.venue)
-                    report(f"[ingest] [{ordinal}/{total}] {match.source} matched: {format_year_for_log(year)}, venue={venue or 'unresolved'}")
+                    venue = normalize_venue_for_storage(settings, match.venue)
+                    report(
+                        f"[ingest] [{ordinal}/{total}] Metadata matched: "
+                        f"preprint={year.get('preprint_year')}, publish={year.get('publish_year')}, "
+                        f"venue={venue or 'unresolved'}"
+                    )
                 else:
                     summary.unresolved.append(f"{pdf_path.name}: ArXiv/DBLP/Semantic Scholar exact title not found")
                     report(f"[ingest] [{ordinal}/{total}] Metadata unresolved after ArXiv, DBLP, and Semantic Scholar")
@@ -275,7 +224,7 @@ def run_ingest(
             record.paper_data_path = str(result.paper_data_dir)
             record.message = "; ".join(result.warnings) if result.warnings else None
             upsert_paper_annotation(annotations, file_hash, result.title)
-            manifest.upsert(record)
+            manifest.records[record.file_hash] = record
             for warning in result.warnings:
                 report(f"[ingest] [{ordinal}/{total}] Warning: {warning}")
             summary.processed.append(
@@ -290,7 +239,7 @@ def run_ingest(
             record.status = "error"
             record.pdf_path = str(pdf_path)
             record.message = str(exc)
-            manifest.upsert(record)
+            manifest.records[record.file_hash] = record
             report(f"[ingest] [{ordinal}/{total}] ERROR: {exc}")
 
     report(f"[ingest] Saving manifest: {settings.manifest_path}")
@@ -319,42 +268,45 @@ def lookup_metadata(
     dblp_retry_delay_seconds: float = 1.0,
     semantic_scholar_retry_delay_seconds: float = 1.0,
     arxiv_retry_delay_seconds: float = 1.0,
-    report: Reporter = noop_reporter,
-    before_dblp_lookup: Callable[[], None] | None = None,
-    after_dblp_lookup: Callable[[], None] | None = None,
-    before_semantic_scholar_lookup: Callable[[], None] | None = None,
-    after_semantic_scholar_lookup: Callable[[], None] | None = None,
-    before_arxiv_lookup: Callable[[], None] | None = None,
-    after_arxiv_lookup: Callable[[], None] | None = None,
+    report: Reporter | None = None,
+    last_lookup_at: dict[str, float] | None = None,
 ) -> MetadataMatch | None:
     """按 ArXiv -> DBLP -> Semantic Scholar 的顺序补全论文元数据。"""
-    arxiv_title: str | None = None
-    arxiv_authors: list[str] = []
+    emit = report or (lambda _: None)
     preprint_year: int | None = None
 
-    report("Querying ArXiv")
-    if before_arxiv_lookup:
-        before_arxiv_lookup()
+    def wait_for_lookup(source_key: str, label: str, delay_seconds: float) -> None:
+        if last_lookup_at is None:
+            return
+        previous = last_lookup_at.get(source_key, 0.0)
+        elapsed = time.monotonic() - previous
+        if previous and elapsed < delay_seconds:
+            wait_seconds = delay_seconds - elapsed
+            emit(f"Waiting {wait_seconds:.1f}s before {label} lookup")
+            time.sleep(wait_seconds)
+
+    def mark_lookup(source_key: str) -> None:
+        if last_lookup_at is not None:
+            last_lookup_at[source_key] = time.monotonic()
+
+    emit("Querying ArXiv")
+    wait_for_lookup("arxiv", "ArXiv", arxiv_retry_delay_seconds)
     try:
         arxiv_match = arxiv.lookup_exact_title(title, retry_delay_seconds=arxiv_retry_delay_seconds)
     except Exception as exc:
         arxiv_match = None
-        report(f"ArXiv lookup failed: {exc}")
+        emit(f"ArXiv lookup failed: {exc}")
     finally:
-        if after_arxiv_lookup:
-            after_arxiv_lookup()
+        mark_lookup("arxiv")
     if arxiv_match:
-        arxiv_title = arxiv_match.title
-        arxiv_authors = clean_author_list(arxiv_match.authors)
         preprint_year = arxiv_match.preprint_year
-        report(f"ArXiv matched preprint year: {preprint_year}")
+        emit(f"ArXiv matched preprint year: {preprint_year}")
     else:
-        report("ArXiv exact title not found")
+        emit("ArXiv exact title not found")
 
     # DBLP 通常能给出更稳定的正式会议/期刊信息，所以优先于 Semantic Scholar。
-    report("Querying DBLP")
-    if before_dblp_lookup:
-        before_dblp_lookup()
+    emit("Querying DBLP")
+    wait_for_lookup("dblp", "DBLP", dblp_retry_delay_seconds)
     try:
         dblp_match = dblp.lookup_exact_title(
             title,
@@ -363,10 +315,9 @@ def lookup_metadata(
         )
     except Exception as exc:
         dblp_match = None
-        report(f"DBLP lookup failed: {exc}")
+        emit(f"DBLP lookup failed: {exc}")
     finally:
-        if after_dblp_lookup:
-            after_dblp_lookup()
+        mark_lookup("dblp")
     if dblp_match and is_formal_venue(dblp_match.venue):
         # ArXiv 提供预印本年份，正式发表信息优先来自 DBLP。
         return MetadataMatch(
@@ -374,14 +325,12 @@ def lookup_metadata(
             authors=clean_author_list(dblp_match.authors),
             year={"preprint_year": preprint_year, "publish_year": formal_publish_year(dblp_match.year, dblp_match.venue)},
             venue=dblp_match.venue,
-            source="ArXiv+DBLP" if preprint_year else "DBLP",
         )
     if dblp_match:
-        report(f"DBLP matched non-formal venue; ignored: {dblp_match.venue}")
+        emit(f"DBLP matched non-formal venue; ignored: {dblp_match.venue}")
 
-    report("DBLP exact title not found; querying Semantic Scholar")
-    if before_semantic_scholar_lookup:
-        before_semantic_scholar_lookup()
+    emit("DBLP exact title not found; querying Semantic Scholar")
+    wait_for_lookup("semantic_scholar", "Semantic Scholar", semantic_scholar_retry_delay_seconds)
     try:
         semantic_scholar_match = semantic_scholar.lookup_exact_title(
             title,
@@ -389,10 +338,9 @@ def lookup_metadata(
         )
     except Exception as exc:
         semantic_scholar_match = None
-        report(f"Semantic Scholar lookup failed: {exc}")
+        emit(f"Semantic Scholar lookup failed: {exc}")
     finally:
-        if after_semantic_scholar_lookup:
-            after_semantic_scholar_lookup()
+        mark_lookup("semantic_scholar")
     if semantic_scholar_match and is_formal_venue(semantic_scholar_match.venue):
         # DBLP 没有正式 venue 时，再用 Semantic Scholar 的正式发表信息兜底。
         return MetadataMatch(
@@ -403,22 +351,20 @@ def lookup_metadata(
                 "publish_year": formal_publish_year(semantic_scholar_match.year, semantic_scholar_match.venue),
             },
             venue=semantic_scholar_match.venue,
-            source="ArXiv+Semantic Scholar" if preprint_year else "Semantic Scholar",
         )
     if semantic_scholar_match:
-        report(f"Semantic Scholar matched non-formal venue; ignored: {semantic_scholar_match.venue}")
+        emit(f"Semantic Scholar matched non-formal venue; ignored: {semantic_scholar_match.venue}")
 
     if arxiv_match:
         # 没有正式发表命中时，仍保留 ArXiv 的 title/authors/preprint_year。
         return MetadataMatch(
-            title=arxiv_title or title,
-            authors=clean_author_list(arxiv_authors),
+            title=arxiv_match.title,
+            authors=clean_author_list(arxiv_match.authors),
             year={"preprint_year": preprint_year, "publish_year": None},
-            venue=None,
-            source="ArXiv",
+            venue=arxiv_match.venue,
         )
 
-    report("Formal metadata exact title not found")
+    emit("Formal metadata exact title not found")
     return None
 
 
@@ -427,21 +373,11 @@ def is_formal_venue(venue: str | None) -> bool:
     return bool(normalized) and normalized not in {"arxiv", "corr"}
 
 
-def normalize_formal_venue(settings: Settings, venue: str | None) -> str | None:
-    if not is_formal_venue(venue):
-        return None
-    return normalize_venue_for_storage(settings, venue)
-
-
 def formal_publish_year(source_year: int, venue: str | None) -> int:
     venue_years = re.findall(r"\b(?:19|20)\d{2}\b", str(venue or ""))
     if venue_years:
         return int(venue_years[0])
     return source_year
-
-
-def format_year_for_log(year: dict[str, int | None]) -> str:
-    return f"preprint={year.get('preprint_year')}, publish={year.get('publish_year')}"
 
 
 def scan_pdfs(pdf_dir: Path, summary: IngestSummary) -> dict[str, Path]:
@@ -499,26 +435,27 @@ def ensure_mineru_output(
     file_hash: str,
     output_index: dict[str, Path],
     summary: IngestSummary,
-    report: Reporter = noop_reporter,
+    report: Reporter | None = None,
 ) -> Path:
     """优先复用 manifest/归档/现有输出，最后才调用 MinerU API。"""
+    emit = report or (lambda _: None)
     if record.mineru_output_path and Path(record.mineru_output_path).exists():
         summary.reused.append(pdf_path.name)
-        report("[ingest] Reusing MinerU output from manifest")
+        emit("[ingest] Reusing MinerU output from manifest")
         return Path(record.mineru_output_path)
     if record.archived_mineru_output_path and Path(record.archived_mineru_output_path).exists():
         src = Path(record.archived_mineru_output_path)
         dst = settings.mineru_output_dir / src.name
         replace_dir(src, dst)
         summary.restored.append(pdf_path.name)
-        report("[ingest] Restored MinerU output from archive")
+        emit("[ingest] Restored MinerU output from archive")
         return dst
     inferred_title = infer_title_from_pdf_name(pdf_path)
     inferred_norm = normalize_text(inferred_title)
     for key, directory in output_index.items():
         if inferred_norm and (inferred_norm == key or inferred_norm in key or key in inferred_norm):
             summary.reused.append(pdf_path.name)
-            report("[ingest] Reusing existing MinerU output by title match")
+            emit("[ingest] Reusing existing MinerU output by title match")
             return directory
     if not settings.mineru_api_key:
         raise MinerUError("MINERU_API_KEY is missing in .env and no reusable MinerU output was found")
@@ -530,7 +467,7 @@ def ensure_mineru_output(
         settings.mineru_model_version,
         settings.mineru_language,
     )
-    report("[ingest] Calling MinerU API")
+    emit("[ingest] Calling MinerU API")
     return client.parse_local_pdf(pdf_path, output_dir, file_hash)
 
 

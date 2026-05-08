@@ -4,16 +4,16 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..config import Settings
-from .routes.common.errors import PlanParseError
-from .routes.content.planner import plan_body
-from .routes.content.router import build_content_decision
-from .routes.metadata.planner import plan_metadata
-from .routes.metadata.router import build_metadata_decision
-from .routes.reference.planner import plan_reference
-from .routes.reference.router import build_reference_decision
-from .routes.top.parser import TopParserClient
-from .route import RouteDecision
+from paper_rag.config import Settings
+from paper_rag.retrieval.routes.common.errors import PlanParseError
+from paper_rag.retrieval.routes.content.planner import plan_body
+from paper_rag.retrieval.routes.content.router import build_content_decision
+from paper_rag.retrieval.routes.metadata.planner import plan_metadata
+from paper_rag.retrieval.routes.metadata.router import build_metadata_decision
+from paper_rag.retrieval.routes.reference.planner import plan_reference
+from paper_rag.retrieval.routes.reference.router import build_reference_decision
+from paper_rag.retrieval.routes.top.parser import TopParserClient
+from paper_rag.retrieval.route import RouteDecision
 
 
 def run_plan(

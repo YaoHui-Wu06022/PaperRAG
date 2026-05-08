@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from .errors import PlanParseError
+from paper_rag.retrieval.routes.common.errors import PlanParseError
 
 
 PAPER_FILTER_FIELDS = {"author", "year", "venue", "title", "paper"}

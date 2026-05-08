@@ -3,14 +3,13 @@ from __future__ import annotations
 import argparse
 import json
 
-from ..config import Settings
-from ..retrieval.dense.service import run_index, run_search
-from ..retrieval.plan import run_plan
+from paper_rag.config import Settings
+from paper_rag.retrieval.dense.service import run_index, run_search
+from paper_rag.retrieval.plan import run_plan
 
 
 def add_retrieval_parsers(subparsers: argparse._SubParsersAction) -> None:
     index = subparsers.add_parser("index", help="Build the Milvus vector index from paper_data chunks")
-    index.add_argument("--quiet", action="store_true", help="Only print the final summary")
     index.set_defaults(handler=handle_index)
 
     search = subparsers.add_parser("search", help="Search indexed paper chunks")
@@ -26,8 +25,7 @@ def add_retrieval_parsers(subparsers: argparse._SubParsersAction) -> None:
 
 def handle_index(args: argparse.Namespace) -> int:
     settings = Settings.load(args.project_root)
-    reporter = (lambda _: None) if args.quiet else print
-    summary = run_index(settings, reporter=reporter)
+    summary = run_index(settings, reporter=print)
     print(f"Indexed {summary.chunk_count} chunk(s) into {summary.collection_name}.")
     return 0
 

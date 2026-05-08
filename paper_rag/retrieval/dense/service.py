@@ -6,9 +6,9 @@ from dataclasses import dataclass
 
 from paper_rag.config import Settings
 from paper_rag.corpus.chunks import ChunkDocument, load_chunk_documents
-from .cache import CachedEmbedder, EmbeddingCache
-from .embedding import EmbeddingClient
-from .milvus_store import MilvusStore, SearchResult
+from paper_rag.retrieval.dense.cache import CachedEmbedder, EmbeddingCache
+from paper_rag.retrieval.dense.embedding import EmbeddingClient
+from paper_rag.retrieval.dense.milvus_store import MilvusStore, SearchResult
 
 
 @dataclass(frozen=True)

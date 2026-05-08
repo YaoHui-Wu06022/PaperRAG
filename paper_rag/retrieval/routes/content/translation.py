@@ -14,7 +14,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
-from ....config import Settings
+from paper_rag.config import Settings
 from paper_rag.corpus.utils import dedupe_bm25_text
 
 

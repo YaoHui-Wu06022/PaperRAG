@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from ....config import Settings
-from ..common.parser_client import PlanParserClient
-from .prompt import metadata_parser_system_prompt
-from .schema import validate_metadata_parse
+from paper_rag.config import Settings
+from paper_rag.retrieval.routes.common.parser_client import PlanParserClient
+from paper_rag.retrieval.routes.metadata.prompt import metadata_parser_system_prompt
+from paper_rag.retrieval.routes.metadata.schema import validate_metadata_parse
 
 
 class MetadataParserClient:

@@ -27,6 +27,7 @@ class ArxivSelectionTests(unittest.TestCase):
         )
         self.assertIsNotNone(match)
         self.assertEqual(match.preprint_year, 2017)
+        self.assertEqual(match.venue, "ArXiv")
         self.assertEqual(match.authors[:2], ["Ashish Vaswani", "Noam Shazeer"])
 
     def test_rejects_non_exact_title(self) -> None:

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from paper_rag.corpus.chunks import ChunkDocument
-from .dense.milvus_store import SearchResult
+from paper_rag.retrieval.dense.milvus_store import SearchResult
 
 
 RRF_K = 60

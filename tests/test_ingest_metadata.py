@@ -119,7 +119,6 @@ class IngestMetadataLookupTests(unittest.TestCase):
         )
 
         self.assertIsNotNone(match)
-        self.assertEqual(match.source, "ArXiv+DBLP")
         self.assertEqual(match.year, {"preprint_year": 2024, "publish_year": 2025})
         self.assertEqual(match.venue, "ICML")
         self.assertEqual(match.authors, ["Formal Author"])
@@ -144,7 +143,6 @@ class IngestMetadataLookupTests(unittest.TestCase):
         match = lookup_metadata("Long Short-Term Memory", MatchClient(Match("Long Short-Term Memory", ["A"], 1997, "CoRR")), semantic, arxiv)
 
         self.assertIsNotNone(match)
-        self.assertEqual(match.source, "Semantic Scholar")
         self.assertTrue(arxiv.called)
         self.assertEqual(match.year, {"preprint_year": None, "publish_year": 1997})
 
@@ -159,7 +157,6 @@ class IngestMetadataLookupTests(unittest.TestCase):
         match = lookup_metadata("Squeeze-and-Excitation Networks", MissingClient(), semantic, MissingClient())
 
         self.assertIsNotNone(match)
-        self.assertEqual(match.source, "Semantic Scholar")
         self.assertEqual(match.year, {"preprint_year": None, "publish_year": 2018})
         self.assertEqual(match.venue, "2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition")
 
@@ -174,7 +171,6 @@ class IngestMetadataLookupTests(unittest.TestCase):
         match = lookup_metadata("Squeeze-and-Excitation Networks", dblp, MissingClient(), MissingClient())
 
         self.assertIsNotNone(match)
-        self.assertEqual(match.source, "DBLP")
         self.assertEqual(match.year, {"preprint_year": None, "publish_year": 2018})
 
     def test_formal_publish_year_falls_back_to_source_year_without_venue_year(self) -> None:
@@ -185,12 +181,11 @@ class IngestMetadataLookupTests(unittest.TestCase):
         self.assertIsNotNone(match)
         self.assertEqual(match.year, {"preprint_year": None, "publish_year": 1997})
 
-    def test_arxiv_only_match_has_no_venue(self) -> None:
+    def test_arxiv_only_match_uses_arxiv_venue(self) -> None:
         match = lookup_metadata("Some Paper", MissingClient(), MissingClient(), MatchClient(Match("Some Paper", ["A"], 2024, "ArXiv")))
         self.assertIsNotNone(match)
-        self.assertEqual(match.source, "ArXiv")
         self.assertEqual(match.year, {"preprint_year": 2024, "publish_year": None})
-        self.assertIsNone(match.venue)
+        self.assertEqual(match.venue, "ArXiv")
 
     def test_uses_source_delay_as_retry_delay(self) -> None:
         dblp = MissingClient()
@@ -324,7 +319,6 @@ class IngestMetadataLookupTests(unittest.TestCase):
                 authors=["A. Author"],
                 year={"preprint_year": None, "publish_year": 2018},
                 venue="2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition",
-                source="Semantic Scholar",
             )
             with (
                 patch("paper_rag.ingest.pipeline.ensure_mineru_output", return_value=mineru_dir),
@@ -342,6 +336,53 @@ class IngestMetadataLookupTests(unittest.TestCase):
             self.assertEqual(manifest_record["venue"], "CVPR")
             self.assertEqual(metadata_record["venue"], "CVPR")
             self.assertEqual(manifest_record["year"], {"preprint_year": None, "publish_year": 2018})
+
+    def test_run_ingest_writes_arxiv_only_venue(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            settings = Settings.load(root)
+            settings.pdf_dir.mkdir(parents=True)
+            settings.mineru_output_dir.mkdir(parents=True)
+            settings.paper_data_dir.mkdir(parents=True)
+            pdf_path = settings.pdf_dir / "Some_Paper.pdf"
+            pdf_path.write_bytes(b"%PDF-1.4 fake")
+            mineru_dir = settings.mineru_output_dir / "Some_Paper"
+            mineru_dir.mkdir()
+
+            def fake_extract(_mineru_output, paper_data_dir, metadata, **_kwargs):
+                paper_data_dir.mkdir(parents=True)
+                (paper_data_dir / "metadata.json").write_text(json.dumps(metadata, ensure_ascii=False), encoding="utf-8")
+                return SimpleNamespace(
+                    title=metadata["title"],
+                    paper_data_dir=paper_data_dir,
+                    block_count=1,
+                    reference_count=0,
+                    chunk_count=0,
+                    warnings=[],
+                )
+
+            match = MetadataMatch(
+                title="Some Paper",
+                authors=["A. Author"],
+                year={"preprint_year": 2024, "publish_year": None},
+                venue="ArXiv",
+            )
+            with (
+                patch("paper_rag.ingest.pipeline.ensure_mineru_output", return_value=mineru_dir),
+                patch("paper_rag.ingest.pipeline.title_from_output", return_value="Some Paper"),
+                patch("paper_rag.ingest.pipeline.lookup_metadata", return_value=match),
+                patch("paper_rag.ingest.pipeline.rename_pdf_if_needed", return_value=pdf_path),
+                patch("paper_rag.ingest.pipeline.rename_mineru_output_if_needed", return_value=mineru_dir),
+                patch("paper_rag.ingest.pipeline.extract_paper_data", side_effect=fake_extract),
+                patch("paper_rag.ingest.pipeline.build_citation_graph", return_value=SimpleNamespace(node_count=1, edge_count=0, path=settings.paper_data_dir / "citation_graph.json")),
+            ):
+                run_ingest(settings)
+
+            manifest_record = json.loads(settings.manifest_path.read_text(encoding="utf-8").splitlines()[0])
+            metadata_record = json.loads((Path(manifest_record["paper_data_path"]) / "metadata.json").read_text(encoding="utf-8"))
+            self.assertEqual(manifest_record["venue"], "ArXiv")
+            self.assertEqual(metadata_record["venue"], "ArXiv")
+            self.assertEqual(manifest_record["year"], {"preprint_year": 2024, "publish_year": None})
 
     def test_run_ingest_normalizes_existing_manifest_venue_without_refresh(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

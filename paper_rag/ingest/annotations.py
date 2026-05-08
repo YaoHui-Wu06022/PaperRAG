@@ -3,19 +3,14 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from typing import Any
 
-from ..config import Settings
-
-
-def paper_annotations_path(settings: Settings) -> Path:
-    return settings.data_dir / "paper_annotations.json"
+from paper_rag.config import Settings
 
 
 def load_paper_annotations(settings: Settings) -> dict[str, dict[str, Any]]:
     """读取并规范化 paper_annotations.json。"""
-    path = paper_annotations_path(settings)
+    path = settings.data_dir / "paper_annotations.json"
     if not path.exists():
         return {}
     payload = json.loads(path.read_text(encoding="utf-8"))
@@ -61,7 +56,7 @@ def upsert_paper_annotation(annotations: dict[str, dict[str, Any]], file_hash: s
 
 
 def save_paper_annotations(settings: Settings, annotations: dict[str, dict[str, Any]]) -> None:
-    path = paper_annotations_path(settings)
+    path = settings.data_dir / "paper_annotations.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     ordered = {
         key: annotations[key]

@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from paper_rag.ingest.extract import extract_paper_data
+from paper_rag.ingest.extract import extract_paper_data, group_chunk_blocks
 from paper_rag.utils import normalize_text
 
 
@@ -79,7 +79,7 @@ class ExtractPaperDataTests(unittest.TestCase):
         )
         self.assertTrue(any(block["region"] == "abstract" for block in blocks))
         self.assertTrue(any(block["region"] == "appendix" for block in blocks))
-        self.assertFalse(any(chunk["region"] == "appendix" for chunk in chunks))
+        self.assertTrue(any(chunk["region"] == "appendix" for chunk in chunks))
         self.assertGreater(len(refs), 40)
 
     def test_wen_paragraph_abstract_is_detected(self) -> None:
@@ -107,7 +107,31 @@ class ExtractPaperDataTests(unittest.TestCase):
         self.assertEqual(len(refs), 48)
         self.assertTrue(any(block["region"] == "appendix" for block in blocks))
         self.assertTrue(any("Task #2: Next Sentence Prediction" in block["text"] for block in blocks))
-        self.assertFalse(any(chunk["region"] == "appendix" for chunk in chunks))
+        self.assertTrue(any(chunk["region"] == "appendix" for chunk in chunks))
+        self.assertTrue(any("Task #2: Next Sentence Prediction" in chunk["text"] for chunk in chunks))
+
+    def test_appendix_titles_split_chunk_groups_except_list_like_titles(self) -> None:
+        blocks = [
+            {"order": 1, "region": "body", "section_id": "sec_1", "type": "paragraph", "text": "body"},
+            {"order": 2, "region": "appendix", "section_id": "sec_appendix", "type": "title", "text": "Appendix"},
+            {"order": 3, "region": "appendix", "section_id": "sec_appendix", "type": "title", "text": "A Details"},
+            {"order": 4, "region": "appendix", "section_id": "sec_appendix", "type": "paragraph", "text": "details"},
+            {"order": 5, "region": "appendix", "section_id": "sec_appendix", "type": "title", "text": "• Batch size"},
+            {"order": 6, "region": "appendix", "section_id": "sec_appendix", "type": "paragraph", "text": "batch"},
+            {"order": 7, "region": "appendix", "section_id": "sec_appendix", "type": "title", "text": "B Results"},
+            {"order": 8, "region": "appendix", "section_id": "sec_appendix", "type": "paragraph", "text": "results"},
+        ]
+
+        group_texts = [[block["text"] for block in group] for group in group_chunk_blocks(blocks)]
+
+        self.assertEqual(
+            group_texts,
+            [
+                ["body"],
+                ["Appendix", "A Details", "details", "• Batch size", "batch"],
+                ["B Results", "results"],
+            ],
+        )
 
     def test_attention_toc_has_numbered_tree(self) -> None:
         _, data, blocks, refs, chunks = self.extract_sample(

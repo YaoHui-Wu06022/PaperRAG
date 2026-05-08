@@ -6,7 +6,7 @@ import json
 import re
 from typing import Any
 
-from ..config import Settings
+from paper_rag.config import Settings
 
 
 def load_venue_aliases(settings: Settings) -> list[dict[str, Any]]:
@@ -43,10 +43,11 @@ def display_venue(settings: Settings, venue: Any) -> str:
 def expand_venue_query_terms(settings: Settings, values: list[str]) -> list[str]:
     """检索时把用户给出的 venue 展开成 canonical/display/aliases 候选。"""
     expanded: list[str] = []
+    aliases = load_venue_aliases(settings)
     for value in values:
         value_key = venue_key(value)
         matched = False
-        for entry in load_venue_aliases(settings):
+        for entry in aliases:
             term_keys = [venue_key(term) for term in venue_entry_terms(entry)]
             if value_key and value_key in term_keys:
                 expanded.extend(venue_entry_terms(entry))
@@ -64,7 +65,8 @@ def expand_venue_record_terms(settings: Settings, venue: Any) -> list[str]:
         return []
     text_key = venue_key(text)
     expanded = [text]
-    for entry in load_venue_aliases(settings):
+    aliases = load_venue_aliases(settings)
+    for entry in aliases:
         for candidate in venue_entry_terms(entry):
             if venue_keys_match(text_key, venue_key(candidate)):
                 expanded.extend(venue_entry_terms(entry))

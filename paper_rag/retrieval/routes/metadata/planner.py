@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from ....config import Settings
+from paper_rag.config import Settings
 from paper_rag.corpus.records import dedupe_paper_records
 from paper_rag.corpus.scope import combined_semantic, records_for_scope
-from ...evidence import build_metadata_evidence
-from ...route import RouteDecision
+from paper_rag.retrieval.evidence import build_metadata_evidence
+from paper_rag.retrieval.route import RouteDecision
 
 
 def plan_metadata(

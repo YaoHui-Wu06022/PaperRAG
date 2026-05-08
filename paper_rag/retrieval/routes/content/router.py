@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from copy import deepcopy
 
-from ....config import Settings
-from ..common.errors import PlanParseError
+from paper_rag.config import Settings
+from paper_rag.retrieval.routes.common.errors import PlanParseError
 from paper_rag.corpus.aliases import dedupe_alias_matches
 from paper_rag.corpus.records import merge_paper_records
 from paper_rag.corpus.resolver import resolve_parser_scope, resolve_year_filter_values
-from ...route import RouteDecision
-from .parser import ContentParserClient
+from paper_rag.retrieval.route import RouteDecision
+from paper_rag.retrieval.routes.content.parser import ContentParserClient
 
 
 def build_content_decision(

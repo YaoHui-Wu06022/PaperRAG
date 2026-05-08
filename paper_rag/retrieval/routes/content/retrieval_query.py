@@ -5,11 +5,11 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from ....config import Settings
+from paper_rag.config import Settings
 from paper_rag.corpus.utils import value_to_text_list
 from paper_rag.corpus.utils import dedupe_text
-from ...route import RouteDecision
-from .translation import KeywordTranslatorProtocol, translate_bm25_terms
+from paper_rag.retrieval.route import RouteDecision
+from paper_rag.retrieval.routes.content.translation import KeywordTranslatorProtocol, translate_bm25_terms
 
 
 QUERY_STOP_PHRASES = (

@@ -3,8 +3,8 @@ from __future__ import annotations
 import argparse
 import json
 
-from ..answer import run_ask
-from ..config import Settings
+from paper_rag.answer import run_ask
+from paper_rag.config import Settings
 
 
 def add_ask_parser(subparsers: argparse._SubParsersAction) -> None:

@@ -6,7 +6,7 @@ import math
 from dataclasses import dataclass
 from typing import Any
 
-from ..chunk_fusion import RRF_K
+from paper_rag.retrieval.chunk_fusion import RRF_K
 from paper_rag.corpus.chunks import ChunkDocument
 from paper_rag.corpus.utils import normalize_bm25_token
 

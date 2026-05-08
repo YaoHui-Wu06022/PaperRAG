@@ -8,9 +8,9 @@ from typing import Any
 from paper_rag.config import Settings
 from paper_rag.ingest.manifest import normalize_year
 from paper_rag.ingest.venues import normalize_venue_for_storage
-from .aliases import AliasMatch, dedupe_alias_matches, resolve_paper_queries
-from .records import merge_paper_records
-from .utils import is_negative_infinity, is_positive_infinity, normalize_interval_bound_text, value_to_text_list
+from paper_rag.corpus.aliases import AliasMatch, dedupe_alias_matches, resolve_paper_queries
+from paper_rag.corpus.records import merge_paper_records
+from paper_rag.corpus.utils import is_negative_infinity, is_positive_infinity, normalize_interval_bound_text, value_to_text_list
 
 
 def resolve_parser_scope(

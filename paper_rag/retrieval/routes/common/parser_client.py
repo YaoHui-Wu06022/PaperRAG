@@ -8,8 +8,8 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
-from ....config import Settings
-from .errors import PlanParseError
+from paper_rag.config import Settings
+from paper_rag.retrieval.routes.common.errors import PlanParseError
 
 
 @dataclass(frozen=True)

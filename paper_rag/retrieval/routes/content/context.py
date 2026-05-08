@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ....config import Settings
+from paper_rag.config import Settings
 from paper_rag.corpus.chunks import ChunkDocument, read_jsonl
 
 

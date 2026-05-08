@@ -10,8 +10,8 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
-from ...utils import normalize_text
-from .retry import urlopen_with_retry
+from paper_rag.utils import normalize_text
+from paper_rag.ingest.metadata_sources.retry import urlopen_with_retry
 
 
 @dataclass(frozen=True)

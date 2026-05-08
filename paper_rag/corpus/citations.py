@@ -6,7 +6,7 @@ import json
 from typing import Any
 
 from paper_rag.config import Settings
-from .filters import compare_text
+from paper_rag.corpus.filters import compare_text
 
 
 def load_citation_graph(settings: Settings) -> dict[str, Any] | None:

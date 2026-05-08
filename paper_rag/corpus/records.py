@@ -8,7 +8,7 @@ from typing import Any
 
 from paper_rag.config import Settings
 from paper_rag.ingest.manifest import Manifest, ManifestRecord
-from .utils import dedupe_by, normalize_bm25_token
+from paper_rag.corpus.utils import dedupe_by, normalize_bm25_token
 
 
 def load_active_manifest_records(settings: Settings) -> list[ManifestRecord]:
