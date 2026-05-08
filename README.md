@@ -702,7 +702,7 @@ query
 
 ### Metadata
 
-metadata route 回答论文元字段问题，例如作者、年份、venue、标题、数量、存在性。
+metadata route 回答论文元字段问题，例如作者、年份、venue、标题、数量、存在性
 
 典型问题：
 
@@ -725,7 +725,14 @@ metadata parser 输出的核心字段：
 }
 ```
 
-执行时，`router.py` 把 parser result 规范化成 `RouteDecision`，`planner.py` 通过 `paper_scope_records.records_for_scope()` 查询 manifest records，再构建 metadata evidence。
+- `lookup` 必须有 `return_fields`
+- `list` 没有 `return_fields` 时默认返回 `title`
+- `count/exists/null` 要求 `return_fields=[]`
+- `group_mode="and"` 只允许用于 `exists`
+
+执行时，`router.py` 把 parser result 规范化成 `RouteDecision`
+
+通过查询 manifest records，再构建 metadata evidence
 
 ### Reference
 
