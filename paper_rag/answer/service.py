@@ -19,10 +19,11 @@ def run_ask(
     debug: bool = False,
     planner=run_plan,
     answer_client: AnswerClientProtocol | None = None,
+    corpus: CorpusContext | None = None,
 ) -> dict[str, Any]:
     """执行 ask：先 plan；metadata/reference 本地回答，content 再调用 LLM。"""
     timings = Timings(debug)
-    corpus = CorpusContext(settings)
+    corpus = corpus or CorpusContext(settings)
     with timings.measure("plan"):
         if planner is run_plan:
             evidence = planner(settings, query, debug=debug, corpus=corpus, timings=timings)

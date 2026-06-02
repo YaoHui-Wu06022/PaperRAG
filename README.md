@@ -63,8 +63,10 @@ python -m paper_rag ingest --refresh
 python -m paper_rag index
 python -m paper_rag search "residual connection" --top-k 5
 python -m paper_rag plan "ResNet 的结构是什么？" --debug
-python -m paper_rag ask "BERT 的预训练任务是什么？" --debug --json
+python -m paper_rag ask "BERT 的预训练任务是什么？" --evidence
+python -m paper_rag chat --evidence
 python -m paper_rag probe evidence --debug "ResNet 的结构是什么？"
+python -m pytest -q
 ```
 
 命令职责：
@@ -77,7 +79,15 @@ python -m paper_rag probe evidence --debug "ResNet 的结构是什么？"
 | `search` | 直接执行 Dense chunk 搜索，不经过路由和 scope planner |
 | `plan` | 输出路由、检索计划和 evidence |
 | `ask` | 执行完整问答 |
+| `ask --evidence` | 在答案后附带最多 5 条证据来源，便于快速判断结果是否可靠 |
+| `ask --debug` | 输出包含完整 evidence、parser 中间态和耗时的 payload，用于排查 |
+| `chat` | 在同一进程中连续执行独立问答，并复用会话内的本地语料对象 |
+| `chat --mode plan` | 连续输出检索计划和 evidence，不调用回答模型 |
 | `probe` | 统一调试 parser、planner、prompt 和正文召回 |
+
+`chat` 中每一轮仍然是独立问题，不会自动承接上一轮语义。因此应该输入完整问题，不要直接追问“它的作者是谁？”
+
+`chat` 会复用已加载的 manifest、chunks、citation graph 和 BM25 index。执行 `ingest` 或 `index` 后，需要退出并重新启动 `chat` 才能加载最新状态。
 
 ### 2.2 配置分组
 
@@ -842,9 +852,38 @@ data/index/bm25_chunks.json
 
 因此优化的是重复 tokenize 成本，不改变 BM25 的 scope 语义
 
+更具体地说，BM25 的正文文档来自：
+
+```text
+chunk.text + chunk.embedding_text
+```
+
+如果每次查询都对所有 chunk 重新分词，再统计词频和文档长度，在线查询会重复做大量确定性工作
+
+项目在 `BM25CorpusIndex` 初始化时一次性准备：
+
+- `doc_tokens`：每个 chunk 的分词结果
+- `doc_lengths`：每个 chunk 的 token 数
+- `term_freqs`：每个 chunk 内部的词频表
+
+查询阶段只需要：
+
+1. 对 query 分词
+2. 根据当前 `allowed_chunk_ids` 计算 scope 内的 `avgdl` 和 `df`
+3. 复用预计算的 `doc_lengths / term_freqs` 逐文档打分
+4. 排序返回 top-k
+
+这里刻意没有把 `df(t)`、`avgdl` 固化进全库索引，因为 content route 会先收缩论文范围
+
+BM25 的 IDF 应该按当前 scope 计算：
+
+```text
+idf(t) = log(1 + (N - df(t) + 0.5) / (df(t) + 0.5))
+```
+
 ### 9.3 CorpusContext 懒加载复用
 
-单次 `plan/ask` 内共享一个 `CorpusContext`
+单次 `plan/ask` 内共享一个 `CorpusContext`；`chat` 会在多轮独立问题之间继续复用同一个实例
 
 它按需加载并复用：
 
@@ -856,6 +895,20 @@ data/index/bm25_chunks.json
 - BM25 index
 
 收益是避免同一次请求在 router、scope resolver 和 planner 之间重复读取 JSON / JSONL
+
+它解决的是请求内重复 IO 和重复构建对象的问题。例如一次 content `ask` 可能会经历：
+
+```text
+top parser -> content parser -> scope resolver -> content planner -> BM25 / Dense -> answer
+```
+
+这些阶段都可能需要访问 manifest、annotations、chunks 或 BM25 index
+
+`CorpusContext` 把这些数据做成按需加载的属性：第一次访问时读取文件或构建索引，后续阶段直接复用内存中的对象
+
+这个缓存是单次命令或 `chat` 会话级的，不是全局常驻缓存
+
+好处是不会跨请求持有过期状态，也不会在只问 metadata 时提前加载 chunks / BM25
 
 ### 9.4 Embedding Cache
 
@@ -880,6 +933,17 @@ query_embedding_cache.jsonl    # query embedding
 - 新增缓存不需要重写整个文件
 - 查询阶段不需要加载更大的 chunk embedding cache
 
+拆成两个缓存是因为两类向量的生命周期不同：
+
+- `embedding_cache.jsonl` 面向离线建库，缓存 chunk embedding，规模随论文库增长
+- `query_embedding_cache.jsonl` 面向在线查询，缓存用户问题的 embedding，规模更小、访问更频繁
+
+两者的 cache key 都包含 `model + dimensions + text`，因此更换 embedding 模型或维度后不会误用旧向量
+
+写入采用 append-only JSONL，只把新增或更新的 key 追加到文件末尾，避免每次新增 query embedding 都重写整个缓存文件
+
+“Embedding 分离缓存”不是改变召回算法，而是减少重复调用 embedding 服务，并降低在线查询时加载无关 chunk cache 的开销
+
 ### 9.5 主要耗时
 
 完整 content `ask` 仍然会调用：
@@ -896,7 +960,7 @@ query_embedding_cache.jsonl    # query embedding
 排查时使用：
 
 ```powershell
-python -m paper_rag ask "ResNet 的结构是什么？" --debug --json
+python -m paper_rag ask "ResNet 的结构是什么？" --debug
 ```
 
 重点查看：
@@ -943,37 +1007,90 @@ debug.timings_ms
 ### 11.1 项目主线
 
 1. 为什么不是所有问题都走向量检索？
+
+   因为问题类型不同，最可靠的数据源也不同
+
+   年份、作者、venue 这类问题应该查 `manifest`；
+
+   引用关系应该查 `citation_graph`；
+
+   只有需要理解正文内容时才进入 Dense / BM25 检索
+
+   全部走向量检索会增加成本，也容易让 references、Appendix 或无关 chunk 污染答案
+
 2. `metadata / reference / content` 三条 route 分别查什么？
+
 3. 为什么 top parser 和 domain parser 要分两层？
+
+   每个 parser 的 schema 更小，prompt 更专一，错误更容易定位，也避免 metadata/reference 问题被过早拉进正文检索链路
+
 4. `plan` 和 `ask` 的区别是什么？
 
 ### 11.2 数据结构
 
 1. `manifest.jsonl` 的作用是什么？
+
+   `manifest.jsonl` 是本地论文库的事实表，以 PDF hash 为稳定主键，记录论文状态、标题、作者、年份、venue、PDF 路径和 paper_data 路径
+
+   它不依赖向量库，因此可以独立回答 metadata 问题，也能作为重建索引和 citation graph 的入口
+
 2. 为什么同时保留 `blocks.jsonl` 和 `chunks.jsonl`？
+
+   `blocks.jsonl` 保留接近版面的结构信息，包括页码、section、bbox、表格、图片和原始 block 顺序，适合追溯和 debug
+
+   `chunks.jsonl` 面向检索，按 region/section 切分成适合 Dense 和 BM25 的文本单元
+
+   二者分开后，可以调整 chunk 策略而不破坏原始结构定位
+
 3. references 为什么不进入正文 chunk？
+
+   references 是结构化引用证据，不是正文语义内容
+
+   混进正文 chunk 会污染 Dense 和 BM25，尤其是模型名、作者名、年份等关键词容易被参考文献列表误召回
+
 4. Appendix 为什么保留但不参与正文召回？
+
 5. 哪些数据是事实表，哪些是可删除的派生索引？
+
+   事实表包括 `manifest.jsonl`、单篇 `metadata.json`、`blocks.jsonl`、`chunks.jsonl`、`references.jsonl`，以及人工维护的 annotations/venue aliases
+
+   派生索引包括 Milvus collection、`data/index/bm25_chunks.json`、embedding cache、query embedding cache 和 citation graph，这些派生数据可以删除后从结构化层重建
 
 ### 11.3 检索
 
 1. 为什么 Dense query 和 BM25 query 要分开？
+
 2. Dense 检索使用什么相似度？
+
+   使用 COSINE，相当于比较 query embedding 和 chunk embedding 的方向相似度
+
+   分数越高，说明语义越接近，但它不保证关键词完全命中，所以需要 BM25 补充专有名词、缩写和公式类匹配
+
 3. BM25 中 $df(t)$、$N$ 和 $\operatorname{avgdl}$ 是按全库还是按 scope 计算？
+
 4. 为什么 Dense 和 BM25 不直接加权求和？
+
+   因为 Dense score 和 BM25 score 不在同一个数值空间，直接加权需要额外校准，而且不同模型、不同语料规模下分数尺度会变
+
+   项目用 RRF 按排名融合，避免手工归一化，同时让两路都命中的 chunk 自然排前
+
 5. RRF 的作用是什么？
+
+   RRF 把多个排序列表融合成一个候选列表，排名越靠前贡献越大
+
+   同一个 chunk 如果同时被 Dense 和 BM25 命中，分数会累加，因此更容易进入最终 evidence
+
 6. Dense 服务失败后为什么还能部分工作？
+
 7. 手写 scope-aware BM25：如何统计 `df`、处理 `avgdl`，并分析单次查询复杂度？
 
-### 11.4 工程设计
+8. `CorpusContext` 解决了什么重复开销？
 
-1. BM25 派生索引优化了什么？为什么不改变排序语义？
-2. 为什么 chunk embedding cache 和 query embedding cache 要拆开？
-3. `CorpusContext` 解决了什么重复开销？
-4. 非 debug 模式为什么不扩展 blocks？
-5. 如何避免旧 Dense 索引中的 Appendix 泄漏？
+   `CorpusContext` 在一次 `plan/ask` 内懒加载并复用 manifest records、annotations、chunks、content chunks、citation graph 和 BM25 index
 
-### 11.5 继续改进
+   它避免 router、scope resolver、planner 之间重复读取 JSON/JSONL 和重复构建索引
+
+### 11.6 继续改进
 
 可以继续讨论：
 
@@ -986,7 +1103,7 @@ debug.timings_ms
 
 ## 12. 测试与验证
 
-建议测试覆盖：
+当前测试覆盖：
 
 - 入库与元数据补全
 - MinerU 解析输出处理
@@ -1001,9 +1118,12 @@ debug.timings_ms
 常用验证：
 
 ```powershell
+python -m pytest -q
 python -m compileall -q paper_rag
 python -m paper_rag index
 python -m paper_rag plan "ResNet 的结构是什么？" --debug
-python -m paper_rag ask "BERT 的预训练任务是什么？" --debug --json
+python -m paper_rag ask "BERT 的预训练任务是什么？" --evidence
+python -m paper_rag ask "ResNet 的结构是什么？" --debug
+python -m paper_rag chat --evidence
 python -m paper_rag probe evidence --debug "ResNet 的结构是什么？"
 ```

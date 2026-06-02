@@ -1,0 +1,137 @@
+import json
+from dataclasses import dataclass
+from pathlib import Path
+
+from paper_rag.corpus.chunks import filter_content_retrieval_chunks, load_chunk_documents
+from paper_rag.ingest.extract import extract_paper_data
+from paper_rag.ingest.manifest import Manifest, ManifestRecord, effective_year
+from paper_rag.ingest.pipeline import lookup_metadata
+
+
+@dataclass
+class MetadataSourceHit:
+    title: str
+    authors: list[str]
+    year: int
+    venue: str | None = None
+    preprint_year: int | None = None
+
+
+class FakeArxiv:
+    def lookup_exact_title(self, title: str, *, retry_delay_seconds: float):
+        return MetadataSourceHit(
+            title=title,
+            authors=["Alice Smith 0001"],
+            year=2015,
+            venue="arXiv",
+            preprint_year=2015,
+        )
+
+
+class FakeDblp:
+    def lookup_exact_title(self, title: str, *, limit: int, retry_delay_seconds: float):
+        return MetadataSourceHit(
+            title=title,
+            authors=["Alice Smith 0001", "Bob Lee"],
+            year=2016,
+            venue="CVPR 2016",
+        )
+
+
+class FakeSemanticScholar:
+    def lookup_exact_title(self, title: str, *, retry_delay_seconds: float):
+        raise AssertionError("DBLP formal venue should stop Semantic Scholar fallback")
+
+
+def test_manifest_roundtrip_and_metadata_lookup_prefers_formal_venue(settings):
+    record = ManifestRecord(
+        file_hash="hash-a",
+        status="active",
+        title="Deep Residual Learning for Image Recognition",
+        year=2015,
+    )
+    manifest = Manifest(settings.manifest_path)
+    manifest.records[record.file_hash] = record
+    manifest.save()
+
+    loaded = Manifest.load(settings.manifest_path).records["hash-a"]
+    assert loaded.year == {"preprint_year": None, "publish_year": 2015}
+    assert effective_year(loaded.year) == 2015
+
+    match = lookup_metadata(
+        "Deep Residual Learning for Image Recognition",
+        FakeDblp(),
+        FakeSemanticScholar(),
+        FakeArxiv(),
+    )
+    assert match is not None
+    assert match.year == {"preprint_year": 2015, "publish_year": 2016}
+    assert match.authors == ["Alice Smith", "Bob Lee"]
+    assert match.venue == "CVPR 2016"
+
+
+def test_extract_mineru_output_splits_blocks_chunks_references_and_appendix(settings, tmp_path: Path):
+    mineru_dir = tmp_path / "mineru"
+    mineru_dir.mkdir()
+    content = [[
+        title("A Tiny Paper"),
+        title("Abstract"),
+        paragraph("We introduce residual connections for optimization."),
+        title("1 Introduction"),
+        paragraph("Residual connections ease training of deep networks."),
+        title("Appendix"),
+        paragraph("Extra ablation details live in the appendix."),
+        title("References"),
+        reference_list("[1] He K. Deep Residual Learning for Image Recognition. 2016."),
+    ]]
+    (mineru_dir / "content_list_v2.json").write_text(json.dumps(content, ensure_ascii=False), encoding="utf-8")
+
+    result = extract_paper_data(
+        mineru_dir,
+        settings.paper_data_dir / "tiny_paper",
+        {
+            "title": "A Tiny Paper",
+            "author": ["Alice Smith"],
+            "year": {"preprint_year": None, "publish_year": 2020},
+            "venue": "UnitTest",
+            "pdf_path": "tiny.pdf",
+        },
+        chunk_target_chars=80,
+        chunk_overlap_chars=10,
+    )
+
+    assert result.block_count >= 3
+    assert result.reference_count == 1
+    references = read_jsonl(result.references_path)
+    assert references[0]["raw_text"].startswith("[1] He K.")
+
+    chunks = read_jsonl(result.chunks_path)
+    regions = {chunk["region"] for chunk in chunks}
+    assert {"abstract", "body", "appendix"} <= regions
+    assert all("Deep Residual Learning" not in chunk["text"] for chunk in chunks)
+
+    loaded_chunks = load_chunk_documents(settings.paper_data_dir)
+    content_chunks = filter_content_retrieval_chunks(loaded_chunks)
+    assert {chunk.region for chunk in content_chunks} == {"abstract", "body"}
+
+
+def title(text: str) -> dict:
+    return {"type": "title", "content": {"title_content": [{"content": text}]}}
+
+
+def paragraph(text: str) -> dict:
+    return {"type": "paragraph", "content": {"paragraph_content": [{"content": text}]}}
+
+
+def reference_list(text: str) -> dict:
+    return {
+        "type": "list",
+        "content": {
+            "list_type": "reference_list",
+            "list_items": [{"item_content": [{"content": text}]}],
+        },
+    }
+
+
+def read_jsonl(path: Path) -> list[dict]:
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
