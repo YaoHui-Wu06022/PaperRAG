@@ -1,1024 +1,558 @@
 # Paper_RAG
 
-## 项目目标
+## 1. 项目定位
 
-核心目标是把本地 PDF 论文库整理成可重建、可检索、可追溯的结构化知识库，并在此基础上提供面向论文问题的 RAG 能力
+Paper_RAG 是一个面向本地论文库的结构化 RAG 项目
 
-设计原则：
+它不只是把 PDF 切块后塞进向量库，而是先把论文整理成可追溯的结构化数据，再根据问题类型选择不同执行路径：
 
-- 原始 PDF、MinerU 原始输出、项目内部结构化数据分层保存
-- 入库阶段沉淀稳定索引：`manifest`、`metadata`、`toc`、`blocks`、`chunks`、`references`、`citation_graph`、`annotations`
-- 检索阶段先做语义路由和论文范围解析，再进入 `metadata`、`reference`、`content` 三条执行链路
-- 对外 evidence 只保留回答组织需要的信息，内部路径、hash、raw records、raw chunks 等调试信息只在 `--debug` 下输出
-- metadata/reference 尽量使用本地确定性回答，content 使用检索证据交给回答 LLM 生成最终答案
+- 元数据问题：查本地 `manifest`
+- 引用关系问题：查本地 `citation_graph`
+- 正文内容问题：先缩小论文范围，再做 Dense + BM25 混合召回，最后交给回答 LLM
 
-## 快速开始
+项目解决的核心问题是：
 
-### 运行依赖
+1. 如何把 PDF 论文稳定地转换成可重建的数据资产
+2. 如何区分元数据、引用关系和正文问题，避免所有问题都盲目走向量检索
+3. 如何先限定论文范围，再在正文 chunk 内检索
+4. 如何结合 Dense 的语义能力和 BM25 的关键词精确匹配能力
+5. 如何保留可调试证据，并在外部服务失败时给出可解释降级
 
-- Python `>=3.10`
-- Milvus 或 Zilliz collection
-- OpenAI-compatible embedding 服务
-- OpenAI-compatible chat completions 服务，用于 plan parser 和 content answer composer
-- MinerU API，仅在新增或重新解析 PDF 时需要
+### 1.1 项目简介
 
-安装项目并创建本地配置：
+面向本地论文库的结构化 RAG 系统，入库阶段先通过 MinerU 解析 PDF，再沉淀 metadata、目录、blocks、chunks、references 和本地 citation graph
 
-```powershell
-python -m pip install -e .
-Copy-Item .env.example .env
-```
+查询阶段不是直接全库向量检索，而是先用 LLM parser 判断问题属于元数据、引用关系还是正文内容
 
-按需填写 `.env`。不同命令依赖的外部服务不同：
+元数据和引用关系尽量用本地结构化数据确定性回答；正文问题先解析论文 scope，再对命中论文的 abstract/body chunks 做 Dense 和 BM25 混合召回，用 RRF 融合后交给回答 LLM。系统还做了 embedding cache、BM25 预分词索引、CorpusContext 懒加载复用和失败降级
 
-| 命令 | 必需配置 | 说明 |
-|---|---|---|
-| `ingest` | `MINERU_API_KEY` | 新增或重新解析 PDF 时调用 MinerU；元数据补全还会访问 ArXiv、DBLP 和 Semantic Scholar |
-| `index` | `EMBEDDING_*`、`MILVUS_*` | 重建正文 dense collection，并同步写出 BM25 派生索引 |
-| `search` | `EMBEDDING_*`、`MILVUS_*` | 直接执行 dense 搜索，不经过 planner |
-| `plan` | `PLAN_PARSER_*` | content 路由建议同时配置 embedding 和 Milvus；dense 不可用时会退回 BM25 |
-| `ask` | `PLAN_PARSER_*` | content 路由还需要 `ANSWER_*`；未填写时默认复用 `PLAN_PARSER_*` |
+### 1.2 为什么不采用最简单的 RAG
 
-BM25 关键词翻译配置是可选项。未配置腾讯云或阿里云翻译时，系统保留原关键词并继续执行 dense/BM25 检索。
-
-### 首次运行
-
-仓库已包含示例 `paper_data` 时，可以直接构建索引：
-
-```powershell
-python -m paper_rag index
-python -m paper_rag ask "ResNet 的结构是什么？"
-```
-
-新增或替换 `data/pdf/` 中的论文后，先重新入库，再重建索引：
-
-```powershell
-python -m paper_rag ingest
-python -m paper_rag index
-```
-
-### 索引边界
-
-`paper_data/*/chunks.jsonl` 会保留 `abstract`、`body` 和 `appendix` 等区域，便于追溯原始结构。content 召回和 `paper-rag index` 只使用 `abstract/body` chunks，避免附录内容污染正文答案。
-
-修改 PDF、重新执行 `ingest`、调整正文区域规则或切换 embedding 配置后，都应重新执行：
-
-```powershell
-python -m paper_rag index
-```
-
-### 冒烟验证
-
-```powershell
-python -m paper_rag search "residual connection" --top-k 5
-python -m paper_rag plan "ResNet 的结构是什么？" --debug
-python -m paper_rag ask "BERT 的预训练任务是什么？" --debug --json
-python -m pytest -q
-```
-
-`--debug` 会在 evidence 中附加 `timings_ms`、parser 结果、scope records 和 content block 扩展结果，适合定位路由、召回与外部服务耗时。
-
-## 仓库结构与模块说明
+最简单的做法是：
 
 ```text
-RAG_project/
-├─ pyproject.toml                    # Python 包配置，声明 paper-rag CLI 入口
-├─ README.md                         # 当前技术文档
-├─ PLAN.md                           # 阶段性设计记录，README 不依赖该文件
-├─ .env.example                      # 环境变量模板
-├─ data/                             # 本地论文数据与派生索引
-├─ tests/                            # unittest 测试
-└─ paper_rag/                        # 核心 Python 包
+PDF -> 文本切块 -> 向量库 -> top-k -> LLM
 ```
 
-### 本地数据目录
+这个项目没有直接采用该方案，原因是：
+
+- “BERT 是哪一年发表的？”不需要正文检索
+- “哪些论文引用了 ResNet？”应该查引用图，而不是让 LLM 猜
+- “ResNet 的结构是什么？”才需要正文召回
+- 参考文献列表和 Appendix 容易污染正文召回
+- 用户指定论文、年份或 venue 后，应该先做结构化过滤，再做语义检索
+
+因此项目的主线是：
 
 ```text
-data/
-├─ pdf/                              # 输入 PDF
-├─ manifest.jsonl                    # 本地论文清单与状态
-├─ index/                            # 检索派生索引与 embedding 缓存
-│  ├─ embedding_cache.jsonl          # chunk embedding 缓存
-│  ├─ query_embedding_cache.jsonl    # query embedding 缓存
-│  └─ bm25_chunks.json               # BM25 corpus 派生索引
-├─ mineru_output/                    # MinerU 原始解析结果
-├─ paper_data/                       # 项目内部结构化论文数据
-│  ├─ <paper_id>/
-│  │  ├─ metadata.json               # 单篇论文元数据
-│  │  ├─ toc.json                    # 目录树
-│  │  ├─ blocks.jsonl                # 清洗后的结构化 block
-│  │  ├─ chunks.jsonl                # 面向检索的 chunk
-│  │  └─ references.jsonl            # 参考文献原始证据
-│  └─ citation_graph.json            # 本地库内引用图
-├─ paper_annotations.json            # 人工维护的论文 aliases/tags
-└─ venue_aliases.json                # venue canonical/display/aliases 规则
+结构化入库
+  -> 问题路由
+  -> 论文 scope 解析
+  -> 按路由执行
+  -> 压缩 evidence
+  -> 本地回答或 LLM 回答
 ```
 
-### 基础入口与配置
+## 2. 快速运行
 
-这一组只负责包入口、配置读取和跨子系统通用工具，不承载具体业务流程
-
-```text
-paper_rag/
-├─ __init__.py                       # 包标记
-├─ __main__.py                       # `python -m paper_rag` 入口
-├─ config.py                         # Settings 与 .env 读取、路径解析、默认配置
-└─ utils.py                          # 根包通用工具：hash、slug、文本规范化、安全目录替换
-```
-
-### CLI 命令层
-
-`cli/` 把命令行参数转换成内部服务调用，尽量保持薄封装，业务逻辑放回 `ingest/`、`retrieval/` 和 `answer/`
-
-```text
-paper_rag/cli/
-├─ __init__.py                       # CLI 子包标记
-├─ main.py                           # CLI 总入口与全局参数
-├─ ingest.py                         # `paper-rag ingest`
-├─ retrieval.py                      # `paper-rag index/search/plan`
-└─ ask.py                            # `paper-rag ask`
-```
-
-### 入库处理
-
-`ingest/` 负责把 PDF 和 MinerU 输出变成项目内部稳定数据结构
-
-```text
-paper_rag/ingest/
-├─ __init__.py                       # 入库子包标记
-├─ pipeline.py                       # 全量 PDF 同步、metadata 补全、extract、citation graph 主流程
-├─ manifest.py                       # ManifestRecord/Manifest、状态管理、年份规范化
-├─ mineru.py                         # MinerU API 上传、轮询、下载、解压
-├─ extract.py                        # 从 MinerU 输出构建 metadata/toc/blocks/references/chunks
-├─ citation_graph.py                 # 从 references 构建本地库内 citation graph
-├─ annotations.py                    # paper_annotations.json 生成、规范化与保存
-└─ metadata_sources/
-   ├─ __init__.py                    # 元数据检索子包标记
-   ├─ arxiv.py                       # ArXiv 精确标题查询与 preprint metadata
-   ├─ dblp.py                        # DBLP 精确标题查询与正式发表 metadata
-   ├─ semantic_scholar.py            # Semantic Scholar 正式发表信息补充
-   └─ retry.py                       # 外部元数据请求的重试、退避、延迟
-```
-
-### 本地论文库访问层
-
-`corpus/` 是检索和回答读取本地结构化数据的统一入口，负责本地数据文件加载成可查询的记录和范围
-
-```text
-paper_rag/corpus/
-├─ __init__.py                       # 本地结构化论文库访问层
-├─ aliases.py                        # 论文 mention/alias 到 canonical paper 的匹配
-├─ annotation_index.py               # paper_annotations.json 的统一扫描入口
-├─ chunks.py                         # chunks.jsonl 加载、ChunkDocument、按论文过滤
-├─ citation_index.py                 # paper follow/prior 基于 citation graph 的范围解析
-├─ context.py                        # 单次 plan/ask 内复用 manifest、chunks、BM25、citation graph
-├─ filters.py                        # 单条 manifest record 的 filter 布尔匹配
-├─ records.py                        # active manifest 读取、论文匹配、record key、去重
-├─ scope.py                          # semantic + filters + groups 到候选论文 records
-├─ resolver.py                       # parser 输出中的 paper/year/venue scope 标准化
-├─ venues.py                         # venue canonical/display/aliases 规范化与匹配
-└─ utils.py                          # token 规范化、去重、interval boundary、value 展平
-```
-
-### 检索与路由
-
-`retrieval/` 负责把自然语言问题拆成可执行计划，并产出回答层消费的 evidence
-
-包含三块：顶层编排、dense/BM25 召回、metadata/reference/content 三条语义路由
-
-```text
-paper_rag/retrieval/
-├─ __init__.py                       # 检索子包标记
-├─ plan.py                           # 编排：top route -> domain router -> planner
-├─ route.py                          # RouteDecision，保存 parser 归一化后的路由状态
-├─ evidence.py                       # composer/debug evidence 统一构建
-├─ evidence_probe.py                 # evidence 调试入口
-├─ timing.py                         # debug 模式下的分阶段耗时记录
-└─ chunk_fusion.py                   # dense/BM25 命中结果的 RRF 融合
-```
-
-```text
-paper_rag/retrieval/dense/
-├─ __init__.py                       # dense 子包标记
-├─ service.py                        # index/search/content dense search 高层服务；index 时写 Milvus 和 BM25 派生索引
-├─ embedding.py                      # OpenAI-compatible embedding HTTP 客户端
-├─ cache.py                          # embedding 本地缓存
-└─ milvus_store.py                   # Milvus/Zilliz collection 重建、插入、向量搜索
-
-paper_rag/retrieval/sparse/
-├─ __init__.py                       # sparse 子包标记
-└─ bm25.py                           # BM25CorpusIndex、派生索引读写、英文 token 规范化、多 query RRF 合并
-```
-
-`paper-rag index`由 `retrieval/dense/service.py` 编排：
-
-- 读取 `paper_data/*/chunks.jsonl`
-- 生成或复用 chunk embedding cache
-- 重建 Milvus/Zilliz dense collection
-- 同步写出 `data/index/bm25_chunks.json`
-
-```text
-paper_rag/retrieval/routes/
-├─ __init__.py                       # route 子包标记
-├─ common/                           # route 共用 parser client、prompt 片段、schema/filter/group 校验
-├─ top/                              # 顶层路由，只分类 metadata/reference/content/unclear
-├─ metadata/                         # 元数据问题：parser/router/planner/prompt probe
-├─ reference/                        # 引用关系问题：source/object scope 修正与 citation graph 查询
-└─ content/                          # 内容问题：检索 query 构建、dense/BM25/fusion、上下文扩展
-```
-
-### 答案生成
-
-`answer/` 消费 retrieval evidence
-
-metadata/reference 优先走本地确定性回答，content route 使用 LLM 基于证据生成自然语言答案
-
-```text
-paper_rag/answer/
-├─ __init__.py                       # answer 包入口，re-export run_ask
-├─ service.py                        # ask 薄编排：plan evidence -> local/LLM answer
-├─ local.py                          # metadata/reference 的本地确定性回答
-└─ llm.py                            # content route 的回答 LLM 客户端与 prompt 组装
-```
-
-## 配置
-
-复制 `.env.example` 为 `.env`
-
-主要分为几类配置
-
-- `MinerU`
-- `metadata`查询
-- `Plan parser`
-- `Answer composer`
-- `Content retrieval`
-- `Dense index`
-- `BM25 keyword translation`
-
-`ANSWER_*` 默认可复用 `PLAN_PARSER_*`
-
-Embedding 缓存分两类：
-
-- `EMBEDDING_CACHE_PATH`：chunk embedding 缓存，主要由 `index` 使用
-- `QUERY_EMBEDDING_CACHE_PATH`：query embedding 缓存，主要由 `search/plan/ask` 使用
-
-BM25 派生索引固定写入 `data/index/bm25_chunks.json`
-
-它由 `index` 命令生成，可以删除后重建，不属于 `paper_data` 数据 schema
-
-## CLI
-
-`paper-rag` 和 `python -m paper_rag` 走同一套入口
-
-命令形式：
-
-```text
-paper-rag [--project-root PROJECT_ROOT] <command>
-```
-
-- `--project-root PROJECT_ROOT`：指定项目根目录，用来定位 `.env`、`data/` 和索引配置
-
-子命令：
-
-```text
-paper-rag ingest [--refresh]
-paper-rag index
-paper-rag search [--top-k TOP_K] <query>
-paper-rag plan [--debug] <query>
-paper-rag ask [--debug] [--json] <query>
-```
-
-### ingest
-
-同步 `data/pdf/` 到本地结构化论文库
-
-主要职责：
-
-- 维护 `manifest.jsonl`
-- 调用或复用 MinerU 输出
-- 生成 `metadata.json`、`toc.json`、`blocks.jsonl`、`chunks.jsonl`、`references.jsonl`
-- 更新 `citation_graph.json` 和 `paper_annotations.json`
-
-参数：
-
-- `--refresh`：重新刷新 active PDF 的外部 metadata
-
-### index
-
-根据 `data/paper_data/*/chunks.jsonl` 重建 dense 向量索引和 BM25 派生索引
-
-只处理向量库，不重新解析 PDF，不刷新 metadata
-
-主要职责：
-
-- 新增或刷新论文后同步 dense index
-- 生成 BM25 派生索引
-- 修改 embedding 或 Milvus/Zilliz collection 配置后重建索引
-
-### search
-
-直接对 dense 向量索引做 chunk 搜索
-
-参数：
-
-- `<query>`：检索文本
-- `--top-k TOP_K`：返回 chunk 数量，默认 `5`
-
-输出包含 score、论文标题、section path、页码、chunk id 和 snippet
-
-不经过 planner，不做 metadata/reference/content 路由
-
-### plan
-
-把用户问题解析成检索计划，并输出 answer 层消费的 evidence JSON
-
-执行过程：
-
-```text
-query
-  -> top route parser
-  -> metadata/reference/content router
-  -> route planner
-  -> evidence
-```
-
-参数：
-
-- `<query>`：要规划的问题
-- `--debug`：输出中间状态和 `timings_ms`
-
-### ask
-
-面向最终使用的问答入口
-
-回答策略：
-
-- `metadata`：本地确定性回答
-- `reference`：本地 citation graph 回答
-- `content`：基于 evidence 调用回答 LLM
-- `unclear` 或无证据：返回降级说明
-
-参数：
-
-- `<query>`：要回答的问题
-- `--debug`：在 answer payload 中保留 planner debug 信息和 `timings_ms`
-- `--json`：输出完整 JSON payload，不传时只打印 `answer`
-
-常用命令示例：
+### 2.1 常用命令
 
 ```powershell
 python -m paper_rag ingest
 python -m paper_rag ingest --refresh
 python -m paper_rag index
 python -m paper_rag search "residual connection" --top-k 5
-python -m paper_rag plan "ResNet 的模型结构是什么？" --debug
-python -m paper_rag ask "发表在 CVPR 上的论文有哪些？"
-python -m paper_rag ask "哪些论文引用了 ResNet？" --json
+python -m paper_rag plan "ResNet 的结构是什么？" --debug
+python -m paper_rag ask "BERT 的预训练任务是什么？" --debug --json
+python -m pytest -q
 ```
 
-## 命名规范
+命令职责：
 
-### 函数命名
+| 命令 | 作用 |
+|---|---|
+| `ingest` | 扫描 PDF，复用或调用 MinerU，生成结构化论文数据，并重建引用图 |
+| `ingest --refresh` | 重新查询 active 论文的外部元数据 |
+| `index` | 为 `abstract/body` chunks 重建 Dense collection 和 BM25 派生索引 |
+| `search` | 直接执行 Dense chunk 搜索，不经过路由和 scope planner |
+| `plan` | 输出路由、检索计划和 evidence |
+| `ask` | 执行完整问答 |
 
-- `validate_*`：schema / parser payload 校验，失败抛 `PlanParseError`
-- `normalize_*`：规范化内容，不读本地数据，不做检索
-- `resolve_*`：把 parser mention、别名、venue、年份边界解析成内部稳定值
-- `match_*`：布尔匹配
-- `filter_*`：集合过滤并返回子集
-- `search_*`：执行检索
-- `build_*`：组装结构化对象或 evidence
-- `to_evidence_*`：内部对象裁剪成对外 evidence 字段
-- `dedupe_*`：按明确 key 保序去重
+### 2.2 配置分组
 
-### 变量命名
+`.env.example` 中的配置可以按用途：
 
-- `query`：用户原始问题
-- `retrieval_query`：content route 内部检索输入对象
-- `dense_query`：embedding 使用的中文自然语言语义句
-- `bm25_queries`：BM25 使用的关键词候选列表
-- `route`：顶层语义路由，取值为 `metadata`、`reference`、`content`、`unclear`
-- `parser_result`：LLM parser 的结构化输出
-- `RouteDecision`：parser 结果经本地规范化后的不可变决策对象
-- `paper_semantic / filters / paper_groups / group_mode`：单侧论文范围结构
-- `source_*` / `object_*`：reference route 的两侧 scope，规范为 `source --cites--> object`
-- `context_units`：content 检索命中 chunk 后扩展出的上下文单元
-- `evidence`：planner 输出给 answer 层消费的压缩证据
+| 配置组 | 主要用途 |
+|---|---|
+| `MINERU_*` | PDF 解析 |
+| `PLAN_PARSER_*` | top parser 和 domain parser |
+| `ANSWER_*` | content 回答生成；为空时复用 `PLAN_PARSER_*` |
+| `EMBEDDING_*` | Dense 索引和 query embedding |
+| `MILVUS_*` | 向量库连接 |
+| `PLAN_*` | Dense、BM25、最终 evidence 的 top-k 与 debug block 窗口 |
+| `TENCENT_TRANSLATE_*` / `ALIYUN_TRANSLATE_*` | 为中文 BM25 关键词补充英文候选 |
 
-### 数据对象命名
+## 3. 总体架构
 
-- `paper`：论文
-- `record`：`manifest.jsonl` 中的论文记录
-- `block`：MinerU 清洗后的结构块
-- `chunk`：面向检索的文本窗口
-- `ChunkDocument`：chunk 的运行时检索对象
-- `BM25Document`：BM25 内部打分对象
-- 外层变量优先使用 `chunk_documents`，避免用 `documents` 混淆论文和检索窗口
-- scope 过滤参数使用 `allowed_chunk_ids`
-- README 中的 document 只作为 `ChunkDocument` / `BM25Document` 术语出现，不表示论文
+### 3.1 数据流
 
-## 本地数据处理
+```mermaid
+flowchart TD
+    PDF["data/pdf/*.pdf"] --> MinerU["MinerU 解析输出"]
+    MinerU --> Extract["结构化提取"]
+    Extract --> PaperData["metadata / toc / blocks / chunks / references"]
+    PaperData --> Graph["citation_graph.json"]
+    PaperData --> Index["Dense collection + BM25 派生索引"]
 
-### 数据导入
+    Query["用户问题"] --> Top["Top Parser"]
+    Top --> Metadata["metadata route"]
+    Top --> Reference["reference route"]
+    Top --> Content["content route"]
+    Top --> Unclear["unclear"]
 
-入库主流程：
+    Metadata --> Manifest["manifest 本地查询"]
+    Reference --> GraphQuery["citation graph 本地查询"]
+    Content --> Scope["论文 scope"]
+    Scope --> Dense["Dense"]
+    Scope --> BM25["BM25"]
+    Dense --> RRF["RRF 融合"]
+    BM25 --> RRF
+    RRF --> Evidence["compact evidence"]
 
-1. 扫描 `PDF_DIR`，默认是 `data/pdf/`
-2. 计算 PDF hash，用 `data/manifest.jsonl` 维护论文状态
-3. 对新增或需要刷新的 PDF 调用 MinerU，得到原始解析目录
-4. 从 MinerU 输出提取项目内部结构：`metadata`、`toc`、`blocks`、`chunks`、`references`
-5. 查询外部元数据源，补全 title、authors、year、venue
-6. 写回 `data/paper_data/<paper_id>/` 和 `manifest.jsonl`
-7. 更新 `paper_annotations.json`
-8. 全量同步末尾构建 `citation_graph.json`
-
-`manifest` 负责记录本地论文库的状态，包括 `active`、`deleted`、`duplicate`、`error` 等
-
-每条 active record 通常包含 `file_hash`、PDF 路径、title、authors、year、venue、paper_data_path
-
-### 元数据检索
-
-元数据补全位于 `paper_rag/ingest/metadata_sources/`
-
-以 MinerU 抽取出的标题作为锚点，用标题精确匹配去外部源补全论文 metadata，拒绝模糊匹配
-
-- `arxiv.py`：根据标题做 ArXiv 精确匹配，提供 preprint 信息
-
-  ```python
-  class ArxivMatch:
-      title: str
-      authors: list[str]
-      preprint_year: int
-      venue: str
-  ```
-
-- `dblp.py`：根据标题做 DBLP 精确匹配，提供正式发表信息
-
-  ```python
-  class DblpMatch:
-      title: str
-      authors: list[str]
-      year: int
-      venue: str
-  ```
-
-- `semantic_scholar.py`：补充正式发表信息
-
-  ```python
-  class SemanticScholarMatch:
-      title: str
-      authors: list[str]
-      year: int
-      venue: str
-  ```
-
-- `retry.py`：统一外部请求重试、延迟和 429/timeout 处理
-
-按 `ArXiv -> DBLP -> Semantic Scholar` 的顺序补全
-
-`publish_year`优先使用 venue 字符串中明确的四位年份，其次使用 DBLP/Semantic Scholar 返回的年份
-
-作者名在 ingest 合并层清洗，例如删除 DBLP 作者末尾的消歧编号：`Yu Qiao 0001 -> Yu Qiao`
-
-最终合并结果
-
-```python
-class MetadataMatch:
-    title: str
-    authors: list[str]
-    year: dict[str, int | None]
-    venue: str | None
+    Manifest --> Local["本地确定性回答"]
+    GraphQuery --> Local
+    Evidence --> LLM["回答 LLM"]
 ```
 
-### MinerU 识别与清洗
+### 3.2 代码模块
 
-`mineru.py` 封装 MinerU API 的上传、任务轮询、结果下载和解压
-
-`extract.py` 负责把 MinerU 的原始输出转换成项目内部稳定格式
-
-主要输入通常来自 MinerU 输出中的 `content_list_v2.json`
-
-清洗阶段会处理：
-
-- 页面级内容展平
-- 正文、标题、表格、图片等 block 文本抽取
-- HTML table 转半结构化文本
-- abstract、references、appendix、acknowledgement 等区域边界识别
-- 目录树 `toc.json` 构建
-- 原始 references 抽取到 `references.jsonl`
-
-MinerU 原始结果保留在 `data/mineru_output/`，项目内部数据写入 `data/paper_data/<paper_id>/`
-
-#### MinerU介绍
-
-MinerU框架
-
-- 预处理：使用 PyMuPDF 读取 PDF 文件，判断是否可解析、是否扫描、是否乱码、语言、页面尺寸
-- 内容解析：采用 PDF 文档提取算法库 `PDF-Extract-Kit`，将不同的识别器应用于不同的区域，得到页面的语义 block 边界
-- 后处理：根据第二阶段的输出，处理 bbox 包含/重叠，排序，删除无效区域
-- 格式转换：生成中间 JSON、Markdown、最终 JSON
-
-**预处理**
-
-解析页面元数据，包括语言类型、总页数、页面尺寸
-
-PDF 常见三类情况：
-
-- Born-digital PDF：原生 LaTeX/Word 生成，文字层存在，可以直接用 PyMuPDF 抽文本
-- 扫描 PDF：本质是图片，没有可靠文字层，需要启用 OCR
-- 乱码 PDF：有文字层，但复制出来是 CID/乱码，直接抽文本会污染后续分割，需要提前进行识别，后续使用OCR进行文字识别
-
-**内容解析**
-
-不是先读出所有文字再猜段落，而是先在页面图像上检测不同区域
-
-layout 标注类型包括标题、正文段落、图像、图像说明、表格、表说明、内联公式、公式标签和丢弃类型(页眉、页脚、页码和页注释)
-
-先得到每个区域的 `bbox` 和类别，再基于几何关系重建阅读顺序
-
-避免了直接 OCR 或直接抽 PDF 文本，公式变成乱码进而破坏句子、段落和 token 边界
-
-`PDF-Extract-Kit`提到把任务拆成 layout detection、formula detection、formula recognition、OCR、table recognition 等模块
-
-**后处理**
-
-把整页切成若干 region，每个 region 最多包含一栏，这样可以保证文本在每个 region 内逐行自上而下读取
-
-再根据 region 的位置关系排序，确定 PDF 中每个元素的阅读顺序
-
-#### 数据清洗
-
-总体流程如下
-
-```
-读取 MinerU JSON
-  -> 扁平化，把二维结构 page -> blocks 变成一维
-  -> 区域识别
-  -> 目录识别
-  -> 正文 block 输出
-  -> chunk 输出
-  -> reference 输出
-  -> 落盘
+```text
+paper_rag/
+├─ ingest/                 # PDF -> 结构化数据
+├─ corpus/                 # 本地语料访问、scope、alias、filter
+├─ retrieval/
+│  ├─ routes/              # top / metadata / reference / content
+│  ├─ dense/               # embedding cache、Milvus
+│  ├─ sparse/              # BM25
+│  ├─ plan.py              # 路由编排
+│  ├─ evidence.py          # evidence 压缩
+│  └─ chunk_fusion.py      # RRF
+├─ answer/                 # 本地回答与 LLM 回答
+├─ cli/                    # 命令行入口
+└─ config.py               # .env -> Settings
 ```
 
-特殊内容：
+### 3.3 数据分层
 
-- 图片本身不做OCR，只使用 caption 作为检索文本
-
-- 表格将识别出来的 HTML 转成半结构化文本
-
-  举例：
-
-  ```
-  Table: Results on ImageNet.
-  Columns: Method, Top-1, Top-5.
-  Row 1: Method = ResNet-50; Top-1 = 76.1; Top-5 = 92.9.
-  Row 2: Method = ViT-B; Top-1 = 81.8; Top-5 = 95.6.
-  ```
-
-**标题识别**
-
-1. 找所有 `type == "title"` 且有文本的 block
-2. 找 abstract marker
-3. 优先取 abstract 之前的第一个非特殊 title
-4. 找不到，就退回第一页 `page_header`
-
-**区域边界识别**
-
-1. `Abstract` 边界：找 title 型 abstract，如果没有找段落开头是`Abstract:`的 paragraph
-
-2. `References` 边界：找第一个 title 型 References
-
-3. `Appendix` 边界：兼容两种论文结构
-
-   ```
-   正文 -> Appendix -> References
-   正文 -> References -> Appendix
-   ```
-
-4. `Acknowledgement` 边界：识别在 references 前、abstract 后的，作为正文结束的边界之一
-
-5. `body` 边界：在摘要之后，references / appendix / acknowledgement 之前，找正文内容标题
-
-   如果有编号标题，优先取第一个带编号标题作为正文起点；否则退回第一个有效标题
-
-**区域判定**
-
-把每个 `FlatBlock` 标成
-
-```
-abstract
-body
-appendix
-reference
-None
+```text
+data/
+├─ pdf/                              # 原始 PDF
+├─ mineru_output/                    # MinerU 原始输出，可复用
+├─ manifest.jsonl                    # 本地论文事实表
+├─ paper_annotations.json            # 人工维护 aliases / tags
+├─ venue_aliases.json                # venue 规范化
+├─ paper_data/
+│  ├─ <paper_id>/
+│  │  ├─ metadata.json
+│  │  ├─ toc.json
+│  │  ├─ blocks.jsonl
+│  │  ├─ chunks.jsonl
+│  │  └─ references.jsonl
+│  └─ citation_graph.json
+└─ index/
+   ├─ embedding_cache.jsonl
+   ├─ query_embedding_cache.jsonl
+   └─ bm25_chunks.json
 ```
 
+| 层级 | 内容 | 是否可重建 |
+|---|---|---|
+| 原始层 | PDF、MinerU 输出 | MinerU 输出可复用，避免重复解析 |
+| 结构化层 | manifest、paper_data、citation graph | 可以从原始层重建 |
+| 派生索引层 | Milvus collection、BM25 tokens、embedding cache | 可以删除后重建 |
+
+## 4. 入库流程
+
+### 4.1 主流程
+
+`python -m paper_rag ingest`：
+
+1. 扫描 `data/pdf/*.pdf`
+2. 对 PDF 计算 SHA-256，按 hash 去重
+3. 用 `manifest.jsonl` 维护论文状态
+4. 优先复用已有 MinerU 输出；无法复用时才调用 MinerU API
+5. 从 MinerU 内容中抽取标题
+6. 用 ArXiv、DBLP、Semantic Scholar 补全元数据
+7. 生成 `metadata / toc / blocks / chunks / references`
+8. 更新 aliases，并全量重建本地 citation graph
+
+关键设计点：
+
+- `manifest` 是本地事实表，不依赖向量库
+- 单篇 `paper_data` 目录可以整体替换，避免旧数据残留
+- 删除 PDF 时，派生 `paper_data` 会移除，MinerU 输出会归档，便于恢复
+- 外部元数据按精确标题匹配，优先减少误配
+
+### 4.2 元数据补全
+
+外部元数据查询顺序：
+
+```text
+ArXiv -> DBLP -> Semantic Scholar
 ```
-abstract_start <= idx < abstract_end       -> abstract
-appendix_before_ref <= idx < references    -> appendix
-body_start <= idx < body_end               -> body
-idx >= appendix_after_ref                  -> appendix
-idx > references_start                     -> reference
-```
 
-**TOC 构建**
+| 来源 | 用途 |
+|---|---|
+| ArXiv | 获取预印本年份和作者 |
+| DBLP | 优先获取正式发表 venue 和年份 |
+| Semantic Scholar | DBLP 无正式 venue 时兜底 |
 
-从正文标题生成两套结构
+最终年份保留两种语义：
 
-```
-sections: 扁平 section 列表
-tree:     树形 toc
-```
-
-正文区域，如果整篇正文里存在编号标题，那么未编号标题会被跳过
-
-Appendix区域，创建一个整体 appendix section
-
-**References输出**
-
-只从 references 区域的 reference_list block 抽取原始引用证据
-
-抽出每条引用的 `raw_text`，输出格式是：
-
-```
+```json
 {
-    "reference_id": "ref_001",
-    "ref_index": 1,
-    "raw_text": "...",
-    "page": 12,
-    "source_block_id": "b000456"
+  "preprint_year": 2015,
+  "publish_year": 2016
 }
 ```
 
-支持两类编号格式 `[1]` / `(1)`
+这比只保留一个年份更适合回答“首次公开”和“正式发表”两类问题
 
-#### block生成
+### 4.3 结构保存
 
-生成最终的 `blocks.jsonl`，只保留后续检索和证据定位需要的字段
+同时保留 block 和 chunk
 
-```
-{
-    "block_id": "b000123",
-    "order": 57,
-    "region": "body",
-    "type": "paragraph",
-    "text": "...",
-    "page": 4,
-    "bbox": [...],
-    "section_id": "sec_2_1",
-    "section_path": ["2 Method", "2.1 Architecture"]
-}
-```
+`blocks.jsonl` 更接近论文结构，用于追溯页码、section、bbox、表格、图片和调试窗口
 
-### Chunk 生成
+`chunks.jsonl` 面向召回，用于 Dense 和 BM25
 
-chunk 是面向检索的文本窗口
+二者分开后：
 
-设置参数
+- 可以调整 chunk 大小，而不破坏原始结构定位
+- 检索结果仍能回溯到原 block
+- debug 模式可以按 section 扩展前后 block 窗口
 
-```
-DEFAULT_CHUNK_TARGET_CHARS = 1400  # chunk 最长长度
-DEFAULT_CHUNK_OVERLAP_CHARS = 200  # chunk 重叠部分长度
-MAX_CHUNK_EQUATION_CHARS = 500     # 单个 chunk 中允许保留的公式文本总字符数上限
-```
+### 4.4 Chunk 构建
 
-每组 section blocks 内部，按 `target_chars` 累积
+Chunk 构建规则：
 
-在组装 chunk 时，overlap 只进入 embedding_text，不进入 text
+1. 先识别 `abstract / body / appendix / references`
+2. references 单独写入 `references.jsonl`
+3. chunk 不跨 region，不跨 section
+4. 默认目标长度为 `1400` 字符
+5. 相邻 chunk 的 Dense 输入带 `200` 字符 overlap
+6. 展示文本仍使用当前 chunk 的原始文本，不展示 overlap
 
-```
-text           给用户展示 / 证据引用
-embedding_text 给向量化使用，带 overlap 上下文
+Dense 使用的文本不是裸正文，而是：
+
+```text
+Paper: <title>
+Section: <section path>
+
+<previous overlap>
+<current chunk text>
 ```
 
-并且embedding_text 加 Paper 和 Section 前缀，可以提升跨论文检索的可辨性
+这样做的目的：
 
-### Citation Graph
+- 标题提供论文级上下文
+- section 提供局部语义
+- overlap 减少切块边界损失
+- 展示文本保持干净，便于回答引用
 
-在 ingest 全量同步末尾生成：
+### 4.5 Appendix 为什么保留但不召回
+
+Appendix 仍然属于论文结构的一部分，因此保留在 `paper_data`，便于追溯和以后扩展。
+
+但正文问答只召回：
+
+```text
+abstract + body
+```
+
+不召回：
+
+```text
+appendix + references
+```
+
+项目在两个位置做了约束：
+
+1. `paper-rag index` 只把 `abstract/body` 写入 Dense 和 BM25 索引
+2. content planner 运行时再次过滤候选 chunk
+
+第二层过滤可以防止旧 Milvus collection 仍然包含 Appendix 时发生泄漏。
+
+当前示例库：
+
+| 区域 | Chunk 数 |
+|---|---:|
+| `abstract` | 16 |
+| `body` | 632 |
+| `appendix` | 119 |
+| 结构化数据总数 | 767 |
+| 正文索引总数 | 648 |
+
+## 5. Citation Graph
+
+### 5.1 为什么引用关系单独建图
+
+references 不适合混入正文检索：
+
+- 它们会污染 BM25 和 Dense
+- 引用关系本身是结构化边
+- “谁引用了 ResNet？”可以确定性回答
+
+因此项目把 references 写入 `references.jsonl`，再派生：
 
 ```text
 data/paper_data/citation_graph.json
 ```
 
-边方向固定为：
+### 5.2 图结构
 
 ```text
-source -> target
+source paper --cites--> target paper
 ```
 
-- `source`：引用发出论文
-- `target`：被引用的本地论文
+边会保留：
 
-citation graph 只覆盖本地 active 论文之间的引用关系
+- source paper id
+- target paper id
+- reference 原文
+- ref index
+- 页码
+- 来源 block id
 
-匹配条件同时满足：
+### 5.3 保守匹配
 
-- target canonical title 出现在 reference raw text 的 normalized 文本中
-- target 第一作者姓氏出现在 reference raw text token 中
-- reference raw text 中出现 target 年份候选之一
+一条 reference 只有同时满足下面条件，才会被认为命中本地论文：
 
-避免短标题或常见词造成误配，年份候选包括 `preprint_year`、`publish_year`
+1. 规范化标题完整包含
+2. 第一作者姓氏命中
+3. 预印本年份或正式发表年份命中
 
-`references.jsonl` 保留原始引用证据，`citation_graph.json` 是派生索引
+设计目标是优先降低误配。
 
-### 别名与标签
+代价是：格式异常、标题缺失或作者写法异常时，可能漏掉真实引用。
 
-`ingest/annotations.py` 管理 `data/paper_annotations.json`
+## 6. 查询路由
 
-该文件用于人工扩展论文别名和标签
+### 6.1 为什么先路由
 
-人工维护：
+不同问题需要不同数据源：
 
-- `aliases`：论文简称、常用名、大小写变体等
-- `tags`：面向语义召回的人工标签
+| 问题 | Route | 执行方式 |
+|---|---|---|
+| “BERT 是谁写的？” | `metadata` | 查 manifest |
+| “CVPR 有哪些论文？” | `metadata` | 查 manifest |
+| “哪些论文引用了 ResNet？” | `reference` | 查 citation graph |
+| “ResNet 的结构是什么？” | `content` | Dense + BM25 + LLM |
+| “你好” | `unclear` | 本地降级说明 |
 
-其它字段应由 ingest/API 生成，避免人工编辑与自动流程冲突
-
-`corpus/venues.py` 管理 `data/venue_aliases.json`，使用 `canonical / display / aliases` 三层设计，匹配时使用 canonical 和 aliases，展示时使用 display
-
-## Corpus
-
-`corpus/` 是本地数据执行层，负责把 parser 输出落到本地数据上
-
-主要职责：
-
-- 读取 active manifest records
-- 解析 paper mention、venue alias、year interval
-- 按 metadata filters 收缩论文范围
-- 加载 ChunkDocument 并按论文范围过滤
-- 读取 annotation aliases/tags
-- 读取 citation graph 并计算 follow/prior 范围
-- 加载或构建 BM25 corpus index
-
-filter 合法组合固定为：
-
-- `paper`: `=` / `follow` / `prior`
-- `year`: `=` / `interval`
-- `venue`: `=` / `in`
-- `author`: `contains`
-- `title`: `contains`
-
-禁止组合包括：
-
-- `paper in`
-- `year contains`
-- `author =`
-- `title =`
-- `venue contains`
-- `follow/prior` 用在 `paper` 以外字段
-
-`filters` 数组内多个条件默认是 AND
-
-OR/PER/AND 分组通过 `paper_groups + group_mode` 表示，不用多个同字段 `=` filter 表达 OR
-
-运行期会用 `CorpusContext` 作为单次 `plan/ask` 的本地数据上下文
-
-它会 lazy load manifest、annotations、chunks、citation graph 和 BM25 index
-
-主要避免同一次 plan 内 router 规范化、planner 执行、多 group scope、reference source/object scope 和 content BM25 检索重复读取本地 JSON/JSONL
-
-## 检索
-
-检索链路：
+顶层链路：
 
 ```text
 query
   -> top parser
-  -> metadata/reference/content router
+  -> metadata / reference / content / unclear
+  -> domain parser
   -> domain planner
   -> evidence
 ```
 
-顶层 parser 只做路由分类：
+Top parser 只负责分路由，不负责一次性解析全部语义。
 
-```json
-{"router": "metadata|reference|content|unclear"}
+这样做的好处：
+
+- 每条 route 的 schema 更小
+- prompt 更专一
+- 错误更容易定位
+- metadata/reference 不需要进入正文检索
+
+### 6.2 Scope
+
+Scope 表示“先在哪些论文里查”。
+
+常见过滤字段：
+
+```text
+paper / author / year / venue / title
 ```
 
-具体语义解析交给三条 domain parser
+常见 group 模式：
 
-### Common
+| 模式 | 含义 |
+|---|---|
+| `single` | 单一 scope |
+| `per` | 每组分别执行并展示 |
+| `or` | 多组并集 |
+| `and` | 多组都满足，常用于 exists 判断或引用关系交集 |
 
-`retrieval/routes/common/` 放 parser 共享能力：
+aliases 和 tags 来自：
 
-- `parser_client.py`：OpenAI-compatible chat completion client
-- `schema.py`：paper filters、groups、nullable enum 等共享校验
-- `prompt.py`：共享 prompt 片段
-- `errors.py`：`PlanParseError`
+```text
+data/paper_annotations.json
+```
 
-### Metadata
+例如用户输入 `ResNet`，scope resolver 可以映射到：
 
-metadata route 回答论文元字段问题，例如作者、年份、venue、标题、数量、存在性
+```text
+Deep Residual Learning for Image Recognition
+```
 
-典型问题：
+### 6.3 三条执行路径
+
+#### Metadata
+
+Metadata route 查本地 manifest，支持：
+
+```text
+lookup / list / count / exists
+```
+
+示例：
 
 ```powershell
-python -m paper_rag ask "ResNet 和 Transformer 分别是哪一年发表的？"
-python -m paper_rag ask "发表在 CVPR 上的论文有哪些？"
-python -m paper_rag ask "2018 年的论文有多少篇？"
+python -m paper_rag ask "发表在 CVPR 的论文有哪些？"
 ```
 
-Schema 字段：
+#### Reference
 
-```json
-{
-  "intent": "lookup|list|count|exists|null",
-  "return_fields": ["author|year|venue|title"],
-  "paper_semantic": "",
-  "filters": [],
-  "paper_groups": [{"semantic": "", "filters": []}],
-  "group_mode": "single|per|or|and"
-}
-```
-
-- `lookup` 必须有 `return_fields`
-- `list` 没有 `return_fields` 时默认返回 `title`
-- `count/exists/null` 要求 `return_fields=[]`
-- `group_mode="and"` 只允许用于 `exists`
-
-执行时，`router.py` 把 parser result 规范化成 `RouteDecision`
-
-通过查询 manifest records，再构建 metadata evidence
-
-### Reference
-
-reference route 回答本地库内 citation graph 覆盖的引用关系问题
-
-统一语义是：
+Reference route 查询：
 
 ```text
 source_scope --cites--> object_scope
 ```
 
-典型问题：
+示例：
 
 ```powershell
-python -m paper_rag ask "ResNet 引用了哪些论文？"
 python -m paper_rag ask "哪些论文引用了 ResNet？"
-python -m paper_rag ask "哪些论文同时引用了 Transformer 和 ResNet？"
 ```
 
-Schema 字段：
+#### Content
 
-```json
-{
-  "intent": "list|count|exists|null",
-  "return_side": "source|object|null",
-  "source_semantic": "",
-  "source_filters": [],
-  "source_groups": [{"semantic": "", "filters": []}],
-  "source_mode": "single|per|or|and",
-  "object_semantic": "",
-  "object_filters": [],
-  "object_groups": [{"semantic": "", "filters": []}],
-  "object_mode": "single|per|or|and"
-}
+Content route 查询正文：
+
+```text
+论文 scope
+  -> 构建 dense_query / bm25_queries
+  -> Dense
+  -> BM25
+  -> RRF
+  -> compact contexts
+  -> 回答 LLM
 ```
 
-- `list/count` 要求 `return_side=source|object`
-- `exists/null` 要求 `return_side=null`
-- `return_side="source"` 返回引用发出方论文
-- `return_side="object"` 返回被引用方论文
-- 执行层优先使用本地 `citation_graph.json`，图缺失时返回 `status="graph_missing"` 和 warning
-- source/object 两侧的 filters 都先经过 `parser_scope_resolver` 标准化，再用 `paper_scope_records` 得到候选论文集合
+## 7. Content 混合检索
 
-### Content
+### 7.1 先缩小论文范围
 
-content route 回答论文正文内容问题，例如方法、结构、实验、对比、原因、结论
+Content planner 不会一上来扫描整个论文库。
 
-典型问题：
+它先根据 paper aliases、filters 和 groups 得到候选论文，再只保留这些论文的 `abstract/body` chunks。
 
-```powershell
-python -m paper_rag ask "ResNet 的模型结构是什么？"
-python -m paper_rag ask "ResNet 里的 BasicBlock 和 Bottleneck 有什么区别？"
-python -m paper_rag ask "ViT 使用了哪些数据集？"
+同时：
+
+- Dense 通过 Milvus `paper_id in [...]` 做标量过滤
+- BM25 通过 `allowed_chunk_ids` 限定统计和打分范围
+
+这是本项目最重要的设计之一：
+
+> 结构化条件交给 scope 层，正文相关性才交给检索层。
+
+### 7.2 Dense Query 与 BM25 Query 分开
+
+Dense 和 BM25 需要不同风格的 query。
+
+Dense query 保持自然语言语义，例如：
+
+```text
+查找论文中关于模型结构的相关内容
 ```
 
-Schema 字段：
+BM25 query 更偏关键词，例如：
 
-```json
-{
-  "intent": "lookup|reason|compare|summary|list|count|exists|null",
-  "paper_semantic": "",
-  "filters": [],
-  "paper_groups": [{"semantic": "", "filters": []}],
-  "group_mode": "single|per|or|and",
-  "content_objects": [],
-  "compare_objects": []
-}
+```text
+模型结构
+structure
 ```
 
-content 检索顺序：
+已经进入 scope 的论文标题、别名、年份和 venue 会从 BM25 query 中剔除，避免重复强调范围词。
 
-1. 用 semantic、filters、groups 解析候选论文范围
-2. 如果候选论文为空，直接返回空 evidence
-3. 构建 `dense_query` 和 `bm25_queries`
-4. 只加载并保留候选论文的 `abstract/body` chunks
-5. 分别执行 dense 和 BM25
-6. 用 RRF 融合命中 chunks
-7. 默认保留 compact chunk evidence；`--debug` 时额外扩展 block 上下文窗口
-8. 构建 content evidence，交给回答 LLM
+中文关键词可以调用腾讯云或阿里云翻译，补充英文候选。翻译失败只写 warning，不会阻断主链路。
 
-#### Dense
+### 7.3 Dense Retrieval
 
-dense 检索位于 `retrieval/dense/`
+Dense 检索适合处理语义相关但词面不完全一致的情况。
 
-- `embedding.py` 调用 OpenAI-compatible `/embeddings` 接口
-- `cache.py` 按 model、dimensions 和文本缓存 embedding
-- `milvus_store.py` 管理 Milvus/Zilliz collection
-- `service.py` 提供 `run_index()`、`run_search()`、`search_dense_chunks()`
+流程：
 
-`dense_query` 保持中文自然语言语义句，不拼接年份、venue、论文标题等已经结构化的 scope 条件
+```text
+chunk.embedding_text
+  -> embedding API
+  -> Milvus COSINE collection
 
-这样做的目的是把论文范围过滤交给本地结构化层，把语义相似度交给 embedding 层
+dense_query
+  -> embedding API
+  -> Milvus top-k
+```
 
-content route 执行 dense 检索时，会把候选论文的 `paper_id` 传给 Milvus filter
+余弦相似度：
 
-query embedding 使用独立的 `QUERY_EMBEDDING_CACHE_PATH`
+```math
+\operatorname{cos}(q,d)
+=
+\frac{q \cdot d}
+{\lVert q \rVert_2 \lVert d \rVert_2}
+```
 
-`appendix` chunks 仍保留在 `paper_data` 中，但不参与 content dense/BM25 召回
+其中：
 
-#### BM25
+- $q$：query embedding
+- $d$：chunk embedding
+- 分数越高，语义越相似
 
-BM25 位于 `retrieval/sparse/bm25.py`，用于对英文论文正文 chunks 做关键词召回
+Dense 的优点：
 
-`paper-rag index` 会从 `abstract/body` ChunkDocument 构建 dense 索引和 `BM25CorpusIndex`
+- 能处理同义表达
+- 适合摘要、概念解释、原因分析
+- 不要求 query 与原文使用完全相同的词
 
-派生索引写入 `data/index/bm25_chunks.json`
+Dense 的限制：
 
-落盘内容主要是：
+- 依赖 embedding 服务和 Milvus
+- 专有名词、缩写、公式名不一定稳定命中
+- 只靠向量相似度可能召回语义相近但不够精确的片段
 
-- `doc_id`：实际对应 `chunk_id`
-- `text_hash`：用于判断当前 chunk 文本是否变化
-- `tokens`：`chunk.text + chunk.embedding_text` 规范化后的 token 列表
+### 7.4 BM25
 
-它不直接保存 BM25 分数、词频表、chunk 长度或 IDF
+BM25 适合补充关键词精确匹配。
 
-查询阶段优先加载这个派生索引，缺失或过期时退回内存构建
+项目中的 BM25 文档文本为：
 
-加载后会在内存中基于 tokens 计算：
+```text
+chunk.text + chunk.embedding_text
+```
 
-- `f(t,d)`：token 在当前 chunk 中的出现次数
-- `|d|`：当前 chunk 的 token 数
-- 当前 scope 内的 `N`、`df(t)`、`avgdl`
-
-派生索引有效时，不会重新 tokenize 全部 chunk
-
-query 本身仍会在每次检索时 tokenize
-
-`bm25_queries` 偏关键词候选，来源包括：
-
-- `content_objects`
-- `compare_objects`
-- 从 query 剩余文本中抽取的核心词
-- 翻译得到的英文候选
-
-IDF：
+单个 token 的 IDF：
 
 ```math
 \operatorname{idf}(t)
 =
 \log\left(
 1+
-\frac{N-df(t)+0.5}{df(t)+0.5}
+\frac{N-df(t)+0.5}
+{df(t)+0.5}
 \right)
-
 ```
-
-- 如果一个 token 出现在很多候选 chunk 中，说明它很常见，区分能力弱，IDF 较低
-- 如果一个 token 只出现在少数候选 chunk 中，说明它更稀有，区分能力强，IDF 较高
 
 词频归一化：
 
 ```math
-\operatorname{tf\_norm}(t,d)
+\operatorname{tfNorm}(t,d)
 =
-\frac{
-f(t,d)(k_1+1)
-}{
-f(t,d)
-+
-k_1\left(
-1-b+b\frac{|d|}{\operatorname{avgdl}}
-\right)
-}
-```
-
-- 词频归一化项衡量当前 token 在 chunk 中的匹配强度
-
-单个 query 对单个 chunk 的 BM25 分数：
-
-```math
-\operatorname{BM25}(q,d)
-=
-\sum_{t\in \operatorname{tokens}(q)}
-\log\left(
-1+
-\frac{N-\operatorname{df}(t)+0.5}
-{\operatorname{df}(t)+0.5}
-\right)
-\cdot
 \frac{
 f(t,d)(k_1+1)
 }{
@@ -1026,463 +560,352 @@ f(t,d)+k_1\left(1-b+b\frac{|d|}{\operatorname{avgdl}}\right)
 }
 ```
 
-- `q`：用户 query，经 `normalize_bm25_token` 转成 token 列表
-- `d`：当前 chunk，`|d|` 表示当前 chunk 的 token 数
-- `N`：候选 scope 内的 chunk 数
-- `df(t)`：候选 scope 内包含 token `t` 的 chunk 数
-- `f(t, d)`：token `t` 在当前 chunk `d` 中出现次数
-- `avgdl`：候选 scope 内 chunks 的平均 token 数
-- `k1`：控制词频饱和，项目中使用 1.5
-- `b`：控制 chunk 长度归一化强度，项目中使用 0.75
+最终分数：
 
-`N`、`df(t)` 和 `avgdl` 都按当前候选论文 scope 内的 chunks 计算
+```math
+\operatorname{BM25}(q,d)
+=
+\sum_{t \in q}
+\operatorname{idf}(t)
+\cdot
+\operatorname{tfNorm}(t,d)
+```
 
-即使派生索引覆盖全库，BM25 也不是先全库打分再过滤
+符号说明：
 
-它会先用 `allowed_chunk_ids` 收缩候选 chunk，再计算当前 scope 的统计量和分数
+| 符号 | 含义 |
+|---|---|
+| $N$ | 当前 scope 内 chunk 数 |
+| $df(t)$ | 当前 scope 内包含 token $t$ 的 chunk 数 |
+| $f(t,d)$ | token $t$ 在 chunk $d$ 中的词频 |
+| $\lvert d \rvert$ | chunk token 数 |
+| $\operatorname{avgdl}$ | 当前 scope 内平均 chunk 长度 |
+| $k_1$ | 词频饱和参数，项目中为 `1.5` |
+| $b$ | 长度归一化强度，项目中为 `0.75` |
 
-BM25Document 的 `text` 来自 `chunk.text + chunk.embedding_text`
+关键点：
 
-如果翻译服务未配置或调用失败，BM25 会退回原关键词，不影响 dense 检索
+> BM25 的 $N$、$df(t)$ 和 $\operatorname{avgdl}$ 按当前论文 scope 计算，而不是直接使用全库统计量。
 
-多个 `bm25_queries` 分别检索后先用 RRF 合并为 BM25 候选
+这样用户只查 ResNet 时，IDF 语义仍然来自 ResNet 的候选 chunks。
+
+### 7.5 RRF 融合
+
+项目没有直接比较 Dense score 和 BM25 score，因为两者不在同一个数值空间。
+
+使用 Reciprocal Rank Fusion：
 
 ```math
 \operatorname{RRF}(d)
 =
 \sum_{i=1}^{m}
-\frac{1}{k+\operatorname{rank}_i(d)}
+\frac{1}
+{k+\operatorname{rank}_i(d)}
 ```
 
-RRF 的 k 系数项目中使用 60
+其中：
 
-dense 与 BM25 候选再做 RRF 融合
+- $d$：候选 chunk
+- $\operatorname{rank}_i(d)$：候选在第 $i$ 个检索列表中的排名
+- $k$：平滑系数，项目中为 `60`
 
-## 答案生成
+项目做两层 RRF：
 
-`paper_rag/answer/service.py` 是 ask 总编排：
+1. 多个 BM25 query 之间先融合
+2. BM25 候选与 Dense 候选再次融合
+
+RRF 的好处：
+
+- 不需要手工归一化 Dense 和 BM25 分数
+- 同时被两路命中的 chunk 会自然提升
+- 对某一路分数尺度变化不敏感
+
+### 7.6 Dense 与 BM25 的分工
+
+| 场景 | Dense | BM25 |
+|---|---|---|
+| 概念解释 | 强 | 中 |
+| 同义表达 | 强 | 弱 |
+| 英文专有名词 | 中 | 强 |
+| 缩写、模型名、数据集名 | 中 | 强 |
+| 服务不可用时 | 依赖外部服务 | 本地可继续工作 |
+
+二者不是互相替代，而是互补。
+
+## 8. Evidence 与回答生成
+
+### 8.1 为什么要压缩 Evidence
+
+Planner 的内部状态很多：
+
+- parser 原始结果
+- RouteDecision
+- scope records
+- Dense / BM25 来源
+- scores
+- block 扩展窗口
+
+这些信息不应该默认全部塞给回答 LLM。
+
+默认 content evidence 只保留：
+
+- chunk id
+- 论文标题
+- section path
+- 页码
+- chunk text
+
+`--debug` 时才附加：
+
+- parser 中间态
+- scope records
+- retrieval query
+- timings
+- sources 和 scores
+- expanded blocks
+
+这样做可以：
+
+- 减少回答 prompt 体积
+- 避免内部路径、hash 和 raw records 泄漏
+- 让 debug 信息仍然可追溯
+
+### 8.2 回答策略
+
+| Route | 回答方式 |
+|---|---|
+| `metadata` | 本地确定性回答 |
+| `reference` | 本地确定性回答 |
+| `content` | 基于 compact evidence 调用回答 LLM |
+| `unclear` / `parse_failed` | 本地降级说明 |
+
+这样可以减少 LLM 幻觉：
+
+- 年份、作者、venue 不需要 LLM 编造
+- 引用边不需要 LLM 推断
+- 只有正文综合表达才交给 LLM
+
+### 8.3 失败降级
+
+项目对常见故障做了降级：
+
+| 故障 | 行为 |
+|---|---|
+| parser 配置缺失或返回非法结构 | 返回 `parse_failed` |
+| top parser 无法判断问题 | 返回 `unclear` |
+| citation graph 缺失 | 提示先执行 `ingest` |
+| Dense 调用失败 | 写 warning，继续使用 BM25 |
+| 翻译失败 | 写 warning，继续使用原 BM25 关键词 |
+| answer LLM 失败 | 返回本地降级说明 |
+
+## 9. 工程优化与权衡
+
+性能优化记录适合保留，但不适合写成长期累积的 benchmark 日志。
+
+面试手册里更值得保留的是：
+
+- 原始瓶颈是什么
+- 做了什么结构性优化
+- 为什么不会改变检索语义
+- 还剩下什么外部耗时
+
+### 9.1 Scope First
+
+先筛论文，再检索 chunk。
+
+收益：
+
+- Dense 减少无关候选
+- BM25 只在 scope 内计算统计量
+- 减少误召回
+
+### 9.2 BM25 派生索引
+
+`paper-rag index` 会写出：
 
 ```text
-query
-  -> run_plan()
-  -> evidence
-  -> local answer 或 LLM answer
-  -> answer payload
+data/index/bm25_chunks.json
 ```
 
-### Evidence
+其中保存：
 
-`retrieval/evidence.py` 负责把各 route planner 的执行结果整理成统一 evidence
+- `doc_id`
+- `text_hash`
+- 预分词 tokens
 
-默认 composer evidence 保留回答需要的精简字段，例如：
+查询时仍然按当前 scope 计算 IDF 和 BM25 分数。
 
-```json
-{
-  "query": "...",
-  "route": "metadata|reference|content",
-  "status": "ok",
-  "intent": "...",
-  "plan": {},
-  "results": {},
-  "warnings": []
-}
-```
+因此优化的是重复 tokenize 成本，不改变 BM25 的 scope 语义。
 
-压缩原则：
+### 9.3 CorpusContext 懒加载复用
 
-- 空数组、空对象、空字符串字段默认不输出
-- `resolved` 默认不输出；只有 alias 命中或必要消歧信息时输出
-- 完整 parser result、RouteDecision、records、raw edges、context units、retrieval source terms 只进 `debug`
-- `--debug` 下会额外输出 `debug.timings_ms`，用于观察 parser、scope、dense、BM25、fusion、answer 等阶段耗时
-- metadata/reference/content 分别输出适合回答层消费的 results 结构
+单次 `plan/ask` 内共享一个 `CorpusContext`。
 
-### Local
+它按需加载并复用：
 
-`answer/local.py` 负责本地确定性回答
+- active manifest records
+- annotations
+- chunks
+- content chunks
+- citation graph
+- BM25 index
 
-metadata/reference route 默认走 local answer，因为这些问题可以从本地结构化数据确定性组织答案：
+收益是避免同一次请求在 router、scope resolver 和 planner 之间重复读取 JSON / JSONL。
 
-- metadata：lookup/list/count/exists
-- reference：list/count/exists，以及 source/object 两侧引用关系
-- failure/empty 状态：输出清晰的本地失败原因或空结果说明
+### 9.4 Embedding Cache
 
-local answer 的目标是尽量不引入 LLM 幻觉，把本地 evidence 中已经确定的事实组织成人类可读文本
-
-### LLM
-
-`answer/llm.py` 负责 content route 的回答生成
-
-content route 的结果通常是一组正文上下文，需要由回答模型综合组织，因此默认走 LLM answer
-
-回答 prompt 输入的是压缩后的 evidence，而不是完整数据库记录
-
-## 设计取舍
-
-### 数据分层
-
-项目把原始 PDF、MinerU 原始输出、项目内部结构化数据分开保存
-
-这样可以在不重新上传 PDF 的情况下重建 `paper_data`
-
-也方便定位问题是来自 PDF 本身、MinerU 识别，还是项目清洗逻辑
-
-### blocks 与 chunks 分开
-
-`blocks.jsonl` 保留接近论文结构的证据单元
-
-它用于页面、bbox、section、上下文窗口和 evidence 定位
-
-`chunks.jsonl` 是检索窗口
-
-它服务 dense/BM25 召回，可以带 overlap 和 embedding 前缀
-
-两者分开后，检索粒度可以调整，证据定位结构不需要跟着变化
-
-### references 单独处理
-
-references 不进入正文 chunk
-
-它们单独写入 `references.jsonl`，再派生 `citation_graph.json`
-
-这样可以避免引用列表污染正文检索
-
-也让 reference route 可以用本地 citation graph 做确定性回答
-
-### 先路由再检索
-
-系统先判断问题属于 metadata、reference 还是 content
-
-metadata 和 reference 能用本地结构化数据确定回答，不需要盲目做正文召回
-
-content 才进入 dense/BM25 召回和 LLM answer
-
-这样可以减少无关检索，也降低 LLM 幻觉空间
-
-### corpus 作为本地数据访问层
-
-`corpus/` 不生成数据，也不规划回答
-
-它负责把 manifest、annotations、venue aliases、chunks、citation graph 读成统一查询对象
-
-retrieval 和 answer 不直接散落读取数据文件
-
-这样 parser 输出、本地过滤和证据构建之间有稳定边界
-
-运行期再用 `CorpusContext` 做单次 `plan/ask` 内复用
-
-它主要服务 plan 内部的重复访问：
-
-- router 规范化 parser scope
-- planner 执行本地 scope
-- 多个 group 分别解析论文范围
-- reference route 同时解析 source/object 两侧
-- content route 过滤 chunks 并执行 BM25 检索
-
-这些阶段会共享同一份 manifest、annotations、chunks、citation graph 和 BM25 index
-
-### 本地确定性回答优先
-
-metadata/reference route 默认走 local answer
-
-因为这些问题的答案来自 manifest 和 citation graph，可以确定性组织
-
-content route 默认走 LLM answer
-
-因为正文内容通常需要综合多个上下文片段，适合由模型组织自然语言答案
-
-## 输出示例
-
-### 端到端例子
-
-以问题为例：
-
-```powershell
-python -m paper_rag ask "ResNet 里的 BasicBlock 和 Bottleneck 有什么区别？"
-```
-
-执行链路：
+Embedding cache key 由下面内容生成：
 
 ```text
-query
-  -> top parser
-  -> content router
-  -> content planner
-  -> dense/BM25 retrieval
-  -> chunk fusion
-  -> evidence
-  -> LLM answer
+model + dimensions + text
 ```
 
-1. top parser 只判断问题类型，问题会进入 `content`
-
-2. content parser 抽取正文检索结构
-
-   得到：
-
-   ```json
-   {
-     "intent": "compare",
-     "paper_semantic": "",
-     "filters": [{"field": "paper", "op": "=", "value": "ResNet"}],
-     "paper_groups": [],
-     "group_mode": "single",
-     "content_objects": [],
-     "compare_objects": ["BasicBlock", "Bottleneck"]
-   }
-   ```
-
-3. router 把 parser result 规范化成 `RouteDecision`
-
-   `paper=ResNet` 进入论文范围
-
-   `BasicBlock` 和 `Bottleneck` 保留为正文比较对象
-
-4. corpus 层解析论文范围
-
-   解析 paper mention 和 aliases
-
-   读取 active manifest records
-
-   根据 filters 得到 ResNet 对应的论文 record
-
-5. content planner 只加载候选论文的 chunks，不会对全库 chunks 盲检
-
-   dense 检索也会把 scope 内的 `paper_id` 传给 Milvus filter
-
-   BM25 会复用 `data/index/bm25_chunks.json` 或运行期内存索引
-
-6. 构建检索 query
-
-   `dense_query` 会变成适合 embedding 的自然语言句子，例如：
-
-   ```
-   比较 BasicBlock、Bottleneck 之间的差异和相关描述
-   ```
-
-   `bm25_queries` 会保留关键词候选，例如：
-
-   ```
-   ["BasicBlock", "Bottleneck"]
-   ```
-
-   如果翻译服务可用，还会补充英文候选
-
-7. 执行 dense 和 BM25
-
-   dense 在向量库中找语义相似 chunk
-
-   BM25 在候选 chunk 文本中找关键词匹配
-
-   BM25 的 IDF、avgdl 等统计量只按候选论文 chunks 计算
-
-   多个 BM25 query 先用 RRF 合并成 BM25 候选
-
-   dense 候选和 BM25 候选再用 RRF 合并成最终 chunk 排序
-
-8. 构建 compact context
-
-   默认 evidence 保留命中 chunk 的文本、标题、section path 和页码
-
-   使用 `--debug` 时，命中 chunk 会根据 `block_ids` 回到 `blocks.jsonl`
-
-   调试窗口只在同一 section 内扩展，最终放入 `debug.context_units`
-
-9. 构建 evidence
-
-   默认 evidence 只保留回答需要的字段：
-
-   - chunk id
-   - 论文标题
-   - section path
-   - 页码
-   - chunk text
-
-   完整 parser result、RouteDecision、原始 records、检索 source terms 和 expanded blocks 只在 `--debug` 下输出
-
-10. 生成答案
-
-    把压缩后的 evidence 交给回答模型
-
-    模型只基于 evidence 组织 BasicBlock 和 Bottleneck 的差异说明
-
-### 失败路径例子
-
-以 parser 配置缺失为例：
-
-```powershell
-python -m paper_rag ask "ResNet 的结构是什么？" --json
-```
-
-如果 `.env` 中缺少 `PLAN_PARSER_BASE_URL`、`PLAN_PARSER_API_KEY` 或 `PLAN_PARSER_MODEL`
-
-执行链路会变成：
+项目把缓存拆成：
 
 ```text
-query
-  -> top parser
-  -> parse_failed
-  -> unclear evidence
-  -> local answer
+embedding_cache.jsonl          # chunk embedding
+query_embedding_cache.jsonl    # query embedding
 ```
 
-此时不会继续进入 metadata/reference/content planner
+并采用 append-only 写入。
 
-planner 会把失败原因放进 evidence：
+收益：
 
-```json
-{
-  "query": "ResNet 的结构是什么？",
-  "route": "unclear",
-  "status": "parse_failed",
-  "results": {},
-  "warnings": [
-    "top_parse_failed: PLAN_PARSER_BASE_URL, PLAN_PARSER_API_KEY or PLAN_PARSER_MODEL is missing"
-  ],
-  "parser_error": "PLAN_PARSER_BASE_URL, PLAN_PARSER_API_KEY or PLAN_PARSER_MODEL is missing"
-}
-```
+- 重复 query 不需要再次向量化
+- 新增缓存不需要重写整个文件
+- 查询阶段不需要加载更大的 chunk embedding cache
 
-ask 层看到 `status != "ok"` 后不会调用回答 LLM
+### 9.5 Debug 扩展按需执行
 
-它会走本地失败回答：
+block 上下文扩展只用于 debug。
 
-```text
-问题解析失败，暂时无法回答
-```
+非 debug 问答不再读取并扩展 blocks，避免产生不会进入回答 prompt 的额外 I/O。
 
-这个路径用于保证 parser、配置或外部服务异常时，系统仍然返回可解释的失败结果
+### 9.6 仍然存在的主要耗时
 
-## 性能优化记录
+完整 content `ask` 仍然会调用：
 
-以下结果来自本地链路测试
+1. top parser
+2. domain parser
+3. 可选翻译服务
+4. embedding 服务
+5. Milvus
+6. answer LLM
 
-测试不调用真实 LLM、embedding API 或 Milvus 网络服务
+因此端到端耗时主要受外部服务影响。
 
-因此它衡量的是本地可控开销，不代表完整 `ask` 端到端耗时
-
-当前测试数据：
-
-- 16 篇论文
-- 767 个结构化 chunks，其中 648 个 `abstract/body` chunks 进入正文索引，119 个 `appendix` chunks 仅保留在 `paper_data`
-- 放大测试使用 15340 个 chunks
-
-### BM25 派生索引
-
-优化点：
-
-- `paper-rag index` 写出 `data/index/bm25_chunks.json`
-- 派生索引保存 chunk 级 tokens 和 `text_hash`
-- 查询阶段优先加载派生索引
-- 当前 scope 内的 `N`、`df(t)`、`avgdl` 和 BM25 分数仍在查询时计算
-
-收益来源：
-
-- 避免每次 content 检索都对全库 chunks 重新 normalize/tokenize
-- 避免每个 BM25 query 都重复构建 chunk tokens
-- 保留 scope 内统计量，避免把全库 IDF 固化进索引
-
-本地测试结果：
-
-| 场景 | 旧路径 | 当前路径 | 提升 |
-|---|---:|---:|---:|
-| 实际库，4 个 BM25 query | 542 ms | 191 ms | 约 2.8x |
-| 实际库，内存 index 复用 | 542 ms | 126 ms | 约 4.3x |
-| 15340 chunks，4 个 BM25 query | 10014 ms | 3931 ms | 约 2.5x |
-| 15340 chunks，内存 index 复用 | 10014 ms | 2566 ms | 约 3.9x |
-
-### CorpusContext 复用
-
-优化点：
-
-- 单次 `plan/ask` 内创建一个 `CorpusContext`
-- lazy load manifest、annotations、chunks、citation graph 和 BM25 index
-- router、planner、scope resolver 和 content planner 共享同一份本地数据对象
-
-收益来源：
-
-- 避免同一次 plan 内重复读取 JSON/JSONL
-- 避免多 group scope 重复构建本地对象
-- 避免 reference source/object 两侧重复加载 citation graph
-- 避免 content route 过滤 chunks 和 BM25 检索时重复读 chunks
-
-本地测试结果：
-
-| 场景 | 旧路径 | 当前路径 | 提升 |
-|---|---:|---:|---:|
-| repeated scope 查询 | 75 ms | 21 ms | 约 3.5x |
-
-### Embedding Cache
-
-优化点：
-
-- chunk embedding cache 和 query embedding cache 分开
-- `EMBEDDING_CACHE_PATH` 主要服务 `index`
-- `QUERY_EMBEDDING_CACHE_PATH` 主要服务 `search/plan/ask`
-- cache 更新从全量重写改为 append-only
-
-收益来源：
-
-- 查询阶段不需要加载 chunk embedding 的大 cache 文件
-- 重复 query 可以直接复用 query embedding
-- 新增 cache 行时不再重写整个 JSONL 文件
-- append-only 文件中如果出现重复 key，加载时以后出现的值为准
-
-本地测试结果：
-
-| 场景 | 旧路径 | 当前路径 | 提升 |
-|---|---:|---:|---:|
-| cache 5000 条，新增 1 条 | 55 ms | 28 ms | 约 2.0x |
-| cache 20000 条，新增 1 条 | 219 ms | 118 ms | 约 1.9x |
-| query cache 加载，混合大文件 vs 独立小文件 | 28 ms | 1.5 ms | 约 18x |
-
-### 结果边界
-
-- BM25 优化主要减少预处理成本，不改变 BM25 公式和排序语义
-- CorpusContext 优化主要减少本地数据重复读取，不改变 scope 解析结果
-- Embedding cache 优化主要减少缓存 I/O 和重复 embedding 请求，不改变 embedding 结果
-- 完整 `ask` 耗时仍受 parser、embedding 服务、Milvus/Zilliz 和 answer LLM 影响
-
-## 当前边界
-
-- Reference 只回答本地 citation graph 覆盖的库内引用关系，不回答全网 citation network
-- Citation graph 匹配规则偏保守，优先降低误配，可能漏掉格式异常或标题不完整的引用
-- Content 的最终回答质量依赖 MinerU 正文解析质量、chunk 构建质量、dense/BM25 召回质量和回答 LLM
-- BM25 主要面向英文论文正文；中文 query 依赖翻译候选增强英文关键词召回
-- BM25 翻译未配置或调用失败时会退回原关键词，不影响 dense 检索
-- `paper_annotations.json` 中的 aliases/tags 需要人工持续维护，才能提升简称、别名和语义标签召回
-- Top parser 只做路由分类；如果 parser 配置缺失或返回 `unclear`，不会进入 domain planner
-- Dense 检索依赖 embedding 服务和 Milvus/Zilliz；未配置时 `index/search/content` dense 链路不可用
-
-## 常见问题
-
-### 为什么 `paper_data` 里仍然能看到 Appendix？
-
-Appendix 仍属于可追溯的结构化论文数据，因此不会在入库时删除。`paper-rag index`、content BM25 和 content dense 候选只使用 `abstract/body` chunks。
-
-拉取正文区域规则变更或重新入库后，需要再次执行 `python -m paper_rag index`，确保 Milvus collection 与 BM25 派生索引同步更新。
-
-### 为什么一次 content `ask` 需要十几秒？
-
-content 问答通常会经过 top parser、domain parser、关键词翻译、query embedding、Milvus 搜索、BM25、融合和 answer LLM。外部服务耗时会累积。
-
-使用下面的命令查看分阶段耗时：
+排查时使用：
 
 ```powershell
 python -m paper_rag ask "ResNet 的结构是什么？" --debug --json
 ```
 
-重复 query 可以复用 query embedding cache，但 parser 和 answer LLM 仍会重新调用。
+重点查看：
 
-### 回答 LLM 暂时不可用时会怎样？
+```text
+debug.timings_ms
+```
 
-metadata/reference 本来就使用本地确定性答案，不受 answer LLM 影响。
+## 10. 当前边界
 
-content 已找到正文证据但 answer LLM 调用失败时，`ask` 会返回本地降级说明；使用 `--json` 可以在 `warnings` 中看到 `answer generation failed: ...`。
+### 10.1 Reference 只覆盖本地库
 
-### parser 返回 `unclear` 或 `parse_failed` 怎么排查？
+Citation graph 只描述当前本地论文库中的引用关系，不是全网 citation network。
 
-先确认 `PLAN_PARSER_BASE_URL`、`PLAN_PARSER_API_KEY` 和 `PLAN_PARSER_MODEL` 已填写，再使用 `plan --debug` 查看 top route、domain parser 状态和 warnings：
+### 10.2 Citation Graph 可能漏召回
+
+引用匹配偏保守，优先减少误配。
+
+如果 reference 原文格式异常、标题不完整或作者写法异常，可能漏掉真实边。
+
+### 10.3 Content 质量依赖上游
+
+正文回答质量依赖：
+
+- MinerU 解析质量
+- region 边界识别
+- chunk 切分
+- scope 解析
+- Dense / BM25 召回
+- 回答 LLM
+
+### 10.4 BM25 更适合英文论文
+
+论文正文以英文为主。
+
+中文 query 可以通过翻译候选增强 BM25，但翻译不是强依赖。
+
+### 10.5 Appendix 暂不参与正文回答
+
+Appendix 当前保留但不参与 content 召回。
+
+如果未来需要回答附录问题，更合理的做法是新增显式 appendix route 或检索开关，而不是默认混入正文。
+
+## 11. 面试自测
+
+### 11.1 项目主线
+
+1. 为什么不是所有问题都走向量检索？
+2. `metadata / reference / content` 三条 route 分别查什么？
+3. 为什么 top parser 和 domain parser 要分两层？
+4. `plan` 和 `ask` 的区别是什么？
+
+### 11.2 数据结构
+
+1. `manifest.jsonl` 的作用是什么？
+2. 为什么同时保留 `blocks.jsonl` 和 `chunks.jsonl`？
+3. references 为什么不进入正文 chunk？
+4. Appendix 为什么保留但不参与正文召回？
+5. 哪些数据是事实表，哪些是可删除的派生索引？
+
+### 11.3 检索
+
+1. 为什么 Dense query 和 BM25 query 要分开？
+2. Dense 检索使用什么相似度？
+3. BM25 中 $df(t)$、$N$ 和 $\operatorname{avgdl}$ 是按全库还是按 scope 计算？
+4. 为什么 Dense 和 BM25 不直接加权求和？
+5. RRF 的作用是什么？
+6. Dense 服务失败后为什么还能部分工作？
+
+### 11.4 工程设计
+
+1. BM25 派生索引优化了什么？为什么不改变排序语义？
+2. 为什么 chunk embedding cache 和 query embedding cache 要拆开？
+3. `CorpusContext` 解决了什么重复开销？
+4. 非 debug 模式为什么不扩展 blocks？
+5. 如何避免旧 Dense 索引中的 Appendix 泄漏？
+
+### 11.5 继续改进
+
+可以继续讨论：
+
+- 为 Appendix 增加显式路由
+- 引入 reranker
+- 为 citation graph 增加更强的引用解析器
+- 为 metadata 和 scope parser 增加更系统的离线评测集
+- 将 embedding cache 从 append-only JSONL 升级为 SQLite 或 KV 存储
+- 对外部 parser、embedding 和 answer LLM 增加并发、重试与熔断策略
+
+## 12. 测试与验证
+
+当前测试覆盖：
+
+- 入库与元数据补全
+- MinerU 解析输出处理
+- Chunk 和 Appendix 边界
+- Citation graph
+- Metadata / Reference / Content 路由
+- BM25
+- Embedding cache
+- Answer 本地与 LLM 降级逻辑
+- CLI
+
+常用验证：
 
 ```powershell
+python -m pytest -q
+python -m compileall -q paper_rag
+python -m paper_rag index
 python -m paper_rag plan "ResNet 的结构是什么？" --debug
+python -m paper_rag ask "BERT 的预训练任务是什么？" --debug --json
 ```
