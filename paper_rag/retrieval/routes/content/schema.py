@@ -43,12 +43,12 @@ def validate_content_parse(content: str | dict[str, Any], fallback_query: str = 
     extra_fields = set(payload) - CONTENT_FIELDS
     if extra_fields:
         fields = ", ".join(sorted(extra_fields))
-        raise PlanParseError(f"Content parser returned unsupported fields: {fields}")
+        raise PlanParseError(f"Content parser 返回了不支持的字段：{fields}")
 
     # null 会被 normalize 成 None，便于后续用 Python 集合判断
     intent = normalize_nullable_enum(payload.get("intent"))
     if intent not in CONTENT_INTENTS:
-        raise PlanParseError(f"Invalid content intent: {intent}")
+        raise PlanParseError(f"不支持的 content intent：{intent}")
 
     # paper scope 决定“先看哪些论文”
     # 不应该混进后续 dense/BM25 的正文检索 query
@@ -60,7 +60,7 @@ def validate_content_parse(content: str | dict[str, Any], fallback_query: str = 
     # content 的 and 只表达“多个论文范围是否都满足同一正文判断”
     # 因此只能服务 exists，不能用于 lookup/list/summary 这类回答型意图
     if group_mode == "and" and intent != "exists":
-        raise PlanParseError('Content group_mode="and" requires intent="exists"')
+        raise PlanParseError('Content group_mode="and" 要求 intent="exists"')
 
     # content_objects 是真正要查正文的对象；compare_objects 只描述被比较对象
     content_objects = normalize_string_list(payload.get("content_objects") or [], f"{PARSER_NAME} content_objects")
@@ -68,18 +68,18 @@ def validate_content_parse(content: str | dict[str, Any], fallback_query: str = 
 
     if intent == "compare":
         if len(compare_objects) < 2:
-            raise PlanParseError("Content compare requires at least two compare_objects")
+            raise PlanParseError("Content compare 至少需要两个 compare_objects")
         # LLM 偶尔会把 A/B 同时放进 compare_objects 和 content_objects
         # 这里做轻量兜底：A/B 只保留为被比较对象，content_objects 只留下比较维度
         compare_keys = {value.casefold() for value in compare_objects}
         content_objects = [value for value in content_objects if value.casefold() not in compare_keys]
     elif compare_objects:
         # 非 compare 意图不允许残留 compare_objects，避免 planner 误拼检索词
-        raise PlanParseError("Content non-compare intents require compare_objects=[]")
+        raise PlanParseError("Content 非 compare 意图要求 compare_objects=[]")
 
     # count/exists 必须知道数什么、判断什么；否则执行层只能盲检
     if intent in {"count", "exists"} and not content_objects:
-        raise PlanParseError(f"Content {intent} requires content_objects")
+        raise PlanParseError(f"Content intent={intent} 需要 content_objects")
 
     # 返回值保持与 schema 同构，但所有字段已经过类型/枚举/列表归一化
     return {

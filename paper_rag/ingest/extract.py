@@ -104,7 +104,7 @@ def extract_paper_data(
     flat_blocks = flatten_pages(pages)
     title = metadata.get("title") or extract_title(flat_blocks)
     if not title:
-        raise ValueError(f"No title found in {content_path}")
+        raise ValueError(f"未在 {content_path} 中找到论文标题")
 
     boundaries = find_region_boundaries(flat_blocks)
     warnings = extraction_warnings(boundaries)
@@ -157,7 +157,7 @@ def extract_paper_data(
 def extraction_warnings(boundaries: dict[str, int | None]) -> list[str]:
     warnings: list[str] = []
     if boundaries.get("abstract_title") is None and boundaries.get("abstract_paragraph") is None:
-        warnings.append("Abstract marker not found")
+        warnings.append("未找到摘要标记")
     return warnings
 
 

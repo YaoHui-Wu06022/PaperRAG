@@ -7,13 +7,13 @@ from typing import Any
 from paper_rag.config import Settings
 from paper_rag.corpus.context import CorpusContext
 from paper_rag.retrieval.routes.common.errors import PlanParseError
+from paper_rag.retrieval.routes.common.parser_client import TopParserClient
 from paper_rag.retrieval.routes.content.planner import plan_body
 from paper_rag.retrieval.routes.content.router import build_content_decision
 from paper_rag.retrieval.routes.metadata.planner import plan_metadata
 from paper_rag.retrieval.routes.metadata.router import build_metadata_decision
 from paper_rag.retrieval.routes.reference.planner import plan_reference
 from paper_rag.retrieval.routes.reference.router import build_reference_decision
-from paper_rag.retrieval.routes.top.parser import TopParserClient
 from paper_rag.retrieval.route import RouteDecision
 from paper_rag.retrieval.timing import Timings, attach_timings
 
@@ -64,10 +64,10 @@ def build_plan_route(
     try:
         parser = top_parser or TopParserClient.from_settings(settings)
         if not hasattr(parser, "parse_top"):
-            raise PlanParseError("top_parser must provide parse_top(query)")
+            raise PlanParseError("top_parser 必须提供 parse_top(query)")
         parser_result = parser.parse_top(query)
     except (PlanParseError, OSError, ValueError) as exc:
-        warnings.append(f"top_parse_failed: {exc}")
+        warnings.append(f"top parser 解析失败：{exc}")
         return RouteDecision(
             route="unclear",
             query=query,
@@ -98,7 +98,7 @@ def unclear_plan(
         "route": "unclear",
         "status": "parse_failed" if route.parse_status == "parse_failed" else "unclear",
         "results": {},
-        "warnings": warnings or ["top parser returned unclear route"],
+        "warnings": warnings or ["top parser 返回了不明确的路由"],
     }
     if route.parser_error:
         evidence["parser_error"] = route.parser_error

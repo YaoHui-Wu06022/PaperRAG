@@ -125,24 +125,22 @@ def resolve_interval_paper_bounds(
     """解析 year interval 两侧可能出现的论文名边界。"""
     if not isinstance(value, list) or len(value) != 2:
         return value, [], []
-    left, left_matches, left_papers = resolve_interval_bound_paper(settings, value[0], corpus=corpus)
-    right, right_matches, right_papers = resolve_interval_bound_paper(settings, value[1], corpus=corpus)
-    return [left, right], [*left_matches, *right_matches], merge_paper_records(left_papers, right_papers)
-
-
-def resolve_interval_bound_paper(
-    settings: Settings,
-    value: Any,
-    *,
-    corpus: "CorpusContext | None" = None,
-) -> tuple[Any, list[AliasMatch], list[dict[str, Any]]]:
-    """解析单个 interval 边界中的论文 mention。"""
-    if not isinstance(value, str) or not value.strip():
-        return value, [], []
-    if is_negative_infinity(value) or is_positive_infinity(value):
-        return value, [], []
-    titles, matches, papers = resolve_paper_mentions_to_titles(settings, [value], corpus=corpus)
-    return (titles[0] if titles else value), matches, papers
+    resolved_values: list[Any] = []
+    alias_matches: list[AliasMatch] = []
+    resolved_papers: list[dict[str, Any]] = []
+    for boundary in value:
+        if (
+            isinstance(boundary, str)
+            and boundary.strip()
+            and not is_negative_infinity(boundary)
+            and not is_positive_infinity(boundary)
+        ):
+            titles, matches, papers = resolve_paper_mentions_to_titles(settings, [boundary], corpus=corpus)
+            boundary = titles[0] if titles else boundary
+            alias_matches.extend(matches)
+            resolved_papers = merge_paper_records(resolved_papers, papers)
+        resolved_values.append(boundary)
+    return resolved_values, alias_matches, resolved_papers
 
 
 def resolve_venue_filter_value(settings: Settings, value: Any) -> Any:
@@ -175,6 +173,26 @@ def resolve_paper_mentions_to_titles(
     return [title for title in titles if title], alias_matches, resolved_papers
 
 
+def resolve_scope_year_filters(
+    settings: Settings,
+    filters: list[dict[str, Any]],
+    groups: list[dict[str, Any]],
+    warnings: list[str],
+    *,
+    corpus: "CorpusContext | None" = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """解析一组 scope filters 和 paper groups 内的 year interval 边界。"""
+    resolved_filters = resolve_year_filter_values(settings, list(filters), warnings, corpus=corpus)
+    resolved_groups = [
+        {
+            **group,
+            "filters": resolve_year_filter_values(settings, list(group.get("filters") or []), warnings, corpus=corpus),
+        }
+        for group in groups
+    ]
+    return resolved_filters, resolved_groups
+
+
 def resolve_year_filter_values(
     settings: Settings,
     filters: list[dict[str, Any]],
@@ -183,30 +201,27 @@ def resolve_year_filter_values(
     corpus: "CorpusContext | None" = None,
 ) -> list[dict[str, Any]]:
     """解析并合并一组 year interval filters。"""
-    resolved_filters = [resolve_year_interval_filter(settings, filter_item, warnings, corpus=corpus) for filter_item in filters]
+    resolved_filters: list[dict[str, Any]] = []
+    for filter_item in filters:
+        if filter_item.get("field") != "year" or filter_item.get("op") != "interval":
+            resolved_filters.append(filter_item)
+            continue
+        value = filter_item.get("value")
+        if not isinstance(value, list) or len(value) != 2:
+            resolved_filters.append(filter_item)
+            continue
+
+        left, right = [
+            resolve_year_boundary(settings, boundary, warnings, corpus=corpus)
+            for boundary in value
+        ]
+        if left == value[0] and right == value[1]:
+            resolved_filters.append(filter_item)
+        elif has_resolved_interval_bounds(left, right):
+            resolved_filters.append({**filter_item, "value": normalize_interval_filter_bounds(left, right)})
+        else:
+            resolved_filters.append({**filter_item, "value": [left, right]})
     return merge_year_interval_filters(resolved_filters)
-
-
-def resolve_year_interval_filter(
-    settings: Settings,
-    filter_item: dict[str, Any],
-    warnings: list[str],
-    *,
-    corpus: "CorpusContext | None" = None,
-) -> dict[str, Any]:
-    """解析单个 year interval filter 的论文边界。"""
-    if filter_item.get("field") != "year" or filter_item.get("op") != "interval":
-        return filter_item
-    value = filter_item.get("value")
-    if not isinstance(value, list) or len(value) != 2:
-        return filter_item
-
-    left, right = [resolve_year_boundary(settings, boundary, warnings, corpus=corpus) for boundary in value]
-    if left == value[0] and right == value[1]:
-        return filter_item
-    if not has_resolved_interval_bounds(left, right):
-        return {**filter_item, "value": [left, right]}
-    return {**filter_item, "value": normalize_interval_filter_bounds(left, right)}
 
 
 def resolve_year_boundary(
@@ -231,18 +246,16 @@ def resolve_year_boundary(
         return boundary
 
     papers, _ = resolve_paper_queries(settings, [text], corpus=corpus)
-    years = [publish_or_preprint_year(paper.get("year")) for paper in papers]
-    years = [year for year in years if year is not None]
+    years: list[int] = []
+    for paper in papers:
+        year = normalize_year(paper.get("year"))
+        candidate = year.get("publish_year") or year.get("preprint_year")
+        if candidate is not None:
+            years.append(candidate)
     if years:
         return min(years)
-    warnings.append(f"paper interval could not resolve boundary year: {text}")
+    warnings.append(f"paper interval 无法解析边界年份：{text}")
     return boundary
-
-
-def publish_or_preprint_year(value: Any) -> int | None:
-    """从 year 字段中取 publish_year，缺失时退到 preprint_year。"""
-    year = normalize_year(value)
-    return year.get("publish_year") or year.get("preprint_year")
 
 
 def normalize_interval_filter_bounds(left: Any, right: Any) -> list[Any]:
@@ -292,31 +305,22 @@ def merge_year_interval(current: dict[str, Any] | None, next_filter: dict[str, A
         return dict(next_filter)
     current_lower, current_upper = current["value"]
     next_lower, next_upper = next_filter["value"]
+    if is_negative_infinity(current_lower):
+        lower = next_lower
+    elif is_negative_infinity(next_lower):
+        lower = current_lower
+    else:
+        lower = max(current_lower, next_lower)
+    if is_positive_infinity(current_upper):
+        upper = "inf" if normalize_interval_bound_text(next_upper) == "+inf" else next_upper
+    elif is_positive_infinity(next_upper):
+        upper = "inf" if normalize_interval_bound_text(current_upper) == "+inf" else current_upper
+    else:
+        upper = min(current_upper, next_upper)
     return {
         **current,
-        "value": [
-            max_lower_bound(current_lower, next_lower),
-            min_upper_bound(current_upper, next_upper),
-        ],
+        "value": [lower, upper],
     }
-
-
-def max_lower_bound(left: Any, right: Any) -> Any:
-    """取两个 interval 下界中更严格的一个。"""
-    if is_negative_infinity(left):
-        return right
-    if is_negative_infinity(right):
-        return left
-    return max(left, right)
-
-
-def min_upper_bound(left: Any, right: Any) -> Any:
-    """取两个 interval 上界中更严格的一个。"""
-    if is_positive_infinity(left):
-        return "inf" if normalize_interval_bound_text(right) == "+inf" else right
-    if is_positive_infinity(right):
-        return "inf" if normalize_interval_bound_text(left) == "+inf" else left
-    return min(left, right)
 
 
 def has_resolved_interval_bounds(left: Any, right: Any) -> bool:

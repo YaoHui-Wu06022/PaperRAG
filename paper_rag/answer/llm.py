@@ -51,7 +51,7 @@ class AnswerComposerClient:
     def complete_answer(self, evidence: dict[str, Any]) -> str:
         """发送回答生成请求。"""
         if not self.base_url or not self.api_key or not self.model:
-            raise AnswerError("ANSWER_BASE_URL, ANSWER_API_KEY or ANSWER_MODEL is missing")
+            raise AnswerError("缺少 ANSWER_BASE_URL、ANSWER_API_KEY 或 ANSWER_MODEL 配置")
         payload = {
             "model": self.model,
             "messages": [
@@ -117,14 +117,14 @@ def chat_completion_content(data: dict[str, Any]) -> str:
     """从 chat/completions 响应中取第一条 message.content。"""
     choices = data.get("choices")
     if not isinstance(choices, list) or not choices:
-        raise AnswerError("Answer response missing choices")
+        raise AnswerError("回答模型响应缺少 choices")
     first = choices[0]
     if not isinstance(first, dict):
-        raise AnswerError("Answer choice is not an object")
+        raise AnswerError("回答模型 choice 不是对象")
     message = first.get("message")
     if not isinstance(message, dict):
-        raise AnswerError("Answer response missing message")
+        raise AnswerError("回答模型响应缺少 message")
     content = message.get("content")
     if not isinstance(content, str) or not content.strip():
-        raise AnswerError("Answer response missing content")
+        raise AnswerError("回答模型响应缺少 content")
     return content.strip()

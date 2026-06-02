@@ -107,17 +107,12 @@ def query_keyword_terms(query: str) -> list[str]:
 
 def non_scope_compare_objects(compare_objects: list[str], scope_terms: list[str]) -> list[str]:
     """保留正文比较对象，过滤掉已作为论文 scope 的 compare_objects。"""
-    scope_keys = {scope_term_key(term) for term in scope_terms if scope_term_key(term)}
+    scope_keys = {str(term or "").strip().casefold() for term in scope_terms if str(term or "").strip()}
     return [
         compare_object
         for compare_object in dedupe_text(compare_objects)
-        if scope_term_key(compare_object) not in scope_keys
+        if str(compare_object or "").strip().casefold() not in scope_keys
     ]
-
-
-def scope_term_key(value: str) -> str:
-    """用于判断 compare_object 是否已经被论文 scope 吸收。"""
-    return str(value or "").strip().casefold()
 
 
 def scope_query_exclusion_terms(route: RouteDecision) -> list[str]:

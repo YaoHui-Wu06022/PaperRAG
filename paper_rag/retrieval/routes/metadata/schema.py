@@ -29,20 +29,20 @@ def validate_metadata_parse(content: str | dict[str, Any], fallback_query: str =
     extra_fields = set(payload) - METADATA_FIELDS
     if extra_fields:
         fields = ", ".join(sorted(extra_fields))
-        raise PlanParseError(f"Metadata parser returned unsupported fields: {fields}")
+        raise PlanParseError(f"Metadata parser 返回了不支持的字段：{fields}")
 
     intent = normalize_nullable_enum(payload.get("intent"))
     if intent not in METADATA_INTENTS:
-        raise PlanParseError(f"Invalid metadata intent: {intent}")
+        raise PlanParseError(f"不支持的 metadata intent：{intent}")
 
     return_fields = validate_return_fields(payload.get("return_fields", []))
     if intent == "list" and not return_fields:
         return_fields = ["title"]
     if intent == "lookup" and not return_fields:
-        raise PlanParseError("Metadata lookup requires return_fields")
+        raise PlanParseError("Metadata lookup 需要 return_fields")
     if intent in {"count", "exists"} or intent is None:
         if return_fields:
-            raise PlanParseError("Metadata count/exists/null requires return_fields=[]")
+            raise PlanParseError("Metadata count/exists/null 要求 return_fields=[]")
 
     paper_semantic = validate_semantic(payload.get("paper_semantic", ""), "paper_semantic")
     filters = validate_paper_filters(payload.get("filters", []), PARSER_NAME)
@@ -50,7 +50,7 @@ def validate_metadata_parse(content: str | dict[str, Any], fallback_query: str =
     group_mode = payload.get("group_mode", "single")
     group_mode = validate_group_mode(group_mode, paper_groups, PARSER_NAME, "group_mode")
     if group_mode == "and" and intent != "exists":
-        raise PlanParseError('Metadata group_mode="and" requires intent="exists"')
+        raise PlanParseError('Metadata group_mode="and" 要求 intent="exists"')
 
     return {
         "intent": intent,
@@ -67,15 +67,15 @@ def validate_return_fields(value: Any) -> list[str]:
     if value is None:
         value = []
     if not isinstance(value, list):
-        raise PlanParseError("Metadata return_fields must be a list")
+        raise PlanParseError("Metadata return_fields 必须是列表")
     fields: list[str] = []
     seen: set[str] = set()
     for item in value:
         if not isinstance(item, str):
-            raise PlanParseError("Metadata return_fields items must be strings")
+            raise PlanParseError("Metadata return_fields 的元素必须是字符串")
         field = item.strip()
         if field not in METADATA_RETURN_FIELDS:
-            raise PlanParseError(f"Invalid metadata return field: {field}")
+            raise PlanParseError(f"不支持的 metadata return field：{field}")
         if field not in seen:
             seen.add(field)
             fields.append(field)

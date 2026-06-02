@@ -10,6 +10,7 @@ from paper_rag.corpus.annotation_index import PaperTags, load_paper_annotation_e
 from paper_rag.corpus.citation_index import record_matches_citation_scope
 from paper_rag.corpus.filters import compare_text, match_record_filters
 from paper_rag.corpus.records import (
+    dedupe_paper_records,
     load_active_manifest_records,
     match_manifest_records,
     paper_record_key,
@@ -43,6 +44,41 @@ def records_for_scope(
         if match_scope_filters(settings, record, filters, corpus=corpus):
             records.append(to_evidence_manifest_record(record))
     return records
+
+
+def resolve_scope_records(
+    settings: Settings,
+    semantic: str,
+    filters: list[dict[str, Any]],
+    groups: list[dict[str, Any]],
+    mode: str,
+    *,
+    corpus: "CorpusContext | None" = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """统一展开 single/per/or/and paper scope，返回扁平 records 和逐组结果。"""
+    if mode not in {"per", "or", "and"}:
+        return records_for_scope(settings, semantic, filters, mode, corpus=corpus), []
+
+    group_results = [
+        {
+            "semantic": group.get("semantic") or "",
+            "filters": group.get("filters") or [],
+            "records": records_for_scope(
+                settings,
+                combined_semantic(semantic, group.get("semantic") or ""),
+                [*filters, *(group.get("filters") or [])],
+                mode,
+                corpus=corpus,
+            ),
+        }
+        for group in groups
+    ]
+    records = dedupe_paper_records([
+        record
+        for group in group_results
+        for record in group["records"]
+    ])
+    return records, group_results
 
 
 def match_scope_filters(

@@ -30,7 +30,7 @@ class EmbeddingClient:
         if not texts:
             return []
         if not self.api_key:
-            raise EmbeddingError("EMBEDDING_API_KEY is missing in .env")
+            raise EmbeddingError(".env 中缺少 EMBEDDING_API_KEY")
         payload = {
             "model": self.model,
             "input": texts,
@@ -61,7 +61,7 @@ def parse_embedding_response(data: dict[str, Any], expected_count: int) -> list[
     """解析 OpenAI-compatible embedding 响应中的向量列表。"""
     rows = data.get("data")
     if not isinstance(rows, list):
-        raise EmbeddingError("Embedding response missing data list")
+        raise EmbeddingError("Embedding 响应缺少 data 列表")
     indexed: list[tuple[int, list[float]]] = []
     for position, row in enumerate(rows):
         if not isinstance(row, dict):
@@ -76,5 +76,5 @@ def parse_embedding_response(data: dict[str, Any], expected_count: int) -> list[
     indexed.sort(key=lambda item: item[0])
     vectors = [vector for _, vector in indexed]
     if len(vectors) != expected_count:
-        raise EmbeddingError(f"Expected {expected_count} embedding(s), got {len(vectors)}")
+        raise EmbeddingError(f"预期 {expected_count} 个 embedding，实际得到 {len(vectors)} 个")
     return vectors

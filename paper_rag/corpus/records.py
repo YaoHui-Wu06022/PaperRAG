@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from pathlib import Path
 from typing import Any
 
 from paper_rag.config import Settings
@@ -79,11 +78,23 @@ def paper_record_key(record: ManifestRecord | dict[str, Any]) -> str:
         if record.get("paper_id"):
             return str(record["paper_id"])
         if record.get("paper_data_path"):
-            return path_name(record["paper_data_path"])
+            return str(record["paper_data_path"]).replace("\\", "/").rstrip("/").rsplit("/", 1)[-1]
         return str(record.get("title") or "")
     if record.paper_data_path:
-        return path_name(record.paper_data_path)
+        return str(record.paper_data_path).replace("\\", "/").rstrip("/").rsplit("/", 1)[-1]
     return str(record.title or "")
+
+
+def paper_record_keys(records: list[dict[str, Any]]) -> list[str]:
+    """把论文 records 转成保序去重的身份 key 列表。"""
+    keys: list[str] = []
+    seen: set[str] = set()
+    for record in records:
+        key = paper_record_key(record)
+        if key and key not in seen:
+            seen.add(key)
+            keys.append(key)
+    return keys
 
 
 def dedupe_paper_records(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -94,8 +105,3 @@ def dedupe_paper_records(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def merge_paper_records(*paper_lists: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """合并多组论文 records，并按论文身份去重。"""
     return dedupe_paper_records([paper for paper_list in paper_lists for paper in paper_list])
-
-
-def path_name(path: Any) -> str:
-    """从路径字符串中取最后一级名称。"""
-    return Path(str(path or "").replace("\\", "/").rstrip("/")).name

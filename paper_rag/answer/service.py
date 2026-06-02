@@ -35,7 +35,7 @@ def run_ask(
                 answer = client.complete_answer(evidence)
                 answer_mode = "llm"
             except (AnswerError, OSError, ValueError) as exc:
-                evidence.setdefault("warnings", []).append(f"answer generation failed: {exc}")
+                evidence.setdefault("warnings", []).append(f"回答生成失败：{exc}")
                 answer = compose_answer_failure_answer()
                 answer_mode = "local"
         else:

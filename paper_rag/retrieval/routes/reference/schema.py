@@ -39,19 +39,19 @@ def validate_reference_parse(content: str | dict[str, Any], fallback_query: str 
     extra_fields = set(payload) - REFERENCE_FIELDS
     if extra_fields:
         fields = ", ".join(sorted(extra_fields))
-        raise PlanParseError(f"Reference parser returned unsupported fields: {fields}")
+        raise PlanParseError(f"Reference parser 返回了不支持的字段：{fields}")
 
     intent = normalize_nullable_enum(payload.get("intent"))
     if intent not in REFERENCE_INTENTS:
-        raise PlanParseError(f"Invalid reference intent: {intent}")
+        raise PlanParseError(f"不支持的 reference intent：{intent}")
 
     return_side = normalize_nullable_enum(payload.get("return_side"))
     if return_side not in REFERENCE_RETURN_SIDES:
-        raise PlanParseError(f"Invalid reference return_side: {return_side}")
+        raise PlanParseError(f"不支持的 reference return_side：{return_side}")
     if intent in {"list", "count"} and return_side not in {"source", "object"}:
-        raise PlanParseError("Reference list/count requires return_side=source or object")
+        raise PlanParseError("Reference list/count 需要 return_side=source 或 object")
     if intent in {"exists", None} and return_side is not None:
-        raise PlanParseError("Reference exists/null requires return_side=null")
+        raise PlanParseError("Reference exists/null 要求 return_side=null")
 
     source_groups = validate_paper_groups(payload.get("source_groups", []), PARSER_NAME, "source_groups")
     object_groups = validate_paper_groups(payload.get("object_groups", []), PARSER_NAME, "object_groups")

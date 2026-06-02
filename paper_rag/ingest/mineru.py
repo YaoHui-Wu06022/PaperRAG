@@ -44,9 +44,9 @@ class MinerUClient:
                 data = json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace").strip()
-            raise MinerUError(f"MinerU {method} {url} failed: HTTP {exc.code}: {detail}") from exc
+            raise MinerUError(f"MinerU {method} {url} 请求失败：HTTP {exc.code}: {detail}") from exc
         if data.get("code") != 0:
-            raise MinerUError(f"MinerU API failed: {data.get('msg') or data}")
+            raise MinerUError(f"MinerU API 调用失败：{data.get('msg') or data}")
         return data
 
     def parse_local_pdf(self, pdf_path: Path, output_dir: Path, data_id: str) -> Path:
@@ -57,7 +57,7 @@ class MinerUClient:
         result = self._wait_batch_result(batch["batch_id"], data_id)
         zip_url = result.get("full_zip_url")
         if not zip_url:
-            raise MinerUError(f"MinerU result missing full_zip_url for {pdf_path.name}")
+            raise MinerUError(f"MinerU 结果缺少 full_zip_url：{pdf_path.name}")
         return self._download_and_extract(zip_url, output_dir)
 
     def _create_upload_batch(self, pdf_path: Path, data_id: str) -> dict:
@@ -74,7 +74,7 @@ class MinerUClient:
     def _upload_file(self, upload_url: str, pdf_path: Path) -> None:
         parsed = urllib.parse.urlparse(upload_url)
         if parsed.scheme != "https":
-            raise MinerUError(f"Unsupported MinerU upload URL scheme: {parsed.scheme}")
+            raise MinerUError(f"不支持的 MinerU 上传 URL 协议：{parsed.scheme}")
         path = parsed.path + (f"?{parsed.query}" if parsed.query else "")
         headers = {"Content-Length": str(pdf_path.stat().st_size)}
         # MinerU 返回的是预签名上传 URL，这里用低层 HTTPSConnection 直接 PUT 文件流。
@@ -85,7 +85,7 @@ class MinerUClient:
                 response = connection.getresponse()
                 detail = response.read().decode("utf-8", errors="replace").strip()
                 if response.status >= 300:
-                    raise MinerUError(f"MinerU upload failed for {pdf_path.name}: HTTP {response.status}: {detail}")
+                    raise MinerUError(f"MinerU 上传失败：{pdf_path.name}: HTTP {response.status}: {detail}")
         finally:
             connection.close()
 
@@ -104,9 +104,9 @@ class MinerUClient:
                 if state == "done":
                     return item
                 if state == "failed":
-                    raise MinerUError(f"MinerU parse failed for {data_id}: {item}")
+                    raise MinerUError(f"MinerU 解析失败：{data_id}: {item}")
             time.sleep(10)
-        raise MinerUError(f"Timed out waiting for MinerU batch {batch_id}")
+        raise MinerUError(f"等待 MinerU 批处理超时：{batch_id}")
 
     def _download_and_extract(self, zip_url: str, output_dir: Path) -> Path:
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -116,7 +116,7 @@ class MinerUClient:
                 zip_path.write_bytes(response.read())
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace").strip()
-            raise MinerUError(f"MinerU result download failed: HTTP {exc.code}: {detail}") from exc
+            raise MinerUError(f"MinerU 结果下载失败：HTTP {exc.code}: {detail}") from exc
         with zipfile.ZipFile(zip_path) as archive:
             safe_extract_zip(archive, output_dir)
         zip_path.unlink(missing_ok=True)
@@ -137,12 +137,12 @@ def safe_zip_member_target(root: Path, member_name: str) -> Path:
     posix_path = PurePosixPath(normalized)
     windows_path = PureWindowsPath(member_name)
     if not normalized.strip() or posix_path.is_absolute() or windows_path.is_absolute() or windows_path.drive:
-        raise MinerUError(f"Unsafe MinerU zip member path: {member_name}")
+        raise MinerUError(f"不安全的 MinerU zip 成员路径：{member_name}")
     if any(part == ".." for part in posix_path.parts):
-        raise MinerUError(f"Unsafe MinerU zip member path: {member_name}")
+        raise MinerUError(f"不安全的 MinerU zip 成员路径：{member_name}")
     target = (root / Path(*posix_path.parts)).resolve()
     try:
         target.relative_to(root)
     except ValueError as exc:
-        raise MinerUError(f"Unsafe MinerU zip member path: {member_name}") from exc
+        raise MinerUError(f"不安全的 MinerU zip 成员路径：{member_name}") from exc
     return target

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from paper_rag.corpus.records import paper_record_key
+from paper_rag.corpus.records import paper_record_keys
 
 
 CONTENT_RETRIEVAL_REGIONS = {"abstract", "body"}
@@ -90,8 +90,8 @@ def filter_chunks_by_paper_records(
     """按论文记录身份过滤 chunk 文档。"""
     if not paper_records:
         return []
-    # paper_records 可能来自 manifest 或 citation graph，统一走 paper_record_key 对齐 chunk.paper_id。
-    paper_ids = {paper_record_key(record) for record in paper_records if paper_record_key(record)}
+    # paper_records 可能来自 manifest 或 citation graph，统一身份 key 后再对齐 chunk.paper_id。
+    paper_ids = set(paper_record_keys(paper_records))
     return [chunk_document for chunk_document in chunk_documents if chunk_document.paper_id in paper_ids]
 
 

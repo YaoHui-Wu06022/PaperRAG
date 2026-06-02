@@ -46,7 +46,7 @@ def build_query_embedder(settings: Settings) -> CachedEmbedder:
 def build_store(settings: Settings) -> MilvusStore:
     """按配置创建 Milvus/Zilliz collection 访问对象。"""
     if not settings.milvus_uri:
-        raise ValueError("MILVUS_URI is missing in .env")
+        raise ValueError(".env 中缺少 MILVUS_URI")
     return MilvusStore(
         uri=settings.milvus_uri,
         token=settings.milvus_token,
@@ -60,18 +60,18 @@ def run_index(settings: Settings, *, reporter=print, embedder=None, store=None) 
     """读取正文 chunks，生成向量并重建 Milvus collection。"""
     chunk_documents = filter_content_retrieval_chunks(load_chunk_documents(settings.paper_data_dir))
     if not chunk_documents:
-        raise ValueError(f"No abstract/body chunks found in {settings.paper_data_dir}")
-    reporter(f"[index] Loaded {len(chunk_documents)} chunk(s)")
+        raise ValueError(f"在 {settings.paper_data_dir} 中没有找到 abstract/body chunks")
+    reporter(f"[index] 已加载 {len(chunk_documents)} 个 chunk")
     embedder = embedder or build_embedder(settings)
     store = store or build_store(settings)
-    reporter("[index] Embedding chunks")
+    reporter("[index] 正在生成 chunk embedding")
     # index 使用 chunk.embedding_text，里面通常包含标题/section/text 的稳定组合。
     vectors = embedder.embed_texts([chunk_document.embedding_text for chunk_document in chunk_documents])
-    reporter(f"[index] Recreating Milvus collection: {settings.milvus_collection}")
+    reporter(f"[index] 正在重建 Milvus collection：{settings.milvus_collection}")
     store.recreate_collection()
     inserted = store.insert_chunk_documents(chunk_documents, vectors)
-    reporter(f"[index] Inserted {inserted} vector(s)")
-    reporter(f"[index] Writing BM25 index: {settings.bm25_index_path}")
+    reporter(f"[index] 已写入 {inserted} 个向量")
+    reporter(f"[index] 正在写入 BM25 索引：{settings.bm25_index_path}")
     BM25CorpusIndex.from_chunks(chunk_documents).save(settings.bm25_index_path)
     return IndexSummary(chunk_count=inserted, collection_name=settings.milvus_collection)
 

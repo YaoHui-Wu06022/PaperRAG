@@ -8,8 +8,8 @@ from paper_rag.config import Settings
 from paper_rag.retrieval.evidence import build_reference_evidence
 from paper_rag.retrieval.route import RouteDecision
 from paper_rag.corpus.citation_index import load_citation_graph
-from paper_rag.corpus.records import dedupe_paper_records, paper_record_key
-from paper_rag.corpus.scope import combined_semantic, records_for_scope
+from paper_rag.corpus.records import paper_record_key
+from paper_rag.corpus.scope import combined_semantic, resolve_scope_records
 
 if TYPE_CHECKING:
     from paper_rag.corpus.context import CorpusContext
@@ -38,7 +38,7 @@ def plan_reference(
     graph = corpus.citation_graph if corpus else load_citation_graph(settings)
     if not graph:
         # reference 不再临时扫描 references.jsonl，图缺失时明确提示先 ingest。
-        warnings.append("reference route requires data/paper_data/citation_graph.json; run paper-rag ingest first")
+        warnings.append("reference 路由缺少 data/paper_data/citation_graph.json；请先运行 paper-rag ingest")
         return build_reference_evidence(
             route,
             status="graph_missing",
@@ -48,25 +48,40 @@ def plan_reference(
             debug=debug,
         )
 
-    source_scope = scope_result(settings, route.source_semantic, route.source_filters, route.source_groups, route.source_mode, corpus=corpus)
-    object_scope = scope_result(settings, route.object_semantic, route.object_filters, route.object_groups, route.object_mode, corpus=corpus)
+    source_scope = scope_result(
+        settings,
+        route.source_semantic,
+        route.source_filters,
+        route.source_groups,
+        route.source_mode,
+        corpus=corpus,
+    )
+    object_scope = scope_result(
+        settings,
+        route.object_semantic,
+        route.object_filters,
+        route.object_groups,
+        route.object_mode,
+        corpus=corpus,
+    )
     source_nodes = node_index(graph, source_scope["records"])
     object_nodes = node_index(graph, object_scope["records"])
     edges = matching_edges(graph, source_nodes, object_nodes)
     answer_papers = answer_papers_for_edges(edges, route.return_side)
-    group_results = (
-        build_group_results(settings, route, graph, corpus=corpus)
-        if route.source_mode != "single" or route.object_mode != "single"
-        else []
+    group_results = build_group_results(
+        settings,
+        route,
+        graph,
+        source_scope,
+        object_scope,
+        corpus=corpus,
     )
     if group_results:
         answer_papers, edges = fold_group_results(route, group_results, answer_papers, edges)
     count = len(answer_papers) if route.intent == "count" else None
     exists = bool(edges) if route.intent == "exists" else None
-    if not answer_papers and route.intent != "exists":
-        warnings.append("reference route found no matching citation edges")
     if not edges:
-        warnings.append("reference route found no matching citation edges")
+        warnings.append("reference 路由没有匹配到引用边")
     return build_reference_evidence(
         route,
         status="ok",
@@ -86,63 +101,51 @@ def build_group_results(
     settings: Settings,
     route: RouteDecision,
     graph: dict[str, Any],
+    source_scope: dict[str, Any],
+    object_scope: dict[str, Any],
     *,
     corpus: "CorpusContext | None" = None,
 ) -> list[dict[str, Any]]:
     """根据有分组的一侧构建逐组引用查询结果。"""
     if route.source_mode != "single":
-        return side_group_results(settings, route, graph, "source", corpus=corpus)
-    if route.object_mode != "single":
-        return side_group_results(settings, route, graph, "object", corpus=corpus)
-    return []
-
-
-def side_group_results(
-    settings: Settings,
-    route: RouteDecision,
-    graph: dict[str, Any],
-    side: str,
-    *,
-    corpus: "CorpusContext | None" = None,
-) -> list[dict[str, Any]]:
-    """对 source 或 object 一侧的 groups 逐组执行引用匹配。"""
-    shared_semantic = route.source_semantic if side == "source" else route.object_semantic
-    shared_filters = route.source_filters if side == "source" else route.object_filters
-    groups = route.source_groups if side == "source" else route.object_groups
-    if not groups:
-        return []
-    fixed_source_scope = None
-    fixed_object_scope = None
-    if side == "source":
-        fixed_object_scope = scope_result(
-            settings,
-            route.object_semantic,
-            route.object_filters,
-            route.object_groups,
-            route.object_mode,
-            corpus=corpus,
-        )
+        side = "source"
+        groups = route.source_groups
+        shared_semantic = route.source_semantic
+        shared_filters = route.source_filters
+    elif route.object_mode != "single":
+        side = "object"
+        groups = route.object_groups
+        shared_semantic = route.object_semantic
+        shared_filters = route.object_filters
     else:
-        fixed_source_scope = scope_result(
-            settings,
-            route.source_semantic,
-            route.source_filters,
-            route.source_groups,
-            route.source_mode,
-            corpus=corpus,
-        )
+        return []
+
     results: list[dict[str, Any]] = []
     for group in groups:
         semantic = combined_semantic(shared_semantic, group.get("semantic") or "")
         filters = [*shared_filters, *(group.get("filters") or [])]
         if side == "source":
-            source_scope = scope_result(settings, semantic, filters, [], "single", corpus=corpus)
-            object_scope = fixed_object_scope
+            current_source_scope = scope_result(
+                settings,
+                semantic,
+                filters,
+                [],
+                "single",
+                corpus=corpus,
+            )
+            current_object_scope = object_scope
         else:
-            source_scope = fixed_source_scope
-            object_scope = scope_result(settings, semantic, filters, [], "single", corpus=corpus)
-        source_nodes = node_index(graph, source_scope["records"])
-        object_nodes = node_index(graph, object_scope["records"])
+            current_source_scope = source_scope
+            current_object_scope = scope_result(
+                settings,
+                semantic,
+                filters,
+                [],
+                "single",
+                corpus=corpus,
+            )
+        source_nodes = node_index(graph, current_source_scope["records"])
+        object_nodes = node_index(graph, current_object_scope["records"])
         edges = matching_edges(graph, source_nodes, object_nodes)
         answer_papers = answer_papers_for_edges(edges, route.return_side)
         results.append({
@@ -164,20 +167,7 @@ def scope_result(
     corpus: "CorpusContext | None" = None,
 ) -> dict[str, Any]:
     """把某一侧 scope 转成候选 records，并保留原始 scope 摘要。"""
-    if mode in {"per", "or", "and"}:
-        records = dedupe_paper_records([
-            record
-            for group in groups
-            for record in records_for_scope(
-                settings,
-                combined_semantic(semantic, group.get("semantic") or ""),
-                [*filters, *(group.get("filters") or [])],
-                mode,
-                corpus=corpus,
-            )
-        ])
-    else:
-        records = records_for_scope(settings, semantic, filters, mode, corpus=corpus)
+    records, _ = resolve_scope_records(settings, semantic, filters, groups, mode, corpus=corpus)
     return {
         "semantic": semantic,
         "filters": filters,
@@ -251,14 +241,18 @@ def fold_group_results(
     edges: list[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """按 per/or/and 聚合 group 结果。"""
-    mode = grouped_side_mode(route)
+    mode = route.source_mode if route.source_mode != "single" else route.object_mode
     if mode == "per":
         return answer_papers, edges
     if mode == "or":
         return unique_papers_from_groups(group_results), unique_edges_from_groups(group_results)
     if mode == "and":
         intersection_ids = intersect_group_answer_ids(group_results)
-        filtered_papers = [paper for paper in unique_papers_from_groups(group_results) if paper_id(paper) in intersection_ids]
+        filtered_papers = [
+            paper
+            for paper in unique_papers_from_groups(group_results)
+            if paper_id(paper) in intersection_ids
+        ]
         filtered_edges = [
             edge
             for edge in unique_edges_from_groups(group_results)
@@ -266,15 +260,6 @@ def fold_group_results(
         ]
         return filtered_papers, filtered_edges
     return answer_papers, edges
-
-
-def grouped_side_mode(route: RouteDecision) -> str:
-    """返回当前 reference 查询中真正启用分组的一侧 mode。"""
-    if route.source_mode != "single":
-        return route.source_mode
-    if route.object_mode != "single":
-        return route.object_mode
-    return "single"
 
 
 def unique_papers_from_groups(group_results: list[dict[str, Any]]) -> list[dict[str, Any]]:

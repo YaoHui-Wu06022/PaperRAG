@@ -73,37 +73,37 @@ def run_ingest(
     """执行一次全量同步，把 PDF 目录重建为本地结构化论文库。"""
     report = reporter or (lambda _: None)
     # 入库流程对目录是增量同步，对 paper_data 是按单篇论文可重建输出。
-    report("[ingest] Preparing data directories")
+    report("[ingest] 正在准备数据目录")
     settings.pdf_dir.mkdir(parents=True, exist_ok=True)
     settings.mineru_output_dir.mkdir(parents=True, exist_ok=True)
     settings.paper_data_dir.mkdir(parents=True, exist_ok=True)
     settings.archive_dir.mkdir(parents=True, exist_ok=True)
     summary = IngestSummary()
-    report(f"[ingest] Loading manifest: {settings.manifest_path}")
+    report(f"[ingest] 正在加载 manifest：{settings.manifest_path}")
     manifest = Manifest.load(settings.manifest_path)
     annotations = load_paper_annotations(settings)
-    report(f"[ingest] Scanning PDFs: {settings.pdf_dir}")
+    report(f"[ingest] 正在扫描 PDF：{settings.pdf_dir}")
     pdf_by_hash = scan_pdfs(settings.pdf_dir, summary)
-    report(f"[ingest] Found {len(pdf_by_hash)} unique PDF(s)")
+    report(f"[ingest] 发现 {len(pdf_by_hash)} 个唯一 PDF")
     for duplicate in summary.duplicates:
-        report(f"[ingest] Duplicate skipped: {duplicate}")
+        report(f"[ingest] 已跳过重复文件：{duplicate}")
     active_hashes = set(pdf_by_hash)
 
-    report("[ingest] Synchronizing deleted PDFs")
+    report("[ingest] 正在同步已删除 PDF")
     # manifest 是以 file_hash 为主键的事实表；当前 PDF 目录中不存在的旧记录需要标记删除。
     for file_hash, record in list(manifest.records.items()):
         if record.status != "deleted" and record.pdf_path and file_hash not in active_hashes:
-            report(f"[ingest] Archiving deleted PDF data: {record.title or file_hash[:8]}")
+            report(f"[ingest] 正在归档已删除 PDF 的派生数据：{record.title or file_hash[:8]}")
             archive_deleted_record(settings, record)
             record.status = "deleted"
             record.pdf_path = None
             summary.deleted.append(record.title or file_hash[:8])
             manifest.records[record.file_hash] = record
 
-    report(f"[ingest] Indexing existing MinerU output: {settings.mineru_output_dir}")
+    report(f"[ingest] 正在索引已有 MinerU 输出：{settings.mineru_output_dir}")
     # 先尝试复用本地 MinerU 输出，避免无谓重复上传和等待解析。
     output_index = build_existing_output_index(settings.mineru_output_dir)
-    report(f"[ingest] Indexed {len(output_index)} MinerU lookup key(s)")
+    report(f"[ingest] 已索引 {len(output_index)} 个 MinerU 查找 key")
     dblp = DblpClient()
     semantic_scholar = SemanticScholarClient(settings.semantic_scholar_api_key)
     arxiv = ArxivClient()
@@ -111,20 +111,20 @@ def run_ingest(
     last_lookup_at = {"arxiv": 0.0, "dblp": 0.0, "semantic_scholar": 0.0}
     total = len(pdf_by_hash)
     for ordinal, (file_hash, pdf_path) in enumerate(pdf_by_hash.items(), start=1):
-        report(f"[ingest] [{ordinal}/{total}] Processing {pdf_path.name}")
+        report(f"[ingest] [{ordinal}/{total}] 正在处理 {pdf_path.name}")
         record = manifest.records.get(file_hash) or ManifestRecord(file_hash=file_hash, status="new")
         try:
             mineru_output = ensure_mineru_output(settings, record, pdf_path, file_hash, output_index, summary, report)
-            report(f"[ingest] [{ordinal}/{total}] MinerU output: {mineru_output.name}")
+            report(f"[ingest] [{ordinal}/{total}] MinerU 输出：{mineru_output.name}")
             title = title_from_output(mineru_output)
             if not title:
                 # 没有可信标题就不继续生成 paper_id，避免后续数据落到不可追踪目录。
                 record.status = "title_unresolved"
                 record.pdf_path = str(pdf_path)
-                record.message = "No paper title found"
-                summary.unresolved.append(f"{pdf_path.name}: no title")
+                record.message = "未找到论文标题"
+                summary.unresolved.append(f"{pdf_path.name}: 未找到标题")
                 manifest.records[record.file_hash] = record
-                report(f"[ingest] [{ordinal}/{total}] Title unresolved; skipped paper_data generation")
+                report(f"[ingest] [{ordinal}/{total}] 标题未解析，已跳过 paper_data 生成")
                 continue
             authors: list[str] = [] if refresh_metadata else clean_author_list(record.author or [])
             year = normalize_year(None if refresh_metadata else record.year)
@@ -133,7 +133,7 @@ def run_ingest(
             has_existing_metadata = bool(record.title and authors and effective_year(year))
             if not refresh_metadata and has_existing_metadata:
                 title = record.title or title
-            report(f"[ingest] [{ordinal}/{total}] Title: {title}")
+            report(f"[ingest] [{ordinal}/{total}] 标题：{title}")
             if not (authors and effective_year(year)):
                 # 三个外部源都有速率限制，闭包让每个源各自维护上次请求时间。
                 match = lookup_metadata(
@@ -154,15 +154,15 @@ def run_ingest(
                     year = match.year
                     venue = normalize_venue_for_storage(settings, match.venue)
                     report(
-                        f"[ingest] [{ordinal}/{total}] Metadata matched: "
-                        f"preprint={year.get('preprint_year')}, publish={year.get('publish_year')}, "
-                        f"venue={venue or 'unresolved'}"
+                        f"[ingest] [{ordinal}/{total}] 元数据匹配成功："
+                        f"预印本年份={year.get('preprint_year')}, 正式发表年份={year.get('publish_year')}, "
+                        f"期刊/会议={venue or '未解析'}"
                     )
                 else:
-                    summary.unresolved.append(f"{pdf_path.name}: ArXiv/DBLP/Semantic Scholar exact title not found")
-                    report(f"[ingest] [{ordinal}/{total}] Metadata unresolved after ArXiv, DBLP, and Semantic Scholar")
+                    summary.unresolved.append(f"{pdf_path.name}: ArXiv/DBLP/Semantic Scholar 未找到精确标题匹配")
+                    report(f"[ingest] [{ordinal}/{total}] ArXiv、DBLP 和 Semantic Scholar 均未解析出元数据")
             else:
-                report(f"[ingest] [{ordinal}/{total}] Metadata already has authors/effective year; skipping external lookup")
+                report(f"[ingest] [{ordinal}/{total}] 元数据已有作者和有效年份，跳过外部检索")
             target_pdf = pdf_path
             rename_year = effective_year(year)
             if rename_year:
@@ -171,15 +171,15 @@ def run_ingest(
                     renamed = rename_pdf_if_needed(settings.pdf_dir, pdf_path, rename_year, title, file_hash)
                 except OSError as exc:
                     renamed = pdf_path
-                    summary.errors.append(f"Could not rename {pdf_path.name}; kept original name: {exc}")
-                    report(f"[ingest] [{ordinal}/{total}] PDF rename failed; kept original name: {exc}")
+                    summary.errors.append(f"无法重命名 {pdf_path.name}，已保留原名：{exc}")
+                    report(f"[ingest] [{ordinal}/{total}] PDF 重命名失败，已保留原名：{exc}")
                 if renamed is None:
-                    summary.errors.append(f"Name conflict for {pdf_path.name}; skipped rename")
-                    report(f"[ingest] [{ordinal}/{total}] PDF rename conflict; kept original name")
+                    summary.errors.append(f"{pdf_path.name} 存在命名冲突，已跳过重命名")
+                    report(f"[ingest] [{ordinal}/{total}] PDF 重命名冲突，已保留原名")
                 else:
                     target_pdf = renamed
                     if renamed != pdf_path:
-                        report(f"[ingest] [{ordinal}/{total}] Renamed PDF -> {renamed.name}")
+                        report(f"[ingest] [{ordinal}/{total}] 已重命名 PDF -> {renamed.name}")
                 renamed_output = rename_mineru_output_if_needed(
                     settings.mineru_output_dir,
                     mineru_output,
@@ -187,17 +187,17 @@ def run_ingest(
                     title,
                 )
                 if renamed_output is None:
-                    summary.errors.append(f"MinerU output name conflict for {title}; kept {mineru_output.name}")
-                    report(f"[ingest] [{ordinal}/{total}] MinerU output rename conflict; kept {mineru_output.name}")
+                    summary.errors.append(f"{title} 的 MinerU 输出存在命名冲突，已保留 {mineru_output.name}")
+                    report(f"[ingest] [{ordinal}/{total}] MinerU 输出重命名冲突，已保留 {mineru_output.name}")
                 else:
                     if renamed_output != mineru_output:
                         summary.renamed_mineru_output.append(f"{mineru_output.name} -> {renamed_output.name}")
-                        report(f"[ingest] [{ordinal}/{total}] Renamed MinerU output -> {renamed_output.name}")
+                        report(f"[ingest] [{ordinal}/{total}] 已重命名 MinerU 输出 -> {renamed_output.name}")
                     mineru_output = renamed_output
             hash8 = file_hash[:8]
             paper_key = f"{slugify_title(title)}_{hash8}"
             paper_data_dir = settings.paper_data_dir / paper_key
-            report(f"[ingest] [{ordinal}/{total}] Building paper_data: {paper_data_dir.name}")
+            report(f"[ingest] [{ordinal}/{total}] 正在构建 paper_data：{paper_data_dir.name}")
             # extract 阶段只消费 MinerU 原始输出和规范 metadata，不再访问外部服务。
             result = extract_paper_data(
                 mineru_output,
@@ -226,13 +226,13 @@ def run_ingest(
             upsert_paper_annotation(annotations, file_hash, result.title)
             manifest.records[record.file_hash] = record
             for warning in result.warnings:
-                report(f"[ingest] [{ordinal}/{total}] Warning: {warning}")
+                report(f"[ingest] [{ordinal}/{total}] 警告：{warning}")
             summary.processed.append(
-                f"{result.title} ({result.block_count} blocks, {result.reference_count} refs, {result.chunk_count} chunks)"
+                f"{result.title}（{result.block_count} 个 block，{result.reference_count} 条引用，{result.chunk_count} 个 chunk）"
             )
             report(
-                f"[ingest] [{ordinal}/{total}] Done: "
-                f"{result.block_count} block(s), {result.reference_count} reference(s), {result.chunk_count} chunk(s)"
+                f"[ingest] [{ordinal}/{total}] 完成："
+                f"{result.block_count} 个 block，{result.reference_count} 条引用，{result.chunk_count} 个 chunk"
             )
         except Exception as exc:
             summary.errors.append(f"{pdf_path.name}: {exc}")
@@ -240,22 +240,22 @@ def run_ingest(
             record.pdf_path = str(pdf_path)
             record.message = str(exc)
             manifest.records[record.file_hash] = record
-            report(f"[ingest] [{ordinal}/{total}] ERROR: {exc}")
+            report(f"[ingest] [{ordinal}/{total}] 错误：{exc}")
 
-    report(f"[ingest] Saving manifest: {settings.manifest_path}")
+    report(f"[ingest] 正在保存 manifest：{settings.manifest_path}")
     manifest.save()
     save_paper_annotations(settings, annotations)
     try:
         # citation graph 是派生索引，放在所有论文都同步完成后统一构建。
         graph_result = build_citation_graph(settings, manifest)
         report(
-            "[ingest] Citation graph: "
-            f"{graph_result.node_count} node(s), {graph_result.edge_count} edge(s) -> {graph_result.path}"
+            "[ingest] 引用图："
+            f"{graph_result.node_count} 个节点，{graph_result.edge_count} 条边 -> {graph_result.path}"
         )
     except Exception as exc:
-        summary.errors.append(f"Citation graph build failed: {exc}")
-        report(f"[ingest] Citation graph build failed: {exc}")
-    report("[ingest] Complete")
+        summary.errors.append(f"引用图构建失败：{exc}")
+        report(f"[ingest] 引用图构建失败：{exc}")
+    report("[ingest] 完成")
     return summary
 
 
@@ -282,30 +282,30 @@ def lookup_metadata(
         elapsed = time.monotonic() - previous
         if previous and elapsed < delay_seconds:
             wait_seconds = delay_seconds - elapsed
-            emit(f"Waiting {wait_seconds:.1f}s before {label} lookup")
+            emit(f"等待 {wait_seconds:.1f}s 后再查询 {label}")
             time.sleep(wait_seconds)
 
     def mark_lookup(source_key: str) -> None:
         if last_lookup_at is not None:
             last_lookup_at[source_key] = time.monotonic()
 
-    emit("Querying ArXiv")
+    emit("正在查询 ArXiv")
     wait_for_lookup("arxiv", "ArXiv", arxiv_retry_delay_seconds)
     try:
         arxiv_match = arxiv.lookup_exact_title(title, retry_delay_seconds=arxiv_retry_delay_seconds)
     except Exception as exc:
         arxiv_match = None
-        emit(f"ArXiv lookup failed: {exc}")
+        emit(f"ArXiv 查询失败：{exc}")
     finally:
         mark_lookup("arxiv")
     if arxiv_match:
         preprint_year = arxiv_match.preprint_year
-        emit(f"ArXiv matched preprint year: {preprint_year}")
+        emit(f"ArXiv 命中预印本年份：{preprint_year}")
     else:
-        emit("ArXiv exact title not found")
+        emit("ArXiv 未找到精确标题匹配")
 
     # DBLP 通常能给出更稳定的正式会议/期刊信息，所以优先于 Semantic Scholar。
-    emit("Querying DBLP")
+    emit("正在查询 DBLP")
     wait_for_lookup("dblp", "DBLP", dblp_retry_delay_seconds)
     try:
         dblp_match = dblp.lookup_exact_title(
@@ -315,7 +315,7 @@ def lookup_metadata(
         )
     except Exception as exc:
         dblp_match = None
-        emit(f"DBLP lookup failed: {exc}")
+        emit(f"DBLP 查询失败：{exc}")
     finally:
         mark_lookup("dblp")
     if dblp_match and is_formal_venue(dblp_match.venue):
@@ -327,9 +327,9 @@ def lookup_metadata(
             venue=dblp_match.venue,
         )
     if dblp_match:
-        emit(f"DBLP matched non-formal venue; ignored: {dblp_match.venue}")
+        emit(f"DBLP 命中非正式 venue，已忽略：{dblp_match.venue}")
 
-    emit("DBLP exact title not found; querying Semantic Scholar")
+    emit("DBLP 未找到精确标题匹配，继续查询 Semantic Scholar")
     wait_for_lookup("semantic_scholar", "Semantic Scholar", semantic_scholar_retry_delay_seconds)
     try:
         semantic_scholar_match = semantic_scholar.lookup_exact_title(
@@ -338,7 +338,7 @@ def lookup_metadata(
         )
     except Exception as exc:
         semantic_scholar_match = None
-        emit(f"Semantic Scholar lookup failed: {exc}")
+        emit(f"Semantic Scholar 查询失败：{exc}")
     finally:
         mark_lookup("semantic_scholar")
     if semantic_scholar_match and is_formal_venue(semantic_scholar_match.venue):
@@ -353,7 +353,7 @@ def lookup_metadata(
             venue=semantic_scholar_match.venue,
         )
     if semantic_scholar_match:
-        emit(f"Semantic Scholar matched non-formal venue; ignored: {semantic_scholar_match.venue}")
+        emit(f"Semantic Scholar 命中非正式 venue，已忽略：{semantic_scholar_match.venue}")
 
     if arxiv_match:
         # 没有正式发表命中时，仍保留 ArXiv 的 title/authors/preprint_year。
@@ -364,7 +364,7 @@ def lookup_metadata(
             venue=arxiv_match.venue,
         )
 
-    emit("Formal metadata exact title not found")
+    emit("未找到正式发表元数据的精确标题匹配")
     return None
 
 
@@ -385,7 +385,7 @@ def scan_pdfs(pdf_dir: Path, summary: IngestSummary) -> dict[str, Path]:
     for path in sorted(pdf_dir.glob("*.pdf"), key=lambda p: p.name.lower()):
         file_hash = sha256_file(path)
         if file_hash in pdf_by_hash:
-            summary.duplicates.append(f"{path.name} duplicates {pdf_by_hash[file_hash].name}")
+            summary.duplicates.append(f"{path.name} 与 {pdf_by_hash[file_hash].name} 重复")
             continue
         pdf_by_hash[file_hash] = path
     return pdf_by_hash
@@ -441,24 +441,24 @@ def ensure_mineru_output(
     emit = report or (lambda _: None)
     if record.mineru_output_path and Path(record.mineru_output_path).exists():
         summary.reused.append(pdf_path.name)
-        emit("[ingest] Reusing MinerU output from manifest")
+        emit("[ingest] 正在复用 manifest 中的 MinerU 输出")
         return Path(record.mineru_output_path)
     if record.archived_mineru_output_path and Path(record.archived_mineru_output_path).exists():
         src = Path(record.archived_mineru_output_path)
         dst = settings.mineru_output_dir / src.name
         replace_dir(src, dst)
         summary.restored.append(pdf_path.name)
-        emit("[ingest] Restored MinerU output from archive")
+        emit("[ingest] 已从归档恢复 MinerU 输出")
         return dst
     inferred_title = infer_title_from_pdf_name(pdf_path)
     inferred_norm = normalize_text(inferred_title)
     for key, directory in output_index.items():
         if inferred_norm and (inferred_norm == key or inferred_norm in key or key in inferred_norm):
             summary.reused.append(pdf_path.name)
-            emit("[ingest] Reusing existing MinerU output by title match")
+            emit("[ingest] 通过标题匹配复用已有 MinerU 输出")
             return directory
     if not settings.mineru_api_key:
-        raise MinerUError("MINERU_API_KEY is missing in .env and no reusable MinerU output was found")
+        raise MinerUError(".env 中缺少 MINERU_API_KEY，且没有找到可复用的 MinerU 输出")
     title_slug = slugify_title(inferred_title)
     output_dir = settings.mineru_output_dir / f"{title_slug}_{file_hash[:8]}"
     client = MinerUClient(
@@ -467,7 +467,7 @@ def ensure_mineru_output(
         settings.mineru_model_version,
         settings.mineru_language,
     )
-    emit("[ingest] Calling MinerU API")
+    emit("[ingest] 正在调用 MinerU API")
     return client.parse_local_pdf(pdf_path, output_dir, file_hash)
 
 

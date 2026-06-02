@@ -9,9 +9,9 @@ from paper_rag.config import Settings
 from paper_rag.retrieval.routes.common.errors import PlanParseError
 from paper_rag.corpus.aliases import dedupe_alias_matches
 from paper_rag.corpus.records import merge_paper_records
-from paper_rag.corpus.resolver import resolve_parser_paper_scope, resolve_year_filter_values
+from paper_rag.corpus.resolver import resolve_parser_paper_scope, resolve_scope_year_filters
 from paper_rag.retrieval.route import RouteDecision
-from paper_rag.retrieval.routes.reference.parser import ReferenceParserClient
+from paper_rag.retrieval.routes.common.parser_client import ReferenceParserClient
 
 if TYPE_CHECKING:
     from paper_rag.corpus.context import CorpusContext
@@ -30,10 +30,10 @@ def build_reference_decision(
     try:
         parser = plan_parser or ReferenceParserClient.from_settings(settings)
         if not hasattr(parser, "parse_reference"):
-            raise PlanParseError("plan_parser must provide parse_reference(query)")
+            raise PlanParseError("plan_parser 必须提供 parse_reference(query)")
         parser_result = parser.parse_reference(query)
     except (PlanParseError, OSError, ValueError) as exc:
-        warnings.append(f"reference_parse_failed: {exc}")
+        warnings.append(f"reference parser 解析失败：{exc}")
         return RouteDecision(
             route=decision.route,
             intent=None,
@@ -115,7 +115,7 @@ def correct_active_cites_scope(query: str, parser_result: dict[str, object], war
     if not moved_filters:
         return parser_result
 
-    warnings.append("reference parser corrected active cites paper scope from object to source")
+    warnings.append("reference parser 已将主动引用句中的 paper scope 从 object 修正到 source")
     return {
         **parser_result,
         "source_filters": [*list(parser_result.get("source_filters") or []), *moved_filters],
@@ -167,16 +167,20 @@ def apply_reference_year_filters(
     corpus: "CorpusContext | None" = None,
 ) -> RouteDecision:
     """解析 source/object 两侧 year interval 中的论文边界。"""
-    source_filters = resolve_year_filter_values(settings, list(decision.source_filters), warnings, corpus=corpus)
-    source_groups = [
-        {**group, "filters": resolve_year_filter_values(settings, list(group.get("filters") or []), warnings, corpus=corpus)}
-        for group in decision.source_groups
-    ]
-    object_filters = resolve_year_filter_values(settings, list(decision.object_filters), warnings, corpus=corpus)
-    object_groups = [
-        {**group, "filters": resolve_year_filter_values(settings, list(group.get("filters") or []), warnings, corpus=corpus)}
-        for group in decision.object_groups
-    ]
+    source_filters, source_groups = resolve_scope_year_filters(
+        settings,
+        decision.source_filters,
+        decision.source_groups,
+        warnings,
+        corpus=corpus,
+    )
+    object_filters, object_groups = resolve_scope_year_filters(
+        settings,
+        decision.object_filters,
+        decision.object_groups,
+        warnings,
+        corpus=corpus,
+    )
     if (
         source_filters == decision.source_filters
         and source_groups == decision.source_groups

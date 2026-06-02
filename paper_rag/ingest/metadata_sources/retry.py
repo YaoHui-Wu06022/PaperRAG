@@ -37,4 +37,4 @@ def urlopen_with_retry(
             time.sleep(delay_seconds)
     if last_error:
         raise last_error
-    raise RuntimeError("urlopen_with_retry failed without an exception")
+    raise RuntimeError("urlopen_with_retry 未返回结果且没有记录异常")

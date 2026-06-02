@@ -19,8 +19,8 @@ def validate_top_parse(content: str | dict[str, Any], fallback_query: str = "") 
     extra_fields = set(payload) - {"router"}
     if extra_fields:
         fields = ", ".join(sorted(extra_fields))
-        raise PlanParseError(f"Top parser returned unsupported fields: {fields}")
+        raise PlanParseError(f"Top parser 返回了不支持的字段：{fields}")
     router = payload.get("router")
     if router not in TOP_ROUTERS:
-        raise PlanParseError(f"Invalid top router: {router}")
+        raise PlanParseError(f"不支持的 top router：{router}")
     return {"router": router}

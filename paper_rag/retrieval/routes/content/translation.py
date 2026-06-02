@@ -71,7 +71,7 @@ def translate_bm25_terms(
                 translated.extend(normalize_translation_result(translator.translate(term, provider, settings)))
             except Exception as exc:
                 if warnings is not None:
-                    warnings.append(f"{provider} translation failed for BM25 term {term!r}: {exc}")
+                    warnings.append(f"{provider} 翻译 BM25 关键词 {term!r} 失败：{exc}")
     return dedupe_bm25_text(translated)
 
 
@@ -230,7 +230,7 @@ def request_json_request(request: Request, timeout_seconds: int) -> dict[str, An
     try:
         return json.loads(raw)
     except json.JSONDecodeError as exc:
-        raise RuntimeError(f"non-json translation response: {raw[:200]}") from exc
+        raise RuntimeError(f"翻译接口返回的不是 JSON：{raw[:200]}") from exc
 
 
 def normalize_translation_result(value: Any) -> list[str]:
@@ -250,14 +250,14 @@ def endpoint_host_url(endpoint: str) -> tuple[str, str]:
     """把 endpoint 配置规整成 host 和 https URL。"""
     value = endpoint.strip().removeprefix("https://").removeprefix("http://").strip("/")
     if not value:
-        raise RuntimeError("translation endpoint is empty")
+        raise RuntimeError("翻译接口 endpoint 为空")
     return value, f"https://{value}/"
 
 
 def require_config(value: str | None, name: str) -> str:
     """读取必填配置，缺失时抛出清晰错误。"""
     if not value:
-        raise RuntimeError(f"{name} is not configured")
+        raise RuntimeError(f"{name} 未配置")
     return value
 
 

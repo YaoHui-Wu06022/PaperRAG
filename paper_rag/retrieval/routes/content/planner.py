@@ -6,8 +6,8 @@ from typing import Any
 
 from paper_rag.config import Settings
 from paper_rag.corpus.context import CorpusContext
-from paper_rag.corpus.records import dedupe_paper_records, paper_record_key
-from paper_rag.corpus.scope import combined_semantic, records_for_scope
+from paper_rag.corpus.records import paper_record_keys
+from paper_rag.corpus.scope import resolve_scope_records
 from paper_rag.retrieval.chunk_fusion import fuse_chunk_hits
 from paper_rag.retrieval.dense.service import search_dense_chunks
 from paper_rag.retrieval.evidence import build_content_evidence
@@ -42,12 +42,19 @@ def plan_body(
             context_units=[],
             parser_error=route.parser_error,
             debug=debug,
-        )
+    )
 
     with timings.measure("scope"):
-        scope_records, group_results = resolve_content_scope(settings, route, corpus)
+        scope_records, group_results = resolve_scope_records(
+            settings,
+            route.paper_semantic,
+            route.filters,
+            route.paper_groups,
+            route.group_mode,
+            corpus=corpus,
+        )
     if not scope_records:
-        warnings.append("content route found no matching paper scope records")
+        warnings.append("content 路由没有匹配到论文范围记录")
         return build_content_evidence(
             route,
             status="ok",
@@ -73,7 +80,7 @@ def plan_body(
         for chunk_document in chunk_documents
     }
     if not chunk_documents:
-        warnings.append("content route found no matching chunks")
+        warnings.append("content 路由没有匹配到正文 chunk")
         context_units: list[dict[str, Any]] = []
     else:
         dense_results = []
@@ -82,12 +89,12 @@ def plan_body(
                 dense_results = search_dense_chunks(
                     settings,
                     retrieval_query["dense_query"],
-                    paper_ids=paper_ids_for_scope(scope_records),
+                    paper_ids=paper_record_keys(scope_records),
                     embedder=embedder,
                     store=store,
                 )
         except Exception as exc:
-            warnings.append(f"dense retrieval failed: {exc}; using BM25 candidates only")
+            warnings.append(f"Dense 检索失败：{exc}；仅使用 BM25 候选")
         with timings.measure("bm25"):
             bm25_results = corpus.bm25_index.search_many(
                 retrieval_query["bm25_queries"],
@@ -107,7 +114,7 @@ def plan_body(
             ]
 
     if not context_units:
-        warnings.append("body route found no dense/BM25 candidates")
+        warnings.append("正文检索没有命中 Dense/BM25 候选")
     return build_content_evidence(
         route,
         status="ok",
@@ -118,52 +125,3 @@ def plan_body(
         group_results=group_results or None,
         debug=debug,
     )
-
-
-def resolve_content_scope(
-    settings: Settings,
-    route: RouteDecision,
-    corpus: CorpusContext,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    """解析 content route 的论文候选范围。"""
-    if route.group_mode not in {"per", "or", "and"}:
-        return records_for_scope(
-            settings,
-            route.paper_semantic,
-            route.filters,
-            route.group_mode,
-            corpus=corpus,
-        ), []
-
-    group_results = [
-        {
-            "semantic": group.get("semantic") or "",
-            "filters": group.get("filters") or [],
-            "records": records_for_scope(
-                settings,
-                combined_semantic(route.paper_semantic, group.get("semantic") or ""),
-                [*route.filters, *(group.get("filters") or [])],
-                route.group_mode,
-                corpus=corpus,
-            ),
-        }
-        for group in route.paper_groups
-    ]
-    scope_records = dedupe_paper_records([
-        record
-        for group in group_results
-        for record in group["records"]
-    ])
-    return scope_records, group_results
-
-
-def paper_ids_for_scope(scope_records: list[dict[str, Any]]) -> list[str]:
-    """把 scope records 转成 Milvus paper_id 过滤列表。"""
-    paper_ids: list[str] = []
-    seen: set[str] = set()
-    for record in scope_records:
-        paper_id = paper_record_key(record)
-        if paper_id and paper_id not in seen:
-            seen.add(paper_id)
-            paper_ids.append(paper_id)
-    return paper_ids

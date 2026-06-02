@@ -6,10 +6,18 @@ import json
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable, Self
 
 from paper_rag.config import Settings
 from paper_rag.retrieval.routes.common.errors import PlanParseError
+from paper_rag.retrieval.routes.content.prompt import content_parser_system_prompt
+from paper_rag.retrieval.routes.content.schema import validate_content_parse
+from paper_rag.retrieval.routes.metadata.prompt import metadata_parser_system_prompt
+from paper_rag.retrieval.routes.metadata.schema import validate_metadata_parse
+from paper_rag.retrieval.routes.reference.prompt import reference_parser_prompt
+from paper_rag.retrieval.routes.reference.schema import validate_reference_parse
+from paper_rag.retrieval.routes.top.prompt import top_route_prompt
+from paper_rag.retrieval.routes.top.schema import validate_top_parse
 
 
 @dataclass(frozen=True)
@@ -34,7 +42,7 @@ class PlanParserClient:
     def complete_json(self, system_prompt: str, query: str) -> str:
         """发送一次 parser 请求，优先要求 JSON object 格式返回。"""
         if not self.base_url or not self.api_key or not self.model:
-            raise PlanParseError("PLAN_PARSER_BASE_URL, PLAN_PARSER_API_KEY or PLAN_PARSER_MODEL is missing")
+            raise PlanParseError("缺少 PLAN_PARSER_BASE_URL、PLAN_PARSER_API_KEY 或 PLAN_PARSER_MODEL 配置")
         payload = {
             "model": self.model,
             "messages": [
@@ -82,14 +90,66 @@ def chat_completion_content(data: dict[str, Any]) -> str:
     """从 chat/completions 响应中取第一条 message.content。"""
     choices = data.get("choices")
     if not isinstance(choices, list) or not choices:
-        raise PlanParseError("Plan parser response missing choices")
+        raise PlanParseError("Plan parser 响应缺少 choices")
     first = choices[0]
     if not isinstance(first, dict):
-        raise PlanParseError("Plan parser choice is not an object")
+        raise PlanParseError("Plan parser choice 不是对象")
     message = first.get("message")
     if not isinstance(message, dict):
-        raise PlanParseError("Plan parser response missing message")
+        raise PlanParseError("Plan parser 响应缺少 message")
     content = message.get("content")
     if not isinstance(content, str) or not content.strip():
-        raise PlanParseError("Plan parser response missing content")
+        raise PlanParseError("Plan parser 响应缺少 content")
     return content.strip()
+
+
+class RouteParserClient:
+    """按 route 配置 prompt 和 schema validator 的 parser client 基类。"""
+
+    prompt_factory: Callable[[], str]
+    validator: Callable[[str, str], dict[str, Any]]
+
+    def __init__(self, client: PlanParserClient) -> None:
+        self.client = client
+
+    @classmethod
+    def from_settings(cls, settings: Settings) -> Self:
+        """从 Settings 创建 route parser client。"""
+        return cls(PlanParserClient.from_settings(settings))
+
+    def parse(self, query: str) -> dict[str, Any]:
+        """调用 route prompt，并返回已校验的 parser result。"""
+        content = self.client.complete_json(self.prompt_factory(), query)
+        return self.validator(content, query)
+
+
+class TopParserClient(RouteParserClient):
+    """只负责调用 top prompt 并校验 router 字段。"""
+
+    prompt_factory = staticmethod(top_route_prompt)
+    validator = staticmethod(validate_top_parse)
+    parse_top = RouteParserClient.parse
+
+
+class MetadataParserClient(RouteParserClient):
+    """调用 metadata prompt，并返回已校验的 parser result。"""
+
+    prompt_factory = staticmethod(metadata_parser_system_prompt)
+    validator = staticmethod(validate_metadata_parse)
+    parse_metadata = RouteParserClient.parse
+
+
+class ReferenceParserClient(RouteParserClient):
+    """调用 reference prompt，并返回已校验的 parser result。"""
+
+    prompt_factory = staticmethod(reference_parser_prompt)
+    validator = staticmethod(validate_reference_parse)
+    parse_reference = RouteParserClient.parse
+
+
+class ContentParserClient(RouteParserClient):
+    """调用 content prompt，并返回已校验的 parser result。"""
+
+    prompt_factory = staticmethod(content_parser_system_prompt)
+    validator = staticmethod(validate_content_parse)
+    parse_content = RouteParserClient.parse

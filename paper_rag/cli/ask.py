@@ -8,10 +8,10 @@ from paper_rag.config import Settings
 
 
 def add_ask_parser(subparsers: argparse._SubParsersAction) -> None:
-    ask = subparsers.add_parser("ask", help="Answer a paper question with retrieval evidence")
-    ask.add_argument("query", nargs="+", help="Question to answer")
-    ask.add_argument("--debug", action="store_true", help="Include planner debug details in evidence")
-    ask.add_argument("--json", action="store_true", help="Print answer payload as JSON")
+    ask = subparsers.add_parser("ask", help="基于检索证据回答论文问题")
+    ask.add_argument("query", nargs="+", help="要回答的问题")
+    ask.add_argument("--debug", action="store_true", help="在 evidence 中包含 planner 调试信息")
+    ask.add_argument("--json", action="store_true", help="以 JSON 格式输出回答 payload")
     ask.set_defaults(handler=handle_ask)
 
 
