@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from paper_rag.answer.llm import AnswerClientProtocol, AnswerComposerClient
-from paper_rag.answer.local import compose_local_answer, should_use_answer_llm
+from paper_rag.answer.llm import AnswerClientProtocol, AnswerComposerClient, AnswerError
+from paper_rag.answer.local import compose_answer_failure_answer, compose_local_answer, should_use_answer_llm
 from paper_rag.config import Settings
 from paper_rag.corpus.context import CorpusContext
 from paper_rag.retrieval.plan import run_plan
@@ -31,8 +31,13 @@ def run_ask(
     with timings.measure("answer"):
         if should_use_answer_llm(evidence):
             client = answer_client or AnswerComposerClient.from_settings(settings)
-            answer = client.complete_answer(evidence)
-            answer_mode = "llm"
+            try:
+                answer = client.complete_answer(evidence)
+                answer_mode = "llm"
+            except (AnswerError, OSError, ValueError) as exc:
+                evidence.setdefault("warnings", []).append(f"answer generation failed: {exc}")
+                answer = compose_answer_failure_answer()
+                answer_mode = "local"
         else:
             answer = compose_local_answer(evidence)
             answer_mode = "local"

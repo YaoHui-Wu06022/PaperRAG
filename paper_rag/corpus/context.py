@@ -6,7 +6,12 @@ from typing import Any
 
 from paper_rag.config import Settings
 from paper_rag.corpus.annotation_index import PaperAnnotationEntry, PaperTags, load_paper_annotation_entries
-from paper_rag.corpus.chunks import ChunkDocument, filter_chunks_by_paper_records, load_chunk_documents
+from paper_rag.corpus.chunks import (
+    ChunkDocument,
+    filter_chunks_by_paper_records,
+    filter_content_retrieval_chunks,
+    load_chunk_documents,
+)
 from paper_rag.corpus.citation_index import load_citation_graph
 from paper_rag.corpus.records import load_active_manifest_records
 from paper_rag.ingest.manifest import ManifestRecord
@@ -22,7 +27,7 @@ class CorpusContext:
         self._annotation_entries: list[PaperAnnotationEntry] | None = None
         self._annotation_tag_index: dict[str, PaperTags] | None = None
         self._chunk_documents: list[ChunkDocument] | None = None
-        self._chunks_by_id: dict[str, ChunkDocument] | None = None
+        self._content_chunk_documents: list[ChunkDocument] | None = None
         self._citation_graph: dict[str, Any] | None | bool = False
         self._bm25_index: BM25CorpusIndex | None = None
 
@@ -55,13 +60,10 @@ class CorpusContext:
         return self._chunk_documents
 
     @property
-    def chunks_by_id(self) -> dict[str, ChunkDocument]:
-        if self._chunks_by_id is None:
-            self._chunks_by_id = {
-                chunk_document.chunk_id: chunk_document
-                for chunk_document in self.chunk_documents
-            }
-        return self._chunks_by_id
+    def content_chunk_documents(self) -> list[ChunkDocument]:
+        if self._content_chunk_documents is None:
+            self._content_chunk_documents = filter_content_retrieval_chunks(self.chunk_documents)
+        return self._content_chunk_documents
 
     @property
     def citation_graph(self) -> dict[str, Any] | None:
@@ -72,9 +74,9 @@ class CorpusContext:
     @property
     def bm25_index(self) -> BM25CorpusIndex:
         if self._bm25_index is None:
-            loaded = BM25CorpusIndex.load(self.settings.bm25_index_path, self.chunk_documents)
-            self._bm25_index = loaded or BM25CorpusIndex.from_chunks(self.chunk_documents)
+            loaded = BM25CorpusIndex.load(self.settings.bm25_index_path, self.content_chunk_documents)
+            self._bm25_index = loaded or BM25CorpusIndex.from_chunks(self.content_chunk_documents)
         return self._bm25_index
 
-    def chunks_for_records(self, records: list[dict[str, Any]]) -> list[ChunkDocument]:
-        return filter_chunks_by_paper_records(self.chunk_documents, records)
+    def content_chunks_for_records(self, records: list[dict[str, Any]]) -> list[ChunkDocument]:
+        return filter_chunks_by_paper_records(self.content_chunk_documents, records)

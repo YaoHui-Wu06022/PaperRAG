@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from paper_rag.config import Settings
-from paper_rag.corpus.chunks import ChunkDocument, load_chunk_documents
+from paper_rag.corpus.chunks import ChunkDocument, filter_content_retrieval_chunks, load_chunk_documents
 from paper_rag.retrieval.dense.cache import CachedEmbedder, EmbeddingCache
 from paper_rag.retrieval.dense.embedding import EmbeddingClient
 from paper_rag.retrieval.dense.milvus_store import MilvusStore, SearchResult
@@ -57,10 +57,10 @@ def build_store(settings: Settings) -> MilvusStore:
 
 
 def run_index(settings: Settings, *, reporter=print, embedder=None, store=None) -> IndexSummary:
-    """读取所有 chunks，生成向量并重建 Milvus collection。"""
-    chunk_documents = load_chunk_documents(settings.paper_data_dir)
+    """读取正文 chunks，生成向量并重建 Milvus collection。"""
+    chunk_documents = filter_content_retrieval_chunks(load_chunk_documents(settings.paper_data_dir))
     if not chunk_documents:
-        raise ValueError(f"No chunks.jsonl found in {settings.paper_data_dir}")
+        raise ValueError(f"No abstract/body chunks found in {settings.paper_data_dir}")
     reporter(f"[index] Loaded {len(chunk_documents)} chunk(s)")
     embedder = embedder or build_embedder(settings)
     store = store or build_store(settings)

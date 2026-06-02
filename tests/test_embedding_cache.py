@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 from paper_rag.config import Settings
-from paper_rag.corpus.chunks import load_chunk_documents
+from paper_rag.corpus.chunks import filter_content_retrieval_chunks, load_chunk_documents
 from paper_rag.retrieval.dense.cache import EmbeddingCache
 from paper_rag.retrieval.dense.service import build_query_embedder, run_index
 from paper_rag.retrieval.sparse.bm25 import BM25CorpusIndex
@@ -43,7 +43,8 @@ class EmbeddingCacheTests(unittest.TestCase):
     def test_run_index_writes_bm25_derived_index(self) -> None:
         with index_fixture() as settings:
             summary = run_index(settings, reporter=lambda message: None, embedder=FakeEmbedder(), store=FakeStore())
-            loaded = BM25CorpusIndex.load(settings.bm25_index_path, load_chunk_documents(settings.paper_data_dir))
+            chunk_documents = filter_content_retrieval_chunks(load_chunk_documents(settings.paper_data_dir))
+            loaded = BM25CorpusIndex.load(settings.bm25_index_path, chunk_documents)
             self.assertEqual(summary.chunk_count, 1)
             self.assertTrue(settings.bm25_index_path.exists())
             self.assertIsNotNone(loaded)
@@ -70,7 +71,7 @@ class index_fixture:
         paper = root / "data" / "paper_data" / "Paper"
         paper.mkdir(parents=True)
         (paper / "metadata.json").write_text(json.dumps({"title": "Paper"}, ensure_ascii=False), encoding="utf-8")
-        row = {
+        body_row = {
             "chunk_id": "Paper::chunk_0000",
             "paper_id": "Paper",
             "chunk_index": 0,
@@ -82,7 +83,21 @@ class index_fixture:
             "text": "residual learning",
             "embedding_text": "Paper\n\nresidual learning",
         }
-        (paper / "chunks.jsonl").write_text(json.dumps(row, ensure_ascii=False) + "\n", encoding="utf-8")
+        appendix_row = {
+            **body_row,
+            "chunk_id": "Paper::chunk_0001",
+            "chunk_index": 1,
+            "region": "appendix",
+            "section_id": "appendix",
+            "section_path": ["Appendix"],
+            "text": "appendix-only-marker",
+            "embedding_text": "Paper\n\nappendix-only-marker",
+        }
+        rows = [body_row, appendix_row]
+        (paper / "chunks.jsonl").write_text(
+            "\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\n",
+            encoding="utf-8",
+        )
         return Settings.load(root)
 
     def __exit__(self, exc_type, exc, tb) -> None:

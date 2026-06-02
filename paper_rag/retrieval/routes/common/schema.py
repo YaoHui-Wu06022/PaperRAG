@@ -124,7 +124,9 @@ def validate_paper_filter(value: Any) -> dict[str, Any]:
     validate_filter_field_op(field, op)
     if "value" not in value:
         raise PlanParseError("Paper filter missing value")
-    negated = value.get("negated")
+    negated = value.get("negated", False)
+    if negated is None:
+        negated = False
     if not isinstance(negated, bool):
         raise PlanParseError("Paper filter negated must be true or false")
     return {

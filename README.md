@@ -12,13 +12,79 @@
 - 对外 evidence 只保留回答组织需要的信息，内部路径、hash、raw records、raw chunks 等调试信息只在 `--debug` 下输出
 - metadata/reference 尽量使用本地确定性回答，content 使用检索证据交给回答 LLM 生成最终答案
 
+## 快速开始
+
+### 运行依赖
+
+- Python `>=3.10`
+- Milvus 或 Zilliz collection
+- OpenAI-compatible embedding 服务
+- OpenAI-compatible chat completions 服务，用于 plan parser 和 content answer composer
+- MinerU API，仅在新增或重新解析 PDF 时需要
+
+安装项目并创建本地配置：
+
+```powershell
+python -m pip install -e .
+Copy-Item .env.example .env
+```
+
+按需填写 `.env`。不同命令依赖的外部服务不同：
+
+| 命令 | 必需配置 | 说明 |
+|---|---|---|
+| `ingest` | `MINERU_API_KEY` | 新增或重新解析 PDF 时调用 MinerU；元数据补全还会访问 ArXiv、DBLP 和 Semantic Scholar |
+| `index` | `EMBEDDING_*`、`MILVUS_*` | 重建正文 dense collection，并同步写出 BM25 派生索引 |
+| `search` | `EMBEDDING_*`、`MILVUS_*` | 直接执行 dense 搜索，不经过 planner |
+| `plan` | `PLAN_PARSER_*` | content 路由建议同时配置 embedding 和 Milvus；dense 不可用时会退回 BM25 |
+| `ask` | `PLAN_PARSER_*` | content 路由还需要 `ANSWER_*`；未填写时默认复用 `PLAN_PARSER_*` |
+
+BM25 关键词翻译配置是可选项。未配置腾讯云或阿里云翻译时，系统保留原关键词并继续执行 dense/BM25 检索。
+
+### 首次运行
+
+仓库已包含示例 `paper_data` 时，可以直接构建索引：
+
+```powershell
+python -m paper_rag index
+python -m paper_rag ask "ResNet 的结构是什么？"
+```
+
+新增或替换 `data/pdf/` 中的论文后，先重新入库，再重建索引：
+
+```powershell
+python -m paper_rag ingest
+python -m paper_rag index
+```
+
+### 索引边界
+
+`paper_data/*/chunks.jsonl` 会保留 `abstract`、`body` 和 `appendix` 等区域，便于追溯原始结构。content 召回和 `paper-rag index` 只使用 `abstract/body` chunks，避免附录内容污染正文答案。
+
+修改 PDF、重新执行 `ingest`、调整正文区域规则或切换 embedding 配置后，都应重新执行：
+
+```powershell
+python -m paper_rag index
+```
+
+### 冒烟验证
+
+```powershell
+python -m paper_rag search "residual connection" --top-k 5
+python -m paper_rag plan "ResNet 的结构是什么？" --debug
+python -m paper_rag ask "BERT 的预训练任务是什么？" --debug --json
+python -m pytest -q
+```
+
+`--debug` 会在 evidence 中附加 `timings_ms`、parser 结果、scope records 和 content block 扩展结果，适合定位路由、召回与外部服务耗时。
+
 ## 仓库结构与模块说明
 
 ```text
 RAG_project/
 ├─ pyproject.toml                    # Python 包配置，声明 paper-rag CLI 入口
 ├─ README.md                         # 当前技术文档
-├─ PLAN.md                           # 阶段性设计计划与模块规范
+├─ PLAN.md                           # 阶段性设计记录，README 不依赖该文件
 ├─ .env.example                      # 环境变量模板
 ├─ data/                             # 本地论文数据与派生索引
 ├─ tests/                            # unittest 测试
@@ -848,10 +914,10 @@ content 检索顺序：
 1. 用 semantic、filters、groups 解析候选论文范围
 2. 如果候选论文为空，直接返回空 evidence
 3. 构建 `dense_query` 和 `bm25_queries`
-4. 只加载并保留候选论文的 chunks
+4. 只加载并保留候选论文的 `abstract/body` chunks
 5. 分别执行 dense 和 BM25
 6. 用 RRF 融合命中 chunks
-7. 对命中 chunk 扩展 block 上下文窗口
+7. 默认保留 compact chunk evidence；`--debug` 时额外扩展 block 上下文窗口
 8. 构建 content evidence，交给回答 LLM
 
 #### Dense
@@ -871,11 +937,13 @@ content route 执行 dense 检索时，会把候选论文的 `paper_id` 传给 M
 
 query embedding 使用独立的 `QUERY_EMBEDDING_CACHE_PATH`
 
+`appendix` chunks 仍保留在 `paper_data` 中，但不参与 content dense/BM25 召回
+
 #### BM25
 
 BM25 位于 `retrieval/sparse/bm25.py`，用于对英文论文正文 chunks 做关键词召回
 
-`paper-rag index` 会从 ChunkDocument 构建 `BM25CorpusIndex`
+`paper-rag index` 会从 `abstract/body` ChunkDocument 构建 dense 索引和 `BM25CorpusIndex`
 
 派生索引写入 `data/index/bm25_chunks.json`
 
@@ -1141,7 +1209,6 @@ query
   -> content planner
   -> dense/BM25 retrieval
   -> chunk fusion
-  -> context expansion
   -> evidence
   -> LLM answer
 ```
@@ -1212,13 +1279,13 @@ query
 
    dense 候选和 BM25 候选再用 RRF 合并成最终 chunk 排序
 
-8. 扩展上下文
+8. 构建 compact context
 
-   命中 chunk 会根据 `block_ids` 回到 `blocks.jsonl`
+   默认 evidence 保留命中 chunk 的文本、标题、section path 和页码
 
-   在同一 section 内扩展前后窗口
+   使用 `--debug` 时，命中 chunk 会根据 `block_ids` 回到 `blocks.jsonl`
 
-   最终形成 `context_units`
+   调试窗口只在同一 section 内扩展，最终放入 `debug.context_units`
 
 9. 构建 evidence
 
@@ -1229,9 +1296,8 @@ query
    - section path
    - 页码
    - chunk text
-   - expanded blocks
 
-   完整 parser result、RouteDecision、原始 records、检索 source terms 只在 `--debug` 下输出
+   完整 parser result、RouteDecision、原始 records、检索 source terms 和 expanded blocks 只在 `--debug` 下输出
 
 10. 生成答案
 
@@ -1297,7 +1363,7 @@ ask 层看到 `status != "ok"` 后不会调用回答 LLM
 当前测试数据：
 
 - 16 篇论文
-- 767 个 chunks
+- 767 个结构化 chunks，其中 648 个 `abstract/body` chunks 进入正文索引，119 个 `appendix` chunks 仅保留在 `paper_data`
 - 放大测试使用 15340 个 chunks
 
 ### BM25 派生索引
@@ -1386,3 +1452,37 @@ ask 层看到 `status != "ok"` 后不会调用回答 LLM
 - `paper_annotations.json` 中的 aliases/tags 需要人工持续维护，才能提升简称、别名和语义标签召回
 - Top parser 只做路由分类；如果 parser 配置缺失或返回 `unclear`，不会进入 domain planner
 - Dense 检索依赖 embedding 服务和 Milvus/Zilliz；未配置时 `index/search/content` dense 链路不可用
+
+## 常见问题
+
+### 为什么 `paper_data` 里仍然能看到 Appendix？
+
+Appendix 仍属于可追溯的结构化论文数据，因此不会在入库时删除。`paper-rag index`、content BM25 和 content dense 候选只使用 `abstract/body` chunks。
+
+拉取正文区域规则变更或重新入库后，需要再次执行 `python -m paper_rag index`，确保 Milvus collection 与 BM25 派生索引同步更新。
+
+### 为什么一次 content `ask` 需要十几秒？
+
+content 问答通常会经过 top parser、domain parser、关键词翻译、query embedding、Milvus 搜索、BM25、融合和 answer LLM。外部服务耗时会累积。
+
+使用下面的命令查看分阶段耗时：
+
+```powershell
+python -m paper_rag ask "ResNet 的结构是什么？" --debug --json
+```
+
+重复 query 可以复用 query embedding cache，但 parser 和 answer LLM 仍会重新调用。
+
+### 回答 LLM 暂时不可用时会怎样？
+
+metadata/reference 本来就使用本地确定性答案，不受 answer LLM 影响。
+
+content 已找到正文证据但 answer LLM 调用失败时，`ask` 会返回本地降级说明；使用 `--json` 可以在 `warnings` 中看到 `answer generation failed: ...`。
+
+### parser 返回 `unclear` 或 `parse_failed` 怎么排查？
+
+先确认 `PLAN_PARSER_BASE_URL`、`PLAN_PARSER_API_KEY` 和 `PLAN_PARSER_MODEL` 已填写，再使用 `plan --debug` 查看 top route、domain parser 状态和 warnings：
+
+```powershell
+python -m paper_rag plan "ResNet 的结构是什么？" --debug
+```

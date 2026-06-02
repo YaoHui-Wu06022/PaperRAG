@@ -28,6 +28,11 @@ def compose_local_answer(evidence: dict[str, Any]) -> str:
     return local_failure_answer(evidence)
 
 
+def compose_answer_failure_answer() -> str:
+    """回答模型调用失败时返回明确的本地降级说明。"""
+    return "已经找到正文证据，但回答模型调用失败，暂时无法生成答案。"
+
+
 def local_failure_answer(evidence: dict[str, Any]) -> str:
     """把 parse failed / unclear / graph missing 转成直接可读的回答。"""
     status = evidence.get("status")

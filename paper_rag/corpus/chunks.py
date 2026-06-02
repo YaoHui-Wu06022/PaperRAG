@@ -10,6 +10,9 @@ from typing import Any
 from paper_rag.corpus.records import paper_record_key
 
 
+CONTENT_RETRIEVAL_REGIONS = {"abstract", "body"}
+
+
 @dataclass(frozen=True)
 class ChunkDocument:
     """召回阶段使用的 chunk 文档结构。"""
@@ -90,3 +93,12 @@ def filter_chunks_by_paper_records(
     # paper_records 可能来自 manifest 或 citation graph，统一走 paper_record_key 对齐 chunk.paper_id。
     paper_ids = {paper_record_key(record) for record in paper_records if paper_record_key(record)}
     return [chunk_document for chunk_document in chunk_documents if chunk_document.paper_id in paper_ids]
+
+
+def filter_content_retrieval_chunks(chunk_documents: list[ChunkDocument]) -> list[ChunkDocument]:
+    """正文召回只使用 abstract/body，appendix 仍保留在结构化数据中。"""
+    return [
+        chunk_document
+        for chunk_document in chunk_documents
+        if chunk_document.region in CONTENT_RETRIEVAL_REGIONS
+    ]

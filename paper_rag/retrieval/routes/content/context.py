@@ -8,10 +8,16 @@ from paper_rag.config import Settings
 from paper_rag.corpus.chunks import ChunkDocument, read_jsonl
 
 
-def context_unit(settings: Settings, candidate: Any, block_window: int) -> dict[str, Any]:
+def context_unit(
+    settings: Settings,
+    candidate: Any,
+    block_window: int,
+    *,
+    include_expanded_blocks: bool = True,
+) -> dict[str, Any]:
     """把命中的 chunk 扩展成回答层可用的上下文单元。"""
     chunk_document = candidate.chunk_document
-    return {
+    unit = {
         "chunk_id": chunk_document.chunk_id,
         "paper_id": chunk_document.paper_id,
         "title": chunk_document.title,
@@ -20,8 +26,10 @@ def context_unit(settings: Settings, candidate: Any, block_window: int) -> dict[
         "score": candidate.score,
         "sources": candidate.sources,
         "chunk_text": chunk_document.text,
-        "expanded_blocks": expand_blocks(settings, chunk_document, block_window),
     }
+    if include_expanded_blocks:
+        unit["expanded_blocks"] = expand_blocks(settings, chunk_document, block_window)
+    return unit
 
 
 def expand_blocks(settings: Settings, chunk_document: ChunkDocument, block_window: int) -> list[dict[str, Any]]:

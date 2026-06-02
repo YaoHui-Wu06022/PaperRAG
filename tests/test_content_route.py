@@ -5,11 +5,12 @@ import tempfile
 import unittest
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 from paper_rag.config import Settings
 from paper_rag.corpus.aliases import AliasMatch
 from paper_rag.corpus.context import CorpusContext
-from paper_rag.retrieval.dense.milvus_store import MilvusStore
+from paper_rag.retrieval.dense.milvus_store import MilvusStore, SearchResult
 from paper_rag.retrieval.routes.common.errors import PlanParseError
 from paper_rag.retrieval.routes.content.planner import plan_body
 from paper_rag.retrieval.routes.content.retrieval_query import build_content_retrieval_query
@@ -59,6 +60,34 @@ class ContentSchemaTests(unittest.TestCase):
                 "group_mode": "single",
                 "content_objects": ["模型结构"],
                 "compare_objects": ["ResNet", "Transformer"],
+            })
+
+    def test_defaults_nullable_filter_negated_to_false(self) -> None:
+        payload = validate_content_parse({
+            "intent": "lookup",
+            "paper_semantic": "",
+            "filters": [
+                {"field": "paper", "op": "=", "value": "ResNet"},
+                {"field": "venue", "op": "=", "value": "CVPR", "negated": None},
+            ],
+            "paper_groups": [],
+            "group_mode": "single",
+            "content_objects": ["model structure"],
+            "compare_objects": [],
+        })
+
+        self.assertEqual([item["negated"] for item in payload["filters"]], [False, False])
+
+    def test_rejects_non_boolean_filter_negated(self) -> None:
+        with self.assertRaises(PlanParseError):
+            validate_content_parse({
+                "intent": "lookup",
+                "paper_semantic": "",
+                "filters": [{"field": "paper", "op": "=", "value": "ResNet", "negated": "false"}],
+                "paper_groups": [],
+                "group_mode": "single",
+                "content_objects": ["model structure"],
+                "compare_objects": [],
             })
 
     def test_rejects_and_mode_outside_exists(self) -> None:
@@ -115,7 +144,11 @@ class ContentPlannerTests(unittest.TestCase):
                 group_mode="single",
                 parse_status="ok",
             )
-            evidence = plan_body(settings, route, [], embedder=EmptyEmbedder(), store=EmptyStore())
+            with patch(
+                "paper_rag.retrieval.routes.content.context.expand_blocks",
+                side_effect=AssertionError("non-debug plan should not expand blocks"),
+            ):
+                evidence = plan_body(settings, route, [], embedder=EmptyEmbedder(), store=EmptyStore())
 
         self.assertEqual(evidence["status"], "ok")
         self.assertNotIn("resolved", evidence)
@@ -127,6 +160,28 @@ class ContentPlannerTests(unittest.TestCase):
         self.assertNotIn("expanded_blocks", evidence["results"]["contexts"][0])
         self.assertNotIn("sources", evidence["results"]["contexts"][0])
         self.assertEqual(evidence["plan"]["content_objects"], ["ImageNet top error"])
+
+    def test_plan_body_excludes_appendix_chunks(self) -> None:
+        with content_fixture() as settings:
+            append_chunk(
+                settings.paper_data_dir / "ResNet",
+                chunk_id="ResNet-appendix",
+                region="appendix",
+                text="appendix-only-marker",
+            )
+            route = RouteDecision(
+                route="content",
+                intent="lookup",
+                query="ResNet appendix-only-marker",
+                parser_result={"content_objects": ["appendix-only-marker"], "compare_objects": []},
+                filters=[{"field": "paper", "op": "=", "value": RESNET_TITLE, "negated": False}],
+                group_mode="single",
+                parse_status="ok",
+            )
+            evidence = plan_body(settings, route, [], embedder=EmptyEmbedder(), store=StaleAppendixStore())
+
+        self.assertNotIn("contexts", evidence["results"])
+        self.assertIn("body route found no dense/BM25 candidates", evidence["warnings"])
 
     def test_group_results_show_each_content_scope(self) -> None:
         with content_fixture() as settings:
@@ -174,6 +229,7 @@ class ContentPlannerTests(unittest.TestCase):
         self.assertIn("bm25_queries", evidence["plan"]["retrieval_query"])
         self.assertIn("scope_records", evidence["debug"])
         self.assertIn("context_units", evidence["debug"])
+        self.assertIn("expanded_blocks", evidence["debug"]["context_units"][0])
         self.assertEqual(embedder.texts, [evidence["debug"]["retrieval_query"]["dense_query"]])
         self.assertEqual(store.paper_ids, ["BERT"])
 
@@ -381,6 +437,23 @@ class EmptyStore:
         return []
 
 
+class StaleAppendixStore:
+    def search(self, query_vector: list[float], top_k: int, *, paper_ids: list[str] | None = None) -> list[Any]:
+        _ = query_vector, top_k, paper_ids
+        return [
+            SearchResult(
+                score=1.0,
+                chunk_id="ResNet-appendix",
+                paper_id="ResNet",
+                chunk_index=1,
+                title=RESNET_TITLE,
+                section_path_text="Appendix",
+                pages_text="2",
+                text="appendix-only-marker",
+            )
+        ]
+
+
 class ExplodingEmbedder:
     def embed_texts(self, texts: list[str]) -> list[list[float]]:
         _ = texts
@@ -425,7 +498,18 @@ class CapturingStore:
     def search(self, query_vector: list[float], top_k: int, *, paper_ids: list[str] | None = None) -> list[Any]:
         _ = query_vector, top_k
         self.paper_ids = paper_ids
-        return []
+        return [
+            SearchResult(
+                score=1.0,
+                chunk_id="BERT-c1",
+                paper_id="BERT",
+                chunk_index=0,
+                title=BERT_TITLE,
+                section_path_text="Experiments",
+                pages_text="1",
+                text="BERT uses BooksCorpus and Wikipedia datasets for pre-training.",
+            )
+        ]
 
 
 class CapturingMilvusClient:
@@ -555,6 +639,23 @@ def write_paper_chunks(directory: Path, title: str, text: str) -> None:
         "section_path": ["Experiments"],
     }
     (directory / "blocks.jsonl").write_text(json.dumps(block, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def append_chunk(directory: Path, *, chunk_id: str, region: str, text: str) -> None:
+    row = {
+        "chunk_id": chunk_id,
+        "paper_id": directory.name,
+        "chunk_index": 1,
+        "region": region,
+        "section_id": "appendix",
+        "section_path": ["Appendix"],
+        "pages": [2],
+        "block_ids": ["appendix-b1"],
+        "text": text,
+        "embedding_text": text,
+    }
+    with (directory / "chunks.jsonl").open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
 if __name__ == "__main__":

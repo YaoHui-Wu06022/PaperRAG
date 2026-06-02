@@ -123,6 +123,19 @@ class RunAskTests(unittest.TestCase):
         self.assertEqual(payload["answer"], "VIT 的模型结构包含 patch embedding 和 Transformer encoder。")
         self.assertEqual(client.evidence["route"], "content")
 
+    def test_run_ask_falls_back_when_answer_llm_fails(self) -> None:
+        with temp_settings() as settings:
+            payload = run_ask(
+                settings,
+                "VIT 的模型结构是什么？",
+                planner=static_content_planner,
+                answer_client=FailingContentAnswerClient(),
+            )
+
+        self.assertEqual(payload["answer_mode"], "local")
+        self.assertIn("回答模型调用失败", payload["answer"])
+        self.assertEqual(payload["warnings"], ["answer generation failed: service unavailable"])
+
     def test_run_ask_debug_includes_plan_and_answer_timing(self) -> None:
         with temp_settings() as settings:
             payload = run_ask(
@@ -190,6 +203,12 @@ class FailingAnswerClient:
     def complete_answer(self, evidence: dict) -> str:
         _ = evidence
         raise AssertionError("metadata/reference ask should not call answer LLM")
+
+
+class FailingContentAnswerClient:
+    def complete_answer(self, evidence: dict) -> str:
+        _ = evidence
+        raise AnswerError("service unavailable")
 
 
 class EnableThinkingFallbackClient(AnswerComposerClient):

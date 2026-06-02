@@ -67,7 +67,7 @@ def plan_body(
         )
 
     with timings.measure("load_chunks"):
-        chunk_documents = corpus.chunks_for_records(scope_records)
+        chunk_documents = corpus.content_chunks_for_records(scope_records)
     chunk_documents_by_id = {
         chunk_document.chunk_id: chunk_document
         for chunk_document in chunk_documents
@@ -97,7 +97,12 @@ def plan_body(
         with timings.measure("fusion_context"):
             fused = fuse_chunk_hits(chunk_documents_by_id, dense_results, bm25_results)
             context_units = [
-                context_unit(settings, candidate, settings.plan_block_window)
+                context_unit(
+                    settings,
+                    candidate,
+                    settings.plan_block_window,
+                    include_expanded_blocks=debug,
+                )
                 for candidate in fused[:settings.plan_final_top_k]
             ]
 

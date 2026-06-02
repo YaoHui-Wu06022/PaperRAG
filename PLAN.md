@@ -270,7 +270,7 @@ Schema 字段：
 - 非 `compare` intent 要求 `compare_objects=[]`。
 - `count/exists` 要求 `content_objects` 非空。
 - `group_mode="and"` 只允许用于 `exists`。
-- content 先用 `paper_scope_records` 限制候选论文，再只对命中论文的 chunks 做 dense/BM25。
+- content 先用 `paper_scope_records` 限制候选论文，再只对命中论文的 `abstract/body` chunks 做 dense/BM25；appendix 保留在 `paper_data`，不参与正文召回。
 
 ### Content Retrieval Query
 
@@ -347,7 +347,7 @@ Schema 字段：
 ## 9. Dense / Sparse / Fusion
 
 - `dense/service.py`：
-  - `run_index()`：读取 chunks、请求 embedding、重建 Milvus collection
+  - `run_index()`：读取 `abstract/body` chunks、请求 embedding、重建 Milvus collection
   - `run_search()`：CLI search 使用
   - `search_dense_chunks()`：content planner 使用
 - `sparse/bm25.py`：

@@ -104,7 +104,7 @@ def run_case(settings: Settings, case: dict[str, Any], *, top_k: int, run_dense:
         )
         retrieval_query = build_content_retrieval_query(settings, route, warnings)
         scope_records = content_scope_records(settings, route, corpus)
-        chunk_documents = corpus.chunks_for_records(scope_records)
+        chunk_documents = corpus.content_chunks_for_records(scope_records)
         chunk_documents_by_id = {
             chunk_document.chunk_id: chunk_document
             for chunk_document in chunk_documents
