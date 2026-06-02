@@ -8,6 +8,8 @@ from typing import Any
 
 from paper_rag.config import Settings
 from paper_rag.corpus.aliases import AliasMatch
+from paper_rag.corpus.context import CorpusContext
+from paper_rag.retrieval.dense.milvus_store import MilvusStore
 from paper_rag.retrieval.routes.common.errors import PlanParseError
 from paper_rag.retrieval.routes.content.planner import plan_body
 from paper_rag.retrieval.routes.content.retrieval_query import build_content_retrieval_query
@@ -151,6 +153,7 @@ class ContentPlannerTests(unittest.TestCase):
     def test_debug_mode_includes_retrieval_query(self) -> None:
         with content_fixture() as settings:
             embedder = CapturingEmbedder()
+            store = CapturingStore()
             route = RouteDecision(
                 route="content",
                 intent="lookup",
@@ -160,7 +163,7 @@ class ContentPlannerTests(unittest.TestCase):
                 group_mode="single",
                 parse_status="ok",
             )
-            evidence = plan_body(settings, route, [], embedder=embedder, store=EmptyStore(), debug=True)
+            evidence = plan_body(settings, route, [], embedder=embedder, store=store, debug=True)
 
         self.assertIn("debug", evidence)
         self.assertIn("retrieval_query", evidence["debug"])
@@ -172,6 +175,23 @@ class ContentPlannerTests(unittest.TestCase):
         self.assertIn("scope_records", evidence["debug"])
         self.assertIn("context_units", evidence["debug"])
         self.assertEqual(embedder.texts, [evidence["debug"]["retrieval_query"]["dense_query"]])
+        self.assertEqual(store.paper_ids, ["BERT"])
+
+    def test_milvus_store_search_uses_paper_id_filter(self) -> None:
+        client = CapturingMilvusClient()
+        store = MilvusStore(
+            uri="unused",
+            token=None,
+            db_name=None,
+            collection_name="chunks",
+            dimensions=1,
+            client=client,
+        )
+
+        results = store.search([0.0], 3, paper_ids=["ResNet", "BERT", "ResNet"])
+
+        self.assertEqual(results, [])
+        self.assertEqual(client.filter, 'paper_id in ["ResNet", "BERT"]')
 
     def test_content_retrieval_query_omits_scope_from_dense_query(self) -> None:
         with content_fixture() as settings:
@@ -188,9 +208,8 @@ class ContentPlannerTests(unittest.TestCase):
                 group_mode="single",
                 parse_status="ok",
             )
-            evidence = plan_body(settings, route, [], embedder=EmptyEmbedder(), store=EmptyStore(), debug=True)
+            retrieval_query = build_content_retrieval_query(settings, route, [], translator=None)
 
-        retrieval_query = evidence["debug"]["retrieval_query"]
         self.assertIn("ImageNet top error", retrieval_query["dense_query"])
         self.assertNotIn("CVPR", retrieval_query["dense_query"])
         self.assertNotIn(RESNET_TITLE, retrieval_query["dense_query"])
@@ -280,6 +299,57 @@ class ContentPlannerTests(unittest.TestCase):
         self.assertIn("pretraining corpus", bm25_queries)
         self.assertEqual([unit["title"] for unit in evidence["results"]["contexts"]], [BERT_TITLE])
 
+    def test_empty_scope_returns_before_chunk_and_retrieval_work(self) -> None:
+        with content_fixture() as settings:
+            route = RouteDecision(
+                route="content",
+                intent="lookup",
+                query="不存在的论文讨论了什么？",
+                parser_result={"content_objects": ["model"], "compare_objects": []},
+                filters=[{"field": "paper", "op": "=", "value": "Missing Paper", "negated": False}],
+                group_mode="single",
+                parse_status="ok",
+            )
+            evidence = plan_body(
+                settings,
+                route,
+                [],
+                embedder=ExplodingEmbedder(),
+                store=ExplodingStore(),
+                translator=ExplodingTranslator(),
+                corpus=GuardedCorpus(settings),
+                debug=True,
+            )
+
+        self.assertEqual(evidence["status"], "ok")
+        self.assertIn("content route found no matching paper scope records", evidence["warnings"])
+        self.assertIsNone(evidence.get("debug", {}).get("retrieval_query"))
+        self.assertNotIn("contexts", evidence["results"])
+
+    def test_debug_timing_is_attached_to_content_plan(self) -> None:
+        with content_fixture() as settings:
+            route = RouteDecision(
+                route="content",
+                intent="lookup",
+                query="BERT 的预训练数据是什么？",
+                parser_result={"content_objects": ["预训练数据"], "compare_objects": []},
+                filters=[{"field": "paper", "op": "=", "value": BERT_TITLE, "negated": False}],
+                group_mode="single",
+                parse_status="ok",
+            )
+            from paper_rag.retrieval.plan import run_plan
+
+            evidence = run_plan(
+                settings,
+                route.query,
+                debug=True,
+                top_parser=StaticTopParser("content"),
+            )
+
+        self.assertIn("debug", evidence)
+        self.assertIn("timings_ms", evidence["debug"])
+        self.assertIn("top_parser", evidence["debug"]["timings_ms"])
+
 
 class StaticContentParser:
     def __init__(self, payload: dict[str, Any]) -> None:
@@ -306,9 +376,65 @@ class CapturingEmbedder:
 
 
 class EmptyStore:
-    def search(self, query_vector: list[float], top_k: int) -> list[Any]:
-        _ = query_vector, top_k
+    def search(self, query_vector: list[float], top_k: int, *, paper_ids: list[str] | None = None) -> list[Any]:
+        _ = query_vector, top_k, paper_ids
         return []
+
+
+class ExplodingEmbedder:
+    def embed_texts(self, texts: list[str]) -> list[list[float]]:
+        _ = texts
+        raise AssertionError("empty scope should not call embedder")
+
+
+class ExplodingStore:
+    def search(self, query_vector: list[float], top_k: int, *, paper_ids: list[str] | None = None) -> list[Any]:
+        _ = query_vector, top_k, paper_ids
+        raise AssertionError("empty scope should not call dense store")
+
+
+class ExplodingTranslator:
+    def translate(self, text: str, provider: str, settings: Settings) -> str | list[str] | None:
+        _ = text, provider, settings
+        raise AssertionError("empty scope should not translate BM25 terms")
+
+
+class GuardedCorpus(CorpusContext):
+    @property
+    def chunk_documents(self):
+        raise AssertionError("empty scope should not load chunks")
+
+    @property
+    def bm25_index(self):
+        raise AssertionError("empty scope should not build BM25 index")
+
+
+class StaticTopParser:
+    def __init__(self, router: str) -> None:
+        self.router = router
+
+    def parse_top(self, query: str) -> dict[str, str]:
+        _ = query
+        return {"router": self.router}
+
+
+class CapturingStore:
+    def __init__(self) -> None:
+        self.paper_ids: list[str] | None = None
+
+    def search(self, query_vector: list[float], top_k: int, *, paper_ids: list[str] | None = None) -> list[Any]:
+        _ = query_vector, top_k
+        self.paper_ids = paper_ids
+        return []
+
+
+class CapturingMilvusClient:
+    def __init__(self) -> None:
+        self.filter: str | None = None
+
+    def search(self, **kwargs) -> list[list[dict[str, Any]]]:
+        self.filter = kwargs.get("filter")
+        return [[]]
 
 
 class FakeTranslator:

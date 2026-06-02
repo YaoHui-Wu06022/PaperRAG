@@ -26,6 +26,7 @@ from paper_rag.retrieval.route import RouteDecision
 RESNET_TITLE = "Deep Residual Learning for Image Recognition"
 BERT_TITLE = "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding"
 SUPCON_TITLE = "Supervised Contrastive Learning"
+ARXIV_TITLE = "A Pure ArXiv Preprint"
 
 
 class MetadataSchemaTests(unittest.TestCase):
@@ -150,6 +151,13 @@ class MetadataResolverTests(unittest.TestCase):
 
         self.assertEqual([paper["title"] for paper in papers], [RESNET_TITLE])
         self.assertEqual(matches[0].alias, "ResNet")
+
+    def test_resolve_paper_queries_uses_chinese_alias(self) -> None:
+        with metadata_fixture() as settings:
+            papers, matches = resolve_paper_queries(settings, ["残差网络"])
+
+        self.assertEqual([paper["title"] for paper in papers], [RESNET_TITLE])
+        self.assertEqual(matches[0].alias, "残差网络")
 
     def test_resolved_paper_record_preserves_manifest_record_fields(self) -> None:
         record = {
@@ -434,24 +442,57 @@ class MetadataPlannerTests(unittest.TestCase):
         self.assertEqual([record["title"] for record in arxiv_evidence["results"]["items"]], [BERT_TITLE])
         self.assertEqual(published_evidence["results"], {})
 
+    def test_plain_year_uses_effective_year_for_arxiv_only_records(self) -> None:
+        with metadata_fixture(include_arxiv_only=True) as settings:
+            route = RouteDecision(
+                route="metadata",
+                intent="list",
+                return_fields=["title"],
+                filters=[{"field": "year", "op": "=", "value": 2024, "negated": False}],
+            )
+            evidence = plan_metadata(settings, route, [])
+
+        self.assertEqual([record["title"] for record in evidence["results"]["items"]], [ARXIV_TITLE])
+
+    def test_plain_year_prefers_publish_year_when_available(self) -> None:
+        with metadata_fixture() as settings:
+            preprint_route = RouteDecision(
+                route="metadata",
+                intent="list",
+                return_fields=["title"],
+                filters=[{"field": "year", "op": "=", "value": 2018, "negated": False}],
+            )
+            publish_route = RouteDecision(
+                route="metadata",
+                intent="list",
+                return_fields=["title"],
+                filters=[{"field": "year", "op": "=", "value": 2019, "negated": False}],
+            )
+            preprint_evidence = plan_metadata(settings, preprint_route, [])
+            publish_evidence = plan_metadata(settings, publish_route, [])
+
+        self.assertEqual(preprint_evidence["results"], {})
+        self.assertEqual([record["title"] for record in publish_evidence["results"]["items"]], [BERT_TITLE])
+
 
 class metadata_fixture:
-    def __init__(self, *, write_graph: bool = True) -> None:
+    def __init__(self, *, write_graph: bool = True, include_arxiv_only: bool = False) -> None:
         self.write_graph = write_graph
+        self.include_arxiv_only = include_arxiv_only
 
     def __enter__(self) -> Settings:
         self.tmp = tempfile.TemporaryDirectory()
         root = Path(self.tmp.name)
         data = root / "data"
         data.mkdir()
-        write_manifest(data / "manifest.jsonl")
+        write_manifest(data / "manifest.jsonl", include_arxiv_only=self.include_arxiv_only)
         write_venue_aliases(data / "venue_aliases.json")
         if self.write_graph:
             write_citation_graph(data / "paper_data" / "citation_graph.json")
         (data / "paper_annotations.json").write_text(json.dumps({
             "resnet": {
                 "title": RESNET_TITLE,
-                "aliases": ["ResNet"],
+                "aliases": ["ResNet", "残差网络"],
                 "tags": {
                     "zh": ["卷积神经网络", "残差连接", "图像分类"],
                     "en": ["CNN", "residual connection", "image classification"],
@@ -480,7 +521,7 @@ class metadata_fixture:
         self.tmp.cleanup()
 
 
-def write_manifest(path: Path) -> None:
+def write_manifest(path: Path, *, include_arxiv_only: bool = False) -> None:
     records = [
         {
             "file_hash": "resnet",
@@ -513,6 +554,17 @@ def write_manifest(path: Path) -> None:
             "pdf_path": str(path.parent / "pdf" / "supcon.pdf"),
         },
     ]
+    if include_arxiv_only:
+        records.append({
+            "file_hash": "arxiv-only",
+            "status": "active",
+            "title": ARXIV_TITLE,
+            "author": ["Ada Example"],
+            "year": {"preprint_year": 2024, "publish_year": None},
+            "venue": "ArXiv",
+            "paper_data_path": str(path.parent / "paper_data" / "ArxivOnly"),
+            "pdf_path": str(path.parent / "pdf" / "arxiv.pdf"),
+        })
     path.write_text("\n".join(json.dumps(record, ensure_ascii=False) for record in records) + "\n", encoding="utf-8")
 
 

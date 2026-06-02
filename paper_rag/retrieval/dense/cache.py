@@ -13,7 +13,7 @@ class EmbeddingCache:
     def __init__(self, path: Path):
         self.path = path
         self._vectors: dict[str, list[float]] = {}
-        self._dirty = False
+        self._pending: dict[str, list[float]] = {}
         self._load()
 
     def get(self, key: str) -> list[float] | None:
@@ -23,22 +23,20 @@ class EmbeddingCache:
     def set(self, key: str, vector: list[float]) -> None:
         """写入向量并标记缓存需要落盘。"""
         self._vectors[key] = vector
-        self._dirty = True
+        self._pending[key] = vector
 
     def save(self) -> None:
-        """如果缓存有更新，将全部向量按 key 排序写回 jsonl。"""
-        if not self._dirty:
+        """如果缓存有更新，只把新增/更新的向量追加到 jsonl。"""
+        if not self._pending:
             return
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        lines = [
-            json.dumps({"key": key, "vector": vector}, ensure_ascii=False)
-            for key, vector in sorted(self._vectors.items())
-        ]
-        self.path.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
-        self._dirty = False
+        with self.path.open("a", encoding="utf-8") as handle:
+            for key, vector in self._pending.items():
+                handle.write(json.dumps({"key": key, "vector": vector}, ensure_ascii=False) + "\n")
+        self._pending.clear()
 
     def _load(self) -> None:
-        """启动时读取已有 jsonl 缓存，坏行直接交给 json 解析抛错。"""
+        """启动时读取已有 jsonl 缓存，重复 key 以后出现的值为准。"""
         if not self.path.exists():
             return
         for line in self.path.read_text(encoding="utf-8").splitlines():

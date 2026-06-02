@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from paper_rag.config import Settings
 from paper_rag.ingest.manifest import ManifestRecord
@@ -17,24 +17,30 @@ from paper_rag.corpus.records import (
 )
 from paper_rag.corpus.utils import normalize_token, value_to_text_list
 
+if TYPE_CHECKING:
+    from paper_rag.corpus.context import CorpusContext
+
 
 def records_for_scope(
     settings: Settings,
     paper_semantic: str,
     filters: list[dict[str, Any]],
     group_mode: str = "single",
+    *,
+    corpus: "CorpusContext | None" = None,
 ) -> list[dict[str, Any]]:
     """根据 semantic 和已解析 filters 找到候选论文 records。"""
     semantic = paper_semantic.strip()
-    semantic_keys = semantic_candidate_keys(settings, semantic)
+    semantic_keys = semantic_candidate_keys(settings, semantic, corpus=corpus)
     if semantic and not semantic_keys:
         # 有 semantic 但没有任何标题/tag 召回时，直接返回空候选集。
         return []
     records: list[dict[str, Any]] = []
-    for record in load_active_manifest_records(settings):
+    active_records = corpus.active_manifest_records if corpus else load_active_manifest_records(settings)
+    for record in active_records:
         if semantic and paper_record_key(record) not in semantic_keys:
             continue
-        if match_scope_filters(settings, record, filters):
+        if match_scope_filters(settings, record, filters, corpus=corpus):
             records.append(to_evidence_manifest_record(record))
     return records
 
@@ -43,12 +49,14 @@ def match_scope_filters(
     settings: Settings,
     record: ManifestRecord,
     filters: list[dict[str, Any]],
+    *,
+    corpus: "CorpusContext | None" = None,
 ) -> bool:
     """判断 record 是否满足 scope 中的 paper filters 和 metadata filters。"""
     paper_filters = [filter_item for filter_item in filters if filter_item.get("field") == "paper"]
     metadata_filters = [filter_item for filter_item in filters if filter_item.get("field") != "paper"]
     for filter_item in paper_filters:
-        matched = match_paper_filter(settings, record, filter_item)
+        matched = match_paper_filter(settings, record, filter_item, corpus=corpus)
         if filter_item.get("negated"):
             matched = not matched
         if not matched:
@@ -60,6 +68,8 @@ def match_paper_filter(
     settings: Settings,
     record: ManifestRecord,
     filter_item: dict[str, Any],
+    *,
+    corpus: "CorpusContext | None" = None,
 ) -> bool:
     """匹配 paper = / follow / prior 三类论文范围条件。"""
     op = filter_item.get("op")
@@ -69,31 +79,46 @@ def match_paper_filter(
     if op == "=":
         return any(compare_text(record.title, "=", value) for value in values)
     if op in {"follow", "prior"}:
-        return record_matches_citation_scope(settings, paper_record_key(record), values, op)
+        graph = corpus.citation_graph if corpus else None
+        if corpus and graph is None:
+            return False
+        return record_matches_citation_scope(settings, paper_record_key(record), values, op, graph=graph)
     return False
 
 
-def semantic_candidate_keys(settings: Settings, paper_semantic: str) -> set[str]:
+def semantic_candidate_keys(
+    settings: Settings,
+    paper_semantic: str,
+    *,
+    corpus: "CorpusContext | None" = None,
+) -> set[str]:
     """把 paper_semantic 转成候选论文 key 集合。"""
     semantic = paper_semantic.strip()
     if not semantic:
         return set()
     keys: set[str] = set()
-    matches = match_manifest_records(settings, semantic)
+    active_records = corpus.active_manifest_records if corpus else load_active_manifest_records(settings)
+    matches = match_manifest_records(settings, semantic, records=active_records)
     keys.update(paper_record_key(record) for record in matches if paper_record_key(record))
-    tag_title_keys = semantic_tag_title_keys(settings, semantic)
+    tag_title_keys = semantic_tag_title_keys(settings, semantic, corpus=corpus)
     if tag_title_keys:
         # tags 先按 title key 对齐 annotation 和 manifest，再转成统一 paper_record_key。
         keys.update(
             paper_record_key(record)
-            for record in load_active_manifest_records(settings)
+            for record in active_records
             if paper_title_key(record.title) in tag_title_keys
         )
     return keys
 
 
-def load_paper_annotation_tag_index(settings: Settings) -> dict[str, PaperTags]:
+def load_paper_annotation_tag_index(
+    settings: Settings,
+    *,
+    corpus: "CorpusContext | None" = None,
+) -> dict[str, PaperTags]:
     """从 annotation entries 构建标题 key 到 tags 的索引。"""
+    if corpus:
+        return corpus.annotation_tag_index
     index: dict[str, PaperTags] = {}
     for entry in load_paper_annotation_entries(settings):
         if entry.tags["zh"] or entry.tags["en"]:
@@ -101,14 +126,19 @@ def load_paper_annotation_tag_index(settings: Settings) -> dict[str, PaperTags]:
     return index
 
 
-def semantic_tag_title_keys(settings: Settings, paper_semantic: str) -> set[str]:
+def semantic_tag_title_keys(
+    settings: Settings,
+    paper_semantic: str,
+    *,
+    corpus: "CorpusContext | None" = None,
+) -> set[str]:
     """找出 tags 能匹配 paper_semantic 的论文标题 key。"""
     semantic = paper_semantic.strip()
     if not semantic:
         return set()
     return {
         title
-        for title, tags in load_paper_annotation_tag_index(settings).items()
+        for title, tags in load_paper_annotation_tag_index(settings, corpus=corpus).items()
         if semantic_matches_tags(semantic, tags)
     }
 

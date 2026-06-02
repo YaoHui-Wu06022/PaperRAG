@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from typing import TYPE_CHECKING
 
 from paper_rag.config import Settings
 from paper_rag.retrieval.routes.common.errors import PlanParseError
@@ -12,6 +13,9 @@ from paper_rag.corpus.resolver import resolve_parser_paper_scope, resolve_year_f
 from paper_rag.retrieval.route import RouteDecision
 from paper_rag.retrieval.routes.reference.parser import ReferenceParserClient
 
+if TYPE_CHECKING:
+    from paper_rag.corpus.context import CorpusContext
+
 
 def build_reference_decision(
     settings: Settings,
@@ -19,6 +23,7 @@ def build_reference_decision(
     warnings: list[str],
     *,
     plan_parser=None,
+    corpus: "CorpusContext | None" = None,
 ) -> RouteDecision:
     """把 reference parser result 归一化成 RouteDecision。"""
     query = decision.query
@@ -54,11 +59,11 @@ def build_reference_decision(
     source_resolved = resolve_parser_paper_scope(settings, {
         "filters": parser_result["source_filters"],
         "paper_groups": parser_result["source_groups"],
-    })
+    }, corpus=corpus)
     object_resolved = resolve_parser_paper_scope(settings, {
         "filters": parser_result["object_filters"],
         "paper_groups": parser_result["object_groups"],
-    })
+    }, corpus=corpus)
     parser_result = {
         **parser_result,
         # parser_result 中保留两侧 resolved_papers，debug 时能看 source/object 是否放反。
@@ -95,7 +100,7 @@ def build_reference_decision(
         object_groups=parser_result["object_groups"],
         object_mode=parser_result["object_mode"],
     )
-    return apply_reference_year_filters(settings, enriched, warnings)
+    return apply_reference_year_filters(settings, enriched, warnings, corpus=corpus)
 
 
 def correct_active_cites_scope(query: str, parser_result: dict[str, object], warnings: list[str]) -> dict[str, object]:
@@ -154,16 +159,22 @@ def is_positive_paper_equals(filter_item: dict[str, object]) -> bool:
     )
 
 
-def apply_reference_year_filters(settings: Settings, decision: RouteDecision, warnings: list[str]) -> RouteDecision:
+def apply_reference_year_filters(
+    settings: Settings,
+    decision: RouteDecision,
+    warnings: list[str],
+    *,
+    corpus: "CorpusContext | None" = None,
+) -> RouteDecision:
     """解析 source/object 两侧 year interval 中的论文边界。"""
-    source_filters = resolve_year_filter_values(settings, list(decision.source_filters), warnings)
+    source_filters = resolve_year_filter_values(settings, list(decision.source_filters), warnings, corpus=corpus)
     source_groups = [
-        {**group, "filters": resolve_year_filter_values(settings, list(group.get("filters") or []), warnings)}
+        {**group, "filters": resolve_year_filter_values(settings, list(group.get("filters") or []), warnings, corpus=corpus)}
         for group in decision.source_groups
     ]
-    object_filters = resolve_year_filter_values(settings, list(decision.object_filters), warnings)
+    object_filters = resolve_year_filter_values(settings, list(decision.object_filters), warnings, corpus=corpus)
     object_groups = [
-        {**group, "filters": resolve_year_filter_values(settings, list(group.get("filters") or []), warnings)}
+        {**group, "filters": resolve_year_filter_values(settings, list(group.get("filters") or []), warnings, corpus=corpus)}
         for group in decision.object_groups
     ]
     if (

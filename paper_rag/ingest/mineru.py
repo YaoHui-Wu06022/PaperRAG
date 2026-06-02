@@ -9,7 +9,7 @@ import time
 import http.client
 import urllib.request
 import zipfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 
 class MinerUError(RuntimeError):
@@ -118,6 +118,31 @@ class MinerUClient:
             detail = exc.read().decode("utf-8", errors="replace").strip()
             raise MinerUError(f"MinerU result download failed: HTTP {exc.code}: {detail}") from exc
         with zipfile.ZipFile(zip_path) as archive:
-            archive.extractall(output_dir)
+            safe_extract_zip(archive, output_dir)
         zip_path.unlink(missing_ok=True)
         return output_dir
+
+
+def safe_extract_zip(archive: zipfile.ZipFile, output_dir: Path) -> None:
+    """只允许 zip 成员解压到 output_dir 内部。"""
+    root = output_dir.resolve()
+    for member in archive.infolist():
+        safe_zip_member_target(root, member.filename)
+    archive.extractall(output_dir)
+
+
+def safe_zip_member_target(root: Path, member_name: str) -> Path:
+    """校验 zip 成员路径，拒绝绝对路径和 .. 逃逸。"""
+    normalized = member_name.replace("\\", "/")
+    posix_path = PurePosixPath(normalized)
+    windows_path = PureWindowsPath(member_name)
+    if not normalized.strip() or posix_path.is_absolute() or windows_path.is_absolute() or windows_path.drive:
+        raise MinerUError(f"Unsafe MinerU zip member path: {member_name}")
+    if any(part == ".." for part in posix_path.parts):
+        raise MinerUError(f"Unsafe MinerU zip member path: {member_name}")
+    target = (root / Path(*posix_path.parts)).resolve()
+    try:
+        target.relative_to(root)
+    except ValueError as exc:
+        raise MinerUError(f"Unsafe MinerU zip member path: {member_name}") from exc
+    return target

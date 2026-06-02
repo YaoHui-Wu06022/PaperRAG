@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from paper_rag.config import Settings
 from paper_rag.ingest.manifest import normalize_year
@@ -12,19 +12,23 @@ from paper_rag.corpus.aliases import AliasMatch, dedupe_alias_matches, resolve_p
 from paper_rag.corpus.records import merge_paper_records
 from paper_rag.corpus.utils import is_negative_infinity, is_positive_infinity, normalize_interval_bound_text, value_to_text_list
 
+if TYPE_CHECKING:
+    from paper_rag.corpus.context import CorpusContext
+
 
 def resolve_parser_scope(
     settings: Settings,
     parser_result: dict[str, Any],
     *,
     fallback_query: str | None = None,
+    corpus: "CorpusContext | None" = None,
 ) -> dict[str, Any]:
     """解析完整 parser scope，必要时用 fallback query 补论文范围。"""
-    resolved = resolve_parser_paper_scope(settings, parser_result)
+    resolved = resolve_parser_paper_scope(settings, parser_result, corpus=corpus)
     resolved_papers = resolved["resolved_papers"]
     alias_matches = list(resolved["alias_matches"])
     if fallback_query and not resolved_papers:
-        fallback_papers, fallback_matches = resolve_paper_queries(settings, [fallback_query])
+        fallback_papers, fallback_matches = resolve_paper_queries(settings, [fallback_query], corpus=corpus)
         resolved_papers = merge_paper_records(resolved_papers, fallback_papers)
         alias_matches.extend(fallback_matches)
     return {
@@ -34,16 +38,21 @@ def resolve_parser_scope(
     }
 
 
-def resolve_parser_paper_scope(settings: Settings, parser_result: dict[str, Any]) -> dict[str, Any]:
+def resolve_parser_paper_scope(
+    settings: Settings,
+    parser_result: dict[str, Any],
+    *,
+    corpus: "CorpusContext | None" = None,
+) -> dict[str, Any]:
     """解析 parser 输出中的 filters 和 paper_groups。"""
-    filters, filter_matches, filter_papers = resolve_filter_values(settings, parser_result.get("filters") or [])
+    filters, filter_matches, filter_papers = resolve_filter_values(settings, parser_result.get("filters") or [], corpus=corpus)
     paper_groups: list[dict[str, Any]] = []
     group_matches: list[AliasMatch] = []
     group_papers: list[dict[str, Any]] = []
     for group in parser_result.get("paper_groups") or []:
         if not isinstance(group, dict):
             continue
-        group_filters, matches, papers = resolve_filter_values(settings, group.get("filters") or [])
+        group_filters, matches, papers = resolve_filter_values(settings, group.get("filters") or [], corpus=corpus)
         group_matches.extend(matches)
         group_papers = merge_paper_records(group_papers, papers)
         paper_groups.append({
@@ -64,6 +73,8 @@ def resolve_parser_paper_scope(settings: Settings, parser_result: dict[str, Any]
 def resolve_filter_values(
     settings: Settings,
     filters: list[dict[str, Any]],
+    *,
+    corpus: "CorpusContext | None" = None,
 ) -> tuple[list[dict[str, Any]], list[AliasMatch], list[dict[str, Any]]]:
     """规范化 parser filters 中的 paper、venue 和 year interval value。"""
     resolved_filters: list[dict[str, Any]] = []
@@ -74,14 +85,14 @@ def resolve_filter_values(
         field = item.get("field")
         if field == "paper":
             # paper = / follow / prior 都先把 value 解析成本地 canonical title。
-            value, matches, papers = resolve_paper_filter_value(settings, item.get("value"))
+            value, matches, papers = resolve_paper_filter_value(settings, item.get("value"), corpus=corpus)
             item["value"] = value
             alias_matches.extend(matches)
             if not item.get("negated"):
                 resolved_papers = merge_paper_records(resolved_papers, papers)
         elif field == "year" and item.get("op") == "interval":
             # year interval 允许边界写论文名，例如 ["ResNet", "inf"]。
-            value, matches, papers = resolve_interval_paper_bounds(settings, item.get("value"))
+            value, matches, papers = resolve_interval_paper_bounds(settings, item.get("value"), corpus=corpus)
             item["value"] = value
             alias_matches.extend(matches)
             resolved_papers = merge_paper_records(resolved_papers, papers)
@@ -91,31 +102,46 @@ def resolve_filter_values(
     return resolved_filters, alias_matches, resolved_papers
 
 
-def resolve_paper_filter_value(settings: Settings, value: Any) -> tuple[Any, list[AliasMatch], list[dict[str, Any]]]:
+def resolve_paper_filter_value(
+    settings: Settings,
+    value: Any,
+    *,
+    corpus: "CorpusContext | None" = None,
+) -> tuple[Any, list[AliasMatch], list[dict[str, Any]]]:
     """把 paper filter value 解析为本地规范论文标题。"""
     values = value_to_text_list(value)
-    titles, matches, papers = resolve_paper_mentions_to_titles(settings, values)
+    titles, matches, papers = resolve_paper_mentions_to_titles(settings, values, corpus=corpus)
     if not isinstance(value, list):
         return (titles[0] if titles else str(value or "").strip()), matches, papers
     return titles, matches, papers
 
 
-def resolve_interval_paper_bounds(settings: Settings, value: Any) -> tuple[Any, list[AliasMatch], list[dict[str, Any]]]:
+def resolve_interval_paper_bounds(
+    settings: Settings,
+    value: Any,
+    *,
+    corpus: "CorpusContext | None" = None,
+) -> tuple[Any, list[AliasMatch], list[dict[str, Any]]]:
     """解析 year interval 两侧可能出现的论文名边界。"""
     if not isinstance(value, list) or len(value) != 2:
         return value, [], []
-    left, left_matches, left_papers = resolve_interval_bound_paper(settings, value[0])
-    right, right_matches, right_papers = resolve_interval_bound_paper(settings, value[1])
+    left, left_matches, left_papers = resolve_interval_bound_paper(settings, value[0], corpus=corpus)
+    right, right_matches, right_papers = resolve_interval_bound_paper(settings, value[1], corpus=corpus)
     return [left, right], [*left_matches, *right_matches], merge_paper_records(left_papers, right_papers)
 
 
-def resolve_interval_bound_paper(settings: Settings, value: Any) -> tuple[Any, list[AliasMatch], list[dict[str, Any]]]:
+def resolve_interval_bound_paper(
+    settings: Settings,
+    value: Any,
+    *,
+    corpus: "CorpusContext | None" = None,
+) -> tuple[Any, list[AliasMatch], list[dict[str, Any]]]:
     """解析单个 interval 边界中的论文 mention。"""
     if not isinstance(value, str) or not value.strip():
         return value, [], []
     if is_negative_infinity(value) or is_positive_infinity(value):
         return value, [], []
-    titles, matches, papers = resolve_paper_mentions_to_titles(settings, [value])
+    titles, matches, papers = resolve_paper_mentions_to_titles(settings, [value], corpus=corpus)
     return (titles[0] if titles else value), matches, papers
 
 
@@ -129,13 +155,15 @@ def resolve_venue_filter_value(settings: Settings, value: Any) -> Any:
 def resolve_paper_mentions_to_titles(
     settings: Settings,
     mentions: list[str],
+    *,
+    corpus: "CorpusContext | None" = None,
 ) -> tuple[list[str], list[AliasMatch], list[dict[str, Any]]]:
     """把多个论文 mention 解析为标题、alias matches 和 records。"""
     titles: list[str] = []
     alias_matches: list[AliasMatch] = []
     resolved_papers: list[dict[str, Any]] = []
     for mention in mentions:
-        papers, matches = resolve_paper_queries(settings, [mention])
+        papers, matches = resolve_paper_queries(settings, [mention], corpus=corpus)
         alias_matches.extend(matches)
         resolved_papers = merge_paper_records(resolved_papers, papers)
         if papers:
@@ -151,9 +179,11 @@ def resolve_year_filter_values(
     settings: Settings,
     filters: list[dict[str, Any]],
     warnings: list[str],
+    *,
+    corpus: "CorpusContext | None" = None,
 ) -> list[dict[str, Any]]:
     """解析并合并一组 year interval filters。"""
-    resolved_filters = [resolve_year_interval_filter(settings, filter_item, warnings) for filter_item in filters]
+    resolved_filters = [resolve_year_interval_filter(settings, filter_item, warnings, corpus=corpus) for filter_item in filters]
     return merge_year_interval_filters(resolved_filters)
 
 
@@ -161,6 +191,8 @@ def resolve_year_interval_filter(
     settings: Settings,
     filter_item: dict[str, Any],
     warnings: list[str],
+    *,
+    corpus: "CorpusContext | None" = None,
 ) -> dict[str, Any]:
     """解析单个 year interval filter 的论文边界。"""
     if filter_item.get("field") != "year" or filter_item.get("op") != "interval":
@@ -169,7 +201,7 @@ def resolve_year_interval_filter(
     if not isinstance(value, list) or len(value) != 2:
         return filter_item
 
-    left, right = [resolve_year_boundary(settings, boundary, warnings) for boundary in value]
+    left, right = [resolve_year_boundary(settings, boundary, warnings, corpus=corpus) for boundary in value]
     if left == value[0] and right == value[1]:
         return filter_item
     if not has_resolved_interval_bounds(left, right):
@@ -177,7 +209,13 @@ def resolve_year_interval_filter(
     return {**filter_item, "value": normalize_interval_filter_bounds(left, right)}
 
 
-def resolve_year_boundary(settings: Settings, boundary: Any, warnings: list[str]) -> Any:
+def resolve_year_boundary(
+    settings: Settings,
+    boundary: Any,
+    warnings: list[str],
+    *,
+    corpus: "CorpusContext | None" = None,
+) -> Any:
     """把 year interval 边界中的论文 mention 转成年份。"""
     if isinstance(boundary, int):
         return boundary
@@ -192,7 +230,7 @@ def resolve_year_boundary(settings: Settings, boundary: Any, warnings: list[str]
     else:
         return boundary
 
-    papers, _ = resolve_paper_queries(settings, [text])
+    papers, _ = resolve_paper_queries(settings, [text], corpus=corpus)
     years = [publish_or_preprint_year(paper.get("year")) for paper in papers]
     years = [year for year in years if year is not None]
     if years:

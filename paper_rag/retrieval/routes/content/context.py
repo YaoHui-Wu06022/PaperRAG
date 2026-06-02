@@ -10,31 +10,31 @@ from paper_rag.corpus.chunks import ChunkDocument, read_jsonl
 
 def context_unit(settings: Settings, candidate: Any, block_window: int) -> dict[str, Any]:
     """把命中的 chunk 扩展成回答层可用的上下文单元。"""
-    document = candidate.document
+    chunk_document = candidate.chunk_document
     return {
-        "chunk_id": document.chunk_id,
-        "paper_id": document.paper_id,
-        "title": document.title,
-        "section_path": document.section_path,
-        "pages": document.pages,
+        "chunk_id": chunk_document.chunk_id,
+        "paper_id": chunk_document.paper_id,
+        "title": chunk_document.title,
+        "section_path": chunk_document.section_path,
+        "pages": chunk_document.pages,
         "score": candidate.score,
         "sources": candidate.sources,
-        "chunk_text": document.text,
-        "expanded_blocks": expand_blocks(settings, document, block_window),
+        "chunk_text": chunk_document.text,
+        "expanded_blocks": expand_blocks(settings, chunk_document, block_window),
     }
 
 
-def expand_blocks(settings: Settings, document: ChunkDocument, block_window: int) -> list[dict[str, Any]]:
+def expand_blocks(settings: Settings, chunk_document: ChunkDocument, block_window: int) -> list[dict[str, Any]]:
     """按命中 chunk 的 block_ids，在同一 section 内扩展前后窗口。"""
-    blocks_path = settings.paper_data_dir / document.paper_id / "blocks.jsonl"
-    if not blocks_path.exists() or not document.block_ids:
+    blocks_path = settings.paper_data_dir / chunk_document.paper_id / "blocks.jsonl"
+    if not blocks_path.exists() or not chunk_document.block_ids:
         return []
     blocks = read_jsonl(blocks_path)
     section_blocks = [
         block for block in blocks
-        if str(block.get("section_id") or "") == document.section_id
+        if str(block.get("section_id") or "") == chunk_document.section_id
     ]
-    hit_ids = set(document.block_ids)
+    hit_ids = set(chunk_document.block_ids)
     hit_positions = [
         index for index, block in enumerate(section_blocks)
         if str(block.get("block_id") or "") in hit_ids

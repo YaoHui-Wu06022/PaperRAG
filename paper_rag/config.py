@@ -49,6 +49,8 @@ class Settings:
     embedding_dim: int
     embedding_batch_size: int
     embedding_cache_path: Path
+    query_embedding_cache_path: Path
+    bm25_index_path: Path
     plan_dense_top_k: int
     plan_bm25_top_k: int
     plan_final_top_k: int
@@ -119,6 +121,12 @@ class Settings:
                 env.get("EMBEDDING_CACHE_PATH"),
                 data_dir / "index" / "embedding_cache.jsonl",
             ),
+            query_embedding_cache_path=resolve_config_path(
+                root,
+                env.get("QUERY_EMBEDDING_CACHE_PATH"),
+                data_dir / "index" / "query_embedding_cache.jsonl",
+            ),
+            bm25_index_path=data_dir / "index" / "bm25_chunks.json",
             plan_dense_top_k=int(env.get("PLAN_DENSE_TOP_K", "20")),
             plan_bm25_top_k=int(env.get("PLAN_BM25_TOP_K", "20")),
             plan_final_top_k=int(env.get("PLAN_FINAL_TOP_K", "8")),

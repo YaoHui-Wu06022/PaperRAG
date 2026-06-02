@@ -39,7 +39,7 @@ class ChunkDocument:
 
 def load_chunk_documents(paper_data_dir: Path) -> list[ChunkDocument]:
     """读取所有论文目录下的 chunks.jsonl。"""
-    documents: list[ChunkDocument] = []
+    chunk_documents: list[ChunkDocument] = []
     for directory in sorted(p for p in paper_data_dir.iterdir() if p.is_dir()):
         chunks_path = directory / "chunks.jsonl"
         metadata_path = directory / "metadata.json"
@@ -48,8 +48,8 @@ def load_chunk_documents(paper_data_dir: Path) -> list[ChunkDocument]:
         metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
         title = str(metadata.get("title") or directory.name)
         for row in read_jsonl(chunks_path):
-            documents.append(parse_chunk_row(row, title))
-    return documents
+            chunk_documents.append(parse_chunk_row(row, title))
+    return chunk_documents
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -81,7 +81,7 @@ def parse_chunk_row(row: dict[str, Any], title: str) -> ChunkDocument:
 
 
 def filter_chunks_by_paper_records(
-    documents: list[ChunkDocument],
+    chunk_documents: list[ChunkDocument],
     paper_records: list[dict[str, Any]],
 ) -> list[ChunkDocument]:
     """按论文记录身份过滤 chunk 文档。"""
@@ -89,4 +89,4 @@ def filter_chunks_by_paper_records(
         return []
     # paper_records 可能来自 manifest 或 citation graph，统一走 paper_record_key 对齐 chunk.paper_id。
     paper_ids = {paper_record_key(record) for record in paper_records if paper_record_key(record)}
-    return [document for document in documents if document.paper_id in paper_ids]
+    return [chunk_document for chunk_document in chunk_documents if chunk_document.paper_id in paper_ids]

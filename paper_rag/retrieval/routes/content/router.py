@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from typing import TYPE_CHECKING
 
 from paper_rag.config import Settings
 from paper_rag.retrieval.routes.common.errors import PlanParseError
@@ -12,6 +13,9 @@ from paper_rag.corpus.resolver import resolve_parser_scope, resolve_year_filter_
 from paper_rag.retrieval.route import RouteDecision
 from paper_rag.retrieval.routes.content.parser import ContentParserClient
 
+if TYPE_CHECKING:
+    from paper_rag.corpus.context import CorpusContext
+
 
 def build_content_decision(
     settings: Settings,
@@ -19,6 +23,7 @@ def build_content_decision(
     warnings: list[str],
     *,
     plan_parser=None,
+    corpus: "CorpusContext | None" = None,
 ) -> RouteDecision:
     """把 content parser result 归一化成 RouteDecision。"""
     query = decision.query
@@ -49,7 +54,7 @@ def build_content_decision(
         # 顶层若将来带公共 filters，也在这里并入 content scope。
         "filters": [*decision.filters, *parser_result["filters"]],
     }
-    resolved = resolve_parser_scope(settings, parser_result)
+    resolved = resolve_parser_scope(settings, parser_result, corpus=corpus)
     parser_result = {
         **parser_result,
         "filters": resolved["filters"],
@@ -68,14 +73,20 @@ def build_content_decision(
         paper_groups=parser_result["paper_groups"],
         group_mode=parser_result["group_mode"],
     )
-    return apply_content_year_filters(settings, enriched, warnings)
+    return apply_content_year_filters(settings, enriched, warnings, corpus=corpus)
 
 
-def apply_content_year_filters(settings: Settings, decision: RouteDecision, warnings: list[str]) -> RouteDecision:
+def apply_content_year_filters(
+    settings: Settings,
+    decision: RouteDecision,
+    warnings: list[str],
+    *,
+    corpus: "CorpusContext | None" = None,
+) -> RouteDecision:
     """解析 content scope 中 year interval 的论文边界。"""
-    filters = resolve_year_filter_values(settings, list(decision.filters), warnings)
+    filters = resolve_year_filter_values(settings, list(decision.filters), warnings, corpus=corpus)
     paper_groups = [
-        {**group, "filters": resolve_year_filter_values(settings, list(group.get("filters") or []), warnings)}
+        {**group, "filters": resolve_year_filter_values(settings, list(group.get("filters") or []), warnings, corpus=corpus)}
         for group in decision.paper_groups
     ]
     if filters == decision.filters and paper_groups == decision.paper_groups:

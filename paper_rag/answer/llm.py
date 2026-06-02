@@ -61,7 +61,14 @@ class AnswerComposerClient:
             "temperature": self.temperature,
             "enable_thinking": False,
         }
-        data = self.chat_completion(payload)
+        try:
+            data = self.chat_completion(payload)
+        except AnswerError as exc:
+            if not is_enable_thinking_error(exc):
+                raise
+            fallback_payload = dict(payload)
+            fallback_payload.pop("enable_thinking", None)
+            data = self.chat_completion(fallback_payload)
         return chat_completion_content(data)
 
     def chat_completion(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -89,6 +96,11 @@ class AnswerComposerClient:
 
 class AnswerError(RuntimeError):
     """回答生成失败。"""
+
+
+def is_enable_thinking_error(error: Exception) -> bool:
+    """判断兼容服务是否拒绝 enable_thinking 字段。"""
+    return "enable_thinking" in str(error).lower()
 
 
 def build_answer_user_prompt(evidence: dict[str, Any]) -> str:

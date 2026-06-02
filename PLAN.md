@@ -351,8 +351,8 @@ Schema 字段：
   - `run_search()`：CLI search 使用
   - `search_dense_chunks()`：content planner 使用
 - `sparse/bm25.py`：
-  - `BM25Index`：本地 BM25
-  - `search_bm25_chunks()`：多个 BM25 query 分别检索，再用 RRF 合并
+  - `BM25CorpusIndex`：本地 BM25 corpus 索引
+  - `BM25CorpusIndex.search_many()`：多个 BM25 query 分别检索，再用 RRF 合并
 - `chunk_fusion.py`：
   - `RRF_K=60`
   - `fuse_chunk_hits()`：合并 dense 和 BM25 命中，按 `chunk_id` 去重

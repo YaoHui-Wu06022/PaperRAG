@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 from paper_rag.answer import run_ask
-from paper_rag.answer.llm import build_answer_user_prompt
+from paper_rag.answer.llm import AnswerComposerClient, AnswerError, build_answer_user_prompt
 from paper_rag.cli.main import build_parser
 from paper_rag.config import Settings
 
@@ -123,6 +123,20 @@ class RunAskTests(unittest.TestCase):
         self.assertEqual(payload["answer"], "VIT 的模型结构包含 patch embedding 和 Transformer encoder。")
         self.assertEqual(client.evidence["route"], "content")
 
+    def test_run_ask_debug_includes_plan_and_answer_timing(self) -> None:
+        with temp_settings() as settings:
+            payload = run_ask(
+                settings,
+                "BERT 是谁写的",
+                debug=True,
+                planner=static_metadata_planner,
+                answer_client=FailingAnswerClient(),
+            )
+
+        timings = payload["evidence"]["debug"]["timings_ms"]
+        self.assertIn("plan", timings)
+        self.assertIn("answer", timings)
+
     def test_answer_prompt_contains_compact_evidence(self) -> None:
         prompt = build_answer_user_prompt({
             "query": "BERT 是谁写的",
@@ -153,6 +167,15 @@ class RunAskTests(unittest.TestCase):
         self.assertEqual(settings.answer_api_key, "parser-key")
         self.assertEqual(settings.answer_model, "parser-model")
 
+    def test_answer_client_retries_without_enable_thinking_when_unsupported(self) -> None:
+        client = EnableThinkingFallbackClient()
+
+        answer = client.complete_answer({"query": "VIT 的结构是什么", "route": "content", "results": {"contexts": []}})
+
+        self.assertEqual(answer, "fallback ok")
+        self.assertIn("enable_thinking", client.payloads[0])
+        self.assertNotIn("enable_thinking", client.payloads[1])
+
 
 class StaticAnswerClient:
     def __init__(self, answer: str) -> None:
@@ -167,6 +190,22 @@ class FailingAnswerClient:
     def complete_answer(self, evidence: dict) -> str:
         _ = evidence
         raise AssertionError("metadata/reference ask should not call answer LLM")
+
+
+class EnableThinkingFallbackClient(AnswerComposerClient):
+    def __init__(self) -> None:
+        super().__init__(
+            base_url="https://example.test/v1",
+            api_key="test-key",
+            model="test-model",
+        )
+        object.__setattr__(self, "payloads", [])
+
+    def chat_completion(self, payload: dict) -> dict:
+        self.payloads.append(dict(payload))
+        if len(self.payloads) == 1:
+            raise AnswerError("unsupported parameter: enable_thinking")
+        return {"choices": [{"message": {"content": "fallback ok"}}]}
 
 
 def static_metadata_planner(settings: Settings, query: str, *, debug: bool = False) -> dict:

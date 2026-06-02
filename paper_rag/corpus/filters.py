@@ -21,8 +21,8 @@ ARXIV_VALUES = {"arxiv", "arxiv preprint"}
 
 def match_record_filters(settings: Settings, record, filters: list[dict[str, Any]]) -> bool:
     """判断单条 manifest record 是否满足全部 metadata filters。"""
-    # 同组出现 venue=ArXiv 时，year 改用 preprint_year；其它情况用 publish_year。
-    year_source = "preprint" if has_arxiv_filter(filters) else "publish"
+    # 同组出现 venue=ArXiv 时，year 改用 preprint_year；其它情况使用 effective year。
+    year_source = "preprint" if has_arxiv_filter(filters) else "effective"
     return all(match_record_filter(settings, record, filter_item, year_source=year_source) for filter_item in filters)
 
 
@@ -31,7 +31,7 @@ def match_record_filter(
     record,
     filter_item: dict[str, Any],
     *,
-    year_source: str = "publish",
+    year_source: str = "effective",
 ) -> bool:
     """处理单个 filter 的正向/否定匹配。"""
     matched = match_record_positive_filter(settings, record, filter_item, year_source=year_source)
@@ -43,7 +43,7 @@ def match_record_positive_filter(
     record,
     filter_item: dict[str, Any],
     *,
-    year_source: str = "publish",
+    year_source: str = "effective",
 ) -> bool:
     """按 field 分发到具体的正向匹配函数。"""
     field = filter_item.get("field")
@@ -71,7 +71,7 @@ def match_record_positive_filter(
     return False
 
 
-def compare_number(actual: Any, op: str, expected: Any, *, year_source: str = "publish") -> bool:
+def compare_number(actual: Any, op: str, expected: Any, *, year_source: str = "effective") -> bool:
     """比较 year 字段；parser 层应已经把论文边界解析成 int/-inf/inf。"""
     actual_year = filter_year(actual, year_source)
     if actual_year is None:
@@ -166,11 +166,13 @@ def value_is_arxiv(value: Any) -> bool:
 
 
 def filter_year(value: Any, year_source: str) -> int | None:
-    """按当前过滤上下文选择 preprint_year 或 publish_year。"""
+    """按当前过滤上下文选择 preprint_year、publish_year 或 effective year。"""
     year = normalize_year(value)
     if year_source == "preprint":
         return year.get("preprint_year")
-    return year.get("publish_year")
+    if year_source == "publish":
+        return year.get("publish_year")
+    return year.get("publish_year") or year.get("preprint_year")
 
 
 def matching_author(authors: list[str], author_query: str) -> str | None:

@@ -5,17 +5,17 @@ from __future__ import annotations
 from typing import Any
 
 from paper_rag.config import Settings
-from paper_rag.retrieval.chunk_fusion import fuse_chunk_hits
-from paper_rag.corpus.chunks import filter_chunks_by_paper_records, load_chunk_documents
-from paper_rag.corpus.records import dedupe_paper_records
+from paper_rag.corpus.context import CorpusContext
+from paper_rag.corpus.records import dedupe_paper_records, paper_record_key
 from paper_rag.corpus.scope import combined_semantic, records_for_scope
+from paper_rag.retrieval.chunk_fusion import fuse_chunk_hits
 from paper_rag.retrieval.dense.service import search_dense_chunks
 from paper_rag.retrieval.evidence import build_content_evidence
 from paper_rag.retrieval.route import RouteDecision
-from paper_rag.retrieval.sparse.bm25 import search_bm25_chunks
 from paper_rag.retrieval.routes.content.context import context_unit
 from paper_rag.retrieval.routes.content.retrieval_query import build_content_retrieval_query
 from paper_rag.retrieval.routes.content.translation import CloudKeywordTranslator, KeywordTranslatorProtocol
+from paper_rag.retrieval.timing import Timings
 
 
 def plan_body(
@@ -27,8 +27,12 @@ def plan_body(
     store=None,
     translator: KeywordTranslatorProtocol | None = None,
     debug: bool = False,
+    corpus: CorpusContext | None = None,
+    timings: Timings | None = None,
 ) -> dict[str, Any]:
     """执行正文检索计划，并构造 content evidence。"""
+    corpus = corpus or CorpusContext(settings)
+    timings = timings or Timings(False)
     if route.parse_status == "parse_failed":
         return build_content_evidence(
             route,
@@ -40,60 +44,63 @@ def plan_body(
             debug=debug,
         )
 
-    if route.group_mode in {"per", "or", "and"}:
-        # content 的 group 当前只影响论文范围；chunk 检索仍在合并后的候选论文内执行。
-        scope_records = dedupe_paper_records([
-            record
-            for group in route.paper_groups
-            for record in records_for_scope(
-                settings,
-                combined_semantic(route.paper_semantic, group.get("semantic") or ""),
-                [*route.filters, *(group.get("filters") or [])],
-                route.group_mode,
-            )
-        ])
-        group_results = [
-            {
-                "semantic": group.get("semantic") or "",
-                "filters": group.get("filters") or [],
-                "records": records_for_scope(
-                    settings,
-                    combined_semantic(route.paper_semantic, group.get("semantic") or ""),
-                    [*route.filters, *(group.get("filters") or [])],
-                    route.group_mode,
-                ),
-            }
-            for group in route.paper_groups
-        ]
-    else:
-        scope_records = records_for_scope(settings, route.paper_semantic, route.filters, route.group_mode)
-        group_results = []
-    retrieval_query = build_content_retrieval_query(
-        settings,
-        route,
-        warnings,
-        translator=translator or CloudKeywordTranslator(),
-    )
-    documents = filter_chunks_by_paper_records(load_chunk_documents(settings.paper_data_dir), scope_records)
-    documents_by_id = {document.chunk_id: document for document in documents}
+    with timings.measure("scope"):
+        scope_records, group_results = resolve_content_scope(settings, route, corpus)
     if not scope_records:
         warnings.append("content route found no matching paper scope records")
-    if not documents:
+        return build_content_evidence(
+            route,
+            status="ok",
+            warnings=warnings,
+            scope_records=scope_records,
+            context_units=[],
+            group_results=group_results or None,
+            debug=debug,
+        )
+
+    with timings.measure("retrieval_query"):
+        retrieval_query = build_content_retrieval_query(
+            settings,
+            route,
+            warnings,
+            translator=translator or CloudKeywordTranslator(),
+        )
+
+    with timings.measure("load_chunks"):
+        chunk_documents = corpus.chunks_for_records(scope_records)
+    chunk_documents_by_id = {
+        chunk_document.chunk_id: chunk_document
+        for chunk_document in chunk_documents
+    }
+    if not chunk_documents:
         warnings.append("content route found no matching chunks")
-        dense_results = []
+        context_units: list[dict[str, Any]] = []
     else:
+        dense_results = []
         try:
-            dense_results = search_dense_chunks(settings, retrieval_query["dense_query"], embedder=embedder, store=store)
+            with timings.measure("dense"):
+                dense_results = search_dense_chunks(
+                    settings,
+                    retrieval_query["dense_query"],
+                    paper_ids=paper_ids_for_scope(scope_records),
+                    embedder=embedder,
+                    store=store,
+                )
         except Exception as exc:
             warnings.append(f"dense retrieval failed: {exc}; using BM25 candidates only")
-            dense_results = []
-    bm25_results = search_bm25_chunks(documents, retrieval_query["bm25_queries"], settings.plan_bm25_top_k)
-    # dense 与 BM25 各自召回后，用 RRF 在 chunk 粒度做最终排序。
-    fused = fuse_chunk_hits(documents_by_id, dense_results, bm25_results)
-    context_units = [
-        context_unit(settings, candidate, settings.plan_block_window)
-        for candidate in fused[:settings.plan_final_top_k]
-    ]
+        with timings.measure("bm25"):
+            bm25_results = corpus.bm25_index.search_many(
+                retrieval_query["bm25_queries"],
+                settings.plan_bm25_top_k,
+                allowed_chunk_ids=[chunk_document.chunk_id for chunk_document in chunk_documents],
+            )
+        with timings.measure("fusion_context"):
+            fused = fuse_chunk_hits(chunk_documents_by_id, dense_results, bm25_results)
+            context_units = [
+                context_unit(settings, candidate, settings.plan_block_window)
+                for candidate in fused[:settings.plan_final_top_k]
+            ]
+
     if not context_units:
         warnings.append("body route found no dense/BM25 candidates")
     return build_content_evidence(
@@ -106,3 +113,52 @@ def plan_body(
         group_results=group_results or None,
         debug=debug,
     )
+
+
+def resolve_content_scope(
+    settings: Settings,
+    route: RouteDecision,
+    corpus: CorpusContext,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """解析 content route 的论文候选范围。"""
+    if route.group_mode not in {"per", "or", "and"}:
+        return records_for_scope(
+            settings,
+            route.paper_semantic,
+            route.filters,
+            route.group_mode,
+            corpus=corpus,
+        ), []
+
+    group_results = [
+        {
+            "semantic": group.get("semantic") or "",
+            "filters": group.get("filters") or [],
+            "records": records_for_scope(
+                settings,
+                combined_semantic(route.paper_semantic, group.get("semantic") or ""),
+                [*route.filters, *(group.get("filters") or [])],
+                route.group_mode,
+                corpus=corpus,
+            ),
+        }
+        for group in route.paper_groups
+    ]
+    scope_records = dedupe_paper_records([
+        record
+        for group in group_results
+        for record in group["records"]
+    ])
+    return scope_records, group_results
+
+
+def paper_ids_for_scope(scope_records: list[dict[str, Any]]) -> list[str]:
+    """把 scope records 转成 Milvus paper_id 过滤列表。"""
+    paper_ids: list[str] = []
+    seen: set[str] = set()
+    for record in scope_records:
+        paper_id = paper_record_key(record)
+        if paper_id and paper_id not in seen:
+            seen.add(paper_id)
+            paper_ids.append(paper_id)
+    return paper_ids

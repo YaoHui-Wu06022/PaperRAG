@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any
 
@@ -75,11 +76,11 @@ class MilvusStore:
             enable_dynamic_field=True,
         )
 
-    def insert_documents(self, documents: list[ChunkDocument], vectors: list[list[float]], batch_size: int = 100) -> int:
+    def insert_chunk_documents(self, chunk_documents: list[ChunkDocument], vectors: list[list[float]], batch_size: int = 100) -> int:
         """把 chunk 元数据和向量成批写入 Milvus。"""
         rows = [
-            build_document_row(document, vector, self.vector_field)
-            for document, vector in zip(documents, vectors)
+            build_chunk_row(chunk_document, vector, self.vector_field)
+            for chunk_document, vector in zip(chunk_documents, vectors)
         ]
         for start in range(0, len(rows), batch_size):
             self.client.insert(self.collection_name, rows[start:start + batch_size])
@@ -87,11 +88,15 @@ class MilvusStore:
             self.client.load_collection(self.collection_name)
         return len(rows)
 
-    def search(self, query_vector: list[float], top_k: int) -> list[SearchResult]:
+    def search(self, query_vector: list[float], top_k: int, *, paper_ids: list[str] | None = None) -> list[SearchResult]:
         """用 query 向量检索最相近的 chunk。"""
+        filter_expr = paper_id_filter_expr(paper_ids)
+        if paper_ids is not None and not filter_expr:
+            return []
         results = self.client.search(
             collection_name=self.collection_name,
             data=[query_vector],
+            filter=filter_expr,
             limit=top_k,
             output_fields=self.output_fields,
             search_params={"metric_type": "COSINE"},
@@ -101,16 +106,16 @@ class MilvusStore:
         return [parse_search_hit(hit) for hit in hits]
 
 
-def build_document_row(document: ChunkDocument, vector: list[float], vector_field: str) -> dict[str, Any]:
+def build_chunk_row(chunk_document: ChunkDocument, vector: list[float], vector_field: str) -> dict[str, Any]:
     """把 ChunkDocument 投影成 Milvus 可插入的行。"""
     return {
-        "chunk_id": document.chunk_id,
-        "paper_id": document.paper_id,
-        "chunk_index": document.chunk_index,
-        "title": document.title,
-        "section_path_text": document.section_path_text,
-        "pages_text": document.pages_text,
-        "text": document.text,
+        "chunk_id": chunk_document.chunk_id,
+        "paper_id": chunk_document.paper_id,
+        "chunk_index": chunk_document.chunk_index,
+        "title": chunk_document.title,
+        "section_path_text": chunk_document.section_path_text,
+        "pages_text": chunk_document.pages_text,
+        "text": chunk_document.text,
         vector_field: vector,
     }
 
@@ -129,6 +134,22 @@ def parse_search_hit(hit: dict[str, Any]) -> SearchResult:
         pages_text=str(entity.get("pages_text") or ""),
         text=str(entity.get("text") or ""),
     )
+
+
+def paper_id_filter_expr(paper_ids: list[str] | None) -> str:
+    """把 scope paper_id 列表转成 Milvus 标量过滤表达式。"""
+    if paper_ids is None:
+        return ""
+    values = []
+    seen: set[str] = set()
+    for paper_id in paper_ids:
+        text = str(paper_id or "").strip()
+        if text and text not in seen:
+            seen.add(text)
+            values.append(text)
+    if not values:
+        return ""
+    return "paper_id in " + json.dumps(values, ensure_ascii=False)
 
 
 def snippet(text: str, limit: int = 320) -> str:

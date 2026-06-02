@@ -23,16 +23,16 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from paper_rag.config import Settings
-from paper_rag.retrieval.chunk_fusion import fuse_chunk_hits
-from paper_rag.corpus.chunks import filter_chunks_by_paper_records, load_chunk_documents
+from paper_rag.corpus.context import CorpusContext
 from paper_rag.corpus.records import dedupe_paper_records
 from paper_rag.corpus.scope import combined_semantic, records_for_scope
+from paper_rag.retrieval.chunk_fusion import fuse_chunk_hits
 from paper_rag.retrieval.dense.service import search_dense_chunks
 from paper_rag.retrieval.routes.content.context import context_unit
+from paper_rag.retrieval.routes.content.planner import paper_ids_for_scope
 from paper_rag.retrieval.routes.content.retrieval_query import build_content_retrieval_query
 from paper_rag.retrieval.routes.content.router import build_content_decision
 from paper_rag.retrieval.routes.content.schema import validate_content_parse
-from paper_rag.retrieval.sparse.bm25 import search_bm25_chunks
 from paper_rag.retrieval.route import RouteDecision
 
 
@@ -94,19 +94,28 @@ def run_case(settings: Settings, case: dict[str, Any], *, top_k: int, run_dense:
         }
 
     try:
+        corpus = CorpusContext(settings)
         route = build_content_decision(
             settings,
             RouteDecision(route="content", query=query, parse_status="ok"),
             warnings,
             plan_parser=StaticContentParser(parser_result),
+            corpus=corpus,
         )
         retrieval_query = build_content_retrieval_query(settings, route, warnings)
-        scope_records = content_scope_records(settings, route)
-        documents = filter_chunks_by_paper_records(load_chunk_documents(settings.paper_data_dir), scope_records)
-        documents_by_id = {document.chunk_id: document for document in documents}
-        dense_hits = dense_results(settings, retrieval_query["dense_query"], run_dense, warnings)
-        bm25_hits = search_bm25_chunks(documents, retrieval_query["bm25_queries"], settings.plan_bm25_top_k)
-        fused_hits = fuse_chunk_hits(documents_by_id, dense_hits, bm25_hits)
+        scope_records = content_scope_records(settings, route, corpus)
+        chunk_documents = corpus.chunks_for_records(scope_records)
+        chunk_documents_by_id = {
+            chunk_document.chunk_id: chunk_document
+            for chunk_document in chunk_documents
+        }
+        dense_hits = dense_results(settings, retrieval_query["dense_query"], paper_ids_for_scope(scope_records), run_dense, warnings)
+        bm25_hits = corpus.bm25_index.search_many(
+            retrieval_query["bm25_queries"],
+            settings.plan_bm25_top_k,
+            allowed_chunk_ids=[chunk_document.chunk_id for chunk_document in chunk_documents],
+        )
+        fused_hits = fuse_chunk_hits(chunk_documents_by_id, dense_hits, bm25_hits)
         contexts = [context_unit(settings, hit, settings.plan_block_window) for hit in fused_hits[:top_k]]
         return {
             "query": query,
@@ -117,7 +126,7 @@ def run_case(settings: Settings, case: dict[str, Any], *, top_k: int, run_dense:
                 "filters": route.filters,
                 "paper_groups": route.paper_groups,
                 "papers": [record.get("title") for record in scope_records],
-                "chunk_count": len(documents),
+                "chunk_count": len(chunk_documents),
             },
             "retrieval_query": {
                 "dense_query": retrieval_query["dense_query"],
@@ -139,7 +148,7 @@ def run_case(settings: Settings, case: dict[str, Any], *, top_k: int, run_dense:
         }
 
 
-def content_scope_records(settings: Settings, route: RouteDecision) -> list[dict[str, Any]]:
+def content_scope_records(settings: Settings, route: RouteDecision, corpus: CorpusContext) -> list[dict[str, Any]]:
     """复用 content planner 的 scope 语义，得到候选论文 records。"""
     if route.group_mode in {"per", "or", "and"}:
         return dedupe_paper_records([
@@ -150,18 +159,19 @@ def content_scope_records(settings: Settings, route: RouteDecision) -> list[dict
                 combined_semantic(route.paper_semantic, group.get("semantic") or ""),
                 [*route.filters, *(group.get("filters") or [])],
                 route.group_mode,
+                corpus=corpus,
             )
         ])
-    return records_for_scope(settings, route.paper_semantic, route.filters, route.group_mode)
+    return records_for_scope(settings, route.paper_semantic, route.filters, route.group_mode, corpus=corpus)
 
 
-def dense_results(settings: Settings, dense_query: str, run_dense: bool, warnings: list[str]) -> list[Any]:
+def dense_results(settings: Settings, dense_query: str, paper_ids: list[str], run_dense: bool, warnings: list[str]) -> list[Any]:
     """执行 dense 检索；不可用时只记录 warning，BM25 仍可继续测。"""
     if not run_dense:
         warnings.append("dense retrieval skipped by --no-dense")
         return []
     try:
-        return search_dense_chunks(settings, dense_query)
+        return search_dense_chunks(settings, dense_query, paper_ids=paper_ids)
     except Exception as exc:
         warnings.append(f"dense retrieval failed: {exc}; BM25 results are still shown")
         return []
@@ -180,14 +190,14 @@ def compact_dense_hit(hit: Any) -> dict[str, Any]:
 
 
 def compact_bm25_hit(hit: Any) -> dict[str, Any]:
-    """压缩 BM25 hit；真实 ChunkDocument 放在 payload.document 里。"""
-    document = (hit.payload or {}).get("document")
+    """压缩 BM25 hit；真实 ChunkDocument 放在 payload.chunk_document 里。"""
+    chunk_document = (hit.payload or {}).get("chunk_document")
     return {
         "score": hit.score,
         "chunk_id": hit.doc_id,
-        "title": getattr(document, "title", ""),
-        "section": getattr(document, "section_path_text", ""),
-        "pages": getattr(document, "pages_text", ""),
+        "title": getattr(chunk_document, "title", ""),
+        "section": getattr(chunk_document, "section_path_text", ""),
+        "pages": getattr(chunk_document, "pages_text", ""),
         "text": snippet(hit.text),
     }
 

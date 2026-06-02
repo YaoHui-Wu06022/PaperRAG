@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from paper_rag.config import Settings
+from paper_rag.corpus.context import CorpusContext
 from paper_rag.retrieval.routes.common.errors import PlanParseError
 from paper_rag.retrieval.routes.content.planner import plan_body
 from paper_rag.retrieval.routes.content.router import build_content_decision
@@ -14,6 +15,7 @@ from paper_rag.retrieval.routes.reference.planner import plan_reference
 from paper_rag.retrieval.routes.reference.router import build_reference_decision
 from paper_rag.retrieval.routes.top.parser import TopParserClient
 from paper_rag.retrieval.route import RouteDecision
+from paper_rag.retrieval.timing import Timings, attach_timings
 
 
 def run_plan(
@@ -22,20 +24,33 @@ def run_plan(
     *,
     debug: bool = False,
     top_parser=None,
+    corpus: CorpusContext | None = None,
+    timings: Timings | None = None,
 ) -> dict[str, Any]:
     """执行一次完整 plan：top router -> domain router -> domain planner。"""
     warnings: list[str] = []
-    route = build_plan_route(settings, query, warnings, top_parser=top_parser)
+    corpus = corpus or CorpusContext(settings)
+    timings = timings or Timings(debug)
+    with timings.measure("top_parser"):
+        route = build_plan_route(settings, query, warnings, top_parser=top_parser)
     if route.route == "metadata":
-        decision = build_metadata_decision(settings, route, warnings)
-        return plan_metadata(settings, decision, warnings, debug=debug)
+        with timings.measure("domain_parser"):
+            decision = build_metadata_decision(settings, route, warnings, corpus=corpus)
+        with timings.measure("scope"):
+            evidence = plan_metadata(settings, decision, warnings, debug=debug, corpus=corpus)
+        return attach_timings(evidence, timings)
     if route.route == "reference":
-        decision = build_reference_decision(settings, route, warnings)
-        return plan_reference(settings, decision, warnings, debug=debug)
+        with timings.measure("domain_parser"):
+            decision = build_reference_decision(settings, route, warnings, corpus=corpus)
+        with timings.measure("scope"):
+            evidence = plan_reference(settings, decision, warnings, debug=debug, corpus=corpus)
+        return attach_timings(evidence, timings)
     if route.route == "content":
-        decision = build_content_decision(settings, route, warnings)
-        return plan_body(settings, decision, warnings, debug=debug)
-    return unclear_plan(query, route, warnings, debug=debug)
+        with timings.measure("domain_parser"):
+            decision = build_content_decision(settings, route, warnings, corpus=corpus)
+        evidence = plan_body(settings, decision, warnings, debug=debug, corpus=corpus, timings=timings)
+        return attach_timings(evidence, timings)
+    return attach_timings(unclear_plan(query, route, warnings, debug=debug), timings)
 
 
 def build_plan_route(

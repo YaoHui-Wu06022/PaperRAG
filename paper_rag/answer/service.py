@@ -7,7 +7,9 @@ from typing import Any
 from paper_rag.answer.llm import AnswerClientProtocol, AnswerComposerClient
 from paper_rag.answer.local import compose_local_answer, should_use_answer_llm
 from paper_rag.config import Settings
+from paper_rag.corpus.context import CorpusContext
 from paper_rag.retrieval.plan import run_plan
+from paper_rag.retrieval.timing import Timings, attach_timings
 
 
 def run_ask(
@@ -19,14 +21,22 @@ def run_ask(
     answer_client: AnswerClientProtocol | None = None,
 ) -> dict[str, Any]:
     """执行 ask：先 plan；metadata/reference 本地回答，content 再调用 LLM。"""
-    evidence = planner(settings, query, debug=debug)
-    if should_use_answer_llm(evidence):
-        client = answer_client or AnswerComposerClient.from_settings(settings)
-        answer = client.complete_answer(evidence)
-        answer_mode = "llm"
-    else:
-        answer = compose_local_answer(evidence)
-        answer_mode = "local"
+    timings = Timings(debug)
+    corpus = CorpusContext(settings)
+    with timings.measure("plan"):
+        if planner is run_plan:
+            evidence = planner(settings, query, debug=debug, corpus=corpus, timings=timings)
+        else:
+            evidence = planner(settings, query, debug=debug)
+    with timings.measure("answer"):
+        if should_use_answer_llm(evidence):
+            client = answer_client or AnswerComposerClient.from_settings(settings)
+            answer = client.complete_answer(evidence)
+            answer_mode = "llm"
+        else:
+            answer = compose_local_answer(evidence)
+            answer_mode = "local"
+    attach_timings(evidence, timings)
     payload: dict[str, Any] = {
         "query": query,
         "answer": answer,

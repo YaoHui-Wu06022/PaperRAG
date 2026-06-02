@@ -21,9 +21,14 @@ def load_active_manifest_records(settings: Settings) -> list[ManifestRecord]:
     ]
 
 
-def match_manifest_records(settings: Settings, query: str) -> list[dict]:
+def match_manifest_records(
+    settings: Settings,
+    query: str,
+    *,
+    records: list[ManifestRecord] | None = None,
+) -> list[dict]:
     """用标题轻量召回匹配 query 的 manifest records。"""
-    records = load_active_manifest_records(settings)
+    records = load_active_manifest_records(settings) if records is None else records
     query_token_list = normalize_bm25_token(query)
     query_tokens = set(query_token_list)
     query_compact = "".join(query_token_list)

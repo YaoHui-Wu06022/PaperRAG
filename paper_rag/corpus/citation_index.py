@@ -21,9 +21,15 @@ def load_citation_graph(settings: Settings) -> dict[str, Any] | None:
     return payload if isinstance(payload, dict) else None
 
 
-def citation_scope_paper_ids(settings: Settings, titles: list[str], relation: str) -> set[str]:
+def citation_scope_paper_ids(
+    settings: Settings,
+    titles: list[str],
+    relation: str,
+    *,
+    graph: dict[str, Any] | None = None,
+) -> set[str]:
     """根据 paper follow/prior 关系返回候选论文 id。"""
-    graph = load_citation_graph(settings)
+    graph = load_citation_graph(settings) if graph is None else graph
     if not graph:
         return set()
     target_ids = paper_ids_for_titles(graph, titles)
@@ -47,11 +53,18 @@ def citation_scope_paper_ids(settings: Settings, titles: list[str], relation: st
     return set()
 
 
-def record_matches_citation_scope(settings: Settings, paper_id: str, titles: list[str], relation: str) -> bool:
+def record_matches_citation_scope(
+    settings: Settings,
+    paper_id: str,
+    titles: list[str],
+    relation: str,
+    *,
+    graph: dict[str, Any] | None = None,
+) -> bool:
     """判断某个 paper_id 是否位于 citation scope 中。"""
     if not paper_id:
         return False
-    return paper_id in citation_scope_paper_ids(settings, titles, relation)
+    return paper_id in citation_scope_paper_ids(settings, titles, relation, graph=graph)
 
 
 def paper_ids_for_titles(graph: dict[str, Any], titles: list[str]) -> set[str]:
