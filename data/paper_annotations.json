@@ -69,6 +69,25 @@
       ]
     }
   },
+  "331961622a2f6588c48a34ecddc6a3d052ffe8fcfba333f233d5f27b2da5565d": {
+    "title": "Generative Adversarial Nets",
+    "aliases": [
+      "GAN",
+      "GANs"
+    ],
+    "tags": {
+      "zh": [
+        "生成模型",
+        "对抗训练",
+        "无监督学习"
+      ],
+      "en": [
+        "generative model",
+        "adversarial training",
+        "unsupervised learning"
+      ]
+    }
+  },
   "3da9d0812b27de20e3623ea0f71933dd866f10459fdf04e1129f9f5abdc093cd": {
     "title": "Supervised Contrastive Learning",
     "aliases": [
@@ -216,6 +235,24 @@
       ]
     }
   },
+  "9c196ccbe6c6a595a1adba6cd030d35f7c2e548bbf5e7f1278b0109d8dd9ebaa": {
+    "title": "Dropout: a simple way to prevent neural networks from overfitting",
+    "aliases": [
+      "Dropout"
+    ],
+    "tags": {
+      "zh": [
+        "正则化",
+        "过拟合抑制",
+        "模型集成"
+      ],
+      "en": [
+        "regularization",
+        "overfitting prevention",
+        "model ensemble"
+      ]
+    }
+  },
   "af6b1bd620f81bfaea81edf8227484588e1fcc2427d6b5020fa17454d7566c70": {
     "title": "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks",
     "aliases": [
@@ -231,6 +268,25 @@
         "CNN",
         "model scaling",
         "efficient architecture"
+      ]
+    }
+  },
+  "bdcb63b79ed88f64f8ee2d43a721930d01dde5441a4dba20ecaa2342b34e017c": {
+    "title": "Auto-Encoding Variational Bayes",
+    "aliases": [
+      "VAE",
+      "AEVB"
+    ],
+    "tags": {
+      "zh": [
+        "生成模型",
+        "变分推断",
+        "潜变量模型"
+      ],
+      "en": [
+        "generative model",
+        "variational inference",
+        "latent variable model"
       ]
     }
   },
@@ -285,6 +341,44 @@
         "Transformer",
         "attention mechanism",
         "sequence modeling"
+      ]
+    }
+  },
+  "eab9c73ae2ceda884b94830bda99312254bac4806f6c9f045cbab90721ecda31": {
+    "title": "Adam: A Method for Stochastic Optimization",
+    "aliases": [
+      "Adam"
+    ],
+    "tags": {
+      "zh": [
+        "优化方法",
+        "自适应学习率",
+        "随机优化"
+      ],
+      "en": [
+        "optimization",
+        "adaptive learning rate",
+        "stochastic optimization"
+      ]
+    }
+  },
+  "f2eb20b4e97409aef516a6506ea76c7c051860eeded3006a6d9687c364847b27": {
+    "title": "Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift",
+    "aliases": [
+      "BatchNorm",
+      "Batch Normalization",
+      "BN"
+    ],
+    "tags": {
+      "zh": [
+        "归一化",
+        "训练加速",
+        "内部协变量偏移"
+      ],
+      "en": [
+        "normalization",
+        "training acceleration",
+        "internal covariate shift"
       ]
     }
   }

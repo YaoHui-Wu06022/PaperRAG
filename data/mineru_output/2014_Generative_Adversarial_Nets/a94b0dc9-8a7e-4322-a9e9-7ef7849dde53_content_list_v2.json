@@ -1,0 +1,2781 @@
+[
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Generative Adversarial Nets"
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                325,
+                135,
+                671,
+                157
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Ian J. Goodfellow∗, Jean Pouget-Abadie†, Mehdi Mirza, Bing Xu, David Warde-Farley, Sherjil Ozair‡, Aaron Courville, Yoshua Bengio§"
+                    }
+                ]
+            },
+            "bbox": [
+                192,
+                208,
+                807,
+                238
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Departement d’informatique et de recherche op ´ erationnelle ´"
+                    }
+                ]
+            },
+            "bbox": [
+                303,
+                239,
+                692,
+                253
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Universite de Montr´ eal´"
+                    }
+                ]
+            },
+            "bbox": [
+                421,
+                253,
+                575,
+                265
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Montreal, QC H3C 3J7´"
+                    }
+                ]
+            },
+            "bbox": [
+                421,
+                266,
+                575,
+                279
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Abstract"
+                    }
+                ],
+                "level": 2
+            },
+            "bbox": [
+                459,
+                316,
+                537,
+                330
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We propose a new framework for estimating generative models via an adversarial process, in which we simultaneously train two models: a generative model G that captures the data distribution, and a discriminative model D that estimates the probability that a sample came from the training data rather than G. The training procedure for G is to maximize the probability of D making a mistake. This framework corresponds to a minimax two-player game. In the space of arbitrary functions G and D, a unique solution exists, with G recovering the training data distribution and D equal to 1 everywhere. In the case where G and D are defined by multilayer perceptrons, the entire system can be trained with backpropagation. There is no need for any Markov chains or unrolled approximate inference networks during either training or generation of samples. Experiments demonstrate the potential of the framework through qualitative and quantitative evaluation of the generated samples."
+                    }
+                ]
+            },
+            "bbox": [
+                228,
+                349,
+                767,
+                530
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "1 Introduction"
+                    }
+                ],
+                "level": 2
+            },
+            "bbox": [
+                171,
+                556,
+                313,
+                571
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The promise of deep learning is to discover rich, hierarchical models [2] that represent probability distributions over the kinds of data encountered in artificial intelligence applications, such as natural images, audio waveforms containing speech, and symbols in natural language corpora. So far, the most striking successes in deep learning have involved discriminative models, usually those that map a high-dimensional, rich sensory input to a class label [14, 20]. These striking successes have primarily been based on the backpropagation and dropout algorithms, using piecewise linear units [17, 8, 9] which have a particularly well-behaved gradient . Deep generative models have had less of an impact, due to the difficulty of approximating many intractable probabilistic computations that arise in maximum likelihood estimation and related strategies, and due to difficulty of leveraging the benefits of piecewise linear units in the generative context. We propose a new generative model estimation procedure that sidesteps these difficulties."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                589,
+                823,
+                743
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In the proposed adversarial nets framework, the generative model is pitted against an adversary: a discriminative model that learns to determine whether a sample is from the model distribution or the data distribution. The generative model can be thought of as analogous to a team of counterfeiters, trying to produce fake currency and use it without detection, while the discriminative model is analogous to the police, trying to detect the counterfeit currency. Competition in this game drives both teams to improve their methods until the counterfeits are indistiguishable from the genuine articles."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                750,
+                823,
+                847
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "∗Ian Goodfellow is now a research scientist at Google, but did this work earlier as a UdeM student"
+                    }
+                ]
+            },
+            "bbox": [
+                189,
+                854,
+                774,
+                868
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "†Jean Pouget-Abadie did this work while visiting Universite de Montr ´ eal from Ecole Polytechnique.´"
+                    }
+                ]
+            },
+            "bbox": [
+                192,
+                868,
+                784,
+                882
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "‡Sherjil Ozair is visiting Universite de Montr ´ eal from Indian Institute of Technology Delhi ´"
+                    }
+                ]
+            },
+            "bbox": [
+                192,
+                882,
+                728,
+                896
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "§Yoshua Bengio is a CIFAR Senior Fellow."
+                    }
+                ]
+            },
+            "bbox": [
+                192,
+                896,
+                450,
+                909
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "1All code and hyperparameters available at http://www.github.com/goodfeli/adversarial"
+                    }
+                ]
+            },
+            "bbox": [
+                192,
+                909,
+                820,
+                922
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "1"
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                948,
+                503,
+                959
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "This framework can yield specific training algorithms for many kinds of model and optimization algorithm. In this article, we explore the special case when the generative model generates samples by passing random noise through a multilayer perceptron, and the discriminative model is also a multilayer perceptron. We refer to this special case as adversarial nets. In this case, we can train both models using only the highly successful backpropagation and dropout algorithms [16] and sample from the generative model using only forward propagation. No approximate inference or Markov chains are necessary."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                103,
+                823,
+                203
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2 Related work"
+                    }
+                ],
+                "level": 2
+            },
+            "bbox": [
+                171,
+                220,
+                318,
+                237
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Until recently, most work on deep generative models focused on models that provided a parametric specification of a probability distribution function. The model can then be trained by maximizing the log likelihood. In this family of model, perhaps the most succesful is the deep Boltzmann machine [25]. Such models generally have intractable likelihood functions and therefore require numerous approximations to the likelihood gradient. These difficulties motivated the development of “generative machines”–models that do not explicitly represent the likelihood, yet are able to generate samples from the desired distribution. Generative stochastic networks [4] are an example of a generative machine that can be trained with exact backpropagation rather than the numerous ap proximations required for Boltzmann machines. This work extends the idea of a generative machine by eliminating the Markov chains used in generative stochastic networks."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                253,
+                823,
+                393
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our work backpropagates derivatives through generative processes by using the observation that"
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                400,
+                803,
+                414
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\lim _ {\\sigma \\rightarrow 0} \\nabla_ {\\boldsymbol {x}} \\mathbb {E} _ {\\epsilon \\sim \\mathcal {N} (0, \\sigma^ {2} \\boldsymbol {I})} f (\\boldsymbol {x} + \\epsilon) = \\nabla_ {\\boldsymbol {x}} f (\\boldsymbol {x}).",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/727de6eb0ffaeccdcbbcd313a592782918e7203651b9a21268d3e1a94fd0dd1a.jpg"
+                }
+            },
+            "bbox": [
+                357,
+                422,
+                637,
+                444
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We were unaware at the time we developed this work that Kingma and Welling [18] and Rezende et al. [23] had developed more general stochastic backpropagation rules, allowing one to backprop agate through Gaussian distributions with finite variance, and to backpropagate to the covariance parameter as well as the mean. These backpropagation rules could allow one to learn the conditional variance of the generator, which we treated as a hyperparameter in this work. Kingma and Welling [18] and Rezende et al. [23] use stochastic backpropagation to train variational autoencoders (VAEs). Like generative adversarial networks, variational autoencoders pair a differentiable generator network with a second neural network. Unlike generative adversarial networks, the second network in a VAE is a recognition model that performs approximate inference. GANs require differentiation through the visible units, and thus cannot model discrete data, while VAEs require differentiation through the hidden units, and thus cannot have discrete latent variables. Other VAElike approaches exist [12, 22] but are less closely related to our method."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                450,
+                823,
+                618
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Previous work has also taken the approach of using a discriminative criterion to train a generative model [29, 13]. These approaches use criteria that are intractable for deep generative models. These methods are difficult even to approximate for deep models because they involve ratios of probabilities which cannot be approximated using variational approximations that lower bound the probability. Noise-contrastive estimation (NCE) [13] involves training a generative model by learning the weights that make the model useful for discriminating data from a fixed noise distribution. Using a previously trained model as the noise distribution allows training a sequence of models of increasing quality. This can be seen as an informal competition mechanism similar in spirit to the formal competition used in the adversarial networks game. The key limitation of NCE is that its “discriminator” is defined by the ratio of the probability densities of the noise distribution and the model distribution, and thus requires the ability to evaluate and backpropagate through both densities."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                625,
+                823,
+                777
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Some previous work has used the general concept of having two neural networks compete. The most relevant work is predictability minimization [26]. In predictability minimization, each hidden unit in a neural network is trained to be different from the output of a second network, which predicts the value of that hidden unit given the value of all of the other hidden units. This work differs from predictability minimization in three important ways: 1) in this work, the competition between the networks is the sole training criterion, and is sufficient on its own to train the network. Predictability minimization is only a regularizer that encourages the hidden units of a neural network to be statistically independent while they accomplish some other task; it is not a primary training criterion. 2) The nature of the competition is different. In predictability minimization, two networks’ outputs are compared, with one network trying to make the outputs similar and the other trying to make the outputs different. The output in question is a single scalar. In GANs, one network produces a rich, high dimensional vector that is used as the input to another network, and attempts to choose an input that the other network does not know how to process. 3) The specification of the learning process is different. Predictability minimization is described as an optimization problem with an objective function to be minimized, and learning approaches the minimum of the objective function. GANs are based on a minimax game rather than an optimization problem, and have a value function that one agent seeks to maximize and the other seeks to minimize. The game terminates at a saddle point that is a minimum with respect to one player’s strategy and a maximum with respect to the other player’s strategy."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                785,
+                823,
+                924
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "2"
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                948,
+                503,
+                959
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": []
+            },
+            "bbox": [
+                169,
+                103,
+                823,
+                229
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Generative adversarial networks has been sometimes confused with the related concept of “adversarial examples” [28]. Adversarial examples are examples found by using gradient-based optimization directly on the input to a classification network, in order to find examples that are similar to the data yet misclassified. This is different from the present work because adversarial examples are not a mechanism for training a generative model. Instead, adversarial examples are primarily an analysis tool for showing that neural networks behave in intriguing ways, often confidently classifying two images differently with high confidence even though the difference between them is imperceptible to a human observer. The existence of such adversarial examples does suggest that generative adversarial network training could be inefficient, because they show that it is possible to make modern discriminative networks confidently recognize a class without emulating any of the human-perceptible attributes of that class."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                236,
+                826,
+                388
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3 Adversarial nets"
+                    }
+                ],
+                "level": 2
+            },
+            "bbox": [
+                171,
+                407,
+                344,
+                422
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The adversarial modeling framework is most straightforward to apply when the models are both multilayer perceptrons. To learn the generator’s distribution "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "over data x, we define a prior on input noise variables "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { z } ( z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", then represent a mapping to data space as "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "G ( z ; \\theta _ { g } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where G is a differentiable function represented by a multilayer perceptron with parameters "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\theta _ { g } ."
+                    },
+                    {
+                        "type": "text",
+                        "content": ". We also define a second multilayer perceptron "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D ( \\pmb { x } ; \\theta _ { d } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that outputs a single scalar. "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D ( \\pmb { x } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "represents the probability that x came from the data rather than "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g } ."
+                    },
+                    {
+                        "type": "text",
+                        "content": ". We train D to maximize the probability of assigning the correct label to both training examples and samples from G. We simultaneously train G to minimize log "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( 1 - D ( G ( z ) ) )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". In other words, D and G play the following two-player minimax game with value function "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "V ( \\boldsymbol { G } , \\boldsymbol { D } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ":"
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                438,
+                823,
+                563
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\min _ {G} \\max _ {D} V (D, G) = \\mathbb {E} _ {\\boldsymbol {x} \\sim p _ {\\text { data }} (\\boldsymbol {x})} [ \\log D (\\boldsymbol {x}) ] + \\mathbb {E} _ {\\boldsymbol {z} \\sim p _ {\\boldsymbol {z}} (\\boldsymbol {z})} [ \\log (1 - D (G (\\boldsymbol {z}))) ]. \\tag {1}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/54be1f85ba745f85fa7161b7cceffe52df16fe535f7330277762ff9dca8b7bdc.jpg"
+                }
+            },
+            "bbox": [
+                241,
+                566,
+                823,
+                587
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In the next section, we present a theoretical analysis of adversarial nets, essentially showing that the training criterion allows one to recover the data generating distribution as G and D are given enough capacity, i.e., in the non-parametric limit. See Figure 1 for a less formal, more pedagogical explanation of the approach. In practice, we must implement the game using an iterative, numerical approach. Optimizing D to completion in the inner loop of training is computationally prohibitive, and on finite datasets would result in overfitting. Instead, we alternate between k steps of optimizing D and one step of optimizing G. This results in D being maintained near its optimal solution, so long as G changes slowly enough. The procedure is formally presented in Algorithm 1."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                589,
+                823,
+                702
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In practice, equation 1 may not provide sufficient gradient for G to learn well. Early in learning, when G is poor, D can reject samples with high confidence because they are clearly different from the training data. In this case, l "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\bar { \\mathrm { p g } } } ( 1 - D ( G { \\bar { ( } } z ) ) )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ") saturates. Rather than training G to minimize "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\log ( 1 - \\bar { D ( G ( z ) ) } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "we can train G to maximize log "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D ( G ( z ) )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "). This objective function results in the same fixed point of the dynamics of G and D but provides much stronger gradients early in learning."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                707,
+                823,
+                779
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4 Theoretical Results"
+                    }
+                ],
+                "level": 2
+            },
+            "bbox": [
+                169,
+                787,
+                367,
+                803
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The generator G implicitly defines a probability distribution "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as the distribution of the samples "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "G ( z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "obtained when "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z \\sim p _ { z }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Therefore, we would like Algorithm 1 to converge to a good estimator of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { \\mathrm { d a t a } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", if given enough capacity and training time. The results of this section are done in a nonparametric setting, e.g. we represent a model with infinite capacity by studying convergence in the space of probability density functions."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                818,
+                823,
+                888
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We will show in section 4.1 that this minimax game has a global optimum for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g } = p _ { \\mathrm { d a t a } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". We will then show in section 4.2 that Algorithm 1 optimizes Eq 1, thus obtaining the desired result."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                895,
+                823,
+                925
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "3"
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                948,
+                503,
+                959
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/c1ccb1bc0592111ed175b4e42ed6f8cf27928570083ee942b8eae3803ebb968e.jpg"
+                },
+                "content": "x\nz",
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(a)"
+                    }
+                ],
+                "image_footnote": []
+            },
+            "sub_type": "text_image",
+            "bbox": [
+                186,
+                114,
+                316,
+                239
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/4115b7deef5c2ef1b77841eb2cfca898c152d73fccdbd5a5eae4d83c3d5be508.jpg"
+                },
+                "content": "Diagram showing two curves with dotted and solid lines, one peaking sharply, the other forming a bell shape, and a grid of parallel lines below.",
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(b)"
+                    }
+                ],
+                "image_footnote": []
+            },
+            "sub_type": "text_image",
+            "bbox": [
+                351,
+                114,
+                473,
+                237
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/0be11c92c823e7702217f57edad4c6ad784f390a50a6ae4bc397ed96da2be3f7.jpg"
+                },
+                "content": "Diagram showing a green curve with dotted and dashed lines, possibly representing a signal or distribution profile, above a grid of lines.",
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(c)"
+                    }
+                ],
+                "image_footnote": []
+            },
+            "sub_type": "text_image",
+            "bbox": [
+                509,
+                114,
+                630,
+                237
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/2370de0f61f9e65e920d408daf75b077453c5b403cd2772f677603bd9ec100cd.jpg"
+                },
+                "content": "Diagram showing a Gaussian-like distribution with a dotted horizontal line and a grid of vertical lines below, likely illustrating a probability density function or wavelet pattern.",
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(d)"
+                    },
+                    {
+                        "type": "text",
+                        "content": "Figure 1: Generative adversarial nets are trained by simultaneously updating the discriminative distribution (D, blue, dashed line) so that it discriminates between samples from the data generating distribution (black, dotted line) "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { x }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from those of the generative distribution "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(G) (green, solid line). The lower horizontal line is the domain from which z is sampled, in this case uniformly. The horizontal line above is part of the domain of x. The upward arrows show how the mapping "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x = G ( z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "imposes the non-uniform distribution "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "on transformed samples. "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "G"
+                    },
+                    {
+                        "type": "text",
+                        "content": "contracts in regions of high density and expands in regions of low density of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g } ."
+                    },
+                    {
+                        "type": "text",
+                        "content": "(a) Consider an adversarial pair near convergence: "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is similar to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { \\mathrm { d a t a } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a partially accurate classifier. (b) In the inner loop of the algorithm D is trained to discriminate samples from data, converging to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D ^ { \\ast } ( { \\pmb x } ) ="
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\frac { p _ { \\mathrm { d a t a } } ( \\pmb { x } ) } { p _ { \\mathrm { d a t a } } ( \\pmb { x } ) + p _ { g } ( \\pmb { x } ) } . \\ ( \\mathbf { c } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "After an update to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "G ,"
+                    },
+                    {
+                        "type": "text",
+                        "content": "gradient of D has guided "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "G ( z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to flow to regions that are more likely to be classified as data. (d) After several steps of training, if G and D have enough capacity, they will reach a point at which both cannot improve because "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g } = p _ { \\mathrm { d a t a } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The discriminator is unable to differentiate between the two distributions, i.e. "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { D ( \\pmb { x } ) = \\frac { 1 } { 2 } } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "."
+                    }
+                ],
+                "image_footnote": []
+            },
+            "sub_type": "text_image",
+            "bbox": [
+                658,
+                114,
+                813,
+                237
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Algorithm 1 Minibatch stochastic gradient descent training of generative adversarial nets. The number of steps to apply to the discriminator, k, is a hyperparameter. We used "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k = 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the least expensive option, in our experiments."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                454,
+                823,
+                494
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "for number of training iterations do"
+                    }
+                ]
+            },
+            "bbox": [
+                187,
+                496,
+                426,
+                510
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "for k steps do"
+                    }
+                ]
+            },
+            "bbox": [
+                204,
+                511,
+                300,
+                523
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• Sample minibatch of m noise samples "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\{ z ^ { ( 1 ) } , \\dots , z ^ { ( m ) } \\}"
+                            },
+                            {
+                                "type": "text",
+                                "content": "from noise prior "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "p _ { g } ( z )"
+                            },
+                            {
+                                "type": "text",
+                                "content": "."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• Sample minibatch of m examples "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\{ \\pmb { x } ^ { ( 1 ) } , \\ldots , \\pmb { x } ^ { ( m ) } \\}"
+                            },
+                            {
+                                "type": "text",
+                                "content": "from data generating distribution "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "p _ { \\mathrm { d a t a } } ( \\pmb { x } )"
+                            },
+                            {
+                                "type": "text",
+                                "content": "."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• Update the discriminator by ascending its stochastic gradient:"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                218,
+                525,
+                823,
+                584
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\nabla_ {\\theta_ {d}} \\frac {1}{m} \\sum_ {i = 1} ^ {m} \\left[ \\log D (\\pmb {x} ^ {(i)}) + \\log (1 - D (G (\\pmb {z} ^ {(i)}))) \\right].",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/b4f87454fd91c02d929a716993b284242d18a29ec8fb6dfe3303813fa022ff1d.jpg"
+                }
+            },
+            "bbox": [
+                333,
+                592,
+                710,
+                631
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "end for"
+                    }
+                ]
+            },
+            "bbox": [
+                204,
+                638,
+                259,
+                648
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• Sample minibatch of m noise samples "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\{ z ^ { ( 1 ) } , \\dots , z ^ { ( m ) } \\}"
+                            },
+                            {
+                                "type": "text",
+                                "content": "from noise prior "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "p _ { g } ( z )"
+                            },
+                            {
+                                "type": "text",
+                                "content": "."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• Update the generator by descending its stochastic gradient:"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                204,
+                650,
+                741,
+                680
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\nabla_ {\\theta_ {g}} \\frac {1}{m} \\sum_ {i = 1} ^ {m} \\log \\left(1 - D \\left(G \\left(\\boldsymbol {z} ^ {(i)}\\right)\\right)\\right).",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/912200bb11dad1cc2e021281af5873cd2f3bb69ff2f04e09306eea7aa87e19db.jpg"
+                }
+            },
+            "bbox": [
+                385,
+                686,
+                640,
+                726
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "end for"
+                    }
+                ]
+            },
+            "bbox": [
+                187,
+                734,
+                241,
+                746
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The gradient-based updates can use any standard gradient-based learning rule. We used momentum in our experiments."
+                    }
+                ]
+            },
+            "bbox": [
+                186,
+                747,
+                823,
+                776
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4.1 Global Optimality of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g } = p _ { \\mathbf { d a t a } }"
+                    }
+                ],
+                "level": 2
+            },
+            "bbox": [
+                169,
+                811,
+                429,
+                828
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We first consider the optimal discriminator D for any given generator "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "G ."
+                    },
+                    {
+                        "type": "text",
+                        "content": "."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                840,
+                648,
+                856
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proposition 1. For G fixed, the optimal discriminator D is"
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                861,
+                563,
+                876
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "D _ {G} ^ {*} (\\boldsymbol {x}) = \\frac {p _ {\\text { data }} (\\boldsymbol {x})}{p _ {\\text { data }} (\\boldsymbol {x}) + p _ {g} (\\boldsymbol {x})} \\tag {2}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/83ee02aab3a13b2c39c3c69c2df69fd15868beeb9f51e2737d81751529602c45.jpg"
+                }
+            },
+            "bbox": [
+                401,
+                888,
+                823,
+                922
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "4"
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                948,
+                504,
+                959
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proof. The training criterion for the discriminator D, given any generator G, is to maximize the quantity V (G, D)"
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                103,
+                823,
+                132
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} V (G, D) = \\int_ {\\pmb {x}} p _ {\\mathrm{data}} (\\pmb {x}) \\log (D (\\pmb {x})) d x + \\int_ {z} p _ {\\pmb {z}} (\\pmb {z}) \\log (1 - D (g (\\pmb {z}))) d z \\\\ = \\int_ {\\boldsymbol {x}} p _ {\\text { data }} (\\boldsymbol {x}) \\log (D (\\boldsymbol {x})) + p _ {g} (\\boldsymbol {x}) \\log (1 - D (\\boldsymbol {x})) d x \\tag {3} \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/10858dd9275837e3998d4a5a30b30da202f96f2f10f003d7d4c7d1b0174cd44d.jpg"
+                }
+            },
+            "bbox": [
+                264,
+                133,
+                825,
+                199
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "For any "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( a , b ) \\in \\mathbb { R } ^ { 2 } \\setminus \\{ 0 , 0 \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the function "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y \\to a \\log ( y ) + b \\log ( 1 - y )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "achieves its maximum in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { [ 0 , 1 ] \\mathrm { ~ a t ~ } \\frac { \\dot { a } } { a + b } . } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The discriminator does not need to be defined outside of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S u p p ( p _ { \\mathrm { d a t a } } ) \\cup S u p p ( p _ { g } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", concluding the proof. □"
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                200,
+                825,
+                244
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Note that the training objective for D can be interpreted as maximizing the log-likelihood for estimating the conditional probability "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( \\boldsymbol { Y } = \\boldsymbol { y } | \\boldsymbol { x } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where Y indicates whether x comes from pdata (with y = 1) or from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(with y = 0). The minimax game in Eq. 1 can now be reformulated as:"
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                258,
+                823,
+                301
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} C (G) = \\max _ {D} V (G, D) \\\\ = \\mathbb {E} _ {\\boldsymbol {x} \\sim p _ {\\text { data }}} [ \\log D _ {G} ^ {*} (\\boldsymbol {x}) ] + \\mathbb {E} _ {\\boldsymbol {z} \\sim p _ {\\boldsymbol {z}}} [ \\log (1 - D _ {G} ^ {*} (G (\\boldsymbol {z}))) ] \\tag {4} \\\\ = \\mathbb {E} _ {\\boldsymbol {x} \\sim p _ {\\mathrm{data}}} [ \\log D _ {G} ^ {*} (\\boldsymbol {x}) ] + \\mathbb {E} _ {\\boldsymbol {x} \\sim p _ {g}} [ \\log (1 - D _ {G} ^ {*} (\\boldsymbol {x})) ] \\\\ = \\mathbb {E} _ {\\boldsymbol {x} \\sim p _ {\\text { data }}} \\left[ \\log \\frac {p _ {\\text { data }} (\\boldsymbol {x})}{P _ {\\text { data }} (\\boldsymbol {x}) + p _ {g} (\\boldsymbol {x})} \\right] + \\mathbb {E} _ {\\boldsymbol {x} \\sim p _ {g}} \\left[ \\log \\frac {p _ {g} (\\boldsymbol {x})}{p _ {\\text { data }} (\\boldsymbol {x}) + p _ {g} (\\boldsymbol {x})} \\right] \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/fd172b5f7ea591b6ca065de97b4d37d2fba49492b79782689a854bc286f68f52.jpg"
+                }
+            },
+            "bbox": [
+                250,
+                303,
+                825,
+                398
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Theorem 1. The global minimum of the virtual training criterion C(G) is achieved if and only if "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g } = p _ { d a t a } ."
+                    },
+                    {
+                        "type": "text",
+                        "content": ". At that point, C(G) achieves the value − log 4."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                398,
+                826,
+                429
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proof. For "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { p _ { g } = p _ { \\mathrm { d a t a } } , D _ { G } ^ { * } ( { \\pmb x } ) = \\frac { 1 } { 2 } } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", (consider Eq. 2). Hence, by inspecting Eq. 4 at "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { D _ { G } ^ { * } ( \\pmb { x } ) = \\frac { 1 } { 2 } } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", we find "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C ( G ) = \\log { \\textstyle { \\frac { 1 } { 2 } } } + \\log { \\textstyle { \\frac { 1 } { 2 } } } = - \\log 4"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". To see that this is the best possible value of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C ( G )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", reached only for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g } = p _ { \\mathrm { d a t a } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", observe that"
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                443,
+                823,
+                489
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathbb {E} _ {\\pmb {x} \\sim p _ {\\mathrm{data}}} [ - \\log 2 ] + \\mathbb {E} _ {\\pmb {x} \\sim p _ {g}} [ - \\log 2 ] = - \\log 4",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/c516dd32d88d56444d374c970ee6dde78c3c70e010c821ea50324f81ba9ed02b.jpg"
+                }
+            },
+            "bbox": [
+                343,
+                489,
+                653,
+                507
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "and that by subtracting this expression from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C ( G ) = V ( D _ { G } ^ { * } , G )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", we obtain:"
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                507,
+                674,
+                522
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "C (G) = - \\log (4) + K L \\left(p _ {\\text { data }} \\left\\| \\frac {p _ {\\text { data }} + p _ {g}}{2}\\right) + K L \\left(p _ {g} \\left\\| \\frac {p _ {\\text { data }} + p _ {g}}{2}\\right) \\right. \\right. \\tag {5}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/d7920820ab2b8f53ca53289663b6d1fa2f30d1e0666fad2f129191286613bc1c.jpg"
+                }
+            },
+            "bbox": [
+                259,
+                523,
+                823,
+                556
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where KL is the Kullback–Leibler divergence. We recognize in the previous expression the Jensen– Shannon divergence between the model’s distribution and the data generating process:"
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                556,
+                823,
+                585
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "C (G) = - \\log (4) + 2 \\cdot J S D \\left(p _ {\\text { data }} \\| p _ {g}\\right) \\tag {6}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/48f8ecf429cbd44762d1b2b8b0752ee995695b8f2c2557e006595b397959f12a.jpg"
+                }
+            },
+            "bbox": [
+                361,
+                587,
+                823,
+                603
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Since the Jensen–Shannon divergence between two distributions is always non-negative, and zero iff they are equal, we have shown that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C ^ { * } = - \\log ( 4 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the global minimum of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C ( G )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and that the only solution is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g } = p _ { \\mathrm { d a t a } } , \\mathrm { i . e . }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "., the generative model perfectly replicating the data distribution."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                604,
+                825,
+                648
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4.2 Convergence of Algorithm 1"
+                    }
+                ],
+                "level": 2
+            },
+            "bbox": [
+                171,
+                661,
+                408,
+                676
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proposition 2. If G and D have enough capacity, and at each step of Algorithm 1, the discriminator is allowed to reach its optimum given G, and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is updated so as to improve the criterion"
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                688,
+                823,
+                715
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathbb {E} _ {\\pmb {x} \\sim p _ {d a t a}} [ \\log D _ {G} ^ {*} (\\pmb {x}) ] + \\mathbb {E} _ {\\pmb {x} \\sim p _ {g}} [ \\log (1 - D _ {G} ^ {*} (\\pmb {x})) ]",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/d982d8ffdecbffaf049e4edcb610e95b3e2d7c929c924d7b484f7931224790ae.jpg"
+                }
+            },
+            "bbox": [
+                336,
+                717,
+                658,
+                734
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "then "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "converges to pdata"
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                734,
+                344,
+                750
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proof. Consider "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "V ( G , D ) = U ( p _ { q } , D )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as a function of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as done in the above criterion. Note that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "U ( p _ { g } , D )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is convex in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g } ."
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The subderivatives of a supremum of convex functions include the derivative of the function at the point where the maximum is attained. In other words, if "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f ( x ) ="
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\textstyle \\operatorname* { s u p } _ { \\alpha \\in { \\mathcal { A } } } f _ { \\alpha } ( x )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { \\alpha } ( x )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is convex in x for every α, then "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\partial f _ { \\beta } ( x ) \\in \\partial f { \\mathrm { ~ i f ~ } } \\beta = \\arg \\operatorname* { s u p } _ { \\alpha \\in { \\mathcal { A } } } { \\dot { f } } _ { \\alpha } ( x )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". This is equivalent to computing a gradient descent update for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "at the optimal D given the corresponding G. "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\operatorname* { s u p } _ { D } U ( p _ { g } , D )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is convex in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "with a unique global optima as proven in Thm 1, therefore with sufficiently small updates of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g } , p _ { g }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "converges to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { x }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", concluding the proof. □"
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                763,
+                825,
+                863
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In practice, adversarial nets represent a limited family of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "distributions via the function "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "G ( z ; \\theta _ { g } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and we optimize "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\theta _ { g }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rather than "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "itself, so the proofs do not apply. However, the excellent performance of multilayer perceptrons in practice suggests that they are a reasonable model to use despite their lack of theoretical guarantees."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                867,
+                825,
+                925
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "5"
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                948,
+                504,
+                959
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/832d3d203623d4ffb815ab650fad8e264027a40245d3f76a020651e3b8327b23.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 1: Parzen window-based log-likelihood estimates. The reported numbers on MNIST are the mean loglikelihood of samples on test set, with the standard error of the mean computed across examples. On TFD, we computed the standard error across folds of the dataset, with a different σ chosen using the validation set of each fold. On TFD, σ was cross validated on each fold and mean log-likelihood on each fold were computed. For MNIST we compare against other models of the real-valued (rather than binary) version of dataset."
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>Model</td><td>MNIST</td><td>TFD</td></tr><tr><td>DBN [3]</td><td>138 ± 2</td><td>1909 ± 66</td></tr><tr><td>Stacked CAE [3]</td><td>121 ± 1.6</td><td>2110 ± 50</td></tr><tr><td>Deep GSN [5]</td><td>214 ± 1.1</td><td>1890 ± 29</td></tr><tr><td>Adversarial nets</td><td>225 ± 2</td><td>2057 ± 26</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                341,
+                99,
+                656,
+                172
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5 Experiments"
+                    }
+                ],
+                "level": 2
+            },
+            "bbox": [
+                171,
+                273,
+                313,
+                292
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We trained adversarial nets an a range of datasets including MNIST[21], the Toronto Face Database (TFD) [27], and CIFAR-10 [19]. The generator nets used a mixture of rectifier linear activations [17, 8] and sigmoid activations, while the discriminator net used maxout [9] activations. Dropout [16] was applied in training the discriminator net. While our theoretical framework permits the use of dropout and other noise at intermediate layers of the generator, we used noise as the input to only the bottommost layer of the generator network."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                308,
+                823,
+                393
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We estimate probability of the test set data under "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "by fitting a Gaussian Parzen window to the samples generated with G and reporting the log-likelihood under this distribution. The σ parameter of the Gaussians was obtained by cross validation on the validation set. This procedure was introduced in Breuleux et al. [7] and used for various generative models for which the exact likelihood is not tractable [24, 3, 4]. Results are reported in Table 1. This method of estimating the likelihood has somewhat high variance and does not perform well in high dimensional spaces but it is the best method available to our knowledge. Advances in generative models that can sample but not estimate likelihood directly motivate further research into how to evaluate such models. In Figures 2 and 3 we show samples drawn from the generator net after training. While we make no claim that these samples are better than samples generated by existing methods, we believe that these samples are at least competitive with the better generative models in the literature and highlight the potential of the adversarial framework."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                398,
+                826,
+                565
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "6 Advantages and disadvantages"
+                    }
+                ],
+                "level": 2
+            },
+            "bbox": [
+                169,
+                589,
+                464,
+                607
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "This new framework comes with advantages and disadvantages relative to previous modeling frameworks. The disadvantages are primarily that there is no explicit representation of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { g } ( \\pmb { x } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and that D must be synchronized well with G during training (in particular, G must not be trained too much without updating D, in order to avoid “the Helvetica scenario” in which G collapses too many values of z to the same value of x to have enough diversity to model "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { \\mathrm { d a t a } } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", much as the negative chains of a Boltzmann machine must be kept up to date between learning steps. The advantages are that Markov chains are never needed, only backprop is used to obtain gradients, no inference is needed during learning, and a wide variety of functions can be incorporated into the model. Table 2 summarizes the comparison of generative adversarial nets with other generative modeling approaches."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                622,
+                823,
+                750
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The aforementioned advantages are primarily computational. Adversarial models may also gain some statistical advantage from the generator network not being updated directly with data examples, but only with gradients flowing through the discriminator. This means that components of the input are not copied directly into the generator’s parameters. Another advantage of adversarial networks is that they can represent very sharp, even degenerate distributions, while methods based on Markov chains require that the distribution be somewhat blurry in order for the chains to be able to mix between modes."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                753,
+                826,
+                852
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "7 Conclusions and future work"
+                    }
+                ],
+                "level": 2
+            },
+            "bbox": [
+                171,
+                875,
+                449,
+                892
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "This framework admits many straightforward extensions:"
+                    }
+                ]
+            },
+            "bbox": [
+                171,
+                909,
+                550,
+                924
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "6"
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                948,
+                504,
+                959
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/6f21b2fa378dac461eb5609077c74c81ebe580424da75a820b02e512c5b5aa4b.jpg"
+                },
+                "content": "7 3 9 3 9 9\n1 1 0 6 0 0\n0 1 9 1 2 2\n6 8 2 0 8 8",
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "a)"
+                    }
+                ],
+                "image_footnote": []
+            },
+            "sub_type": "text_image",
+            "bbox": [
+                179,
+                99,
+                493,
+                262
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/aefc4a97e60a173d27ef9ada4b5e62758763474c5fde2af3d32a115cf7f94e55.jpg"
+                },
+                "content": "Grid of grayscale facial expressions showing various emotions and expressions (no text or symbols)",
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "b)"
+                    }
+                ],
+                "image_footnote": []
+            },
+            "sub_type": "natural_image",
+            "bbox": [
+                504,
+                99,
+                820,
+                263
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/9fe2b7ca433f22d7aae871234b23fabf51c77bc4adb94df0752f96bb9bddfc4b.jpg"
+                },
+                "content": "Grid of 20 grayscale images showing various outdoor scenes with no visible text or symbols",
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "c)"
+                    }
+                ],
+                "image_footnote": []
+            },
+            "sub_type": "natural_image",
+            "bbox": [
+                179,
+                277,
+                493,
+                441
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/51e409ae418750755a3f25c737fd1c2fd56539923090202d9c2844de9f188c6f.jpg"
+                },
+                "content": "Grid of 20 nature photos showing animals and animals in various habitat settings, with some highlighted in yellow (no text or symbols)",
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "d )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "Figure 2: Visualization of samples from the model. Rightmost column shows the nearest training example of the neighboring sample, in order to demonstrate that the model has not memorized the training set. Samples are fair random draws, not cherry-picked. Unlike most other visualizations of deep generative models, these images show actual samples from the model distributions, not conditional means given samples of hidden units. Moreover, these samples are uncorrelated because the sampling process does not depend on Markov chain mixing. a) MNIST b) TFD c) CIFAR-10 (fully connected model) d) CIFAR-10 (convolutional discriminator and “deconvolutional” generator)"
+                    }
+                ],
+                "image_footnote": []
+            },
+            "sub_type": "natural_image",
+            "bbox": [
+                506,
+                277,
+                820,
+                441
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/8c052a299d3f9442dcbdd8e6ec6c837e59566451f17a6b87019332bf98ae9026.jpg"
+                },
+                "content": "1 1 1 1 5 5 5 5 5 5 7 7 9 9 9 9 1 1 1 1",
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 3: Digits obtained by linearly interpolating between coordinates in z space of the full model."
+                    }
+                ],
+                "image_footnote": []
+            },
+            "sub_type": "text_image",
+            "bbox": [
+                217,
+                597,
+                781,
+                625
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "1. A conditional generative model "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "p ( { \\pmb x } \\mid { \\pmb c } )"
+                            },
+                            {
+                                "type": "text",
+                                "content": "can be obtained by adding c as input to both G and D."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "2. Learned approximate inference can be performed by training an auxiliary network to predict z given x. This is similar to the inference net trained by the wake-sleep algorithm [15] but with the advantage that the inference net may be trained for a fixed generator net after the generator net has finished training."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "3. One can approximately model all conditionals "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "p ( \\pmb { x } _ { S } \\ | \\ \\pmb { x } _ { \\mathcal { S } } )"
+                            },
+                            {
+                                "type": "text",
+                                "content": "where S is a subset of the indices of x by training a family of conditional models that share parameters. Essentially, one can use adversarial nets to implement a stochastic extension of the deterministic MP-DBM [10]."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "4. Semi-supervised learning: features from the discriminator or inference net could improve performance of classifiers when limited labeled data is available."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "5. Efficiency improvements: training could be accelerated greatly by devising better methods for coordinating G and D or determining better distributions to sample z from during training."
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                704,
+                823,
+                872
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "This paper has demonstrated the viability of the adversarial modeling framework, suggesting that these research directions could prove useful."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                895,
+                823,
+                924
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "7"
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                948,
+                504,
+                959
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/b3cf3012a13b7c6470de5081d590f2a212afe9be885d8e3d609d6ec31fb91322.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 2: Challenges in generative modeling: a summary of the difficulties encountered by different approaches to deep generative modeling for each of the major operations involving a model."
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td></td><td>Deep directed graphical models</td><td>Deep undirected graphical models</td><td>Generative autoencoders</td><td>Adversarial models</td></tr><tr><td>Training</td><td>Inference needed during training.</td><td>Inference needed during training. MCMC needed to approximate partition function gradient.</td><td>Enforced tradeoff between mixing and power of reconstruction generation</td><td>Synchronizing the discriminator with the generator. Helvetica.</td></tr><tr><td>Inference</td><td>Learned approximate inference</td><td>Variational inference</td><td>MCMC-based inference</td><td>Learned approximate inference</td></tr><tr><td>Sampling</td><td>No difficulties</td><td>Requires Markov chain</td><td>Requires Markov chain</td><td>No difficulties</td></tr><tr><td>Evaluating p(x)</td><td>Intractable, may be approximated with AIS</td><td>Intractable, may be approximated with AIS</td><td>Not explicitly represented, may be approximated with Parzen density estimation</td><td>Not explicitly represented, may be approximated with Parzen density estimation</td></tr><tr><td>Model design</td><td>Models need to be designed to work with the desired inference scheme — some inference schemes support similar model families as GANs</td><td>Careful design needed to ensure multiple properties</td><td>Any differentiable function is theoretically permitted</td><td>Any differentiable function is theoretically permitted</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                173,
+                99,
+                844,
+                434
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Acknowledgments"
+                    }
+                ],
+                "level": 2
+            },
+            "bbox": [
+                171,
+                496,
+                305,
+                511
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We would like to acknowledge Patrice Marcotte, Olivier Delalleau, Kyunghyun Cho, Guillaume Alain and Jason Yosinski for helpful discussions. Yann Dauphin shared his Parzen window evaluation code with us. We would like to thank the developers of Pylearn2 [11] and Theano [6, 1], particularly Fred´ eric Bastien who rushed a Theano feature specifically to benefit this project. Ar-´ naud Bergeron provided much-needed support with LAT X typesetting. We would also like to thank CIFAR, and Canada Research Chairs for funding, and Compute Canada, and Calcul Quebec for´ providing computational resources. Ian Goodfellow is supported by the 2013 Google Fellowship in Deep Learning. Finally, we would like to thank Les Trois Brasseurs for stimulating our creativity."
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                518,
+                826,
+                632
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "References"
+                    }
+                ],
+                "level": 2
+            },
+            "bbox": [
+                171,
+                650,
+                267,
+                666
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[1] Bastien, F., Lamblin, P., Pascanu, R., Bergstra, J., Goodfellow, I. J., Bergeron, A., Bouchard, N., and Bengio, Y. (2012). Theano: new features and speed improvements. Deep Learning and Unsupervised Feature Learning NIPS 2012 Workshop."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[2] Bengio, Y. (2009). Learning deep architectures for AI. Now Publishers."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[3] Bengio, Y., Mesnil, G., Dauphin, Y., and Rifai, S. (2013). Better mixing via deep representations. In ICML’13."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[4] Bengio, Y., Thibodeau-Laufer, E., and Yosinski, J. (2014a). Deep generative stochastic networks trainable by backprop. In ICML’14."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[5] Bengio, Y., Thibodeau-Laufer, E., Alain, G., and Yosinski, J. (2014b). Deep generative stochastic networks trainable by backprop. In Proceedings of the 30th International Conference on Machine Learning (ICML’14)."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[6] Bergstra, J., Breuleux, O., Bastien, F., Lamblin, P., Pascanu, R., Desjardins, G., Turian, J., Warde-Farley, D., and Bengio, Y. (2010). Theano: a CPU and GPU math expression compiler. In Proceedings of the Python for Scientific Computing Conference (SciPy). Oral Presentation."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[7] Breuleux, O., Bengio, Y., and Vincent, P. (2011). Quickly generating representative samples from an RBM-derived process. Neural Computation, 23(8), 2053–2073."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[8] Glorot, X., Bordes, A., and Bengio, Y. (2011). Deep sparse rectifier neural networks. In AISTATS’2011."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[9] Goodfellow, I. J., Warde-Farley, D., Mirza, M., Courville, A., and Bengio, Y. (2013a). Maxout networks. In ICML’2013."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[10] Goodfellow, I. J., Mirza, M., Courville, A., and Bengio, Y. (2013b). Multi-prediction deep Boltzmann machines. In NIPS’2013."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[11] Goodfellow, I. J., Warde-Farley, D., Lamblin, P., Dumoulin, V., Mirza, M., Pascanu, R., Bergstra, J., Bastien, F., and Bengio, Y. (2013c). Pylearn2: a machine learning research library. arXiv preprint arXiv:1308.4214."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[12] Gregor, K., Danihelka, I., Mnih, A., Blundell, C., and Wierstra, D. (2014). Deep autoregressive networks. In ICML’2014."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[13] Gutmann, M. and Hyvarinen, A. (2010). Noise-contrastive estimation: A new estimation principle for unnormalized statistical models. In Proceedings of The Thirteenth International Conference on Artificial Intelligence and Statistics (AISTATS’10)."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[14] Hinton, G., Deng, L., Dahl, G. E., Mohamed, A., Jaitly, N., Senior, A., Vanhoucke, V., Nguyen, P., Sainath, T., and Kingsbury, B. (2012a). Deep neural networks for acoustic modeling in speech recognition. IEEE Signal Processing Magazine, 29(6), 82–97."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[15] Hinton, G. E., Dayan, P., Frey, B. J., and Neal, R. M. (1995). The wake-sleep algorithm for unsupervised neural networks. Science, 268, 1558–1161."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[16] Hinton, G. E., Srivastava, N., Krizhevsky, A., Sutskever, I., and Salakhutdinov, R. (2012b). Improving neural networks by preventing co-adaptation of feature detectors. Technical report, arXiv:1207.0580."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[17] Jarrett, K., Kavukcuoglu, K., Ranzato, M., and LeCun, Y. (2009). What is the best multi-stage architecture for object recognition? In Proc. International Conference on Computer Vision (ICCV’09), pages 2146–2153. IEEE."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[18] Kingma, D. P. and Welling, M. (2014). Auto-encoding variational bayes. In Proceedings of the International Conference on Learning Representations (ICLR)."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[19] Krizhevsky, A. and Hinton, G. (2009). Learning multiple layers of features from tiny images. Technical report, University of Toronto."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[20] Krizhevsky, A., Sutskever, I., and Hinton, G. (2012). ImageNet classification with deep convolutional neural networks. In NIPS’2012."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[21] LeCun, Y., Bottou, L., Bengio, Y., and Haffner, P. (1998). Gradient-based learning applied to document recognition. Proceedings of the IEEE, 86(11), 2278–2324."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[22] Mnih, A. and Gregor, K. (2014). Neural variational inference and learning in belief networks. Technical report, arXiv preprint arXiv:1402.0030."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[23] Rezende, D. J., Mohamed, S., and Wierstra, D. (2014). Stochastic backpropagation and approximate inference in deep generative models. Technical report, arXiv:1401.4082."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[24] Rifai, S., Bengio, Y., Dauphin, Y., and Vincent, P. (2012). A generative process for sampling contractive auto-encoders. In ICML’12."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[25] Salakhutdinov, R. and Hinton, G. E. (2009). Deep Boltzmann machines. In AISTATS’2009, pages 448– 455."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[26] Schmidhuber, J. (1992). Learning factorial codes by predictability minimization. Neural Computation, 4(6), 863–879."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[27] Susskind, J., Anderson, A., and Hinton, G. E. (2010). The Toronto face dataset. Technical Report UTML TR 2010-001, U. Toronto."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[28] Szegedy, C., Zaremba, W., Sutskever, I., Bruna, J., Erhan, D., Goodfellow, I. J., and Fergus, R. (2014). Intriguing properties of neural networks. ICLR, abs/1312.6199."
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[29] Tu, Z. (2007). Learning generative models via discriminative approaches. In Computer Vision and Pattern Recognition, 2007. CVPR’07. IEEE Conference on, pages 1–8. IEEE."
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                173,
+                672,
+                825,
+                924
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "8"
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                948,
+                503,
+                959
+            ]
+        }
+    ],
+    [
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": []
+            },
+            "bbox": [
+                166,
+                99,
+                828,
+                789
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "9"
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                948,
+                504,
+                959
+            ]
+        }
+    ]
+]

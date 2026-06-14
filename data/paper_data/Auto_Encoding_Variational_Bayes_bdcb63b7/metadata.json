@@ -1,0 +1,13 @@
+{
+  "author": [
+    "Diederik P. Kingma",
+    "Max Welling"
+  ],
+  "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2014_Auto_Encoding_Variational_Bayes.pdf",
+  "title": "Auto-Encoding Variational Bayes",
+  "venue": "ICLR",
+  "year": {
+    "preprint_year": 2013,
+    "publish_year": 2014
+  }
+}

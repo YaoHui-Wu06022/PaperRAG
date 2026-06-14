@@ -13,7 +13,13 @@ from paper_rag.config import Settings
 from paper_rag.utils import infer_title_from_pdf_name, normalize_text, replace_dir, safe_move_dir, sha256_file, slugify_title
 from paper_rag.ingest.annotations import load_paper_annotations, save_paper_annotations, upsert_paper_annotation
 from paper_rag.ingest.citation_graph import build_citation_graph
-from paper_rag.ingest.extract import extract_paper_data, extract_title, flatten_pages, load_content_list_v2
+from paper_rag.ingest.extract import (
+    extract_paper_data,
+    extract_title,
+    find_content_list_v2_path,
+    flatten_pages,
+    load_content_list_v2,
+)
 from paper_rag.ingest.manifest import Manifest, ManifestRecord, effective_year, normalize_year
 from paper_rag.ingest.mineru import MinerUClient, MinerUError
 from paper_rag.ingest.metadata_sources.arxiv import ArxivClient
@@ -409,7 +415,11 @@ def build_existing_output_index(mineru_output_dir: Path) -> dict[str, Path]:
     """按目录名和解析出的标题建立 MinerU 输出复用索引。"""
     index: dict[str, Path] = {}
     for directory in sorted(mineru_output_dir.iterdir() if mineru_output_dir.exists() else []):
-        if not directory.is_dir() or not (directory / "content_list_v2.json").exists():
+        if not directory.is_dir():
+            continue
+        try:
+            find_content_list_v2_path(directory)
+        except FileNotFoundError:
             continue
         index[normalize_text(directory.name)] = directory
         try:
@@ -424,7 +434,7 @@ def build_existing_output_index(mineru_output_dir: Path) -> dict[str, Path]:
 
 def title_from_output(mineru_output_dir: Path) -> str | None:
     """只从 MinerU 输出中取标题，避免文件名推断覆盖解析出的真实标题。"""
-    pages = load_content_list_v2(mineru_output_dir / "content_list_v2.json")
+    pages = load_content_list_v2(find_content_list_v2_path(mineru_output_dir))
     return extract_title(flatten_pages(pages))
 
 

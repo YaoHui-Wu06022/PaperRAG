@@ -1,0 +1,1044 @@
+{
+  "sections": [
+    {
+      "section_id": "sec_abstract",
+      "parent_id": null,
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 17,
+      "end_block_index": 17
+    },
+    {
+      "section_id": "sec_1",
+      "parent_id": null,
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 19,
+      "end_block_index": 40
+    },
+    {
+      "section_id": "sec_2",
+      "parent_id": null,
+      "number": "2",
+      "title": "Motivation",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Motivation"
+      ],
+      "start_block_index": 41,
+      "end_block_index": 44
+    },
+    {
+      "section_id": "sec_3",
+      "parent_id": null,
+      "number": "3",
+      "title": "Related Work",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Related Work"
+      ],
+      "start_block_index": 45,
+      "end_block_index": 51
+    },
+    {
+      "section_id": "sec_4",
+      "parent_id": null,
+      "number": "4",
+      "title": "Model Description",
+      "region": "body",
+      "order": 4,
+      "level": 1,
+      "path": [
+        "4 Model Description"
+      ],
+      "start_block_index": 52,
+      "end_block_index": 63
+    },
+    {
+      "section_id": "sec_5",
+      "parent_id": null,
+      "number": "5",
+      "title": "Learning Dropout Nets",
+      "region": "body",
+      "order": 5,
+      "level": 1,
+      "path": [
+        "5 Learning Dropout Nets"
+      ],
+      "start_block_index": 64,
+      "end_block_index": 75
+    },
+    {
+      "section_id": "sec_5_1",
+      "parent_id": "sec_5",
+      "number": "5.1",
+      "title": "Backpropagation",
+      "region": "body",
+      "order": 6,
+      "level": 2,
+      "path": [
+        "5 Learning Dropout Nets",
+        "5.1 Backpropagation"
+      ],
+      "start_block_index": 66,
+      "end_block_index": 72
+    },
+    {
+      "section_id": "sec_5_2",
+      "parent_id": "sec_5",
+      "number": "5.2",
+      "title": "Unsupervised Pretraining",
+      "region": "body",
+      "order": 7,
+      "level": 2,
+      "path": [
+        "5 Learning Dropout Nets",
+        "5.2 Unsupervised Pretraining"
+      ],
+      "start_block_index": 73,
+      "end_block_index": 75
+    },
+    {
+      "section_id": "sec_6",
+      "parent_id": null,
+      "number": "6",
+      "title": "Experimental Results",
+      "region": "body",
+      "order": 8,
+      "level": 1,
+      "path": [
+        "6 Experimental Results"
+      ],
+      "start_block_index": 76,
+      "end_block_index": 138
+    },
+    {
+      "section_id": "sec_6_1",
+      "parent_id": "sec_6",
+      "number": "6.1",
+      "title": "Results on Image Data Sets",
+      "region": "body",
+      "order": 9,
+      "level": 2,
+      "path": [
+        "6 Experimental Results",
+        "6.1 Results on Image Data Sets"
+      ],
+      "start_block_index": 84,
+      "end_block_index": 119
+    },
+    {
+      "section_id": "sec_6_1_1",
+      "parent_id": "sec_6_1",
+      "number": "6.1.1",
+      "title": "MNIST",
+      "region": "body",
+      "order": 10,
+      "level": 3,
+      "path": [
+        "6 Experimental Results",
+        "6.1 Results on Image Data Sets",
+        "6.1.1 MNIST"
+      ],
+      "start_block_index": 86,
+      "end_block_index": 93
+    },
+    {
+      "section_id": "sec_6_1_2",
+      "parent_id": "sec_6_1",
+      "number": "6.1.2",
+      "title": "Street View House Numbers",
+      "region": "body",
+      "order": 11,
+      "level": 3,
+      "path": [
+        "6 Experimental Results",
+        "6.1 Results on Image Data Sets",
+        "6.1.2 Street View House Numbers"
+      ],
+      "start_block_index": 94,
+      "end_block_index": 103
+    },
+    {
+      "section_id": "sec_6_1_3",
+      "parent_id": "sec_6_1",
+      "number": "6.1.3",
+      "title": "CIFAR-10 and CIFAR-100",
+      "region": "body",
+      "order": 12,
+      "level": 3,
+      "path": [
+        "6 Experimental Results",
+        "6.1 Results on Image Data Sets",
+        "6.1.3 CIFAR-10 and CIFAR-100"
+      ],
+      "start_block_index": 104,
+      "end_block_index": 110
+    },
+    {
+      "section_id": "sec_6_1_4",
+      "parent_id": "sec_6_1",
+      "number": "6.1.4",
+      "title": "ImageNet",
+      "region": "body",
+      "order": 13,
+      "level": 3,
+      "path": [
+        "6 Experimental Results",
+        "6.1 Results on Image Data Sets",
+        "6.1.4 ImageNet"
+      ],
+      "start_block_index": 111,
+      "end_block_index": 119
+    },
+    {
+      "section_id": "sec_6_2",
+      "parent_id": "sec_6",
+      "number": "6.2",
+      "title": "Results on TIMIT",
+      "region": "body",
+      "order": 14,
+      "level": 2,
+      "path": [
+        "6 Experimental Results",
+        "6.2 Results on TIMIT"
+      ],
+      "start_block_index": 120,
+      "end_block_index": 125
+    },
+    {
+      "section_id": "sec_6_3",
+      "parent_id": "sec_6",
+      "number": "6.3",
+      "title": "Results on a Text Data Set",
+      "region": "body",
+      "order": 15,
+      "level": 2,
+      "path": [
+        "6 Experimental Results",
+        "6.3 Results on a Text Data Set"
+      ],
+      "start_block_index": 126,
+      "end_block_index": 127
+    },
+    {
+      "section_id": "sec_6_4",
+      "parent_id": "sec_6",
+      "number": "6.4",
+      "title": "Comparison with Bayesian Neural Networks",
+      "region": "body",
+      "order": 16,
+      "level": 2,
+      "path": [
+        "6 Experimental Results",
+        "6.4 Comparison with Bayesian Neural Networks"
+      ],
+      "start_block_index": 128,
+      "end_block_index": 135
+    },
+    {
+      "section_id": "sec_6_5",
+      "parent_id": "sec_6",
+      "number": "6.5",
+      "title": "Comparison with Standard Regularizers",
+      "region": "body",
+      "order": 17,
+      "level": 2,
+      "path": [
+        "6 Experimental Results",
+        "6.5 Comparison with Standard Regularizers"
+      ],
+      "start_block_index": 136,
+      "end_block_index": 138
+    },
+    {
+      "section_id": "sec_7",
+      "parent_id": null,
+      "number": "7",
+      "title": "Salient Features",
+      "region": "body",
+      "order": 18,
+      "level": 1,
+      "path": [
+        "7 Salient Features"
+      ],
+      "start_block_index": 139,
+      "end_block_index": 179
+    },
+    {
+      "section_id": "sec_7_1",
+      "parent_id": "sec_7",
+      "number": "7.1",
+      "title": "Effect on Features",
+      "region": "body",
+      "order": 19,
+      "level": 2,
+      "path": [
+        "7 Salient Features",
+        "7.1 Effect on Features"
+      ],
+      "start_block_index": 145,
+      "end_block_index": 151
+    },
+    {
+      "section_id": "sec_7_2",
+      "parent_id": "sec_7",
+      "number": "7.2",
+      "title": "Effect on Sparsity",
+      "region": "body",
+      "order": 20,
+      "level": 2,
+      "path": [
+        "7 Salient Features",
+        "7.2 Effect on Sparsity"
+      ],
+      "start_block_index": 152,
+      "end_block_index": 159
+    },
+    {
+      "section_id": "sec_7_3",
+      "parent_id": "sec_7",
+      "number": "7.3",
+      "title": "Effect of Dropout Rate",
+      "region": "body",
+      "order": 21,
+      "level": 2,
+      "path": [
+        "7 Salient Features",
+        "7.3 Effect of Dropout Rate"
+      ],
+      "start_block_index": 160,
+      "end_block_index": 168
+    },
+    {
+      "section_id": "sec_7_4",
+      "parent_id": "sec_7",
+      "number": "7.4",
+      "title": "Effect of Data Set Size",
+      "region": "body",
+      "order": 22,
+      "level": 2,
+      "path": [
+        "7 Salient Features",
+        "7.4 Effect of Data Set Size"
+      ],
+      "start_block_index": 169,
+      "end_block_index": 173
+    },
+    {
+      "section_id": "sec_7_5",
+      "parent_id": "sec_7",
+      "number": "7.5",
+      "title": "Monte-Carlo Model Averaging vs. Weight Scaling",
+      "region": "body",
+      "order": 23,
+      "level": 2,
+      "path": [
+        "7 Salient Features",
+        "7.5 Monte-Carlo Model Averaging vs. Weight Scaling"
+      ],
+      "start_block_index": 174,
+      "end_block_index": 179
+    },
+    {
+      "section_id": "sec_8",
+      "parent_id": null,
+      "number": "8",
+      "title": "Dropout Restricted Boltzmann Machines",
+      "region": "body",
+      "order": 24,
+      "level": 1,
+      "path": [
+        "8 Dropout Restricted Boltzmann Machines"
+      ],
+      "start_block_index": 180,
+      "end_block_index": 213
+    },
+    {
+      "section_id": "sec_8_1",
+      "parent_id": "sec_8",
+      "number": "8.1",
+      "title": "Model Description",
+      "region": "body",
+      "order": 25,
+      "level": 2,
+      "path": [
+        "8 Dropout Restricted Boltzmann Machines",
+        "8.1 Model Description"
+      ],
+      "start_block_index": 182,
+      "end_block_index": 201
+    },
+    {
+      "section_id": "sec_8_2",
+      "parent_id": "sec_8",
+      "number": "8.2",
+      "title": "Learning Dropout RBMs",
+      "region": "body",
+      "order": 26,
+      "level": 2,
+      "path": [
+        "8 Dropout Restricted Boltzmann Machines",
+        "8.2 Learning Dropout RBMs"
+      ],
+      "start_block_index": 202,
+      "end_block_index": 203
+    },
+    {
+      "section_id": "sec_8_3",
+      "parent_id": "sec_8",
+      "number": "8.3",
+      "title": "Effect on Features",
+      "region": "body",
+      "order": 27,
+      "level": 2,
+      "path": [
+        "8 Dropout Restricted Boltzmann Machines",
+        "8.3 Effect on Features"
+      ],
+      "start_block_index": 204,
+      "end_block_index": 211
+    },
+    {
+      "section_id": "sec_8_4",
+      "parent_id": "sec_8",
+      "number": "8.4",
+      "title": "Effect on Sparsity",
+      "region": "body",
+      "order": 28,
+      "level": 2,
+      "path": [
+        "8 Dropout Restricted Boltzmann Machines",
+        "8.4 Effect on Sparsity"
+      ],
+      "start_block_index": 212,
+      "end_block_index": 213
+    },
+    {
+      "section_id": "sec_9",
+      "parent_id": null,
+      "number": "9",
+      "title": "Marginalizing Dropout",
+      "region": "body",
+      "order": 29,
+      "level": 1,
+      "path": [
+        "9 Marginalizing Dropout"
+      ],
+      "start_block_index": 214,
+      "end_block_index": 236
+    },
+    {
+      "section_id": "sec_9_1",
+      "parent_id": "sec_9",
+      "number": "9.1",
+      "title": "Linear Regression",
+      "region": "body",
+      "order": 30,
+      "level": 2,
+      "path": [
+        "9 Marginalizing Dropout",
+        "9.1 Linear Regression"
+      ],
+      "start_block_index": 220,
+      "end_block_index": 230
+    },
+    {
+      "section_id": "sec_9_2",
+      "parent_id": "sec_9",
+      "number": "9.2",
+      "title": "Logistic Regression and Deep Networks",
+      "region": "body",
+      "order": 31,
+      "level": 2,
+      "path": [
+        "9 Marginalizing Dropout",
+        "9.2 Logistic Regression and Deep Networks"
+      ],
+      "start_block_index": 231,
+      "end_block_index": 236
+    },
+    {
+      "section_id": "sec_10",
+      "parent_id": null,
+      "number": "10",
+      "title": "Multiplicative Gaussian Noise",
+      "region": "body",
+      "order": 32,
+      "level": 1,
+      "path": [
+        "10 Multiplicative Gaussian Noise"
+      ],
+      "start_block_index": 237,
+      "end_block_index": 240
+    },
+    {
+      "section_id": "sec_11",
+      "parent_id": null,
+      "number": "11",
+      "title": "Conclusion",
+      "region": "body",
+      "order": 33,
+      "level": 1,
+      "path": [
+        "11 Conclusion"
+      ],
+      "start_block_index": 241,
+      "end_block_index": 247
+    },
+    {
+      "section_id": "sec_appendix",
+      "parent_id": null,
+      "number": null,
+      "title": "Appendix",
+      "region": "appendix",
+      "order": 34,
+      "level": 1,
+      "path": [
+        "Appendix"
+      ],
+      "start_block_index": 250,
+      "end_block_index": 289
+    }
+  ],
+  "tree": [
+    {
+      "section_id": "sec_abstract",
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 17,
+      "end_block_index": 17,
+      "children": []
+    },
+    {
+      "section_id": "sec_1",
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 19,
+      "end_block_index": 40,
+      "children": []
+    },
+    {
+      "section_id": "sec_2",
+      "number": "2",
+      "title": "Motivation",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Motivation"
+      ],
+      "start_block_index": 41,
+      "end_block_index": 44,
+      "children": []
+    },
+    {
+      "section_id": "sec_3",
+      "number": "3",
+      "title": "Related Work",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Related Work"
+      ],
+      "start_block_index": 45,
+      "end_block_index": 51,
+      "children": []
+    },
+    {
+      "section_id": "sec_4",
+      "number": "4",
+      "title": "Model Description",
+      "region": "body",
+      "order": 4,
+      "level": 1,
+      "path": [
+        "4 Model Description"
+      ],
+      "start_block_index": 52,
+      "end_block_index": 63,
+      "children": []
+    },
+    {
+      "section_id": "sec_5",
+      "number": "5",
+      "title": "Learning Dropout Nets",
+      "region": "body",
+      "order": 5,
+      "level": 1,
+      "path": [
+        "5 Learning Dropout Nets"
+      ],
+      "start_block_index": 64,
+      "end_block_index": 75,
+      "children": [
+        {
+          "section_id": "sec_5_1",
+          "number": "5.1",
+          "title": "Backpropagation",
+          "region": "body",
+          "order": 6,
+          "level": 2,
+          "path": [
+            "5 Learning Dropout Nets",
+            "5.1 Backpropagation"
+          ],
+          "start_block_index": 66,
+          "end_block_index": 72,
+          "children": []
+        },
+        {
+          "section_id": "sec_5_2",
+          "number": "5.2",
+          "title": "Unsupervised Pretraining",
+          "region": "body",
+          "order": 7,
+          "level": 2,
+          "path": [
+            "5 Learning Dropout Nets",
+            "5.2 Unsupervised Pretraining"
+          ],
+          "start_block_index": 73,
+          "end_block_index": 75,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_6",
+      "number": "6",
+      "title": "Experimental Results",
+      "region": "body",
+      "order": 8,
+      "level": 1,
+      "path": [
+        "6 Experimental Results"
+      ],
+      "start_block_index": 76,
+      "end_block_index": 138,
+      "children": [
+        {
+          "section_id": "sec_6_1",
+          "number": "6.1",
+          "title": "Results on Image Data Sets",
+          "region": "body",
+          "order": 9,
+          "level": 2,
+          "path": [
+            "6 Experimental Results",
+            "6.1 Results on Image Data Sets"
+          ],
+          "start_block_index": 84,
+          "end_block_index": 119,
+          "children": [
+            {
+              "section_id": "sec_6_1_1",
+              "number": "6.1.1",
+              "title": "MNIST",
+              "region": "body",
+              "order": 10,
+              "level": 3,
+              "path": [
+                "6 Experimental Results",
+                "6.1 Results on Image Data Sets",
+                "6.1.1 MNIST"
+              ],
+              "start_block_index": 86,
+              "end_block_index": 93,
+              "children": []
+            },
+            {
+              "section_id": "sec_6_1_2",
+              "number": "6.1.2",
+              "title": "Street View House Numbers",
+              "region": "body",
+              "order": 11,
+              "level": 3,
+              "path": [
+                "6 Experimental Results",
+                "6.1 Results on Image Data Sets",
+                "6.1.2 Street View House Numbers"
+              ],
+              "start_block_index": 94,
+              "end_block_index": 103,
+              "children": []
+            },
+            {
+              "section_id": "sec_6_1_3",
+              "number": "6.1.3",
+              "title": "CIFAR-10 and CIFAR-100",
+              "region": "body",
+              "order": 12,
+              "level": 3,
+              "path": [
+                "6 Experimental Results",
+                "6.1 Results on Image Data Sets",
+                "6.1.3 CIFAR-10 and CIFAR-100"
+              ],
+              "start_block_index": 104,
+              "end_block_index": 110,
+              "children": []
+            },
+            {
+              "section_id": "sec_6_1_4",
+              "number": "6.1.4",
+              "title": "ImageNet",
+              "region": "body",
+              "order": 13,
+              "level": 3,
+              "path": [
+                "6 Experimental Results",
+                "6.1 Results on Image Data Sets",
+                "6.1.4 ImageNet"
+              ],
+              "start_block_index": 111,
+              "end_block_index": 119,
+              "children": []
+            }
+          ]
+        },
+        {
+          "section_id": "sec_6_2",
+          "number": "6.2",
+          "title": "Results on TIMIT",
+          "region": "body",
+          "order": 14,
+          "level": 2,
+          "path": [
+            "6 Experimental Results",
+            "6.2 Results on TIMIT"
+          ],
+          "start_block_index": 120,
+          "end_block_index": 125,
+          "children": []
+        },
+        {
+          "section_id": "sec_6_3",
+          "number": "6.3",
+          "title": "Results on a Text Data Set",
+          "region": "body",
+          "order": 15,
+          "level": 2,
+          "path": [
+            "6 Experimental Results",
+            "6.3 Results on a Text Data Set"
+          ],
+          "start_block_index": 126,
+          "end_block_index": 127,
+          "children": []
+        },
+        {
+          "section_id": "sec_6_4",
+          "number": "6.4",
+          "title": "Comparison with Bayesian Neural Networks",
+          "region": "body",
+          "order": 16,
+          "level": 2,
+          "path": [
+            "6 Experimental Results",
+            "6.4 Comparison with Bayesian Neural Networks"
+          ],
+          "start_block_index": 128,
+          "end_block_index": 135,
+          "children": []
+        },
+        {
+          "section_id": "sec_6_5",
+          "number": "6.5",
+          "title": "Comparison with Standard Regularizers",
+          "region": "body",
+          "order": 17,
+          "level": 2,
+          "path": [
+            "6 Experimental Results",
+            "6.5 Comparison with Standard Regularizers"
+          ],
+          "start_block_index": 136,
+          "end_block_index": 138,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_7",
+      "number": "7",
+      "title": "Salient Features",
+      "region": "body",
+      "order": 18,
+      "level": 1,
+      "path": [
+        "7 Salient Features"
+      ],
+      "start_block_index": 139,
+      "end_block_index": 179,
+      "children": [
+        {
+          "section_id": "sec_7_1",
+          "number": "7.1",
+          "title": "Effect on Features",
+          "region": "body",
+          "order": 19,
+          "level": 2,
+          "path": [
+            "7 Salient Features",
+            "7.1 Effect on Features"
+          ],
+          "start_block_index": 145,
+          "end_block_index": 151,
+          "children": []
+        },
+        {
+          "section_id": "sec_7_2",
+          "number": "7.2",
+          "title": "Effect on Sparsity",
+          "region": "body",
+          "order": 20,
+          "level": 2,
+          "path": [
+            "7 Salient Features",
+            "7.2 Effect on Sparsity"
+          ],
+          "start_block_index": 152,
+          "end_block_index": 159,
+          "children": []
+        },
+        {
+          "section_id": "sec_7_3",
+          "number": "7.3",
+          "title": "Effect of Dropout Rate",
+          "region": "body",
+          "order": 21,
+          "level": 2,
+          "path": [
+            "7 Salient Features",
+            "7.3 Effect of Dropout Rate"
+          ],
+          "start_block_index": 160,
+          "end_block_index": 168,
+          "children": []
+        },
+        {
+          "section_id": "sec_7_4",
+          "number": "7.4",
+          "title": "Effect of Data Set Size",
+          "region": "body",
+          "order": 22,
+          "level": 2,
+          "path": [
+            "7 Salient Features",
+            "7.4 Effect of Data Set Size"
+          ],
+          "start_block_index": 169,
+          "end_block_index": 173,
+          "children": []
+        },
+        {
+          "section_id": "sec_7_5",
+          "number": "7.5",
+          "title": "Monte-Carlo Model Averaging vs. Weight Scaling",
+          "region": "body",
+          "order": 23,
+          "level": 2,
+          "path": [
+            "7 Salient Features",
+            "7.5 Monte-Carlo Model Averaging vs. Weight Scaling"
+          ],
+          "start_block_index": 174,
+          "end_block_index": 179,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_8",
+      "number": "8",
+      "title": "Dropout Restricted Boltzmann Machines",
+      "region": "body",
+      "order": 24,
+      "level": 1,
+      "path": [
+        "8 Dropout Restricted Boltzmann Machines"
+      ],
+      "start_block_index": 180,
+      "end_block_index": 213,
+      "children": [
+        {
+          "section_id": "sec_8_1",
+          "number": "8.1",
+          "title": "Model Description",
+          "region": "body",
+          "order": 25,
+          "level": 2,
+          "path": [
+            "8 Dropout Restricted Boltzmann Machines",
+            "8.1 Model Description"
+          ],
+          "start_block_index": 182,
+          "end_block_index": 201,
+          "children": []
+        },
+        {
+          "section_id": "sec_8_2",
+          "number": "8.2",
+          "title": "Learning Dropout RBMs",
+          "region": "body",
+          "order": 26,
+          "level": 2,
+          "path": [
+            "8 Dropout Restricted Boltzmann Machines",
+            "8.2 Learning Dropout RBMs"
+          ],
+          "start_block_index": 202,
+          "end_block_index": 203,
+          "children": []
+        },
+        {
+          "section_id": "sec_8_3",
+          "number": "8.3",
+          "title": "Effect on Features",
+          "region": "body",
+          "order": 27,
+          "level": 2,
+          "path": [
+            "8 Dropout Restricted Boltzmann Machines",
+            "8.3 Effect on Features"
+          ],
+          "start_block_index": 204,
+          "end_block_index": 211,
+          "children": []
+        },
+        {
+          "section_id": "sec_8_4",
+          "number": "8.4",
+          "title": "Effect on Sparsity",
+          "region": "body",
+          "order": 28,
+          "level": 2,
+          "path": [
+            "8 Dropout Restricted Boltzmann Machines",
+            "8.4 Effect on Sparsity"
+          ],
+          "start_block_index": 212,
+          "end_block_index": 213,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_9",
+      "number": "9",
+      "title": "Marginalizing Dropout",
+      "region": "body",
+      "order": 29,
+      "level": 1,
+      "path": [
+        "9 Marginalizing Dropout"
+      ],
+      "start_block_index": 214,
+      "end_block_index": 236,
+      "children": [
+        {
+          "section_id": "sec_9_1",
+          "number": "9.1",
+          "title": "Linear Regression",
+          "region": "body",
+          "order": 30,
+          "level": 2,
+          "path": [
+            "9 Marginalizing Dropout",
+            "9.1 Linear Regression"
+          ],
+          "start_block_index": 220,
+          "end_block_index": 230,
+          "children": []
+        },
+        {
+          "section_id": "sec_9_2",
+          "number": "9.2",
+          "title": "Logistic Regression and Deep Networks",
+          "region": "body",
+          "order": 31,
+          "level": 2,
+          "path": [
+            "9 Marginalizing Dropout",
+            "9.2 Logistic Regression and Deep Networks"
+          ],
+          "start_block_index": 231,
+          "end_block_index": 236,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_10",
+      "number": "10",
+      "title": "Multiplicative Gaussian Noise",
+      "region": "body",
+      "order": 32,
+      "level": 1,
+      "path": [
+        "10 Multiplicative Gaussian Noise"
+      ],
+      "start_block_index": 237,
+      "end_block_index": 240,
+      "children": []
+    },
+    {
+      "section_id": "sec_11",
+      "number": "11",
+      "title": "Conclusion",
+      "region": "body",
+      "order": 33,
+      "level": 1,
+      "path": [
+        "11 Conclusion"
+      ],
+      "start_block_index": 241,
+      "end_block_index": 247,
+      "children": []
+    },
+    {
+      "section_id": "sec_appendix",
+      "number": null,
+      "title": "Appendix",
+      "region": "appendix",
+      "order": 34,
+      "level": 1,
+      "path": [
+        "Appendix"
+      ],
+      "start_block_index": 250,
+      "end_block_index": 289,
+      "children": []
+    }
+  ]
+}

@@ -20,7 +20,7 @@ class IndexSummary:
     collection_name: str
 
 
-def build_embedder(settings: Settings, *, cache_path=None) -> CachedEmbedder:
+def build_embedder(settings: Settings, *, cache_path=None, store_cache_text: bool = False) -> CachedEmbedder:
     """按配置组装带本地缓存的 embedding 客户端。"""
     client = EmbeddingClient(
         base_url=settings.embedding_base_url,
@@ -28,7 +28,7 @@ def build_embedder(settings: Settings, *, cache_path=None) -> CachedEmbedder:
         model=settings.embedding_model,
         dimensions=settings.embedding_dim,
     )
-    cache = EmbeddingCache(cache_path or settings.embedding_cache_path)
+    cache = EmbeddingCache(cache_path or settings.embedding_cache_path, store_text=store_cache_text)
     return CachedEmbedder(
         client,
         cache,
@@ -40,7 +40,11 @@ def build_embedder(settings: Settings, *, cache_path=None) -> CachedEmbedder:
 
 def build_query_embedder(settings: Settings) -> CachedEmbedder:
     """为用户 query 使用独立 embedding cache。"""
-    return build_embedder(settings, cache_path=settings.query_embedding_cache_path)
+    return build_embedder(
+        settings,
+        cache_path=settings.query_embedding_cache_path,
+        store_cache_text=True,
+    )
 
 
 def build_store(settings: Settings) -> MilvusStore:

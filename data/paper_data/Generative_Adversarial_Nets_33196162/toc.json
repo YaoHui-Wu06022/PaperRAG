@@ -1,0 +1,291 @@
+{
+  "sections": [
+    {
+      "section_id": "sec_abstract",
+      "parent_id": null,
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 6,
+      "end_block_index": 6
+    },
+    {
+      "section_id": "sec_1",
+      "parent_id": null,
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 7,
+      "end_block_index": 16
+    },
+    {
+      "section_id": "sec_2",
+      "parent_id": null,
+      "number": "2",
+      "title": "Related work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Related work"
+      ],
+      "start_block_index": 17,
+      "end_block_index": 26
+    },
+    {
+      "section_id": "sec_3",
+      "parent_id": null,
+      "number": "3",
+      "title": "Adversarial nets",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Adversarial nets"
+      ],
+      "start_block_index": 27,
+      "end_block_index": 31
+    },
+    {
+      "section_id": "sec_4",
+      "parent_id": null,
+      "number": "4",
+      "title": "Theoretical Results",
+      "region": "body",
+      "order": 4,
+      "level": 1,
+      "path": [
+        "4 Theoretical Results"
+      ],
+      "start_block_index": 32,
+      "end_block_index": 75
+    },
+    {
+      "section_id": "sec_4_1",
+      "parent_id": "sec_4",
+      "number": "4.1",
+      "title": "Global Optimality of p _ { g } = p _ { \\mathbf { d a t a } }",
+      "region": "body",
+      "order": 5,
+      "level": 2,
+      "path": [
+        "4 Theoretical Results",
+        "4.1 Global Optimality of p _ { g } = p _ { \\mathbf { d a t a } }"
+      ],
+      "start_block_index": 50,
+      "end_block_index": 67
+    },
+    {
+      "section_id": "sec_4_2",
+      "parent_id": "sec_4",
+      "number": "4.2",
+      "title": "Convergence of Algorithm 1",
+      "region": "body",
+      "order": 6,
+      "level": 2,
+      "path": [
+        "4 Theoretical Results",
+        "4.2 Convergence of Algorithm 1"
+      ],
+      "start_block_index": 68,
+      "end_block_index": 75
+    },
+    {
+      "section_id": "sec_5",
+      "parent_id": null,
+      "number": "5",
+      "title": "Experiments",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "5 Experiments"
+      ],
+      "start_block_index": 76,
+      "end_block_index": 78
+    },
+    {
+      "section_id": "sec_6",
+      "parent_id": null,
+      "number": "6",
+      "title": "Advantages and disadvantages",
+      "region": "body",
+      "order": 8,
+      "level": 1,
+      "path": [
+        "6 Advantages and disadvantages"
+      ],
+      "start_block_index": 79,
+      "end_block_index": 81
+    },
+    {
+      "section_id": "sec_7",
+      "parent_id": null,
+      "number": "7",
+      "title": "Conclusions and future work",
+      "region": "body",
+      "order": 9,
+      "level": 1,
+      "path": [
+        "7 Conclusions and future work"
+      ],
+      "start_block_index": 82,
+      "end_block_index": 93
+    }
+  ],
+  "tree": [
+    {
+      "section_id": "sec_abstract",
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 6,
+      "end_block_index": 6,
+      "children": []
+    },
+    {
+      "section_id": "sec_1",
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 7,
+      "end_block_index": 16,
+      "children": []
+    },
+    {
+      "section_id": "sec_2",
+      "number": "2",
+      "title": "Related work",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Related work"
+      ],
+      "start_block_index": 17,
+      "end_block_index": 26,
+      "children": []
+    },
+    {
+      "section_id": "sec_3",
+      "number": "3",
+      "title": "Adversarial nets",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Adversarial nets"
+      ],
+      "start_block_index": 27,
+      "end_block_index": 31,
+      "children": []
+    },
+    {
+      "section_id": "sec_4",
+      "number": "4",
+      "title": "Theoretical Results",
+      "region": "body",
+      "order": 4,
+      "level": 1,
+      "path": [
+        "4 Theoretical Results"
+      ],
+      "start_block_index": 32,
+      "end_block_index": 75,
+      "children": [
+        {
+          "section_id": "sec_4_1",
+          "number": "4.1",
+          "title": "Global Optimality of p _ { g } = p _ { \\mathbf { d a t a } }",
+          "region": "body",
+          "order": 5,
+          "level": 2,
+          "path": [
+            "4 Theoretical Results",
+            "4.1 Global Optimality of p _ { g } = p _ { \\mathbf { d a t a } }"
+          ],
+          "start_block_index": 50,
+          "end_block_index": 67,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_2",
+          "number": "4.2",
+          "title": "Convergence of Algorithm 1",
+          "region": "body",
+          "order": 6,
+          "level": 2,
+          "path": [
+            "4 Theoretical Results",
+            "4.2 Convergence of Algorithm 1"
+          ],
+          "start_block_index": 68,
+          "end_block_index": 75,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_5",
+      "number": "5",
+      "title": "Experiments",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "5 Experiments"
+      ],
+      "start_block_index": 76,
+      "end_block_index": 78,
+      "children": []
+    },
+    {
+      "section_id": "sec_6",
+      "number": "6",
+      "title": "Advantages and disadvantages",
+      "region": "body",
+      "order": 8,
+      "level": 1,
+      "path": [
+        "6 Advantages and disadvantages"
+      ],
+      "start_block_index": 79,
+      "end_block_index": 81,
+      "children": []
+    },
+    {
+      "section_id": "sec_7",
+      "number": "7",
+      "title": "Conclusions and future work",
+      "region": "body",
+      "order": 9,
+      "level": 1,
+      "path": [
+        "7 Conclusions and future work"
+      ],
+      "start_block_index": 82,
+      "end_block_index": 93,
+      "children": []
+    }
+  ]
+}

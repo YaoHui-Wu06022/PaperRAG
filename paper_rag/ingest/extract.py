@@ -99,7 +99,7 @@ def extract_paper_data(
     chunk_overlap_chars: int = DEFAULT_CHUNK_OVERLAP_CHARS,
 ) -> ExtractionResult:
     """从一个 MinerU 输出目录生成项目内部结构化论文数据"""
-    content_path = mineru_output_dir / "content_list_v2.json"
+    content_path = find_content_list_v2_path(mineru_output_dir)
     pages = load_content_list_v2(content_path)
     flat_blocks = flatten_pages(pages)
     title = metadata.get("title") or extract_title(flat_blocks)
@@ -162,6 +162,14 @@ def extraction_warnings(boundaries: dict[str, int | None]) -> list[str]:
 
 
 # MinerU 输入读取与页面展平 -----------------------------------------------------
+
+
+def find_content_list_v2_path(mineru_output_dir: Path) -> Path:
+    """定位 MinerU 3.0 的 content_list_v2 输出文件。"""
+    matches = sorted(path for path in mineru_output_dir.glob("*_content_list_v2.json") if path.is_file())
+    if matches:
+        return matches[0]
+    raise FileNotFoundError(f"未找到 MinerU content_list_v2 输出：{mineru_output_dir}")
 
 
 def load_content_list_v2(path: Path) -> list[list[dict[str, Any]]]:

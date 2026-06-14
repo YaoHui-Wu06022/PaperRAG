@@ -1,0 +1,499 @@
+{
+  "sections": [
+    {
+      "section_id": "sec_abstract",
+      "parent_id": null,
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 8,
+      "end_block_index": 8
+    },
+    {
+      "section_id": "sec_1",
+      "parent_id": null,
+      "number": "1",
+      "title": "INTRODUCTION",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 INTRODUCTION"
+      ],
+      "start_block_index": 9,
+      "end_block_index": 18
+    },
+    {
+      "section_id": "sec_2",
+      "parent_id": null,
+      "number": "2",
+      "title": "ALGORITHM",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 ALGORITHM"
+      ],
+      "start_block_index": 19,
+      "end_block_index": 27
+    },
+    {
+      "section_id": "sec_2_1",
+      "parent_id": "sec_2",
+      "number": "2.1",
+      "title": "ADAM’S UPDATE RULE",
+      "region": "body",
+      "order": 3,
+      "level": 2,
+      "path": [
+        "2 ALGORITHM",
+        "2.1 ADAM’S UPDATE RULE"
+      ],
+      "start_block_index": 23,
+      "end_block_index": 27
+    },
+    {
+      "section_id": "sec_3",
+      "parent_id": null,
+      "number": "3",
+      "title": "INITIALIZATION BIAS CORRECTION",
+      "region": "body",
+      "order": 4,
+      "level": 1,
+      "path": [
+        "3 INITIALIZATION BIAS CORRECTION"
+      ],
+      "start_block_index": 28,
+      "end_block_index": 36
+    },
+    {
+      "section_id": "sec_4",
+      "parent_id": null,
+      "number": "4",
+      "title": "CONVERGENCE ANALYSIS",
+      "region": "body",
+      "order": 5,
+      "level": 1,
+      "path": [
+        "4 CONVERGENCE ANALYSIS"
+      ],
+      "start_block_index": 37,
+      "end_block_index": 47
+    },
+    {
+      "section_id": "sec_5",
+      "parent_id": null,
+      "number": "5",
+      "title": "RELATED WORK",
+      "region": "body",
+      "order": 6,
+      "level": 1,
+      "path": [
+        "5 RELATED WORK"
+      ],
+      "start_block_index": 48,
+      "end_block_index": 54
+    },
+    {
+      "section_id": "sec_6",
+      "parent_id": null,
+      "number": "6",
+      "title": "EXPERIMENTS",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "6 EXPERIMENTS"
+      ],
+      "start_block_index": 55,
+      "end_block_index": 86
+    },
+    {
+      "section_id": "sec_6_1",
+      "parent_id": "sec_6",
+      "number": "6.1",
+      "title": "EXPERIMENT: LOGISTIC REGRESSION",
+      "region": "body",
+      "order": 8,
+      "level": 2,
+      "path": [
+        "6 EXPERIMENTS",
+        "6.1 EXPERIMENT: LOGISTIC REGRESSION"
+      ],
+      "start_block_index": 58,
+      "end_block_index": 65
+    },
+    {
+      "section_id": "sec_6_2",
+      "parent_id": "sec_6",
+      "number": "6.2",
+      "title": "EXPERIMENT: MULTI-LAYER NEURAL NETWORKS",
+      "region": "body",
+      "order": 9,
+      "level": 2,
+      "path": [
+        "6 EXPERIMENTS",
+        "6.2 EXPERIMENT: MULTI-LAYER NEURAL NETWORKS"
+      ],
+      "start_block_index": 66,
+      "end_block_index": 69
+    },
+    {
+      "section_id": "sec_6_3",
+      "parent_id": "sec_6",
+      "number": "6.3",
+      "title": "EXPERIMENT: CONVOLUTIONAL NEURAL NETWORKS",
+      "region": "body",
+      "order": 10,
+      "level": 2,
+      "path": [
+        "6 EXPERIMENTS",
+        "6.3 EXPERIMENT: CONVOLUTIONAL NEURAL NETWORKS"
+      ],
+      "start_block_index": 70,
+      "end_block_index": 83
+    },
+    {
+      "section_id": "sec_6_4",
+      "parent_id": "sec_6",
+      "number": "6.4",
+      "title": "EXPERIMENT: BIAS-CORRECTION TERM",
+      "region": "body",
+      "order": 11,
+      "level": 2,
+      "path": [
+        "6 EXPERIMENTS",
+        "6.4 EXPERIMENT: BIAS-CORRECTION TERM"
+      ],
+      "start_block_index": 84,
+      "end_block_index": 86
+    },
+    {
+      "section_id": "sec_7",
+      "parent_id": null,
+      "number": "7",
+      "title": "EXTENSIONS",
+      "region": "body",
+      "order": 12,
+      "level": 1,
+      "path": [
+        "7 EXTENSIONS"
+      ],
+      "start_block_index": 87,
+      "end_block_index": 111
+    },
+    {
+      "section_id": "sec_7_1",
+      "parent_id": "sec_7",
+      "number": "7.1",
+      "title": "ADAMAX",
+      "region": "body",
+      "order": 13,
+      "level": 2,
+      "path": [
+        "7 EXTENSIONS",
+        "7.1 ADAMAX"
+      ],
+      "start_block_index": 88,
+      "end_block_index": 109
+    },
+    {
+      "section_id": "sec_7_2",
+      "parent_id": "sec_7",
+      "number": "7.2",
+      "title": "TEMPORAL AVERAGING",
+      "region": "body",
+      "order": 14,
+      "level": 2,
+      "path": [
+        "7 EXTENSIONS",
+        "7.2 TEMPORAL AVERAGING"
+      ],
+      "start_block_index": 110,
+      "end_block_index": 111
+    },
+    {
+      "section_id": "sec_8",
+      "parent_id": null,
+      "number": "8",
+      "title": "CONCLUSION",
+      "region": "body",
+      "order": 15,
+      "level": 1,
+      "path": [
+        "8 CONCLUSION"
+      ],
+      "start_block_index": 112,
+      "end_block_index": 116
+    },
+    {
+      "section_id": "sec_appendix",
+      "parent_id": null,
+      "number": null,
+      "title": "Appendix",
+      "region": "appendix",
+      "order": 16,
+      "level": 1,
+      "path": [
+        "Appendix"
+      ],
+      "start_block_index": 126,
+      "end_block_index": 185
+    }
+  ],
+  "tree": [
+    {
+      "section_id": "sec_abstract",
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 8,
+      "end_block_index": 8,
+      "children": []
+    },
+    {
+      "section_id": "sec_1",
+      "number": "1",
+      "title": "INTRODUCTION",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 INTRODUCTION"
+      ],
+      "start_block_index": 9,
+      "end_block_index": 18,
+      "children": []
+    },
+    {
+      "section_id": "sec_2",
+      "number": "2",
+      "title": "ALGORITHM",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 ALGORITHM"
+      ],
+      "start_block_index": 19,
+      "end_block_index": 27,
+      "children": [
+        {
+          "section_id": "sec_2_1",
+          "number": "2.1",
+          "title": "ADAM’S UPDATE RULE",
+          "region": "body",
+          "order": 3,
+          "level": 2,
+          "path": [
+            "2 ALGORITHM",
+            "2.1 ADAM’S UPDATE RULE"
+          ],
+          "start_block_index": 23,
+          "end_block_index": 27,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_3",
+      "number": "3",
+      "title": "INITIALIZATION BIAS CORRECTION",
+      "region": "body",
+      "order": 4,
+      "level": 1,
+      "path": [
+        "3 INITIALIZATION BIAS CORRECTION"
+      ],
+      "start_block_index": 28,
+      "end_block_index": 36,
+      "children": []
+    },
+    {
+      "section_id": "sec_4",
+      "number": "4",
+      "title": "CONVERGENCE ANALYSIS",
+      "region": "body",
+      "order": 5,
+      "level": 1,
+      "path": [
+        "4 CONVERGENCE ANALYSIS"
+      ],
+      "start_block_index": 37,
+      "end_block_index": 47,
+      "children": []
+    },
+    {
+      "section_id": "sec_5",
+      "number": "5",
+      "title": "RELATED WORK",
+      "region": "body",
+      "order": 6,
+      "level": 1,
+      "path": [
+        "5 RELATED WORK"
+      ],
+      "start_block_index": 48,
+      "end_block_index": 54,
+      "children": []
+    },
+    {
+      "section_id": "sec_6",
+      "number": "6",
+      "title": "EXPERIMENTS",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "6 EXPERIMENTS"
+      ],
+      "start_block_index": 55,
+      "end_block_index": 86,
+      "children": [
+        {
+          "section_id": "sec_6_1",
+          "number": "6.1",
+          "title": "EXPERIMENT: LOGISTIC REGRESSION",
+          "region": "body",
+          "order": 8,
+          "level": 2,
+          "path": [
+            "6 EXPERIMENTS",
+            "6.1 EXPERIMENT: LOGISTIC REGRESSION"
+          ],
+          "start_block_index": 58,
+          "end_block_index": 65,
+          "children": []
+        },
+        {
+          "section_id": "sec_6_2",
+          "number": "6.2",
+          "title": "EXPERIMENT: MULTI-LAYER NEURAL NETWORKS",
+          "region": "body",
+          "order": 9,
+          "level": 2,
+          "path": [
+            "6 EXPERIMENTS",
+            "6.2 EXPERIMENT: MULTI-LAYER NEURAL NETWORKS"
+          ],
+          "start_block_index": 66,
+          "end_block_index": 69,
+          "children": []
+        },
+        {
+          "section_id": "sec_6_3",
+          "number": "6.3",
+          "title": "EXPERIMENT: CONVOLUTIONAL NEURAL NETWORKS",
+          "region": "body",
+          "order": 10,
+          "level": 2,
+          "path": [
+            "6 EXPERIMENTS",
+            "6.3 EXPERIMENT: CONVOLUTIONAL NEURAL NETWORKS"
+          ],
+          "start_block_index": 70,
+          "end_block_index": 83,
+          "children": []
+        },
+        {
+          "section_id": "sec_6_4",
+          "number": "6.4",
+          "title": "EXPERIMENT: BIAS-CORRECTION TERM",
+          "region": "body",
+          "order": 11,
+          "level": 2,
+          "path": [
+            "6 EXPERIMENTS",
+            "6.4 EXPERIMENT: BIAS-CORRECTION TERM"
+          ],
+          "start_block_index": 84,
+          "end_block_index": 86,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_7",
+      "number": "7",
+      "title": "EXTENSIONS",
+      "region": "body",
+      "order": 12,
+      "level": 1,
+      "path": [
+        "7 EXTENSIONS"
+      ],
+      "start_block_index": 87,
+      "end_block_index": 111,
+      "children": [
+        {
+          "section_id": "sec_7_1",
+          "number": "7.1",
+          "title": "ADAMAX",
+          "region": "body",
+          "order": 13,
+          "level": 2,
+          "path": [
+            "7 EXTENSIONS",
+            "7.1 ADAMAX"
+          ],
+          "start_block_index": 88,
+          "end_block_index": 109,
+          "children": []
+        },
+        {
+          "section_id": "sec_7_2",
+          "number": "7.2",
+          "title": "TEMPORAL AVERAGING",
+          "region": "body",
+          "order": 14,
+          "level": 2,
+          "path": [
+            "7 EXTENSIONS",
+            "7.2 TEMPORAL AVERAGING"
+          ],
+          "start_block_index": 110,
+          "end_block_index": 111,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_8",
+      "number": "8",
+      "title": "CONCLUSION",
+      "region": "body",
+      "order": 15,
+      "level": 1,
+      "path": [
+        "8 CONCLUSION"
+      ],
+      "start_block_index": 112,
+      "end_block_index": 116,
+      "children": []
+    },
+    {
+      "section_id": "sec_appendix",
+      "number": null,
+      "title": "Appendix",
+      "region": "appendix",
+      "order": 16,
+      "level": 1,
+      "path": [
+        "Appendix"
+      ],
+      "start_block_index": 126,
+      "end_block_index": 185,
+      "children": []
+    }
+  ]
+}

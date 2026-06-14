@@ -1,0 +1,230 @@
+[
+  {
+    "id": "metadata_resnet_author",
+    "query": "Deep Residual Learning 这篇论文的作者是谁？只查元数据，不要检索正文。",
+    "expected_route": "metadata",
+    "expected_intent": "lookup",
+    "expected_papers": [
+      "Deep Residual Learning for Image Recognition"
+    ],
+    "expected_fields": [
+      "author"
+    ],
+    "expected_values": {
+      "author": "Kaiming He"
+    }
+  },
+  {
+    "id": "metadata_bert_year",
+    "query": "BERT 这篇 ACL 论文正式发表年份是多少？",
+    "expected_route": "metadata",
+    "expected_intent": "lookup",
+    "expected_papers": [
+      "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding"
+    ],
+    "expected_fields": [
+      "year"
+    ],
+    "expected_values": {
+      "year": "2019"
+    }
+  },
+  {
+    "id": "metadata_cvpr_count",
+    "query": "本地库里 venue 是 CVPR 的论文总共有几篇？",
+    "expected_route": "metadata",
+    "expected_intent": "count",
+    "expected_values": {
+      "count": 5
+    }
+  },
+  {
+    "id": "metadata_acl_list",
+    "query": "请列出本地库中发表在 ACL 的论文标题。",
+    "expected_route": "metadata",
+    "expected_intent": "list",
+    "expected_papers": [
+      "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding"
+    ]
+  },
+  {
+    "id": "metadata_efficientnet_exists",
+    "query": "本地论文库是否已经收录 EfficientNet 这篇工作？",
+    "expected_route": "metadata",
+    "expected_intent": "exists",
+    "expected_values": {
+      "exists": true
+    }
+  },
+  {
+    "id": "metadata_transformer_venue",
+    "query": "Attention is All you Need，也就是 Transformer 原论文，发表 venue 是什么？",
+    "expected_route": "metadata",
+    "expected_intent": "lookup",
+    "expected_papers": [
+      "Attention is All you Need"
+    ],
+    "expected_fields": [
+      "venue"
+    ],
+    "expected_values": {
+      "venue": "NeurIPS"
+    }
+  },
+  {
+    "id": "reference_who_cites_resnet",
+    "query": "在当前本地论文库中，哪些论文把 ResNet 作为参考文献引用了？",
+    "expected_route": "reference",
+    "expected_intent": "list",
+    "expected_return_side": "source",
+    "expected_papers": [
+      "Aggregated Residual Transformations for Deep Neural Networks"
+    ]
+  },
+  {
+    "id": "reference_resnext_cites_resnet",
+    "query": "请判断 ResNeXt 这篇论文和 ResNet 之间是否存在 ResNeXt -> ResNet 的引用边。",
+    "expected_route": "reference",
+    "expected_intent": "exists",
+    "expected_papers": [
+      "Aggregated Residual Transformations for Deep Neural Networks",
+      "Deep Residual Learning for Image Recognition"
+    ],
+    "expected_values": {
+      "exists": true
+    }
+  },
+  {
+    "id": "reference_resnext_cites_what",
+    "query": "从引用图看，ResNeXt 这篇论文引用了本地库里的哪些论文？",
+    "expected_route": "reference",
+    "expected_intent": "list",
+    "expected_return_side": "object",
+    "expected_papers": [
+      "Deep Residual Learning for Image Recognition"
+    ]
+  },
+  {
+    "id": "reference_count_cite_imagenet",
+    "query": "以 ImageNet Classification with Deep Convolutional Neural Networks 为被引对象，本地库里有多少 source 论文引用它？",
+    "expected_route": "reference",
+    "expected_intent": "count",
+    "expected_return_side": "source",
+    "expected_papers": [
+      "Deep Residual Learning for Image Recognition"
+    ]
+  },
+  {
+    "id": "content_resnet_structure",
+    "query": "Deep Residual Learning 论文中的 residual shortcut connection 是什么？",
+    "expected_route": "content",
+    "expected_intent": "lookup",
+    "expected_papers": [
+      "Deep Residual Learning for Image Recognition"
+    ],
+    "expected_terms": [
+      "residual",
+      "shortcut",
+      "identity"
+    ]
+  },
+  {
+    "id": "content_bert_pretraining_tasks",
+    "query": "BERT 论文中的 masked language model 预训练任务是什么？",
+    "expected_route": "content",
+    "expected_intent": "lookup",
+    "expected_papers": [
+      "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding"
+    ],
+    "expected_terms": [
+      "masked",
+      "next sentence",
+      "prediction"
+    ]
+  },
+  {
+    "id": "content_transformer_structure",
+    "query": "Attention is All you Need 中 multi-head attention 的作用是什么？",
+    "expected_route": "content",
+    "expected_intent": "reason",
+    "expected_papers": [
+      "Attention is All you Need"
+    ],
+    "expected_terms": [
+      "attention",
+      "encoder",
+      "decoder"
+    ]
+  },
+  {
+    "id": "content_vit_patch_embedding",
+    "query": "ViT 论文中的 image patch embedding 是什么？",
+    "expected_route": "content",
+    "expected_intent": "lookup",
+    "expected_papers": [
+      "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale"
+    ],
+    "expected_terms": [
+      "patches",
+      "16x16",
+      "transformer"
+    ]
+  },
+  {
+    "id": "content_se_channel_attention",
+    "query": "Squeeze-and-Excitation Networks 里的 SE block 是什么？",
+    "expected_route": "content",
+    "expected_intent": "lookup",
+    "expected_papers": [
+      "Squeeze-and-Excitation Networks"
+    ],
+    "expected_terms": [
+      "squeeze",
+      "excitation",
+      "channel"
+    ]
+  },
+  {
+    "id": "content_efficientnet_scaling",
+    "query": "EfficientNet 的 compound scaling 是什么？",
+    "expected_route": "content",
+    "expected_intent": "lookup",
+    "expected_papers": [
+      "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks"
+    ],
+    "expected_terms": [
+      "compound",
+      "depth",
+      "width",
+      "resolution"
+    ]
+  },
+  {
+    "id": "content_supcon_loss",
+    "query": "Supervised Contrastive Learning 的 supervised contrastive loss 是什么？",
+    "expected_route": "content",
+    "expected_intent": "lookup",
+    "expected_papers": [
+      "Supervised Contrastive Learning"
+    ],
+    "expected_terms": [
+      "contrastive",
+      "positives",
+      "label"
+    ]
+  },
+  {
+    "id": "content_lstm_gates",
+    "query": "LSTM 的 memory cell 是什么？",
+    "expected_route": "content",
+    "expected_intent": "lookup",
+    "expected_papers": [
+      "Long Short-Term Memory"
+    ],
+    "expected_terms": [
+      "memory",
+      "gate",
+      "error"
+    ]
+  }
+]

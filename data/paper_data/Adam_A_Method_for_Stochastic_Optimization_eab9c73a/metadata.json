@@ -1,0 +1,13 @@
+{
+  "author": [
+    "Diederik P. Kingma",
+    "Jimmy Ba"
+  ],
+  "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2015_Adam_A_Method_for_Stochastic_Optimization.pdf",
+  "title": "Adam: A Method for Stochastic Optimization",
+  "venue": "ICLR",
+  "year": {
+    "preprint_year": 2014,
+    "publish_year": 2015
+  }
+}

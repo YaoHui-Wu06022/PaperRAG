@@ -12,6 +12,7 @@ from paper_rag.retrieval.route import RouteDecision
 from paper_rag.retrieval.routes.content.planner import plan_body
 from paper_rag.retrieval.routes.metadata.planner import plan_metadata
 from paper_rag.retrieval.routes.reference.planner import plan_reference
+from paper_rag.corpus.scope import records_for_scope
 
 from conftest import add_paper, chunk_row, save_manifest, write_json
 
@@ -54,7 +55,6 @@ def test_metadata_reference_and_content_routes_use_local_scopes(settings):
     write_json(
         settings.paper_data_dir / "citation_graph.json",
         {
-            "version": 1,
             "nodes": [
                 {"paper_id": "resnet", "title": resnet.title, "author": resnet.author, "year": resnet.year, "venue": resnet.venue},
                 {"paper_id": "vit", "title": vit.title, "author": vit.author, "year": vit.year, "venue": vit.venue},
@@ -135,6 +135,33 @@ def test_metadata_reference_and_content_routes_use_local_scopes(settings):
     contexts = content["results"]["contexts"]
     assert contexts[0]["chunk_id"] == "resnet::chunk_0000"
     assert "Appendix-only" not in json.dumps(contexts, ensure_ascii=False)
+
+
+def test_paper_semantic_strips_chinese_paper_suffix_and_uses_alias(settings):
+    bert = add_paper(
+        settings,
+        file_hash="bert-hash",
+        paper_id="bert",
+        title="BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+        authors=["Jacob Devlin"],
+        year={"preprint_year": 2018, "publish_year": 2019},
+        venue="ACL",
+    )
+    save_manifest(settings, [bert])
+    write_json(
+        settings.data_dir / "paper_annotations.json",
+        {
+            "bert-hash": {
+                "title": bert.title,
+                "aliases": ["BERT"],
+                "tags": {"zh": [], "en": []},
+            }
+        },
+    )
+
+    for semantic in ["BERT 论文", "BERT 这篇论文", "BERT 原论文"]:
+        records = records_for_scope(settings, semantic, [])
+        assert [record["title"] for record in records] == [bert.title]
 
 
 def test_ask_uses_local_answers_and_falls_back_when_answer_llm_fails(settings):

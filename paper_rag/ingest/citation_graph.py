@@ -12,7 +12,6 @@ from paper_rag.config import Settings
 from paper_rag.ingest.manifest import Manifest, ManifestRecord, normalize_year
 
 
-CITATION_GRAPH_VERSION = 1
 CITATION_GRAPH_FILENAME = "citation_graph.json"
 
 
@@ -72,7 +71,6 @@ def build_citation_graph(settings: Settings, manifest: Manifest) -> CitationGrap
                     "match_type": "canonical_title",
                 })
     graph = {
-        "version": CITATION_GRAPH_VERSION,
         "nodes": [
             {
                 # node 保留展示和过滤需要的 metadata，不参与这里的年份再解析

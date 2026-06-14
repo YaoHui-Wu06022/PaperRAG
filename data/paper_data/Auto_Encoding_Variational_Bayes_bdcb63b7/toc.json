@@ -1,0 +1,379 @@
+{
+  "sections": [
+    {
+      "section_id": "sec_abstract",
+      "parent_id": null,
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 8,
+      "end_block_index": 8
+    },
+    {
+      "section_id": "sec_1",
+      "parent_id": null,
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 9,
+      "end_block_index": 11
+    },
+    {
+      "section_id": "sec_2",
+      "parent_id": null,
+      "number": "2",
+      "title": "Method",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Method"
+      ],
+      "start_block_index": 12,
+      "end_block_index": 62
+    },
+    {
+      "section_id": "sec_2_1",
+      "parent_id": "sec_2",
+      "number": "2.1",
+      "title": "Problem scenario",
+      "region": "body",
+      "order": 3,
+      "level": 2,
+      "path": [
+        "2 Method",
+        "2.1 Problem scenario"
+      ],
+      "start_block_index": 18,
+      "end_block_index": 26
+    },
+    {
+      "section_id": "sec_2_2",
+      "parent_id": "sec_2",
+      "number": "2.2",
+      "title": "The variational bound",
+      "region": "body",
+      "order": 4,
+      "level": 2,
+      "path": [
+        "2 Method",
+        "2.2 The variational bound"
+      ],
+      "start_block_index": 27,
+      "end_block_index": 34
+    },
+    {
+      "section_id": "sec_2_3",
+      "parent_id": "sec_2",
+      "number": "2.3",
+      "title": "The SGVB estimator and AEVB algorithm",
+      "region": "body",
+      "order": 5,
+      "level": 2,
+      "path": [
+        "2 Method",
+        "2.3 The SGVB estimator and AEVB algorithm"
+      ],
+      "start_block_index": 35,
+      "end_block_index": 52
+    },
+    {
+      "section_id": "sec_2_4",
+      "parent_id": "sec_2",
+      "number": "2.4",
+      "title": "The reparameterization trick",
+      "region": "body",
+      "order": 6,
+      "level": 2,
+      "path": [
+        "2 Method",
+        "2.4 The reparameterization trick"
+      ],
+      "start_block_index": 53,
+      "end_block_index": 62
+    },
+    {
+      "section_id": "sec_3",
+      "parent_id": null,
+      "number": "3",
+      "title": "Example: Variational Auto-Encoder",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "3 Example: Variational Auto-Encoder"
+      ],
+      "start_block_index": 63,
+      "end_block_index": 73
+    },
+    {
+      "section_id": "sec_4",
+      "parent_id": null,
+      "number": "4",
+      "title": "Related work",
+      "region": "body",
+      "order": 8,
+      "level": 1,
+      "path": [
+        "4 Related work"
+      ],
+      "start_block_index": 74,
+      "end_block_index": 79
+    },
+    {
+      "section_id": "sec_5",
+      "parent_id": null,
+      "number": "5",
+      "title": "Experiments",
+      "region": "body",
+      "order": 9,
+      "level": 1,
+      "path": [
+        "5 Experiments"
+      ],
+      "start_block_index": 80,
+      "end_block_index": 93
+    },
+    {
+      "section_id": "sec_6",
+      "parent_id": null,
+      "number": "6",
+      "title": "Conclusion",
+      "region": "body",
+      "order": 10,
+      "level": 1,
+      "path": [
+        "6 Conclusion"
+      ],
+      "start_block_index": 94,
+      "end_block_index": 95
+    },
+    {
+      "section_id": "sec_7",
+      "parent_id": null,
+      "number": "7",
+      "title": "Future work",
+      "region": "body",
+      "order": 11,
+      "level": 1,
+      "path": [
+        "7 Future work"
+      ],
+      "start_block_index": 96,
+      "end_block_index": 98
+    },
+    {
+      "section_id": "sec_appendix",
+      "parent_id": null,
+      "number": null,
+      "title": "Appendix",
+      "region": "appendix",
+      "order": 12,
+      "level": 1,
+      "path": [
+        "Appendix"
+      ],
+      "start_block_index": 101,
+      "end_block_index": 176
+    }
+  ],
+  "tree": [
+    {
+      "section_id": "sec_abstract",
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 8,
+      "end_block_index": 8,
+      "children": []
+    },
+    {
+      "section_id": "sec_1",
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 9,
+      "end_block_index": 11,
+      "children": []
+    },
+    {
+      "section_id": "sec_2",
+      "number": "2",
+      "title": "Method",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Method"
+      ],
+      "start_block_index": 12,
+      "end_block_index": 62,
+      "children": [
+        {
+          "section_id": "sec_2_1",
+          "number": "2.1",
+          "title": "Problem scenario",
+          "region": "body",
+          "order": 3,
+          "level": 2,
+          "path": [
+            "2 Method",
+            "2.1 Problem scenario"
+          ],
+          "start_block_index": 18,
+          "end_block_index": 26,
+          "children": []
+        },
+        {
+          "section_id": "sec_2_2",
+          "number": "2.2",
+          "title": "The variational bound",
+          "region": "body",
+          "order": 4,
+          "level": 2,
+          "path": [
+            "2 Method",
+            "2.2 The variational bound"
+          ],
+          "start_block_index": 27,
+          "end_block_index": 34,
+          "children": []
+        },
+        {
+          "section_id": "sec_2_3",
+          "number": "2.3",
+          "title": "The SGVB estimator and AEVB algorithm",
+          "region": "body",
+          "order": 5,
+          "level": 2,
+          "path": [
+            "2 Method",
+            "2.3 The SGVB estimator and AEVB algorithm"
+          ],
+          "start_block_index": 35,
+          "end_block_index": 52,
+          "children": []
+        },
+        {
+          "section_id": "sec_2_4",
+          "number": "2.4",
+          "title": "The reparameterization trick",
+          "region": "body",
+          "order": 6,
+          "level": 2,
+          "path": [
+            "2 Method",
+            "2.4 The reparameterization trick"
+          ],
+          "start_block_index": 53,
+          "end_block_index": 62,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_3",
+      "number": "3",
+      "title": "Example: Variational Auto-Encoder",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "3 Example: Variational Auto-Encoder"
+      ],
+      "start_block_index": 63,
+      "end_block_index": 73,
+      "children": []
+    },
+    {
+      "section_id": "sec_4",
+      "number": "4",
+      "title": "Related work",
+      "region": "body",
+      "order": 8,
+      "level": 1,
+      "path": [
+        "4 Related work"
+      ],
+      "start_block_index": 74,
+      "end_block_index": 79,
+      "children": []
+    },
+    {
+      "section_id": "sec_5",
+      "number": "5",
+      "title": "Experiments",
+      "region": "body",
+      "order": 9,
+      "level": 1,
+      "path": [
+        "5 Experiments"
+      ],
+      "start_block_index": 80,
+      "end_block_index": 93,
+      "children": []
+    },
+    {
+      "section_id": "sec_6",
+      "number": "6",
+      "title": "Conclusion",
+      "region": "body",
+      "order": 10,
+      "level": 1,
+      "path": [
+        "6 Conclusion"
+      ],
+      "start_block_index": 94,
+      "end_block_index": 95,
+      "children": []
+    },
+    {
+      "section_id": "sec_7",
+      "number": "7",
+      "title": "Future work",
+      "region": "body",
+      "order": 11,
+      "level": 1,
+      "path": [
+        "7 Future work"
+      ],
+      "start_block_index": 96,
+      "end_block_index": 98,
+      "children": []
+    },
+    {
+      "section_id": "sec_appendix",
+      "number": null,
+      "title": "Appendix",
+      "region": "appendix",
+      "order": 12,
+      "level": 1,
+      "path": [
+        "Appendix"
+      ],
+      "start_block_index": 101,
+      "end_block_index": 176,
+      "children": []
+    }
+  ]
+}

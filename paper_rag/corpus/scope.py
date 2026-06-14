@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from paper_rag.config import Settings
 from paper_rag.ingest.manifest import ManifestRecord
+from paper_rag.corpus.aliases import resolve_paper_queries
 from paper_rag.corpus.annotation_index import PaperTags, load_paper_annotation_entries, paper_title_key
 from paper_rag.corpus.citation_index import record_matches_citation_scope
 from paper_rag.corpus.filters import compare_text, match_record_filters
@@ -134,17 +135,37 @@ def semantic_candidate_keys(
         return set()
     keys: set[str] = set()
     active_records = corpus.active_manifest_records if corpus else load_active_manifest_records(settings)
-    matches = match_manifest_records(settings, semantic, records=active_records)
-    keys.update(paper_record_key(record) for record in matches if paper_record_key(record))
-    tag_title_keys = semantic_tag_title_keys(settings, semantic, corpus=corpus)
-    if tag_title_keys:
-        # tags 先按 title key 对齐 annotation 和 manifest，再转成统一 paper_record_key。
-        keys.update(
-            paper_record_key(record)
-            for record in active_records
-            if paper_title_key(record.title) in tag_title_keys
-        )
+    semantics = semantic_query_variants(semantic)
+    for value in semantics:
+        matches = match_manifest_records(settings, value, records=active_records)
+        keys.update(paper_record_key(record) for record in matches if paper_record_key(record))
+        tag_title_keys = semantic_tag_title_keys(settings, value, corpus=corpus)
+        if tag_title_keys:
+            # tags 先按 title key 对齐 annotation 和 manifest，再转成统一 paper_record_key。
+            keys.update(
+                paper_record_key(record)
+                for record in active_records
+                if paper_title_key(record.title) in tag_title_keys
+            )
+    alias_papers, _ = resolve_paper_queries(settings, semantics, corpus=corpus)
+    keys.update(paper_record_key(record) for record in alias_papers if paper_record_key(record))
     return keys
+
+
+def semantic_query_variants(semantic: str) -> list[str]:
+    """生成 paper_semantic 的匹配变体，去掉常见中文论文描述后缀。"""
+    stripped = strip_paper_semantic_suffix(semantic)
+    values = [semantic, stripped]
+    return [value for index, value in enumerate(values) if value and value not in values[:index]]
+
+
+def strip_paper_semantic_suffix(semantic: str) -> str:
+    """清理 parser 常把论文别名带上的中文描述后缀。"""
+    value = semantic.strip()
+    for suffix in ["这篇论文", "原论文", "论文"]:
+        if value.endswith(suffix):
+            return value[:-len(suffix)].strip(" \t\r\n，。！？?；;：:、")
+    return value
 
 
 def load_paper_annotation_tag_index(

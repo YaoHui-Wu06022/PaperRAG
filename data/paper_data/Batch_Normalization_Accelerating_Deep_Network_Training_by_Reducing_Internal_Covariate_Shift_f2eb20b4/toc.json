@@ -1,0 +1,423 @@
+{
+  "sections": [
+    {
+      "section_id": "sec_abstract",
+      "parent_id": null,
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 7,
+      "end_block_index": 7
+    },
+    {
+      "section_id": "sec_1",
+      "parent_id": null,
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 8,
+      "end_block_index": 25
+    },
+    {
+      "section_id": "sec_2",
+      "parent_id": null,
+      "number": "2",
+      "title": "Towards Reducing Internal Covariate Shift",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Towards Reducing Internal Covariate Shift"
+      ],
+      "start_block_index": 26,
+      "end_block_index": 34
+    },
+    {
+      "section_id": "sec_3",
+      "parent_id": null,
+      "number": "3",
+      "title": "Normalization via Mini-Batch Statistics",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Normalization via Mini-Batch Statistics"
+      ],
+      "start_block_index": 35,
+      "end_block_index": 101
+    },
+    {
+      "section_id": "sec_3_1",
+      "parent_id": "sec_3",
+      "number": "3.1",
+      "title": "Training and Inference with Batch-Normalized Networks",
+      "region": "body",
+      "order": 4,
+      "level": 2,
+      "path": [
+        "3 Normalization via Mini-Batch Statistics",
+        "3.1 Training and Inference with Batch-Normalized Networks"
+      ],
+      "start_block_index": 68,
+      "end_block_index": 71
+    },
+    {
+      "section_id": "sec_3_2",
+      "parent_id": "sec_3",
+      "number": "3.2",
+      "title": "Batch-Normalized Convolutional Networks",
+      "region": "body",
+      "order": 5,
+      "level": 2,
+      "path": [
+        "3 Normalization via Mini-Batch Statistics",
+        "3.2 Batch-Normalized Convolutional Networks"
+      ],
+      "start_block_index": 72,
+      "end_block_index": 95
+    },
+    {
+      "section_id": "sec_3_3",
+      "parent_id": "sec_3",
+      "number": "3.3",
+      "title": "Batch Normalization enables higher learning rates",
+      "region": "body",
+      "order": 6,
+      "level": 2,
+      "path": [
+        "3 Normalization via Mini-Batch Statistics",
+        "3.3 Batch Normalization enables higher learning rates"
+      ],
+      "start_block_index": 96,
+      "end_block_index": 101
+    },
+    {
+      "section_id": "sec_4",
+      "parent_id": null,
+      "number": "4",
+      "title": "Experiments",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "4 Experiments"
+      ],
+      "start_block_index": 102,
+      "end_block_index": 141
+    },
+    {
+      "section_id": "sec_4_1",
+      "parent_id": "sec_4",
+      "number": "4.1",
+      "title": "Activations over time",
+      "region": "body",
+      "order": 8,
+      "level": 2,
+      "path": [
+        "4 Experiments",
+        "4.1 Activations over time"
+      ],
+      "start_block_index": 103,
+      "end_block_index": 108
+    },
+    {
+      "section_id": "sec_4_2",
+      "parent_id": "sec_4",
+      "number": "4.2",
+      "title": "ImageNet classification",
+      "region": "body",
+      "order": 9,
+      "level": 2,
+      "path": [
+        "4 Experiments",
+        "4.2 ImageNet classification"
+      ],
+      "start_block_index": 109,
+      "end_block_index": 141
+    },
+    {
+      "section_id": "sec_4_2_1",
+      "parent_id": "sec_4_2",
+      "number": "4.2.1",
+      "title": "ACCELERATING BN NETWORKS",
+      "region": "body",
+      "order": 10,
+      "level": 3,
+      "path": [
+        "4 Experiments",
+        "4.2 ImageNet classification",
+        "4.2.1 ACCELERATING BN NETWORKS"
+      ],
+      "start_block_index": 113,
+      "end_block_index": 124
+    },
+    {
+      "section_id": "sec_4_2_2",
+      "parent_id": "sec_4_2",
+      "number": "4.2.2",
+      "title": "SINGLE-NETWORK CLASSIFICATION",
+      "region": "body",
+      "order": 11,
+      "level": 3,
+      "path": [
+        "4 Experiments",
+        "4.2 ImageNet classification",
+        "4.2.2 SINGLE-NETWORK CLASSIFICATION"
+      ],
+      "start_block_index": 125,
+      "end_block_index": 135
+    },
+    {
+      "section_id": "sec_4_2_3",
+      "parent_id": "sec_4_2",
+      "number": "4.2.3",
+      "title": "ENSEMBLE CLASSIFICATION",
+      "region": "body",
+      "order": 12,
+      "level": 3,
+      "path": [
+        "4 Experiments",
+        "4.2 ImageNet classification",
+        "4.2.3 ENSEMBLE CLASSIFICATION"
+      ],
+      "start_block_index": 136,
+      "end_block_index": 141
+    },
+    {
+      "section_id": "sec_5",
+      "parent_id": null,
+      "number": "5",
+      "title": "Conclusion",
+      "region": "body",
+      "order": 13,
+      "level": 1,
+      "path": [
+        "5 Conclusion"
+      ],
+      "start_block_index": 142,
+      "end_block_index": 147
+    }
+  ],
+  "tree": [
+    {
+      "section_id": "sec_abstract",
+      "number": null,
+      "title": "Abstract",
+      "region": "abstract",
+      "order": 0,
+      "level": 1,
+      "path": [
+        "Abstract"
+      ],
+      "start_block_index": 7,
+      "end_block_index": 7,
+      "children": []
+    },
+    {
+      "section_id": "sec_1",
+      "number": "1",
+      "title": "Introduction",
+      "region": "body",
+      "order": 1,
+      "level": 1,
+      "path": [
+        "1 Introduction"
+      ],
+      "start_block_index": 8,
+      "end_block_index": 25,
+      "children": []
+    },
+    {
+      "section_id": "sec_2",
+      "number": "2",
+      "title": "Towards Reducing Internal Covariate Shift",
+      "region": "body",
+      "order": 2,
+      "level": 1,
+      "path": [
+        "2 Towards Reducing Internal Covariate Shift"
+      ],
+      "start_block_index": 26,
+      "end_block_index": 34,
+      "children": []
+    },
+    {
+      "section_id": "sec_3",
+      "number": "3",
+      "title": "Normalization via Mini-Batch Statistics",
+      "region": "body",
+      "order": 3,
+      "level": 1,
+      "path": [
+        "3 Normalization via Mini-Batch Statistics"
+      ],
+      "start_block_index": 35,
+      "end_block_index": 101,
+      "children": [
+        {
+          "section_id": "sec_3_1",
+          "number": "3.1",
+          "title": "Training and Inference with Batch-Normalized Networks",
+          "region": "body",
+          "order": 4,
+          "level": 2,
+          "path": [
+            "3 Normalization via Mini-Batch Statistics",
+            "3.1 Training and Inference with Batch-Normalized Networks"
+          ],
+          "start_block_index": 68,
+          "end_block_index": 71,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_2",
+          "number": "3.2",
+          "title": "Batch-Normalized Convolutional Networks",
+          "region": "body",
+          "order": 5,
+          "level": 2,
+          "path": [
+            "3 Normalization via Mini-Batch Statistics",
+            "3.2 Batch-Normalized Convolutional Networks"
+          ],
+          "start_block_index": 72,
+          "end_block_index": 95,
+          "children": []
+        },
+        {
+          "section_id": "sec_3_3",
+          "number": "3.3",
+          "title": "Batch Normalization enables higher learning rates",
+          "region": "body",
+          "order": 6,
+          "level": 2,
+          "path": [
+            "3 Normalization via Mini-Batch Statistics",
+            "3.3 Batch Normalization enables higher learning rates"
+          ],
+          "start_block_index": 96,
+          "end_block_index": 101,
+          "children": []
+        }
+      ]
+    },
+    {
+      "section_id": "sec_4",
+      "number": "4",
+      "title": "Experiments",
+      "region": "body",
+      "order": 7,
+      "level": 1,
+      "path": [
+        "4 Experiments"
+      ],
+      "start_block_index": 102,
+      "end_block_index": 141,
+      "children": [
+        {
+          "section_id": "sec_4_1",
+          "number": "4.1",
+          "title": "Activations over time",
+          "region": "body",
+          "order": 8,
+          "level": 2,
+          "path": [
+            "4 Experiments",
+            "4.1 Activations over time"
+          ],
+          "start_block_index": 103,
+          "end_block_index": 108,
+          "children": []
+        },
+        {
+          "section_id": "sec_4_2",
+          "number": "4.2",
+          "title": "ImageNet classification",
+          "region": "body",
+          "order": 9,
+          "level": 2,
+          "path": [
+            "4 Experiments",
+            "4.2 ImageNet classification"
+          ],
+          "start_block_index": 109,
+          "end_block_index": 141,
+          "children": [
+            {
+              "section_id": "sec_4_2_1",
+              "number": "4.2.1",
+              "title": "ACCELERATING BN NETWORKS",
+              "region": "body",
+              "order": 10,
+              "level": 3,
+              "path": [
+                "4 Experiments",
+                "4.2 ImageNet classification",
+                "4.2.1 ACCELERATING BN NETWORKS"
+              ],
+              "start_block_index": 113,
+              "end_block_index": 124,
+              "children": []
+            },
+            {
+              "section_id": "sec_4_2_2",
+              "number": "4.2.2",
+              "title": "SINGLE-NETWORK CLASSIFICATION",
+              "region": "body",
+              "order": 11,
+              "level": 3,
+              "path": [
+                "4 Experiments",
+                "4.2 ImageNet classification",
+                "4.2.2 SINGLE-NETWORK CLASSIFICATION"
+              ],
+              "start_block_index": 125,
+              "end_block_index": 135,
+              "children": []
+            },
+            {
+              "section_id": "sec_4_2_3",
+              "number": "4.2.3",
+              "title": "ENSEMBLE CLASSIFICATION",
+              "region": "body",
+              "order": 12,
+              "level": 3,
+              "path": [
+                "4 Experiments",
+                "4.2 ImageNet classification",
+                "4.2.3 ENSEMBLE CLASSIFICATION"
+              ],
+              "start_block_index": 136,
+              "end_block_index": 141,
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section_id": "sec_5",
+      "number": "5",
+      "title": "Conclusion",
+      "region": "body",
+      "order": 13,
+      "level": 1,
+      "path": [
+        "5 Conclusion"
+      ],
+      "start_block_index": 142,
+      "end_block_index": 147,
+      "children": []
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from paper_rag.corpus.chunks import ChunkDocument
@@ -38,7 +39,7 @@ def test_embedding_cache_appends_and_cached_embedder_only_requests_misses(tmp_pa
     cache_path = tmp_path / "embedding_cache.jsonl"
     cache = EmbeddingCache(cache_path)
     cached_key = embedding_cache_key("model-a", 2, "cached")
-    cache.set(cached_key, [1.0, 1.0])
+    cache.set(cached_key, "cached", [1.0, 1.0])
     cache.save()
 
     client = FakeEmbeddingClient({"missing": [2.0, 2.0]})
@@ -56,9 +57,37 @@ def test_embedding_cache_appends_and_cached_embedder_only_requests_misses(tmp_pa
     assert client.calls == [["missing"]]
 
     cache = EmbeddingCache(cache_path)
-    cache.set(cached_key, [3.0, 3.0])
+    cache.set(cached_key, "cached", [3.0, 3.0])
     cache.save()
     assert EmbeddingCache(cache_path).get(cached_key) == [3.0, 3.0]
+
+
+def test_query_embedding_cache_writes_text_and_rejects_old_rows(tmp_path: Path):
+    cache_path = tmp_path / "query_embedding_cache.jsonl"
+    client = FakeEmbeddingClient({"查找模型结构": [1.0, 2.0]})
+    embedder = CachedEmbedder(
+        client,
+        EmbeddingCache(cache_path, store_text=True),
+        model="model-a",
+        dimensions=2,
+        batch_size=4,
+    )
+
+    embedder.embed_texts(["查找模型结构"])
+
+    row = json.loads(cache_path.read_text(encoding="utf-8"))
+    assert row["text"] == "查找模型结构"
+
+    cache_path.write_text(
+        json.dumps({"key": row["key"], "vector": row["vector"]}) + "\n",
+        encoding="utf-8",
+    )
+    try:
+        EmbeddingCache(cache_path, store_text=True)
+    except ValueError as exc:
+        assert "缺少 text" in str(exc)
+    else:
+        raise AssertionError("旧 query embedding 缓存格式不应继续兼容")
 
 
 class FakeEmbeddingClient:

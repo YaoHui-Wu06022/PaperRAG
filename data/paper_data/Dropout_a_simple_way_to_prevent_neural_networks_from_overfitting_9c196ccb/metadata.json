@@ -1,0 +1,16 @@
+{
+  "title": "Dropout: a simple way to prevent neural networks from overfitting",
+  "author": [
+    "Nitish Srivastava",
+    "Geoffrey E. Hinton",
+    "A. Krizhevsky",
+    "I. Sutskever",
+    "R. Salakhutdinov"
+  ],
+  "year": {
+    "preprint_year": null,
+    "publish_year": 2014
+  },
+  "venue": "JMLR",
+  "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2014_Dropout_A_Simple_Way_to_Prevent_Neural_Networks_from_Overfitting.pdf"
+}

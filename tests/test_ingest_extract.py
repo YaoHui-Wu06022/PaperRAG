@@ -79,12 +79,18 @@ def test_extract_mineru_output_splits_blocks_chunks_references_and_appendix(sett
         paragraph("We introduce residual connections for optimization."),
         title("1 Introduction"),
         paragraph("Residual connections ease training of deep networks."),
+        image("Figure 1: Residual block architecture.", "images/residual-block.jpg"),
+        table(
+            "Table 1: Model comparison.",
+            "<table><tr><th>Model</th><th>Accuracy</th></tr>"
+            "<tr><td>ResNet</td><td>76.2</td></tr></table>",
+        ),
         title("Appendix"),
         paragraph("Extra ablation details live in the appendix."),
         title("References"),
         reference_list("[1] He K. Deep Residual Learning for Image Recognition. 2016."),
     ]]
-    (mineru_dir / "content_list_v2.json").write_text(json.dumps(content, ensure_ascii=False), encoding="utf-8")
+    (mineru_dir / "upload-id_content_list_v2.json").write_text(json.dumps(content, ensure_ascii=False), encoding="utf-8")
 
     result = extract_paper_data(
         mineru_dir,
@@ -105,10 +111,24 @@ def test_extract_mineru_output_splits_blocks_chunks_references_and_appendix(sett
     references = read_jsonl(result.references_path)
     assert references[0]["raw_text"].startswith("[1] He K.")
 
+    blocks = read_jsonl(result.blocks_path)
+    image_block = next(block for block in blocks if block["type"] == "image")
+    assert image_block["caption"] == "Figure 1: Residual block architecture."
+    assert image_block["source_path"] == "images/residual-block.jpg"
+
+    table_block = next(block for block in blocks if block["type"] == "table")
+    assert table_block["caption"] == "Table 1: Model comparison."
+    assert "<table>" in table_block["html"]
+    assert "Columns: Model, Accuracy." in table_block["text"]
+    assert "Row 1: Model = ResNet; Accuracy = 76.2." in table_block["text"]
+
     chunks = read_jsonl(result.chunks_path)
     regions = {chunk["region"] for chunk in chunks}
     assert {"abstract", "body", "appendix"} <= regions
     assert all("Deep Residual Learning" not in chunk["text"] for chunk in chunks)
+    body_text = "\n".join(chunk["text"] for chunk in chunks if chunk["region"] == "body")
+    assert "Figure 1: Residual block architecture." in body_text
+    assert "Row 1: Model = ResNet; Accuracy = 76.2." in body_text
 
     loaded_chunks = load_chunk_documents(settings.paper_data_dir)
     content_chunks = filter_content_retrieval_chunks(loaded_chunks)
@@ -121,6 +141,26 @@ def title(text: str) -> dict:
 
 def paragraph(text: str) -> dict:
     return {"type": "paragraph", "content": {"paragraph_content": [{"content": text}]}}
+
+
+def image(caption: str, path: str) -> dict:
+    return {
+        "type": "image",
+        "content": {
+            "image_caption": [{"content": caption}],
+            "image_source": {"path": path},
+        },
+    }
+
+
+def table(caption: str, html: str) -> dict:
+    return {
+        "type": "table",
+        "content": {
+            "table_caption": [{"content": caption}],
+            "html": html,
+        },
+    }
 
 
 def reference_list(text: str) -> dict:

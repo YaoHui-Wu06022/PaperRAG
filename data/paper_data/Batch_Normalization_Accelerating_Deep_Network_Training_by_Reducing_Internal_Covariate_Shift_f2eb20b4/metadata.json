@@ -1,0 +1,13 @@
+{
+  "author": [
+    "Sergey Ioffe",
+    "Christian Szegedy"
+  ],
+  "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2015_Batch_Normalization_Accelerating_Deep_Network_Training_by_Reducing_Internal_Covariate_Shift.pdf",
+  "title": "Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift",
+  "venue": "ICML",
+  "year": {
+    "preprint_year": 2015,
+    "publish_year": 2015
+  }
+}
