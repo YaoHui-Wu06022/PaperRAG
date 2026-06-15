@@ -18,7 +18,6 @@ ANSWER_SYSTEM_PROMPT = """
 回答使用中文，保持简洁。必要时引用论文标题、页码、section 或引用边作为依据
 """
 
-
 class AnswerClientProtocol(Protocol):
     """回答 LLM client 协议，方便测试时注入 fake client。"""
 

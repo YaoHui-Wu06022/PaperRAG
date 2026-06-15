@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
@@ -118,7 +119,12 @@ class BM25CorpusIndex:
                 for index, document in enumerate(self.documents)
             ],
         }
-        path.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+        tmp_path = path.with_name(f"{path.name}.tmp-{uuid.uuid4().hex}")
+        try:
+            tmp_path.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+            tmp_path.replace(path)
+        finally:
+            tmp_path.unlink(missing_ok=True)
 
     def search(
         self,

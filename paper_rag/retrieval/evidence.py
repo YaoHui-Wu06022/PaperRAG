@@ -42,7 +42,6 @@ def build_metadata_evidence(
         plan={
             "return_fields": route.return_fields,
             "scope": compact_scope_terms(route.paper_semantic, route.filters),
-            "groups": compact_groups(route.paper_groups),
             "group_mode": route.group_mode if route.group_mode != "single" else "",
         },
         resolved=common_resolved(route),
@@ -50,7 +49,11 @@ def build_metadata_evidence(
         parser_error=parser_error,
     )
     if debug:
-        evidence["debug"] = route_debug(route, records=records, group_results=group_results)
+        evidence["debug"] = route_debug(
+            route,
+            records=[paper_label(record) for record in records if paper_label(record)],
+            group_results=[compact_metadata_group(settings, route, group) for group in group_results or []],
+        )
     return evidence
 
 
@@ -77,11 +80,13 @@ def build_content_evidence(
         warnings=warnings,
         plan={
             "scope": compact_scope_terms(route.paper_semantic, route.filters),
-            "groups": compact_groups(route.paper_groups),
             "group_mode": route.group_mode if route.group_mode != "single" else "",
             "content_objects": parser_result.get("content_objects") or [],
             "compare_objects": parser_result.get("compare_objects") or [],
-            "retrieval_query": compact_retrieval_query(retrieval_query),
+            "retrieval_query": compact_payload({
+                "dense_query": (retrieval_query or {}).get("dense_query"),
+                "bm25_queries": (retrieval_query or {}).get("bm25_queries") or [],
+            }),
         },
         resolved=common_resolved(route),
         results=results,
@@ -90,10 +95,16 @@ def build_content_evidence(
     if debug:
         evidence["debug"] = route_debug(
             route,
-            scope_records=scope_records,
-            retrieval_query=retrieval_query,
-            group_results=group_results,
-            context_units=context_units,
+            scope_records=[paper_label(record) for record in scope_records if paper_label(record)],
+            group_results=[compact_record_group(group) for group in group_results or []],
+            context_units=[
+                compact_payload({
+                    "chunk_id": unit.get("chunk_id"),
+                    "score": unit.get("score"),
+                    "sources": unit.get("sources"),
+                })
+                for unit in context_units
+            ],
         )
     return evidence
 
@@ -133,10 +144,8 @@ def build_reference_evidence(
         plan={
             "return_side": route.return_side,
             "source_scope": compact_scope_terms(route.source_semantic, route.source_filters),
-            "source_groups": compact_groups(route.source_groups),
             "source_mode": route.source_mode if route.source_mode != "single" else "",
             "object_scope": compact_scope_terms(route.object_semantic, route.object_filters),
-            "object_groups": compact_groups(route.object_groups),
             "object_mode": route.object_mode if route.object_mode != "single" else "",
         },
         resolved=common_resolved(route),
@@ -146,11 +155,11 @@ def build_reference_evidence(
     if debug:
         evidence["debug"] = route_debug(
             route,
-            source_records=source_records,
-            object_records=object_records,
-            answer_papers=answer_papers,
-            edges=edges,
-            group_results=group_results,
+            source_records=[paper_label(record) for record in source_records if paper_label(record)],
+            object_records=[paper_label(record) for record in object_records if paper_label(record)],
+            answer_papers=[paper_label(record) for record in answer_papers if paper_label(record)],
+            edges=[compact_reference_edge(edge) for edge in edges],
+            group_results=[compact_reference_group(group) for group in group_results or []],
         )
     return evidence
 
@@ -277,16 +286,6 @@ def content_results(
     return results
 
 
-def compact_retrieval_query(retrieval_query: dict[str, Any] | None) -> dict[str, Any]:
-    """默认 evidence 只展示 dense_query 和 bm25_queries。"""
-    if not retrieval_query:
-        return {}
-    return compact_payload({
-        "dense_query": retrieval_query.get("dense_query"),
-        "bm25_queries": retrieval_query.get("bm25_queries") or [],
-    })
-
-
 def compact_context_unit(unit: dict[str, Any]) -> dict[str, Any]:
     """裁剪 context_unit，隐藏 expanded blocks、scores 等 debug 信息。"""
     return compact_payload({
@@ -294,19 +293,35 @@ def compact_context_unit(unit: dict[str, Any]) -> dict[str, Any]:
         "title": unit.get("title"),
         "section_path": unit.get("section_path"),
         "pages": unit.get("pages"),
-        "text": unit.get("chunk_text") or unit.get("text"),
+        "text": context_text(unit),
     })
 
 
 def compact_record_group(group: dict[str, Any]) -> dict[str, Any]:
     """把 content group 的论文 records 压成标题列表和计数。"""
     records = group.get("records") or []
+    context_refs = [unit.get("chunk_id") for unit in group.get("context_units") or [] if unit.get("chunk_id")]
     return compact_payload({
         "scope": compact_scope_terms(group.get("semantic") or "", group.get("filters") or []),
         "papers": [paper_label(record) for record in records if paper_label(record)],
         "count": len(records),
-        "exists": bool(records),
+        "exists": bool(group.get("exists")) if "exists" in group else bool(records),
+        "context_refs": context_refs,
     })
+
+
+def context_text(unit: dict[str, Any]) -> str:
+    """普通 evidence 使用扩展 block 文本，debug 才暴露 expanded_blocks 结构。"""
+    expanded = unit.get("expanded_blocks")
+    if isinstance(expanded, list) and expanded:
+        parts = [
+            str(block.get("text") or "").strip()
+            for block in expanded
+            if isinstance(block, dict) and str(block.get("text") or "").strip()
+        ]
+        if parts:
+            return "\n\n".join(parts)
+    return str(unit.get("chunk_text") or unit.get("text") or "")
 
 
 def reference_results(
@@ -364,18 +379,6 @@ def compact_scope_terms(semantic: str, filters: list[dict[str, Any]]) -> list[st
     return [term for term in terms if term]
 
 
-def compact_groups(groups: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """把 paper_groups 压缩为仅含 scope 的列表。"""
-    compacted: list[dict[str, Any]] = []
-    for group in groups:
-        payload = compact_payload({
-            "scope": compact_scope_terms(group.get("semantic") or "", group.get("filters") or []),
-        })
-        if payload:
-            compacted.append(payload)
-    return compacted
-
-
 def format_filter(filter_item: dict[str, Any]) -> str:
     """把一个结构化 filter 格式化成 composer 可读短文本。"""
     field = str(filter_item.get("field") or "").strip()
@@ -406,28 +409,11 @@ def format_value(value: Any) -> str:
 
 def route_debug(route: RouteDecision, **extra: Any) -> dict[str, Any]:
     """生成 debug 模式下完整 route/parser/result 中间态。"""
-    debug = {
-        "parser_result": route.parser_result,
+    debug = compact_payload({
         "parse_status": route.parse_status,
         "parser_error": route.parser_error,
-        "route_decision": {
-            "return_fields": route.return_fields,
-            "paper_semantic": route.paper_semantic,
-            "filters": route.filters,
-            "paper_groups": route.paper_groups,
-            "group_mode": route.group_mode,
-            "return_side": route.return_side,
-            "source_semantic": route.source_semantic,
-            "source_filters": route.source_filters,
-            "source_groups": route.source_groups,
-            "source_mode": route.source_mode,
-            "object_semantic": route.object_semantic,
-            "object_filters": route.object_filters,
-            "object_groups": route.object_groups,
-            "object_mode": route.object_mode,
-        },
-    }
-    debug.update(extra)
+    })
+    debug.update(compact_payload(extra))
     return debug
 
 

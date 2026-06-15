@@ -1,0 +1,2261 @@
+[
+  {
+    "query": "CVPR 有几篇论文？",
+    "answer": "共找到 5 篇符合条件的论文。\n[1] Deep Residual Learning for Image Recognition\n[2] Aggregated Residual Transformations for Deep Neural Networks\n[3] ECA-Net: Efficient Channel Attention for Deep Convolutional Neural Networks\n[4] Squeeze-and-Excitation Networks\n[5] Going deeper with convolutions",
+    "answer_mode": "local",
+    "evidence": {
+      "query": "CVPR 有几篇论文？",
+      "route": "metadata",
+      "status": "ok",
+      "intent": "count",
+      "plan": {
+        "scope": [
+          "venue=CVPR"
+        ]
+      },
+      "results": {
+        "count": 5,
+        "items": [
+          {
+            "title": "Deep Residual Learning for Image Recognition"
+          },
+          {
+            "title": "Aggregated Residual Transformations for Deep Neural Networks"
+          },
+          {
+            "title": "ECA-Net: Efficient Channel Attention for Deep Convolutional Neural Networks"
+          },
+          {
+            "title": "Squeeze-and-Excitation Networks"
+          },
+          {
+            "title": "Going deeper with convolutions"
+          }
+        ]
+      },
+      "debug": {
+        "parser_result": {
+          "intent": "count",
+          "filters": [
+            {
+              "field": "venue",
+              "op": "=",
+              "value": "CVPR",
+              "negated": false
+            }
+          ],
+          "group_mode": "single"
+        },
+        "parse_status": "ok",
+        "records": [
+          {
+            "_record_key": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+            "file_hash": "1e0651b6810ecba34a3dbc5b5b0209226f889004607c1f203540a48d64e5a93a",
+            "title": "Deep Residual Learning for Image Recognition",
+            "author": [
+              "Kaiming He",
+              "Xiangyu Zhang",
+              "Shaoqing Ren",
+              "Jian Sun"
+            ],
+            "year": {
+              "preprint_year": 2015,
+              "publish_year": 2016
+            },
+            "venue": "CVPR",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2015_Deep_Residual_Learning_for_Image_Recognition.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Deep_Residual_Learning_for_Image_Recognition_1e0651b6"
+          },
+          {
+            "_record_key": "Aggregated_Residual_Transformations_for_Deep_Neural_Networks_1ebca04b",
+            "file_hash": "1ebca04b3460b1dcf254092f48f420d48e9c23a50f077e78179ef9b42fa5324b",
+            "title": "Aggregated Residual Transformations for Deep Neural Networks",
+            "author": [
+              "Saining Xie",
+              "Ross B. Girshick",
+              "Piotr Dollár",
+              "Zhuowen Tu",
+              "Kaiming He"
+            ],
+            "year": {
+              "preprint_year": 2016,
+              "publish_year": 2017
+            },
+            "venue": "CVPR",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2016_Aggregated_Residual_Transformations_for_Deep_Neural_Networks.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Aggregated_Residual_Transformations_for_Deep_Neural_Networks_1ebca04b"
+          },
+          {
+            "_record_key": "ECA_Net_Efficient_Channel_Attention_for_Deep_Convolutional_Neural_Networks_4e782a60",
+            "file_hash": "4e782a60f7f01ec552a725c021779f8dd694d12ece217ab1a9b5e09c75958d77",
+            "title": "ECA-Net: Efficient Channel Attention for Deep Convolutional Neural Networks",
+            "author": [
+              "Qilong Wang",
+              "Banggu Wu",
+              "Pengfei Zhu",
+              "Peihua Li",
+              "Wangmeng Zuo",
+              "Qinghua Hu"
+            ],
+            "year": {
+              "preprint_year": 2019,
+              "publish_year": 2020
+            },
+            "venue": "CVPR",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2019_ECA_Net_Efficient_Channel_Attention_for_Deep_Convolutional_Neural_Networks.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\ECA_Net_Efficient_Channel_Attention_for_Deep_Convolutional_Neural_Networks_4e782a60"
+          },
+          {
+            "_record_key": "Squeeze_and_Excitation_Networks_60e7a8e0",
+            "file_hash": "60e7a8e033ca861eb88d84e71cad1951904bd355e5dec6fa596f6f2ad0087683",
+            "title": "Squeeze-and-Excitation Networks",
+            "author": [
+              "Jie Hu",
+              "Li Shen",
+              "Samuel Albanie",
+              "Gang Sun",
+              "E. Wu"
+            ],
+            "year": {
+              "preprint_year": 2017,
+              "publish_year": 2018
+            },
+            "venue": "CVPR",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2017_Squeeze_and_Excitation_Networks.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Squeeze_and_Excitation_Networks_60e7a8e0"
+          },
+          {
+            "_record_key": "Going_deeper_with_convolutions_66a9f13f",
+            "file_hash": "66a9f13f2635290ca3900a87a6548badbe8fba154a0478555a16e15a8c907c96",
+            "title": "Going deeper with convolutions",
+            "author": [
+              "Christian Szegedy",
+              "Wei Liu",
+              "Yangqing Jia",
+              "Pierre Sermanet",
+              "Scott E. Reed",
+              "Dragomir Anguelov",
+              "Dumitru Erhan",
+              "Vincent Vanhoucke",
+              "Andrew Rabinovich"
+            ],
+            "year": {
+              "preprint_year": 2014,
+              "publish_year": 2015
+            },
+            "venue": "CVPR",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2014_Going_deeper_with_convolutions.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Going_deeper_with_convolutions_66a9f13f"
+          }
+        ],
+        "timings_ms": {
+          "top_parser": 3149.13,
+          "domain_parser": 3336.36,
+          "scope": 13.97,
+          "plan": 6499.51,
+          "answer": 0.02
+        }
+      }
+    },
+    "case": {
+      "id": "Q1",
+      "type": "metadata-count",
+      "query": "CVPR 有几篇论文？",
+      "purpose": "验证 metadata 路由、本地 count 回答、元数据过滤。"
+    },
+    "_report": {
+      "wall_ms": 6499.55
+    }
+  },
+  {
+    "query": "哪些论文引用了 ResNet？",
+    "answer": "[1] A Discriminative Feature Learning Approach for Deep Face Recognition\n[2] Aggregated Residual Transformations for Deep Neural Networks\n[3] An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale\n[4] Attention is All you Need\n[5] ECA-Net: Efficient Channel Attention for Deep Convolutional Neural Networks\n[6] EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks\n[7] Exponential Moving Average of Weights in Deep Learning: Dynamics and Benefits\n[8] Inception-v4, Inception-ResNet and the Impact of Residual Connections on Learning\n[9] NormFace: L2 Hypersphere Embedding for Face Verification\n[10] Squeeze-and-Excitation Networks\n[11] Supervised Contrastive Learning\n引用证据：\n- A Discriminative Feature Learning Approach for Deep Face Recognition -> ResNet，页码 15，block b000131\n- Aggregated Residual Transformations for Deep Neural Networks -> ResNet，页码 9，block b000140\n- An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale -> ResNet，页码 10，block b000107\n- Attention is All you Need -> ResNet，页码 10，block b000133\n- ECA-Net: Efficient Channel Attention for Deep Convolutional Neural Networks -> ResNet，页码 9，block b000121\n- EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks -> ResNet，页码 9，block b000118\n- Exponential Moving Average of Weights in Deep Learning: Dynamics and Benefits -> ResNet，页码 13，block b000115\n- Inception-v4, Inception-ResNet and the Impact of Residual Connections on Learning -> ResNet，页码 7，block b000088\n- NormFace: L2 Hypersphere Embedding for Face Verification -> ResNet，页码 10，block b000206\n- Squeeze-and-Excitation Networks -> ResNet，页码 10，block b000122\n- Supervised Contrastive Learning -> ResNet，页码 11，block b000111",
+    "answer_mode": "local",
+    "evidence": {
+      "query": "哪些论文引用了 ResNet？",
+      "route": "reference",
+      "status": "ok",
+      "intent": "list",
+      "plan": {
+        "return_side": "source",
+        "object_scope": [
+          "paper=Deep Residual Learning for Image Recognition"
+        ]
+      },
+      "resolved": {
+        "aliases": [
+          {
+            "alias": "ResNet",
+            "canonical": "Deep Residual Learning for Image Recognition"
+          }
+        ]
+      },
+      "results": {
+        "papers": [
+          "A Discriminative Feature Learning Approach for Deep Face Recognition",
+          "Aggregated Residual Transformations for Deep Neural Networks",
+          "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+          "Attention is All you Need",
+          "ECA-Net: Efficient Channel Attention for Deep Convolutional Neural Networks",
+          "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks",
+          "Exponential Moving Average of Weights in Deep Learning: Dynamics and Benefits",
+          "Inception-v4, Inception-ResNet and the Impact of Residual Connections on Learning",
+          "NormFace: L2 Hypersphere Embedding for Face Verification",
+          "Squeeze-and-Excitation Networks",
+          "Supervised Contrastive Learning"
+        ],
+        "edges": [
+          {
+            "source": "A Discriminative Feature Learning Approach for Deep Face Recognition",
+            "object": "Deep Residual Learning for Image Recognition",
+            "ref": "11. He, K., Zhang, X., Ren, S., Sun, J.: Deep residual learning for image recognition. arXiv preprint arXiv:1512.03385 (2015)",
+            "page": 15,
+            "block": "b000131"
+          },
+          {
+            "source": "Aggregated Residual Transformations for Deep Neural Networks",
+            "object": "Deep Residual Learning for Image Recognition",
+            "ref": "[14] K. He, X. Zhang, S. Ren, and J. Sun. Deep residual learning for image recognition. In CVPR, 2016.",
+            "page": 9,
+            "block": "b000140"
+          },
+          {
+            "source": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+            "object": "Deep Residual Learning for Image Recognition",
+            "ref": "Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In CVPR, 2016.",
+            "page": 10,
+            "block": "b000107"
+          },
+          {
+            "source": "Attention is All you Need",
+            "object": "Deep Residual Learning for Image Recognition",
+            "ref": "[10] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition, pages 770–778, 2016.",
+            "page": 10,
+            "block": "b000133"
+          },
+          {
+            "source": "ECA-Net: Efficient Channel Attention for Deep Convolutional Neural Networks",
+            "object": "Deep Residual Learning for Image Recognition",
+            "ref": "[11] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In CVPR, 2016.",
+            "page": 9,
+            "block": "b000121"
+          },
+          {
+            "source": "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks",
+            "object": "Deep Residual Learning for Image Recognition",
+            "ref": "He, K., Zhang, X., Ren, S., and Sun, J. Deep residual learning for image recognition. CVPR, pp. 770–778, 2016.",
+            "page": 9,
+            "block": "b000118"
+          },
+          {
+            "source": "Exponential Moving Average of Weights in Deep Learning: Dynamics and Benefits",
+            "object": "Deep Residual Learning for Image Recognition",
+            "ref": "Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In Proceedings of the IEEE conference on computer vision and pattern recognition, pp. 770–778, 2016.",
+            "page": 13,
+            "block": "b000115"
+          },
+          {
+            "source": "Inception-v4, Inception-ResNet and the Impact of Residual Connections on Learning",
+            "object": "Deep Residual Learning for Image Recognition",
+            "ref": "He, K.; Zhang, X.; Ren, S.; and Sun, J. 2015. Deep residual learning for image recognition. arXiv preprint arXiv:1512.03385.",
+            "page": 7,
+            "block": "b000088"
+          },
+          {
+            "source": "NormFace: L2 Hypersphere Embedding for Face Verification",
+            "object": "Deep Residual Learning for Image Recognition",
+            "ref": "[7] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. 2016. Deep residual learning for image recognition. In IEEE Conference on Computer Vision and Pattern Recognition. 770–778.",
+            "page": 10,
+            "block": "b000206"
+          },
+          {
+            "source": "Squeeze-and-Excitation Networks",
+            "object": "Deep Residual Learning for Image Recognition",
+            "ref": "[9] K. He, X. Zhang, S. Ren, and J. Sun. Deep residual learning for image recognition. In CVPR, 2016.",
+            "page": 10,
+            "block": "b000122"
+          },
+          {
+            "source": "Supervised Contrastive Learning",
+            "object": "Deep Residual Learning for Image Recognition",
+            "ref": "[17] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In Proceedings of the IEEE conference on computer vision and pattern recognition, pages 770–778, 2016. 2, 5, 6, 7, 8",
+            "page": 11,
+            "block": "b000111"
+          }
+        ]
+      },
+      "debug": {
+        "parser_result": {
+          "intent": "list",
+          "return_side": "source",
+          "source_mode": "single",
+          "object_filters": [
+            {
+              "field": "paper",
+              "op": "=",
+              "value": "Deep Residual Learning for Image Recognition",
+              "negated": false
+            }
+          ],
+          "object_mode": "single",
+          "object_resolved_papers": [
+            {
+              "_record_key": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "file_hash": "1e0651b6810ecba34a3dbc5b5b0209226f889004607c1f203540a48d64e5a93a",
+              "title": "Deep Residual Learning for Image Recognition",
+              "author": [
+                "Kaiming He",
+                "Xiangyu Zhang",
+                "Shaoqing Ren",
+                "Jian Sun"
+              ],
+              "year": {
+                "preprint_year": 2015,
+                "publish_year": 2016
+              },
+              "venue": "CVPR",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2015_Deep_Residual_Learning_for_Image_Recognition.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "matched_alias": "ResNet"
+            }
+          ]
+        },
+        "parse_status": "ok",
+        "source_records": [
+          {
+            "_record_key": "Exponential_Moving_Average_of_Weights_in_Deep_Learning_Dynamics_and_Benefits_133ecc4d",
+            "file_hash": "133ecc4d73d2928566e13d8a30b851be611a09a90ec66273e8d9d16f7026076c",
+            "title": "Exponential Moving Average of Weights in Deep Learning: Dynamics and Benefits",
+            "author": [
+              "Daniel Morales-Brotons",
+              "Thijs Vogels",
+              "Hadrien Hendrikx"
+            ],
+            "year": {
+              "preprint_year": 2024,
+              "publish_year": 2024
+            },
+            "venue": "TMLR",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2024_Exponential_Moving_Average_of_Weights_in_Deep_Learning_Dynamics_and_Benefits.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Exponential_Moving_Average_of_Weights_in_Deep_Learning_Dynamics_and_Benefits_133ecc4d"
+          },
+          {
+            "_record_key": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+            "file_hash": "1e0651b6810ecba34a3dbc5b5b0209226f889004607c1f203540a48d64e5a93a",
+            "title": "Deep Residual Learning for Image Recognition",
+            "author": [
+              "Kaiming He",
+              "Xiangyu Zhang",
+              "Shaoqing Ren",
+              "Jian Sun"
+            ],
+            "year": {
+              "preprint_year": 2015,
+              "publish_year": 2016
+            },
+            "venue": "CVPR",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2015_Deep_Residual_Learning_for_Image_Recognition.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Deep_Residual_Learning_for_Image_Recognition_1e0651b6"
+          },
+          {
+            "_record_key": "Aggregated_Residual_Transformations_for_Deep_Neural_Networks_1ebca04b",
+            "file_hash": "1ebca04b3460b1dcf254092f48f420d48e9c23a50f077e78179ef9b42fa5324b",
+            "title": "Aggregated Residual Transformations for Deep Neural Networks",
+            "author": [
+              "Saining Xie",
+              "Ross B. Girshick",
+              "Piotr Dollár",
+              "Zhuowen Tu",
+              "Kaiming He"
+            ],
+            "year": {
+              "preprint_year": 2016,
+              "publish_year": 2017
+            },
+            "venue": "CVPR",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2016_Aggregated_Residual_Transformations_for_Deep_Neural_Networks.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Aggregated_Residual_Transformations_for_Deep_Neural_Networks_1ebca04b"
+          },
+          {
+            "_record_key": "NormFace_L2_Hypersphere_Embedding_for_Face_Verification_27a8b27d",
+            "file_hash": "27a8b27d6a421f0c1ecc62927fd95213d306d926b92d67b3168a8b32c967644f",
+            "title": "NormFace: L2 Hypersphere Embedding for Face Verification",
+            "author": [
+              "Feng Wang",
+              "Xiang Xiang",
+              "Jian Cheng",
+              "Alan Loddon Yuille"
+            ],
+            "year": {
+              "preprint_year": 2017,
+              "publish_year": 2017
+            },
+            "venue": "ACM MM",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2017_NormFace_L2_Hypersphere_Embedding_for_Face_Verification.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\NormFace_L2_Hypersphere_Embedding_for_Face_Verification_27a8b27d"
+          },
+          {
+            "_record_key": "Generative_Adversarial_Nets_33196162",
+            "file_hash": "331961622a2f6588c48a34ecddc6a3d052ffe8fcfba333f233d5f27b2da5565d",
+            "title": "Generative Adversarial Nets",
+            "author": [
+              "Ian J. Goodfellow",
+              "Jean Pouget-Abadie",
+              "Mehdi Mirza",
+              "Bing Xu",
+              "David Warde-Farley",
+              "Sherjil Ozair",
+              "Aaron Courville",
+              "Yoshua Bengio"
+            ],
+            "year": {
+              "preprint_year": 2014,
+              "publish_year": 2014
+            },
+            "venue": "NeurIPS",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2014_Generative_Adversarial_Nets.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Generative_Adversarial_Nets_33196162"
+          },
+          {
+            "_record_key": "Supervised_Contrastive_Learning_3da9d081",
+            "file_hash": "3da9d0812b27de20e3623ea0f71933dd866f10459fdf04e1129f9f5abdc093cd",
+            "title": "Supervised Contrastive Learning",
+            "author": [
+              "Prannay Khosla",
+              "Piotr Teterwak",
+              "Chen Wang",
+              "Aaron Sarna",
+              "Yonglong Tian",
+              "Phillip Isola",
+              "Aaron Maschinot",
+              "Ce Liu",
+              "Dilip Krishnan"
+            ],
+            "year": {
+              "preprint_year": 2020,
+              "publish_year": 2020
+            },
+            "venue": "NeurIPS",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2020_Supervised_Contrastive_Learning.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Supervised_Contrastive_Learning_3da9d081"
+          },
+          {
+            "_record_key": "A_Discriminative_Feature_Learning_Approach_for_Deep_Face_Recognition_4770aa24",
+            "file_hash": "4770aa24dc2d1ae1620ebdb4533855e2918ab6f252db670a7c3877cfe2dc9030",
+            "title": "A Discriminative Feature Learning Approach for Deep Face Recognition",
+            "author": [
+              "Yandong Wen",
+              "Kaipeng Zhang",
+              "Zhifeng Li",
+              "Yu Qiao"
+            ],
+            "year": {
+              "preprint_year": null,
+              "publish_year": 2016
+            },
+            "venue": "ECCV",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2016_A_Discriminative_Feature_Learning_Approach_for_Deep_Face_Recognition.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\A_Discriminative_Feature_Learning_Approach_for_Deep_Face_Recognition_4770aa24"
+          },
+          {
+            "_record_key": "ECA_Net_Efficient_Channel_Attention_for_Deep_Convolutional_Neural_Networks_4e782a60",
+            "file_hash": "4e782a60f7f01ec552a725c021779f8dd694d12ece217ab1a9b5e09c75958d77",
+            "title": "ECA-Net: Efficient Channel Attention for Deep Convolutional Neural Networks",
+            "author": [
+              "Qilong Wang",
+              "Banggu Wu",
+              "Pengfei Zhu",
+              "Peihua Li",
+              "Wangmeng Zuo",
+              "Qinghua Hu"
+            ],
+            "year": {
+              "preprint_year": 2019,
+              "publish_year": 2020
+            },
+            "venue": "CVPR",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2019_ECA_Net_Efficient_Channel_Attention_for_Deep_Convolutional_Neural_Networks.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\ECA_Net_Efficient_Channel_Attention_for_Deep_Convolutional_Neural_Networks_4e782a60"
+          },
+          {
+            "_record_key": "BERT_Pre_training_of_Deep_Bidirectional_Transformers_for_Language_Understanding_5692a551",
+            "file_hash": "5692a5514787a8c6727b4ff3b726a3385798bc68e12138d1d4af83947e2acf6e",
+            "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+            "author": [
+              "Jacob Devlin",
+              "Ming-Wei Chang",
+              "Kenton Lee",
+              "Kristina Toutanova"
+            ],
+            "year": {
+              "preprint_year": 2018,
+              "publish_year": 2019
+            },
+            "venue": "ACL",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2018_BERT_Pre_training_of_Deep_Bidirectional_Transformers_for_Language_Understanding.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\BERT_Pre_training_of_Deep_Bidirectional_Transformers_for_Language_Understanding_5692a551"
+          },
+          {
+            "_record_key": "Squeeze_and_Excitation_Networks_60e7a8e0",
+            "file_hash": "60e7a8e033ca861eb88d84e71cad1951904bd355e5dec6fa596f6f2ad0087683",
+            "title": "Squeeze-and-Excitation Networks",
+            "author": [
+              "Jie Hu",
+              "Li Shen",
+              "Samuel Albanie",
+              "Gang Sun",
+              "E. Wu"
+            ],
+            "year": {
+              "preprint_year": 2017,
+              "publish_year": 2018
+            },
+            "venue": "CVPR",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2017_Squeeze_and_Excitation_Networks.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Squeeze_and_Excitation_Networks_60e7a8e0"
+          },
+          {
+            "_record_key": "Going_deeper_with_convolutions_66a9f13f",
+            "file_hash": "66a9f13f2635290ca3900a87a6548badbe8fba154a0478555a16e15a8c907c96",
+            "title": "Going deeper with convolutions",
+            "author": [
+              "Christian Szegedy",
+              "Wei Liu",
+              "Yangqing Jia",
+              "Pierre Sermanet",
+              "Scott E. Reed",
+              "Dragomir Anguelov",
+              "Dumitru Erhan",
+              "Vincent Vanhoucke",
+              "Andrew Rabinovich"
+            ],
+            "year": {
+              "preprint_year": 2014,
+              "publish_year": 2015
+            },
+            "venue": "CVPR",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2014_Going_deeper_with_convolutions.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Going_deeper_with_convolutions_66a9f13f"
+          },
+          {
+            "_record_key": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839",
+            "file_hash": "8ce7b83971a14508ca711a27c875c9b6914c4f6767cf3150fb1ca6c07aa056d6",
+            "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+            "author": [
+              "Alexey Dosovitskiy",
+              "Lucas Beyer",
+              "Alexander Kolesnikov",
+              "Dirk Weissenborn",
+              "Xiaohua Zhai",
+              "Thomas Unterthiner",
+              "Mostafa Dehghani",
+              "Matthias Minderer",
+              "Georg Heigold",
+              "Sylvain Gelly",
+              "Jakob Uszkoreit",
+              "Neil Houlsby"
+            ],
+            "year": {
+              "preprint_year": 2020,
+              "publish_year": 2021
+            },
+            "venue": "ICLR",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2020_An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839"
+          },
+          {
+            "_record_key": "ImageNet_Classification_with_Deep_Convolutional_Neural_Networks_90137160",
+            "file_hash": "90137160c57217953d5f61857e64ca58e85f06e1b13b4f475c918b1b582b9771",
+            "title": "ImageNet Classification with Deep Convolutional Neural Networks",
+            "author": [
+              "Alex Krizhevsky",
+              "Ilya Sutskever",
+              "Geoffrey E. Hinton"
+            ],
+            "year": {
+              "preprint_year": null,
+              "publish_year": 2012
+            },
+            "venue": "NeurIPS",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2012_ImageNet_Classification_with_Deep_Convolutional_Neural_Networks.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\ImageNet_Classification_with_Deep_Convolutional_Neural_Networks_90137160"
+          },
+          {
+            "_record_key": "Dropout_a_simple_way_to_prevent_neural_networks_from_overfitting_9c196ccb",
+            "file_hash": "9c196ccbe6c6a595a1adba6cd030d35f7c2e548bbf5e7f1278b0109d8dd9ebaa",
+            "title": "Dropout: a simple way to prevent neural networks from overfitting",
+            "author": [
+              "Nitish Srivastava",
+              "Geoffrey E. Hinton",
+              "A. Krizhevsky",
+              "I. Sutskever",
+              "R. Salakhutdinov"
+            ],
+            "year": {
+              "preprint_year": null,
+              "publish_year": 2014
+            },
+            "venue": "JMLR",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2014_Dropout_A_Simple_Way_to_Prevent_Neural_Networks_from_Overfitting.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Dropout_a_simple_way_to_prevent_neural_networks_from_overfitting_9c196ccb"
+          },
+          {
+            "_record_key": "EfficientNet_Rethinking_Model_Scaling_for_Convolutional_Neural_Networks_af6b1bd6",
+            "file_hash": "af6b1bd620f81bfaea81edf8227484588e1fcc2427d6b5020fa17454d7566c70",
+            "title": "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks",
+            "author": [
+              "Mingxing Tan",
+              "Quoc V. Le"
+            ],
+            "year": {
+              "preprint_year": 2019,
+              "publish_year": 2019
+            },
+            "venue": "ICML",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2019_EfficientNet_Rethinking_Model_Scaling_for_Convolutional_Neural_Networks.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\EfficientNet_Rethinking_Model_Scaling_for_Convolutional_Neural_Networks_af6b1bd6"
+          },
+          {
+            "_record_key": "Auto_Encoding_Variational_Bayes_bdcb63b7",
+            "file_hash": "bdcb63b79ed88f64f8ee2d43a721930d01dde5441a4dba20ecaa2342b34e017c",
+            "title": "Auto-Encoding Variational Bayes",
+            "author": [
+              "Diederik P. Kingma",
+              "Max Welling"
+            ],
+            "year": {
+              "preprint_year": 2013,
+              "publish_year": 2014
+            },
+            "venue": "ICLR",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2014_Auto_Encoding_Variational_Bayes.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Auto_Encoding_Variational_Bayes_bdcb63b7"
+          },
+          {
+            "_record_key": "Inception_v4_Inception_ResNet_and_the_Impact_of_Residual_Connections_on_Learning_cbf756a4",
+            "file_hash": "cbf756a42355674bc3d6ff2ff39276b51706e82efe3b102aa356dafc3bdc0b05",
+            "title": "Inception-v4, Inception-ResNet and the Impact of Residual Connections on Learning",
+            "author": [
+              "Christian Szegedy",
+              "Sergey Ioffe",
+              "Vincent Vanhoucke",
+              "Alexander A. Alemi"
+            ],
+            "year": {
+              "preprint_year": 2016,
+              "publish_year": 2017
+            },
+            "venue": "AAAI",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2016_Inception_v4_Inception_ResNet_and_the_Impact_of_Residual_Connections_on_Learning.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Inception_v4_Inception_ResNet_and_the_Impact_of_Residual_Connections_on_Learning_cbf756a4"
+          },
+          {
+            "_record_key": "Long_Short_Term_Memory_ceb9e53d",
+            "file_hash": "ceb9e53dbc0493f5b3bf5520ed940f3e6b526064d17b2118d77e51f79c0edcc6",
+            "title": "Long Short-Term Memory",
+            "author": [
+              "Sepp Hochreiter",
+              "J. Schmidhuber"
+            ],
+            "year": {
+              "preprint_year": null,
+              "publish_year": 1997
+            },
+            "venue": "Neural Computation",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\1997_Long_Short_Term_Memory.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Long_Short_Term_Memory_ceb9e53d"
+          },
+          {
+            "_record_key": "Attention_is_All_you_Need_d87d482d",
+            "file_hash": "d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537",
+            "title": "Attention is All you Need",
+            "author": [
+              "Ashish Vaswani",
+              "Noam Shazeer",
+              "Niki Parmar",
+              "Jakob Uszkoreit",
+              "Llion Jones",
+              "Aidan N. Gomez",
+              "Lukasz Kaiser",
+              "I. Polosukhin"
+            ],
+            "year": {
+              "preprint_year": 2017,
+              "publish_year": 2017
+            },
+            "venue": "NeurIPS",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2017_Attention_Is_All_You_Need.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Attention_is_All_you_Need_d87d482d"
+          },
+          {
+            "_record_key": "Adam_A_Method_for_Stochastic_Optimization_eab9c73a",
+            "file_hash": "eab9c73ae2ceda884b94830bda99312254bac4806f6c9f045cbab90721ecda31",
+            "title": "Adam: A Method for Stochastic Optimization",
+            "author": [
+              "Diederik P. Kingma",
+              "Jimmy Ba"
+            ],
+            "year": {
+              "preprint_year": 2014,
+              "publish_year": 2015
+            },
+            "venue": "ICLR",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2015_Adam_A_Method_for_Stochastic_Optimization.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Adam_A_Method_for_Stochastic_Optimization_eab9c73a"
+          },
+          {
+            "_record_key": "Batch_Normalization_Accelerating_Deep_Network_Training_by_Reducing_Internal_Covariate_Shift_f2eb20b4",
+            "file_hash": "f2eb20b4e97409aef516a6506ea76c7c051860eeded3006a6d9687c364847b27",
+            "title": "Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift",
+            "author": [
+              "Sergey Ioffe",
+              "Christian Szegedy"
+            ],
+            "year": {
+              "preprint_year": 2015,
+              "publish_year": 2015
+            },
+            "venue": "ICML",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2015_Batch_Normalization_Accelerating_Deep_Network_Training_by_Reducing_Internal_Covariate_Shift.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Batch_Normalization_Accelerating_Deep_Network_Training_by_Reducing_Internal_Covariate_Shift_f2eb20b4"
+          }
+        ],
+        "object_records": [
+          {
+            "_record_key": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+            "file_hash": "1e0651b6810ecba34a3dbc5b5b0209226f889004607c1f203540a48d64e5a93a",
+            "title": "Deep Residual Learning for Image Recognition",
+            "author": [
+              "Kaiming He",
+              "Xiangyu Zhang",
+              "Shaoqing Ren",
+              "Jian Sun"
+            ],
+            "year": {
+              "preprint_year": 2015,
+              "publish_year": 2016
+            },
+            "venue": "CVPR",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2015_Deep_Residual_Learning_for_Image_Recognition.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Deep_Residual_Learning_for_Image_Recognition_1e0651b6"
+          }
+        ],
+        "answer_papers": [
+          {
+            "paper_id": "A_Discriminative_Feature_Learning_Approach_for_Deep_Face_Recognition_4770aa24",
+            "title": "A Discriminative Feature Learning Approach for Deep Face Recognition",
+            "author": [
+              "Yandong Wen",
+              "Kaipeng Zhang",
+              "Zhifeng Li",
+              "Yu Qiao"
+            ],
+            "year": {
+              "preprint_year": null,
+              "publish_year": 2016
+            },
+            "venue": "ECCV",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2016_A_Discriminative_Feature_Learning_Approach_for_Deep_Face_Recognition.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\A_Discriminative_Feature_Learning_Approach_for_Deep_Face_Recognition_4770aa24"
+          },
+          {
+            "paper_id": "Aggregated_Residual_Transformations_for_Deep_Neural_Networks_1ebca04b",
+            "title": "Aggregated Residual Transformations for Deep Neural Networks",
+            "author": [
+              "Saining Xie",
+              "Ross B. Girshick",
+              "Piotr Dollár",
+              "Zhuowen Tu",
+              "Kaiming He"
+            ],
+            "year": {
+              "preprint_year": 2016,
+              "publish_year": 2017
+            },
+            "venue": "CVPR",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2016_Aggregated_Residual_Transformations_for_Deep_Neural_Networks.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Aggregated_Residual_Transformations_for_Deep_Neural_Networks_1ebca04b"
+          },
+          {
+            "paper_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839",
+            "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+            "author": [
+              "Alexey Dosovitskiy",
+              "Lucas Beyer",
+              "Alexander Kolesnikov",
+              "Dirk Weissenborn",
+              "Xiaohua Zhai",
+              "Thomas Unterthiner",
+              "Mostafa Dehghani",
+              "Matthias Minderer",
+              "Georg Heigold",
+              "Sylvain Gelly",
+              "Jakob Uszkoreit",
+              "Neil Houlsby"
+            ],
+            "year": {
+              "preprint_year": 2020,
+              "publish_year": 2021
+            },
+            "venue": "ICLR",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2020_An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839"
+          },
+          {
+            "paper_id": "Attention_is_All_you_Need_d87d482d",
+            "title": "Attention is All you Need",
+            "author": [
+              "Ashish Vaswani",
+              "Noam Shazeer",
+              "Niki Parmar",
+              "Jakob Uszkoreit",
+              "Llion Jones",
+              "Aidan N. Gomez",
+              "Lukasz Kaiser",
+              "I. Polosukhin"
+            ],
+            "year": {
+              "preprint_year": 2017,
+              "publish_year": 2017
+            },
+            "venue": "NeurIPS",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2017_Attention_Is_All_You_Need.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Attention_is_All_you_Need_d87d482d"
+          },
+          {
+            "paper_id": "ECA_Net_Efficient_Channel_Attention_for_Deep_Convolutional_Neural_Networks_4e782a60",
+            "title": "ECA-Net: Efficient Channel Attention for Deep Convolutional Neural Networks",
+            "author": [
+              "Qilong Wang",
+              "Banggu Wu",
+              "Pengfei Zhu",
+              "Peihua Li",
+              "Wangmeng Zuo",
+              "Qinghua Hu"
+            ],
+            "year": {
+              "preprint_year": 2019,
+              "publish_year": 2020
+            },
+            "venue": "CVPR",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2019_ECA_Net_Efficient_Channel_Attention_for_Deep_Convolutional_Neural_Networks.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\ECA_Net_Efficient_Channel_Attention_for_Deep_Convolutional_Neural_Networks_4e782a60"
+          },
+          {
+            "paper_id": "EfficientNet_Rethinking_Model_Scaling_for_Convolutional_Neural_Networks_af6b1bd6",
+            "title": "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks",
+            "author": [
+              "Mingxing Tan",
+              "Quoc V. Le"
+            ],
+            "year": {
+              "preprint_year": 2019,
+              "publish_year": 2019
+            },
+            "venue": "ICML",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2019_EfficientNet_Rethinking_Model_Scaling_for_Convolutional_Neural_Networks.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\EfficientNet_Rethinking_Model_Scaling_for_Convolutional_Neural_Networks_af6b1bd6"
+          },
+          {
+            "paper_id": "Exponential_Moving_Average_of_Weights_in_Deep_Learning_Dynamics_and_Benefits_133ecc4d",
+            "title": "Exponential Moving Average of Weights in Deep Learning: Dynamics and Benefits",
+            "author": [
+              "Daniel Morales-Brotons",
+              "Thijs Vogels",
+              "Hadrien Hendrikx"
+            ],
+            "year": {
+              "preprint_year": 2024,
+              "publish_year": 2024
+            },
+            "venue": "TMLR",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2024_Exponential_Moving_Average_of_Weights_in_Deep_Learning_Dynamics_and_Benefits.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Exponential_Moving_Average_of_Weights_in_Deep_Learning_Dynamics_and_Benefits_133ecc4d"
+          },
+          {
+            "paper_id": "Inception_v4_Inception_ResNet_and_the_Impact_of_Residual_Connections_on_Learning_cbf756a4",
+            "title": "Inception-v4, Inception-ResNet and the Impact of Residual Connections on Learning",
+            "author": [
+              "Christian Szegedy",
+              "Sergey Ioffe",
+              "Vincent Vanhoucke",
+              "Alexander A. Alemi"
+            ],
+            "year": {
+              "preprint_year": 2016,
+              "publish_year": 2017
+            },
+            "venue": "AAAI",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2016_Inception_v4_Inception_ResNet_and_the_Impact_of_Residual_Connections_on_Learning.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Inception_v4_Inception_ResNet_and_the_Impact_of_Residual_Connections_on_Learning_cbf756a4"
+          },
+          {
+            "paper_id": "NormFace_L2_Hypersphere_Embedding_for_Face_Verification_27a8b27d",
+            "title": "NormFace: L2 Hypersphere Embedding for Face Verification",
+            "author": [
+              "Feng Wang",
+              "Xiang Xiang",
+              "Jian Cheng",
+              "Alan Loddon Yuille"
+            ],
+            "year": {
+              "preprint_year": 2017,
+              "publish_year": 2017
+            },
+            "venue": "ACM MM",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2017_NormFace_L2_Hypersphere_Embedding_for_Face_Verification.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\NormFace_L2_Hypersphere_Embedding_for_Face_Verification_27a8b27d"
+          },
+          {
+            "paper_id": "Squeeze_and_Excitation_Networks_60e7a8e0",
+            "title": "Squeeze-and-Excitation Networks",
+            "author": [
+              "Jie Hu",
+              "Li Shen",
+              "Samuel Albanie",
+              "Gang Sun",
+              "E. Wu"
+            ],
+            "year": {
+              "preprint_year": 2017,
+              "publish_year": 2018
+            },
+            "venue": "CVPR",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2017_Squeeze_and_Excitation_Networks.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Squeeze_and_Excitation_Networks_60e7a8e0"
+          },
+          {
+            "paper_id": "Supervised_Contrastive_Learning_3da9d081",
+            "title": "Supervised Contrastive Learning",
+            "author": [
+              "Prannay Khosla",
+              "Piotr Teterwak",
+              "Chen Wang",
+              "Aaron Sarna",
+              "Yonglong Tian",
+              "Phillip Isola",
+              "Aaron Maschinot",
+              "Ce Liu",
+              "Dilip Krishnan"
+            ],
+            "year": {
+              "preprint_year": 2020,
+              "publish_year": 2020
+            },
+            "venue": "NeurIPS",
+            "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2020_Supervised_Contrastive_Learning.pdf",
+            "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Supervised_Contrastive_Learning_3da9d081"
+          }
+        ],
+        "edges": [
+          {
+            "source_paper": {
+              "paper_id": "A_Discriminative_Feature_Learning_Approach_for_Deep_Face_Recognition_4770aa24",
+              "title": "A Discriminative Feature Learning Approach for Deep Face Recognition",
+              "author": [
+                "Yandong Wen",
+                "Kaipeng Zhang",
+                "Zhifeng Li",
+                "Yu Qiao"
+              ],
+              "year": {
+                "preprint_year": null,
+                "publish_year": 2016
+              },
+              "venue": "ECCV",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2016_A_Discriminative_Feature_Learning_Approach_for_Deep_Face_Recognition.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\A_Discriminative_Feature_Learning_Approach_for_Deep_Face_Recognition_4770aa24"
+            },
+            "object_paper": {
+              "paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "title": "Deep Residual Learning for Image Recognition",
+              "author": [
+                "Kaiming He",
+                "Xiangyu Zhang",
+                "Shaoqing Ren",
+                "Jian Sun"
+              ],
+              "year": {
+                "preprint_year": 2015,
+                "publish_year": 2016
+              },
+              "venue": "CVPR",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2015_Deep_Residual_Learning_for_Image_Recognition.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Deep_Residual_Learning_for_Image_Recognition_1e0651b6"
+            },
+            "edge": {
+              "source_paper_id": "A_Discriminative_Feature_Learning_Approach_for_Deep_Face_Recognition_4770aa24",
+              "target_paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "ref_index": 11,
+              "raw_text": "11. He, K., Zhang, X., Ren, S., Sun, J.: Deep residual learning for image recognition. arXiv preprint arXiv:1512.03385 (2015)",
+              "page": 15,
+              "source_block_id": "b000131",
+              "match_type": "canonical_title"
+            }
+          },
+          {
+            "source_paper": {
+              "paper_id": "Aggregated_Residual_Transformations_for_Deep_Neural_Networks_1ebca04b",
+              "title": "Aggregated Residual Transformations for Deep Neural Networks",
+              "author": [
+                "Saining Xie",
+                "Ross B. Girshick",
+                "Piotr Dollár",
+                "Zhuowen Tu",
+                "Kaiming He"
+              ],
+              "year": {
+                "preprint_year": 2016,
+                "publish_year": 2017
+              },
+              "venue": "CVPR",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2016_Aggregated_Residual_Transformations_for_Deep_Neural_Networks.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Aggregated_Residual_Transformations_for_Deep_Neural_Networks_1ebca04b"
+            },
+            "object_paper": {
+              "paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "title": "Deep Residual Learning for Image Recognition",
+              "author": [
+                "Kaiming He",
+                "Xiangyu Zhang",
+                "Shaoqing Ren",
+                "Jian Sun"
+              ],
+              "year": {
+                "preprint_year": 2015,
+                "publish_year": 2016
+              },
+              "venue": "CVPR",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2015_Deep_Residual_Learning_for_Image_Recognition.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Deep_Residual_Learning_for_Image_Recognition_1e0651b6"
+            },
+            "edge": {
+              "source_paper_id": "Aggregated_Residual_Transformations_for_Deep_Neural_Networks_1ebca04b",
+              "target_paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "ref_index": 14,
+              "raw_text": "[14] K. He, X. Zhang, S. Ren, and J. Sun. Deep residual learning for image recognition. In CVPR, 2016.",
+              "page": 9,
+              "source_block_id": "b000140",
+              "match_type": "canonical_title"
+            }
+          },
+          {
+            "source_paper": {
+              "paper_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839",
+              "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+              "author": [
+                "Alexey Dosovitskiy",
+                "Lucas Beyer",
+                "Alexander Kolesnikov",
+                "Dirk Weissenborn",
+                "Xiaohua Zhai",
+                "Thomas Unterthiner",
+                "Mostafa Dehghani",
+                "Matthias Minderer",
+                "Georg Heigold",
+                "Sylvain Gelly",
+                "Jakob Uszkoreit",
+                "Neil Houlsby"
+              ],
+              "year": {
+                "preprint_year": 2020,
+                "publish_year": 2021
+              },
+              "venue": "ICLR",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2020_An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839"
+            },
+            "object_paper": {
+              "paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "title": "Deep Residual Learning for Image Recognition",
+              "author": [
+                "Kaiming He",
+                "Xiangyu Zhang",
+                "Shaoqing Ren",
+                "Jian Sun"
+              ],
+              "year": {
+                "preprint_year": 2015,
+                "publish_year": 2016
+              },
+              "venue": "CVPR",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2015_Deep_Residual_Learning_for_Image_Recognition.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Deep_Residual_Learning_for_Image_Recognition_1e0651b6"
+            },
+            "edge": {
+              "source_paper_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839",
+              "target_paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "ref_index": 14,
+              "raw_text": "Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In CVPR, 2016.",
+              "page": 10,
+              "source_block_id": "b000107",
+              "match_type": "canonical_title"
+            }
+          },
+          {
+            "source_paper": {
+              "paper_id": "Attention_is_All_you_Need_d87d482d",
+              "title": "Attention is All you Need",
+              "author": [
+                "Ashish Vaswani",
+                "Noam Shazeer",
+                "Niki Parmar",
+                "Jakob Uszkoreit",
+                "Llion Jones",
+                "Aidan N. Gomez",
+                "Lukasz Kaiser",
+                "I. Polosukhin"
+              ],
+              "year": {
+                "preprint_year": 2017,
+                "publish_year": 2017
+              },
+              "venue": "NeurIPS",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2017_Attention_Is_All_You_Need.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Attention_is_All_you_Need_d87d482d"
+            },
+            "object_paper": {
+              "paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "title": "Deep Residual Learning for Image Recognition",
+              "author": [
+                "Kaiming He",
+                "Xiangyu Zhang",
+                "Shaoqing Ren",
+                "Jian Sun"
+              ],
+              "year": {
+                "preprint_year": 2015,
+                "publish_year": 2016
+              },
+              "venue": "CVPR",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2015_Deep_Residual_Learning_for_Image_Recognition.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Deep_Residual_Learning_for_Image_Recognition_1e0651b6"
+            },
+            "edge": {
+              "source_paper_id": "Attention_is_All_you_Need_d87d482d",
+              "target_paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "ref_index": 10,
+              "raw_text": "[10] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition, pages 770–778, 2016.",
+              "page": 10,
+              "source_block_id": "b000133",
+              "match_type": "canonical_title"
+            }
+          },
+          {
+            "source_paper": {
+              "paper_id": "ECA_Net_Efficient_Channel_Attention_for_Deep_Convolutional_Neural_Networks_4e782a60",
+              "title": "ECA-Net: Efficient Channel Attention for Deep Convolutional Neural Networks",
+              "author": [
+                "Qilong Wang",
+                "Banggu Wu",
+                "Pengfei Zhu",
+                "Peihua Li",
+                "Wangmeng Zuo",
+                "Qinghua Hu"
+              ],
+              "year": {
+                "preprint_year": 2019,
+                "publish_year": 2020
+              },
+              "venue": "CVPR",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2019_ECA_Net_Efficient_Channel_Attention_for_Deep_Convolutional_Neural_Networks.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\ECA_Net_Efficient_Channel_Attention_for_Deep_Convolutional_Neural_Networks_4e782a60"
+            },
+            "object_paper": {
+              "paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "title": "Deep Residual Learning for Image Recognition",
+              "author": [
+                "Kaiming He",
+                "Xiangyu Zhang",
+                "Shaoqing Ren",
+                "Jian Sun"
+              ],
+              "year": {
+                "preprint_year": 2015,
+                "publish_year": 2016
+              },
+              "venue": "CVPR",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2015_Deep_Residual_Learning_for_Image_Recognition.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Deep_Residual_Learning_for_Image_Recognition_1e0651b6"
+            },
+            "edge": {
+              "source_paper_id": "ECA_Net_Efficient_Channel_Attention_for_Deep_Convolutional_Neural_Networks_4e782a60",
+              "target_paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "ref_index": 11,
+              "raw_text": "[11] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In CVPR, 2016.",
+              "page": 9,
+              "source_block_id": "b000121",
+              "match_type": "canonical_title"
+            }
+          },
+          {
+            "source_paper": {
+              "paper_id": "EfficientNet_Rethinking_Model_Scaling_for_Convolutional_Neural_Networks_af6b1bd6",
+              "title": "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks",
+              "author": [
+                "Mingxing Tan",
+                "Quoc V. Le"
+              ],
+              "year": {
+                "preprint_year": 2019,
+                "publish_year": 2019
+              },
+              "venue": "ICML",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2019_EfficientNet_Rethinking_Model_Scaling_for_Convolutional_Neural_Networks.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\EfficientNet_Rethinking_Model_Scaling_for_Convolutional_Neural_Networks_af6b1bd6"
+            },
+            "object_paper": {
+              "paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "title": "Deep Residual Learning for Image Recognition",
+              "author": [
+                "Kaiming He",
+                "Xiangyu Zhang",
+                "Shaoqing Ren",
+                "Jian Sun"
+              ],
+              "year": {
+                "preprint_year": 2015,
+                "publish_year": 2016
+              },
+              "venue": "CVPR",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2015_Deep_Residual_Learning_for_Image_Recognition.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Deep_Residual_Learning_for_Image_Recognition_1e0651b6"
+            },
+            "edge": {
+              "source_paper_id": "EfficientNet_Rethinking_Model_Scaling_for_Convolutional_Neural_Networks_af6b1bd6",
+              "target_paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "ref_index": 9,
+              "raw_text": "He, K., Zhang, X., Ren, S., and Sun, J. Deep residual learning for image recognition. CVPR, pp. 770–778, 2016.",
+              "page": 9,
+              "source_block_id": "b000118",
+              "match_type": "canonical_title"
+            }
+          },
+          {
+            "source_paper": {
+              "paper_id": "Exponential_Moving_Average_of_Weights_in_Deep_Learning_Dynamics_and_Benefits_133ecc4d",
+              "title": "Exponential Moving Average of Weights in Deep Learning: Dynamics and Benefits",
+              "author": [
+                "Daniel Morales-Brotons",
+                "Thijs Vogels",
+                "Hadrien Hendrikx"
+              ],
+              "year": {
+                "preprint_year": 2024,
+                "publish_year": 2024
+              },
+              "venue": "TMLR",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2024_Exponential_Moving_Average_of_Weights_in_Deep_Learning_Dynamics_and_Benefits.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Exponential_Moving_Average_of_Weights_in_Deep_Learning_Dynamics_and_Benefits_133ecc4d"
+            },
+            "object_paper": {
+              "paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "title": "Deep Residual Learning for Image Recognition",
+              "author": [
+                "Kaiming He",
+                "Xiangyu Zhang",
+                "Shaoqing Ren",
+                "Jian Sun"
+              ],
+              "year": {
+                "preprint_year": 2015,
+                "publish_year": 2016
+              },
+              "venue": "CVPR",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2015_Deep_Residual_Learning_for_Image_Recognition.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Deep_Residual_Learning_for_Image_Recognition_1e0651b6"
+            },
+            "edge": {
+              "source_paper_id": "Exponential_Moving_Average_of_Weights_in_Deep_Learning_Dynamics_and_Benefits_133ecc4d",
+              "target_paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "ref_index": 20,
+              "raw_text": "Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In Proceedings of the IEEE conference on computer vision and pattern recognition, pp. 770–778, 2016.",
+              "page": 13,
+              "source_block_id": "b000115",
+              "match_type": "canonical_title"
+            }
+          },
+          {
+            "source_paper": {
+              "paper_id": "Inception_v4_Inception_ResNet_and_the_Impact_of_Residual_Connections_on_Learning_cbf756a4",
+              "title": "Inception-v4, Inception-ResNet and the Impact of Residual Connections on Learning",
+              "author": [
+                "Christian Szegedy",
+                "Sergey Ioffe",
+                "Vincent Vanhoucke",
+                "Alexander A. Alemi"
+              ],
+              "year": {
+                "preprint_year": 2016,
+                "publish_year": 2017
+              },
+              "venue": "AAAI",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2016_Inception_v4_Inception_ResNet_and_the_Impact_of_Residual_Connections_on_Learning.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Inception_v4_Inception_ResNet_and_the_Impact_of_Residual_Connections_on_Learning_cbf756a4"
+            },
+            "object_paper": {
+              "paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "title": "Deep Residual Learning for Image Recognition",
+              "author": [
+                "Kaiming He",
+                "Xiangyu Zhang",
+                "Shaoqing Ren",
+                "Jian Sun"
+              ],
+              "year": {
+                "preprint_year": 2015,
+                "publish_year": 2016
+              },
+              "venue": "CVPR",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2015_Deep_Residual_Learning_for_Image_Recognition.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Deep_Residual_Learning_for_Image_Recognition_1e0651b6"
+            },
+            "edge": {
+              "source_paper_id": "Inception_v4_Inception_ResNet_and_the_Impact_of_Residual_Connections_on_Learning_cbf756a4",
+              "target_paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "ref_index": 6,
+              "raw_text": "He, K.; Zhang, X.; Ren, S.; and Sun, J. 2015. Deep residual learning for image recognition. arXiv preprint arXiv:1512.03385.",
+              "page": 7,
+              "source_block_id": "b000088",
+              "match_type": "canonical_title"
+            }
+          },
+          {
+            "source_paper": {
+              "paper_id": "NormFace_L2_Hypersphere_Embedding_for_Face_Verification_27a8b27d",
+              "title": "NormFace: L2 Hypersphere Embedding for Face Verification",
+              "author": [
+                "Feng Wang",
+                "Xiang Xiang",
+                "Jian Cheng",
+                "Alan Loddon Yuille"
+              ],
+              "year": {
+                "preprint_year": 2017,
+                "publish_year": 2017
+              },
+              "venue": "ACM MM",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2017_NormFace_L2_Hypersphere_Embedding_for_Face_Verification.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\NormFace_L2_Hypersphere_Embedding_for_Face_Verification_27a8b27d"
+            },
+            "object_paper": {
+              "paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "title": "Deep Residual Learning for Image Recognition",
+              "author": [
+                "Kaiming He",
+                "Xiangyu Zhang",
+                "Shaoqing Ren",
+                "Jian Sun"
+              ],
+              "year": {
+                "preprint_year": 2015,
+                "publish_year": 2016
+              },
+              "venue": "CVPR",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2015_Deep_Residual_Learning_for_Image_Recognition.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Deep_Residual_Learning_for_Image_Recognition_1e0651b6"
+            },
+            "edge": {
+              "source_paper_id": "NormFace_L2_Hypersphere_Embedding_for_Face_Verification_27a8b27d",
+              "target_paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "ref_index": 7,
+              "raw_text": "[7] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. 2016. Deep residual learning for image recognition. In IEEE Conference on Computer Vision and Pattern Recognition. 770–778.",
+              "page": 10,
+              "source_block_id": "b000206",
+              "match_type": "canonical_title"
+            }
+          },
+          {
+            "source_paper": {
+              "paper_id": "Squeeze_and_Excitation_Networks_60e7a8e0",
+              "title": "Squeeze-and-Excitation Networks",
+              "author": [
+                "Jie Hu",
+                "Li Shen",
+                "Samuel Albanie",
+                "Gang Sun",
+                "E. Wu"
+              ],
+              "year": {
+                "preprint_year": 2017,
+                "publish_year": 2018
+              },
+              "venue": "CVPR",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2017_Squeeze_and_Excitation_Networks.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Squeeze_and_Excitation_Networks_60e7a8e0"
+            },
+            "object_paper": {
+              "paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "title": "Deep Residual Learning for Image Recognition",
+              "author": [
+                "Kaiming He",
+                "Xiangyu Zhang",
+                "Shaoqing Ren",
+                "Jian Sun"
+              ],
+              "year": {
+                "preprint_year": 2015,
+                "publish_year": 2016
+              },
+              "venue": "CVPR",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2015_Deep_Residual_Learning_for_Image_Recognition.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Deep_Residual_Learning_for_Image_Recognition_1e0651b6"
+            },
+            "edge": {
+              "source_paper_id": "Squeeze_and_Excitation_Networks_60e7a8e0",
+              "target_paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "ref_index": 9,
+              "raw_text": "[9] K. He, X. Zhang, S. Ren, and J. Sun. Deep residual learning for image recognition. In CVPR, 2016.",
+              "page": 10,
+              "source_block_id": "b000122",
+              "match_type": "canonical_title"
+            }
+          },
+          {
+            "source_paper": {
+              "paper_id": "Supervised_Contrastive_Learning_3da9d081",
+              "title": "Supervised Contrastive Learning",
+              "author": [
+                "Prannay Khosla",
+                "Piotr Teterwak",
+                "Chen Wang",
+                "Aaron Sarna",
+                "Yonglong Tian",
+                "Phillip Isola",
+                "Aaron Maschinot",
+                "Ce Liu",
+                "Dilip Krishnan"
+              ],
+              "year": {
+                "preprint_year": 2020,
+                "publish_year": 2020
+              },
+              "venue": "NeurIPS",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2020_Supervised_Contrastive_Learning.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Supervised_Contrastive_Learning_3da9d081"
+            },
+            "object_paper": {
+              "paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "title": "Deep Residual Learning for Image Recognition",
+              "author": [
+                "Kaiming He",
+                "Xiangyu Zhang",
+                "Shaoqing Ren",
+                "Jian Sun"
+              ],
+              "year": {
+                "preprint_year": 2015,
+                "publish_year": 2016
+              },
+              "venue": "CVPR",
+              "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2015_Deep_Residual_Learning_for_Image_Recognition.pdf",
+              "paper_data_path": "E:\\Pythonproject\\RAG_project\\data\\paper_data\\Deep_Residual_Learning_for_Image_Recognition_1e0651b6"
+            },
+            "edge": {
+              "source_paper_id": "Supervised_Contrastive_Learning_3da9d081",
+              "target_paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
+              "ref_index": 17,
+              "raw_text": "[17] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In Proceedings of the IEEE conference on computer vision and pattern recognition, pages 770–778, 2016. 2, 5, 6, 7, 8",
+              "page": 11,
+              "source_block_id": "b000111",
+              "match_type": "canonical_title"
+            }
+          }
+        ],
+        "timings_ms": {
+          "top_parser": 1621.06,
+          "domain_parser": 4037.97,
+          "scope": 1.12,
+          "plan": 5660.19,
+          "answer": 0.03
+        }
+      }
+    },
+    "case": {
+      "id": "Q2",
+      "type": "reference-list",
+      "query": "哪些论文引用了 ResNet？",
+      "purpose": "验证 reference 路由、citation graph 查询和本地列表回答。"
+    },
+    "_report": {
+      "wall_ms": 5660.24
+    }
+  },
+  {
+    "query": "LSTM 的网络结构是什么？",
+    "answer": "LSTM（Long Short-Term Memory，长短期记忆网络）是一种特殊的循环神经网络（RNN）结构，旨在解决传统RNN在处理长期依赖问题时的梯度消失或爆炸问题。其核心设计是通过引入**门控机制**和**常量误差车轮（Constant Error Carousels, CEC）**来实现对信息的长期存储与选择性更新。\n\n### LSTM 的主要组成部分：\n1. **记忆单元（Memory Cell）**  \n   - 记忆单元负责存储长期信息。它的内部状态 $ s_{c_j}(t) $ 通过自反馈连接保持不变，除非被输入门或输出门修改。\n   - 公式：$ s_{c_j}(t) = s_{c_j}(t-1) + y^{in_j}(t) \\cdot g(net_{c_j}(t)) $，其中 $ g $ 是一个可微函数（如Sigmoid），用于压缩输入信号。\n\n2. **输入门（Input Gate）**  \n   - 输入门控制哪些新信息可以进入记忆单元。它由一个Sigmoid激活函数生成的值 $ y^{in_j}(t) $ 决定是否允许当前输入影响记忆单元的状态。\n   - 公式：$ net_{in_j}(t) = \\sum_u w_{in_ju} y^u(t-1) $，然后通过Sigmoid函数计算 $ y^{in_j}(t) = \\sigma(net_{in_j}(t)) $。\n\n3. **输出门（Output Gate）**  \n   - 输出门决定记忆单元中的信息何时被输出到其他部分。它同样由Sigmoid函数生成的值 $ y^{out_j}(t) $ 控制。\n   - 公式：$ net_{out_j}(t) = \\sum_u w_{out_ju} y^u(t-1) $，然后通过Sigmoid函数计算 $ y^{out_j}(t) = \\sigma(net_{out_j}(t)) $。\n\n4. **常量误差车轮（CEC）**  \n   - CEC 是 LSTM 的关键特性之一，它确保了误差在反向传播过程中不会衰减或爆炸。通过截断梯度的方式，CEC 可以在不损失长期依赖能力的情况下高效地学习跨越数百甚至上千时间步的信息。\n\n5. **网络拓扑**  \n   - LSTM 网络通常包含一个输入层、一个隐藏层（包含记忆单元和门控单元）和一个输出层。隐藏层中的每个记忆单元都有对应的输入门和输出门。\n   - 所有单元（除了门控单元）都通过全连接的方式传递信息给上一层的所有单元。\n\n6. **计算复杂度**  \n   - LSTM 的更新复杂度为 $ O(W) $，其中 $ W $ 是权重的数量。这使得 LSTM 在处理大规模数据时具有较高的效率。\n\n### 总结\nLSTM 通过引入输入门、输出门和记忆单元，结合 CEC 机制，能够有效地解决传统 RNN 在处理长期依赖问题时的梯度消失/爆炸问题。这种结构使得 LSTM 能够在处理序列数据（如语音识别、自然语言处理等）时表现出色，并且能够在噪声环境中稳定地学习长期依赖关系。\n\n参考文献：《Long Short-Term Memory》论文第4章详细描述了 LSTM 的架构及其工作原理。",
+    "answer_mode": "llm",
+    "evidence": {
+      "query": "LSTM 的网络结构是什么？",
+      "route": "content",
+      "status": "ok",
+      "intent": "lookup",
+      "plan": {
+        "scope": [
+          "paper=Long Short-Term Memory"
+        ],
+        "content_objects": [
+          "网络结构"
+        ],
+        "retrieval_query": {
+          "dense_query": "查找论文中关于网络结构的相关内容",
+          "bm25_queries": [
+            "网络结构",
+            "network structure",
+            "Network architecture"
+          ]
+        }
+      },
+      "resolved": {
+        "aliases": [
+          {
+            "alias": "LSTM",
+            "canonical": "Long Short-Term Memory"
+          }
+        ]
+      },
+      "results": {
+        "contexts": [
+          {
+            "chunk_id": "Long_Short_Term_Memory_ceb9e53d::chunk_0002",
+            "title": "Long Short-Term Memory",
+            "section_path": [
+              "1 INTRODUCTION"
+            ],
+            "pages": [
+              1,
+              2
+            ],
+            "text": "1 INTRODUCTION\n\nRecurrent networks can in principle use their feedback connections to store representations of recent input events in form of activations (\\short-term memory\", as opposed to \\long-term memory\" embodied by slowly changing weights). This is potentially signi\fcant for many applications, including speech processing, non-Markovian control, and music composition (e.g., Mozer 1992). The most widely used algorithms for learning what to put in short-term memory, however, take too much time or do not work well at all, especially when minimal time lags between inputs and corresponding teacher signals are long. Although theoretically fascinating, existing methods do not provide clear practical advantages over, say, backprop in feedforward nets with limited time windows. This paper will review an analysis of the problem and suggest a remedy.\n\nThe problem. With conventional \\Back-Propagation Through Time\" (BPTT, e.g., Williams and Zipser 1992, Werbos 1988) or \\Real-Time Recurrent Learning\" (RTRL, e.g., Robinson and Fallside 1987), error signals \\\rowing backwards in time\" tend to either (1) blow up or (2) vanish: the temporal evolution of the backpropagated error exponentially depends on the size of the weights (Hochreiter 1991). Case (1) may lead to oscillating weights, while in case (2) learning to bridge long time lags takes a prohibitive amount of time, or does not work at all (see section 3).\n\nThe remedy. This paper presents \\Long Short-Term Memory\" (LSTM), a novel recurrent network architecture in conjunction with an appropriate gradient-based learning algorithm. LSTM is designed to overcome these error back-\row problems. It can learn to bridge time intervals in excess of 1000 steps even in case of noisy, incompressible input sequences, without loss of short time lag capabilities. This is achieved by an e\u000ecient, gradient-based algorithm for an architecture\n\nenforcing constant (thus neither exploding nor vanishing) error \row through internal states of special units (provided the gradient computation is truncated at certain architecture-speci\fc points | this does not a\u000bect long-term error \row though).\n\nOutline of paper. Section 2 will brie\ry review previous work. Section 3 begins with an outline of the detailed analysis of vanishing errors due to Hochreiter (1991). It will then introduce a naive approach to constant error backprop for didactic purposes, and highlight its problems concerning information storage and retrieval. These problems will lead to the LSTM architecture as described in Section 4. Section 5 will present numerous experiments and comparisons with competing methods. LSTM outperforms them, and also learns to solve complex, arti\fcial tasks no other recurrent net algorithm has solved. Section 6 will discuss LSTM's limitations and advantages. The appendix contains a detailed description of the algorithm (A.1), and explicit error \row formulae (A.2)."
+          },
+          {
+            "chunk_id": "Long_Short_Term_Memory_ceb9e53d::chunk_0005",
+            "title": "Long Short-Term Memory",
+            "section_path": [
+              "2 PREVIOUS WORK"
+            ],
+            "pages": [
+              2
+            ],
+            "text": "Gradient-descent variants. The approaches of Elman (1988), Fahlman (1991), Williams (1989), Schmidhuber (1992a), Pearlmutter (1989), and many of the related algorithms in Pearlmutter's comprehensive overview (1995) su\u000ber from the same problems as BPTT and RTRL (see Sections 1 and 3).\n\nTime-delays. Other methods that seem practical for short time lags only are Time-Delay Neural Networks (Lang et al. 1990) and Plate's method (Plate 1993), which updates unit activations based on a weighted sum of old activations (see also de Vries and Principe 1991). Lin et al. (1995) propose variants of time-delay networks called NARX networks.\n\nTime constants. To deal with long time lags, Mozer (1992) uses time constants in\ruencing changes of unit activations (deVries and Principe's above-mentioned approach (1991) may in fact be viewed as a mixture of TDNN and time constants). For long time lags, however, the time constants need external \fne tuning (Mozer 1992). Sun et al.'s alternative approach (1993) updates the activation of a recurrent unit by adding the old activation and the (scaled) current net input. The net input, however, tends to perturb the stored information, which makes long-term storage impractical.\n\nRing's approach. Ring (1993) also proposed a method for bridging long time lags. Whenever a unit in his network receives con\ricting error signals, he adds a higher order unit in\ruencing appropriate connections. Although his approach can sometimes be extremely fast, to bridge a time lag involving 100 steps may require the addition of 100 units. Also, Ring's net does not generalize to unseen lag durations.\n\nBengio et al.'s approaches. Bengio et al. (1994) investigate methods such as simulated annealing, multi-grid random search, time-weighted pseudo-Newton optimization, and discrete error propagation. Their \\latch\" and \\2-sequence\" problems are very similar to problem 3a with minimal time lag 100 (see Experiment 3). Bengio and Frasconi (1994) also propose an EM approach for propagating targets. With n so-called \\state networks\", at a given time, their system can be in one of only ndi\u000berent states. See also beginning of Section 5. But to solve continuous problems such as the \\adding problem\" (Section 5.4), their system would require an unacceptable number of states (i.e., state networks).\n\nKalman \flters. Puskorius and Feldkamp (1994) use Kalman \flter techniques to improve recurrent net performance. Since they use \\a derivative discount factor imposed to decay exponentially the e\u000bects of past dynamic derivatives,\" there is no reason to believe that their Kalman Filter Trained Recurrent Networks will be useful for very long minimal time lags."
+          },
+          {
+            "chunk_id": "Long_Short_Term_Memory_ceb9e53d::chunk_0000",
+            "title": "Long Short-Term Memory",
+            "section_path": [
+              "Abstract"
+            ],
+            "pages": [
+              1
+            ],
+            "text": "Learning to store information over extended time intervals via recurrent backpropagation takes a very long time, mostly due to insu\u000ecient, decaying error back \row. We brie\ry review Hochreiter's 1991 analysis of this problem, then address it by introducing a novel, e\u000ecient, gradient-based method called \\Long Short-Term Memory\" (LSTM). Truncating the gradient where this does not do harm, LSTM can learn to bridge minimal time lags in excess of 1000 discrete time steps by enforcing constant error \row through \\constant error carrousels\" within special units. Multiplicative gate units learn to open and close access to the constant error ow. LSTM is local in space and time; its computational complexity per time step and weight is O ( 1 ). Our experiments with arti\fcial data involve local, distributed, real-valued, and noisy pattern representations. In comparisons with RTRL, BPTT, Recurrent Cascade-Correlation, Elman nets, and Neural Sequence Chunking, LSTM leads to many more successful runs, and learns much faster. LSTM also solves complex, arti\fcial long time lag tasks that have never been solved by previous recurrent network algorithms."
+          },
+          {
+            "chunk_id": "Long_Short_Term_Memory_ceb9e53d::chunk_0030",
+            "title": "Long Short-Term Memory",
+            "section_path": [
+              "4 LONG SHORT-TERM MEMORY"
+            ],
+            "pages": [
+              9
+            ],
+            "text": "Computational complexity. As with Mozer's focused recurrent backprop algorithm (Mozer 1989), only the derivatives \\frac { \\partial s _ { c _ { j } } } { \\partial w _ { i l } }@w @ sc need to be stored and updated. Hence the LSTM algorithm is very e\u000ecient, with an excellent update complexity of O ( W ), where Wthe number of weights (see details in appendix A.1). Hence, LSTM and BPTT for fully recurrent nets have the same update complexity per time step (while RTRL's is much worse). Unlike full BPTT, however, LSTM is local in space and time3: there is no need to store activation values observed during sequence processing in a stack with potentially unlimited size.\n\nAbuse problem and solutions. In the beginning of the learning phase, error reduction may be possible without storing information over time. The network will thus tend to abuse memory cells, e.g., as bias cells (i.e., it might make their activations constant and use the outgoing connections as adaptive thresholds for other units). The potential di\u000eculty is: it may take a long time to release abused memory cells and make them available for further learning. A similar \\abuse problem\" appears if two memory cells store the same (redundant) information. There are at least two solutions to the abuse problem: (1) Sequential network construction (e.g., Fahlman 1991): a memory cell and the corresponding gate units are added to the network whenever the\n\nFigure 2: Example of a net with 8 input units, 4 output units, and 2 memory cel l blocks of size 2. in1 marks the input gate, out1 marks the output gate, and cell1=block1 marks the \frst memory cel l of block 1. cell1=block1's architecture is identical to the one in Figure 1, with gate units in1 and out1 (note that by rotating Figure 1 by 90 degrees anti-clockwise, it wil l match with the corresponding parts of Figure 1). The example assumes dense connectivity: each gate unit and each memory cel l see al l non-output units. For simplicity, however, outgoing weights of only one type of unit are shown for each layer. With the e\u000ecient, truncated update rule, error \rows only through connections to output units, and through \fxed self-connections within cel l blocks (not shown here | see Figure 1). Error \row is truncated once it \\wants\" to leave memory cel ls or gate units. Therefore, no connection shown above serves to propagate error back to the unit from which the connection originates (except for connections to output units), although the connections themselves are modi\fable. That's why the truncated LSTM algorithm is so e\u000ecient, despite its ability to bridge very long time lags. See text and appendix A.1 for details. Figure 2 actual ly shows the architecture used for Experiment 6a | only the bias of the non-input units is omitted.\n\nerror stops decreasing (see Experiment 2 in Section 5). (2) Output gate bias: each output gate gets a negative initial bias, to push initial memory cell activations towards zero. Memory cells with more negative bias automatically get \\allocated\" later (see Experiments 1, 3, 4, 5, 6 in Section 5).\n\nInternal state drift and remedies. If memory cell c _ { j }'s inputs are mostly positive or mostly negative, then its internal state s _ { j }will tend to drift away over time. This is potentially dangerous, for the h ^ { \\prime } ( s _ { j } )will then adopt very small values, and the gradient will vanish. One way to circumvent this problem is to choose an appropriate function h. But h ( x ) = x, for instance, has the disadvantage of unrestricted memory cell output range. Our simple but e\u000bective way of solving drift problems at the beginning of learning is to initially bias the input gate i n _ { j }towards zero. Although there is a tradeo\u000b between the magnitudes of h ^ { \\prime } ( s _ { j } )on the one hand and of y ^ { i n _ { j } }and f _ { i n _ { j } } ^ { \\prime }on the other, the potential negative e\u000bect of input gate bias is negligible compared to the one of the drifting e\u000bect. With logistic sigmoid activation functions, there appears to be no need for ne-tuning the initial bias, as con\frmed by Experiments 4 and 5 in Section 5.4."
+          },
+          {
+            "chunk_id": "Long_Short_Term_Memory_ceb9e53d::chunk_0026",
+            "title": "Long Short-Term Memory",
+            "section_path": [
+              "4 LONG SHORT-TERM MEMORY"
+            ],
+            "pages": [
+              8
+            ],
+            "text": "Distributed output representations typically do require output gates. Not always are both gate types necessary, though | one may be su\u000ecient. For instance, in Experiments 2a and 2b in Section 5, it will be possible to use input gates only. In fact, output gates are not required in case of local output encoding | preventing memory cells from perturbing already learned outputs can be done by simply setting the corresponding weights to zero. Even in this case, however, output gates can be bene\fcial: they prevent the net's attempts at storing long time lag memories (which are usually hard to learn) from perturbing activations representing easily learnable short time lag memories. (This will prove quite useful in Experiment 1, for instance.)\n\nNetwork topology. We use networks with one input layer, one hidden layer, and one output layer. The (fully) self-connected hidden layer contains memory cells and corresponding gate units (for convenience, we refer to both memory cells and gate units as being located in the hidden layer). The hidden layer may also contain \\conventional\" hidden units providing inputs to gate units and memory cells. All units (except for gate units) in all layers have directed connections (serve as inputs) to all units in the layer above (or to all higher layers { Experiments 2a and 2b).\n\nMemory cell blocks. Smemory cells sharing the same input gate and the same output gate form a structure called a \\memory cell block of size S\". Memory cell blocks facilitate information storage | as with conventional neural nets, it is not so easy to code a distributed input within a single cell. Since each memory cell block has as many gate units as a single memory cell (namely two), the block architecture can be even slightly more e\u000ecient (see paragraph \\computational complexity\"). A memory cell block of size 1 is just a simple memory cell. In the experiments (Section 5), we will use memory cell blocks of various sizes.\n\nLearning. We use a variant of RTRL (e.g., Robinson and Fallside 1987) which properly takes into account the altered, multiplicative dynamics caused by input and output gates. However, to ensure non-decaying error backprop through internal states of memory cells, as with truncated BPTT (e.g., Williams and Peng 1990), errors arriving at \\memory cell net inputs\" (for cell c _ { j }, this includes n e t _ { c _ { j } }, n e t _ { i n _ { j } }, n e t _ { o u t _ { j } }) do not get propagated back further in time (although they do serve to change the incoming weights). Only within2 memory cells, errors are propagated back through previous internal states s _ { c _ { j } }. To visualize this: once an error signal arrives at a memory cell output, it gets scaled by output gate activation and h ^ { \\prime }. Then it is within the memory cell's CEC, where it can \row back inde\fnitely without ever being scaled. Only when it leaves the memory cell through the input gate and g, it is scaled once more by input gate activation and g ^ { \\prime }. It then serves to change the incoming weights before it is truncated (see appendix for explicit formulae).\n\nComputational complexity. As with Mozer's focused recurrent backprop algorithm (Mozer 1989), only the derivatives \\frac { \\partial s _ { c _ { j } } } { \\partial w _ { i l } }@w @ sc need to be stored and updated. Hence the LSTM algorithm is very e\u000ecient, with an excellent update complexity of O ( W ), where Wthe number of weights (see details in appendix A.1). Hence, LSTM and BPTT for fully recurrent nets have the same update complexity per time step (while RTRL's is much worse). Unlike full BPTT, however, LSTM is local in space and time3: there is no need to store activation values observed during sequence processing in a stack with potentially unlimited size."
+          },
+          {
+            "chunk_id": "Long_Short_Term_Memory_ceb9e53d::chunk_0023",
+            "title": "Long Short-Term Memory",
+            "section_path": [
+              "4 LONG SHORT-TERM MEMORY"
+            ],
+            "pages": [
+              7
+            ],
+            "text": "n e t _ {o u t j} (t) = \\sum_ {u} w _ {o u t j u} y ^ {u} (t - 1),\n\nand\n\nn e t _ {i n _ {j}} (t) = \\sum_ {u} w _ {i n _ {j} u} y ^ {u} (t - 1).\n\nWe also have\n\nn e t _ {c _ {j}} (t) = \\sum_ {u} w _ {c _ {j} u} y ^ {u} (t - 1).\n\nThe summation indices \\boldsymbol { u }may stand for input units, gate units, memory cells, or even conventional hidden units if there are any (see also paragraph on \\network topology\" below). All these di\u000berent types of units may convey useful information about the current state of the net. For instance, an input gate (output gate) may use inputs from other memory cells to decide whether to store (access) certain information in its memory cell. There even may be recurrent self-connections like w _ { c _ { j } c _ { j } }. It is up to the user to de\fne the network topology. See Figure 2 for an example.\n\njAt time t, c _ { j }'s output y ^ { c _ { j } } ( t )is computed as\n\ny ^ {c _ {j}} (t) = y ^ {o u t _ {j}} (t) h (s _ {c _ {j}} (t)),\n\nwhere the \\internal state\" s _ { c _ { j } } ( t )is\n\ns _ {c _ {j}} (0) = 0, s _ {c _ {j}} (t) = s _ {c _ {j}} (t - 1) + y ^ {i n _ {j}} (t) g \\left(n e t _ {c _ {j}} (t)\\right) \\mathrm {f o r} t > 0.\n\nThe di\u000berentiable function gsquashes n e t _ { c _ { j } }; the di\u000berentiable function hscales memory cell outputs computed from the internal state s _ { c _ { j } }.\n\nFigure 1: Architecture of memory cel l c _ { j }(the box) and its gate units i n _ { j } , o u t _ { j }. The self-recurrent connection (with weight 1.0) indicates feedback with a delay of 1 time step. It builds the basis of the \\constant error carrousel\" CEC. The gate units open and close access to CEC. See text and appendix A.1 for details.\n\nWhy gate units? To avoid input weight con\ricts, i n _ { j }controls the error \row to memory cell c _ { j }'s input connections w _ { c _ { j } i }. To circumvent c _ { j }'s output weight con\ricts, o u t _ { j }controls the error ow from unit j's output connections. In other words, the net can use i n _ { j }to decide when to keep or override information in memory cell c _ { j }, and o u t _ { j }to decide when to access memory cell c _ { j }and when to prevent other units from being perturbed by c _ { j }(see Figure 1)."
+          },
+          {
+            "chunk_id": "Long_Short_Term_Memory_ceb9e53d::chunk_0036",
+            "title": "Long Short-Term Memory",
+            "section_path": [
+              "5 EXPERIMENTS"
+            ],
+            "pages": [
+              10,
+              11
+            ],
+            "text": "Our LSTM architectures are selected quite arbitrarily. If nothing is known about the complexity of a given problem, a more systematic approach would be: start with a very small net consisting of one memory cell. If this does not work, try two cells, etc. Alternatively, use sequential network construction (e.g., Fahlman 1991).\n\nOutline of experiments.\n\n\u000f Experiment 1 focuses on a standard benchmark test for recurrent nets: the embedded Reber grammar. Since it allows for training sequences with short time lags, it is not a long time lag problem. We include it because (1) it provides a nice example where LSTM's output gates are truly bene\fcial, and (2) it is a popular benchmark for recurrent nets that has been used by many authors | we want to include at least one experiment where conventional BPTT and RTRL do not fail completely (LSTM, however, clearly outperforms them). The embedded Reber grammar's minimal time lags represent a border case in the sense that it is still possible to learn to bridge them with conventional algorithms. Only slightly longer\n\nminimal time lags would make this almost impossible. The more interesting tasks in our paper, however, are those that RTRL, BPTT, etc. cannot solve at all.\n\n\u000f Experiment 2 focuses on noise-free and noisy sequences involving numerous input symbols distracting from the few important ones. The most di\u000ecult task (Task 2c) involves hundreds of distractor symbols at random positions, and minimal time lags of 1000 steps. LSTM solves it, while BPTT and RTRL already fail in case of 10-step minimal time lags (see also, e.g., Hochreiter 1991 and Mozer 1992). For this reason RTRL and BPTT are omitted in the remaining, more complex experiments, all of which involve much longer time lags.\n\u000f Experiment 3 addresses long time lag problems with noise and signal on the same input line. Experiments 3a/3b focus on Bengio et al.'s 1994 \\2-sequence problem\". Because this problem actually can be solved quickly by random weight guessing, we also include a far more di\u000ecult 2-sequence problem (3c) which requires to learn real-valued, conditional expectations of noisy targets, given the inputs.\n\u000f Experiments 4 and 5 involve distributed, continuous-valued input representations and require learning to store precise, real values for very long time periods. Relevant input signals can occur at quite di\u000berent positions in input sequences. Again minimal time lags involve hundreds of steps. Similar tasks never have been solved by other recurrent net algorithms.\n\u000f Experiment 6 involves tasks of a di\u000berent complex type that also has not been solved by other recurrent net algorithms. Again, relevant input signals can occur at quite di\u000berent positions in input sequences. The experiment shows that LSTM can extract information conveyed by the temporal order of widely separated inputs.\n\nSubsection 5.7 will provide a detailed summary of experimental conditions in two tables for reference."
+          },
+          {
+            "chunk_id": "Long_Short_Term_Memory_ceb9e53d::chunk_0003",
+            "title": "Long Short-Term Memory",
+            "section_path": [
+              "1 INTRODUCTION"
+            ],
+            "pages": [
+              2
+            ],
+            "text": "The remedy. This paper presents \\Long Short-Term Memory\" (LSTM), a novel recurrent network architecture in conjunction with an appropriate gradient-based learning algorithm. LSTM is designed to overcome these error back-\row problems. It can learn to bridge time intervals in excess of 1000 steps even in case of noisy, incompressible input sequences, without loss of short time lag capabilities. This is achieved by an e\u000ecient, gradient-based algorithm for an architecture\n\nenforcing constant (thus neither exploding nor vanishing) error \row through internal states of special units (provided the gradient computation is truncated at certain architecture-speci\fc points | this does not a\u000bect long-term error \row though).\n\nOutline of paper. Section 2 will brie\ry review previous work. Section 3 begins with an outline of the detailed analysis of vanishing errors due to Hochreiter (1991). It will then introduce a naive approach to constant error backprop for didactic purposes, and highlight its problems concerning information storage and retrieval. These problems will lead to the LSTM architecture as described in Section 4. Section 5 will present numerous experiments and comparisons with competing methods. LSTM outperforms them, and also learns to solve complex, arti\fcial tasks no other recurrent net algorithm has solved. Section 6 will discuss LSTM's limitations and advantages. The appendix contains a detailed description of the algorithm (A.1), and explicit error \row formulae (A.2)."
+          }
+        ]
+      },
+      "debug": {
+        "parser_result": {
+          "intent": "lookup",
+          "filters": [
+            {
+              "field": "paper",
+              "op": "=",
+              "value": "Long Short-Term Memory",
+              "negated": false
+            }
+          ],
+          "group_mode": "single",
+          "content_objects": [
+            "网络结构"
+          ]
+        },
+        "parse_status": "ok",
+        "scope_records": [
+          "Long Short-Term Memory"
+        ],
+        "context_units": [
+          {
+            "chunk_id": "Long_Short_Term_Memory_ceb9e53d::chunk_0002",
+            "score": 0.031009615384615385,
+            "sources": {
+              "dense": {
+                "rank": 5,
+                "score": 0.3788454830646515
+              },
+              "bm25": {
+                "rank": 4,
+                "score": 0.030886196246139225
+              }
+            }
+          },
+          {
+            "chunk_id": "Long_Short_Term_Memory_ceb9e53d::chunk_0005",
+            "score": 0.030886196246139225,
+            "sources": {
+              "dense": {
+                "rank": 1,
+                "score": 0.39281049370765686
+              },
+              "bm25": {
+                "rank": 9,
+                "score": 0.029631255487269532
+              }
+            }
+          },
+          {
+            "chunk_id": "Long_Short_Term_Memory_ceb9e53d::chunk_0000",
+            "score": 0.0304147465437788,
+            "sources": {
+              "dense": {
+                "rank": 2,
+                "score": 0.3819049000740051
+              },
+              "bm25": {
+                "rank": 10,
+                "score": 0.02919863597612958
+              }
+            }
+          },
+          {
+            "chunk_id": "Long_Short_Term_Memory_ceb9e53d::chunk_0030",
+            "score": 0.030303030303030304,
+            "sources": {
+              "dense": {
+                "rank": 6,
+                "score": 0.37663716077804565
+              },
+              "bm25": {
+                "rank": 6,
+                "score": 0.03021353930031804
+              }
+            }
+          },
+          {
+            "chunk_id": "Long_Short_Term_Memory_ceb9e53d::chunk_0026",
+            "score": 0.02919863597612958,
+            "sources": {
+              "dense": {
+                "rank": 9,
+                "score": 0.35725679993629456
+              },
+              "bm25": {
+                "rank": 8,
+                "score": 0.029726775956284153
+              }
+            }
+          },
+          {
+            "chunk_id": "Long_Short_Term_Memory_ceb9e53d::chunk_0023",
+            "score": 0.029116045245077504,
+            "sources": {
+              "dense": {
+                "rank": 17,
+                "score": 0.331688791513443
+              },
+              "bm25": {
+                "rank": 2,
+                "score": 0.03149801587301587
+              }
+            }
+          },
+          {
+            "chunk_id": "Long_Short_Term_Memory_ceb9e53d::chunk_0036",
+            "score": 0.02862400327131466,
+            "sources": {
+              "dense": {
+                "rank": 7,
+                "score": 0.36772096157073975
+              },
+              "bm25": {
+                "rank": 13,
+                "score": 0.0261986301369863
+              }
+            }
+          },
+          {
+            "chunk_id": "Long_Short_Term_Memory_ceb9e53d::chunk_0003",
+            "score": 0.028612012987012988,
+            "sources": {
+              "dense": {
+                "rank": 4,
+                "score": 0.3791273832321167
+              },
+              "bm25": {
+                "rank": 17,
+                "score": 0.013157894736842105
+              }
+            }
+          }
+        ],
+        "timings_ms": {
+          "top_parser": 1593.35,
+          "domain_parser": 4060.68,
+          "scope": 0.12,
+          "retrieval_query": 3694.2,
+          "load_chunks": 26.28,
+          "dense": 2451.25,
+          "bm25": 62.28,
+          "fusion_context": 17.99,
+          "plan": 11906.33,
+          "answer": 18962.69
+        }
+      }
+    },
+    "case": {
+      "id": "Q3",
+      "type": "content-single",
+      "query": "LSTM 的网络结构是什么？",
+      "purpose": "验证单对象 content 检索、Dense/BM25/RRF、block window 和 LLM 回答。"
+    },
+    "_report": {
+      "wall_ms": 30869.06
+    }
+  },
+  {
+    "query": "ResNet、Transformer 和 ViT 的网络结构分别是什么样的？",
+    "answer": "ResNet、Transformer 和 ViT 的网络结构如下：\n\n1. **ResNet（Deep Residual Learning for Image Recognition）**：\n   - ResNet 采用残差学习框架，通过引入“快捷连接”（shortcut connections）来解决深度神经网络中的退化问题。\n   - 其基本结构由多个卷积层组成，通常使用 3×3 卷积核，并遵循两个设计规则：(i) 对于相同输出特征图尺寸的层，滤波器数量相同；(ii) 当特征图尺寸减半时，滤波器数量加倍以保持每层的时间复杂度。例如，34 层的 ResNet 模型包含 34 个参数层和 3.6 亿次浮点运算（FLOPs）。\n   - 网络最后通过全局平均池化层和一个全连接层进行分类。\n\n2. **Transformer（Attention is All you Need）**：\n   - Transformer 架构基于自注意力机制（self-attention），其编码器和解码器均由多个相同的层堆叠而成。\n   - 每个编码器层包括两个子层：多头自注意力机制和位置前馈网络（position-wise feed-forward network）。每个子层后都接有残差连接和层归一化。\n   - 编码器共有 6 层，每层的维度为 $ d_{\\text{model}} = 512 $，而前馈网络的中间层维度为 $ d_{\\text{ff}} = 2048 $。\n\n3. **ViT（An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale）**：\n   - ViT 将图像划分为固定大小的块（如 16×16 像素），并将这些块展平后输入到标准的 Transformer 编码器中。\n   - 在第一个层中，展平的图像块被线性投影到低维空间，并添加了可学习的位置嵌入（position embeddings）以保留图像的空间信息。\n   - 自注意力机制允许 ViT 在最低层就整合整个图像的信息。实验表明，某些注意力头在较低层就能关注大部分图像区域，而其他注意力头则表现出局部化的特性。\n\n以上内容分别参考了以下论文：\n- ResNet：*Deep Residual Learning for Image Recognition*（第 3.3 节）\n- Transformer：*Attention is All you Need*（第 3.1 节和 3.3 节）\n- ViT：*An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale*（第 4.5 节）",
+    "answer_mode": "llm",
+    "evidence": {
+      "query": "ResNet、Transformer 和 ViT 的网络结构分别是什么样的？",
+      "route": "content",
+      "status": "ok",
+      "intent": "lookup",
+      "plan": {
+        "groups": [
+          {
+            "scope": [
+              "paper=Deep Residual Learning for Image Recognition"
+            ]
+          },
+          {
+            "scope": [
+              "paper=Attention is All you Need"
+            ]
+          },
+          {
+            "scope": [
+              "paper=An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale"
+            ]
+          }
+        ],
+        "group_mode": "per",
+        "content_objects": [
+          "网络结构"
+        ],
+        "retrieval_query": {
+          "dense_query": "查找论文中关于网络结构的相关内容",
+          "bm25_queries": [
+            "网络结构",
+            "network structure",
+            "Network architecture"
+          ]
+        }
+      },
+      "resolved": {
+        "aliases": [
+          {
+            "alias": "ResNet",
+            "canonical": "Deep Residual Learning for Image Recognition"
+          },
+          {
+            "alias": "Transformer",
+            "canonical": "Attention is All you Need"
+          },
+          {
+            "alias": "ViT",
+            "canonical": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale"
+          }
+        ]
+      },
+      "results": {
+        "contexts": [
+          {
+            "chunk_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0001",
+            "title": "Deep Residual Learning for Image Recognition",
+            "section_path": [
+              "1 Introduction"
+            ],
+            "pages": [
+              1
+            ],
+            "text": "1. Introduction\n\nDeep convolutional neural networks [22, 21] have led to a series of breakthroughs for image classification [21, 50, 40]. Deep networks naturally integrate low/mid/highlevel features [50] and classifiers in an end-to-end multilayer fashion, and the “levels” of features can be enriched by the number of stacked layers (depth). Recent evidence [41, 44] reveals that network depth is of crucial importance, and the leading results [41, 44, 13, 16] on the challenging ImageNet dataset [36] all exploit “very deep” [41] models, with a depth of sixteen [41] to thirty [16]. Many other nontrivial visual recognition tasks [8, 12, 7, 32, 27] have also\n\nFigure 1. Training error (left) and test error (right) on CIFAR-10 with 20-layer and 56-layer “plain” networks. The deeper network has higher training error, and thus test error. Similar phenomena on ImageNet is presented in Fig. 4.\n\ngreatly benefited from very deep models.\n\nDriven by the significance of depth, a question arises: Is learning better networks as easy as stacking more layers? An obstacle to answering this question was the notorious problem of vanishing/exploding gradients [1, 9], which hamper convergence from the beginning. This problem, however, has been largely addressed by normalized initialization [23, 9, 37, 13] and intermediate normalization layers [16], which enable networks with tens of layers to start converging for stochastic gradient descent (SGD) with backpropagation [22].\n\nWhen deeper networks are able to start converging, a degradation problem has been exposed: with the network depth increasing, accuracy gets saturated (which might be unsurprising) and then degrades rapidly. Unexpectedly, such degradation is not caused by overfitting, and adding more layers to a suitably deep model leads to higher training error, as reported in [11, 42] and thoroughly verified by our experiments. Fig. 1 shows a typical example."
+          },
+          {
+            "chunk_id": "Attention_is_All_you_Need_d87d482d::chunk_0007",
+            "title": "Attention is All you Need",
+            "section_path": [
+              "3 Model Architecture",
+              "3.1 Encoder and Decoder Stacks"
+            ],
+            "pages": [
+              2,
+              3
+            ],
+            "text": "3.1 Encoder and Decoder Stacks\n\nEncoder: The encoder is composed of a stack of N = 6identical layers. Each layer has two sub-layers. The first is a multi-head self-attention mechanism, and the second is a simple, position-\n\nFigure 1: The Transformer - model architecture.\n\nwise fully connected feed-forward network. We employ a residual connection [10] around each of the two sub-layers, followed by layer normalization [1]. That is, the output of each sub-layer is Laye \\mathrm { \\cdot N o r m } ( x ^ { \\cdot } + \\mathrm { S u b l a y e r } ( x ) ), where Sublayer ( x )is the function implemented by the sub-layer itself. To facilitate these residual connections, all sub-layers in the model, as well as the embedding layers, produce outputs of dimension d _ { \\mathrm { m o d e l } } = 5 1 2.\n\nDecoder: The decoder is also composed of a stack of N = 6identical layers. In addition to the two sub-layers in each encoder layer, the decoder inserts a third sub-layer, which performs multi-head attention over the output of the encoder stack. Similar to the encoder, we employ residual connections around each of the sub-layers, followed by layer normalization. We also modify the self-attention sub-layer in the decoder stack to prevent positions from attending to subsequent positions. This masking, combined with fact that the output embeddings are offset by one position, ensures that the predictions for position ican depend only on the known outputs at positions less than i."
+          },
+          {
+            "chunk_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0000",
+            "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+            "section_path": [
+              "Abstract"
+            ],
+            "pages": [
+              1
+            ],
+            "text": "While the Transformer architecture has become the de-facto standard for natural language processing tasks, its applications to computer vision remain limited. In vision, attention is either applied in conjunction with convolutional networks, or used to replace certain components of convolutional networks while keeping their overall structure in place. We show that this reliance on CNNs is not necessary and a pure transformer applied directly to sequences of image patches can perform very well on image classification tasks. When pre-trained on large amounts of data and transferred to multiple mid-sized or small image recognition benchmarks (ImageNet, CIFAR-100, VTAB, etc.), Vision Transformer (ViT) attains excellent results compared to state-of-the-art convolutional networks while requiring substantially fewer computational resources to train.1"
+          },
+          {
+            "chunk_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0014",
+            "title": "Deep Residual Learning for Image Recognition",
+            "section_path": [
+              "3 Deep Residual Learning",
+              "3.3 Network Architectures"
+            ],
+            "pages": [
+              3
+            ],
+            "text": "3.3. Network Architectures\n\nWe have tested various plain/residual nets, and have observed consistent phenomena. To provide instances for discussion, we describe two models for ImageNet as follows.\n\nPlain Network. Our plain baselines (Fig. 3, middle) are mainly inspired by the philosophy of VGG nets [41] (Fig. 3, left). The convolutional layers mostly have 3 \\times 3filters and follow two simple design rules: (i) for the same output feature map size, the layers have the same number of filters; and (ii) if the feature map size is halved, the number of filters is doubled so as to preserve the time complexity per layer. We perform downsampling directly by convolutional layers that have a stride of 2. The network ends with a global average pooling layer and a 1000-way fully-connected layer with softmax. The total number of weighted layers is 34 in Fig. 3 (middle).\n\nIt is worth noticing that our model has fewer filters and lower complexity than VGG nets [41] (Fig. 3, left). Our 34- layer baseline has 3.6 billion FLOPs (multiply-adds), which is only 18 \\%of VGG-19 (19.6 billion FLOPs).\n\nFigure 3. Example network architectures for ImageNet. Left: the VGG-19 model [41] (19.6 billion FLOPs) as a reference. Middle: a plain network with 34 parameter layers (3.6 billion FLOPs). Right: a residual network with 34 parameter layers (3.6 billion FLOPs). The dotted shortcuts increase dimensions. Table 1 shows more details and other variants.\n\nResidual Network. Based on the above plain network, we insert shortcut connections (Fig. 3, right) which turn the network into its counterpart residual version. The identity shortcuts (Eqn.(1)) can be directly used when the input and output are of the same dimensions (solid line shortcuts in Fig. 3). When the dimensions increase (dotted line shortcuts in Fig. 3), we consider two options: (A) The shortcut still performs identity mapping, with extra zero entries padded for increasing dimensions. This option introduces no extra parameter; (B) The projection shortcut in Eqn.(2) is used to match dimensions (done by 1 \\times 1convolutions). For both options, when the shortcuts go across feature maps of two sizes, they are performed with a stride of 2."
+          },
+          {
+            "chunk_id": "Attention_is_All_you_Need_d87d482d::chunk_0015",
+            "title": "Attention is All you Need",
+            "section_path": [
+              "3 Model Architecture",
+              "3.3 Position-wise Feed-Forward Networks"
+            ],
+            "pages": [
+              5
+            ],
+            "text": "3.3 Position-wise Feed-Forward Networks\n\nIn addition to attention sub-layers, each of the layers in our encoder and decoder contains a fully connected feed-forward network, which is applied to each position separately and identically. This consists of two linear transformations with a ReLU activation in between.\n\n\\operatorname {F F N} (x) = \\max  \\left(0, x W _ {1} + b _ {1}\\right) W _ {2} + b _ {2} \\tag {2}\n\nWhile the linear transformations are the same across different positions, they use different parameters from layer to layer. Another way of describing this is as two convolutions with kernel size 1. The dimensionality of input and output is d _ { \\mathrm { m o d e l } } = 5 1 2, and the inner-layer has dimensionality d _ { f f } = 2 0 4 8."
+          },
+          {
+            "chunk_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0030",
+            "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+            "section_path": [
+              "4 EXPERIMENTS",
+              "4.5 INSPECTING VISION TRANSFORMER"
+            ],
+            "pages": [
+              8
+            ],
+            "text": "To begin to understand how the Vision Transformer processes image data, we analyze its internal representations. The first layer of the Vision Transformer linearly projects the flattened patches into a lower-dimensional space (Eq. 1). Figure 7 (left) shows the top principal components of the the learned embedding filters. The components resemble plausible basis functions for a low-dimensional representation of the fine structure within each patch.\n\nAfter the projection, a learned position embedding is added to the patch representations. Figure 7 (center) shows that the model learns to encode distance within the image in the similarity of position embeddings, i.e. closer patches tend to have more similar position embeddings. Further, the row-column structure appears; patches in the same row/column have similar embeddings. Finally, a sinusoidal structure is sometimes apparent for larger grids (Appendix D). That the position embeddings learn to represent 2D image topology explains why hand-crafted 2D-aware embedding variants do not yield improvements (Appendix D.4).\n\nSelf-attention allows ViT to integrate information across the entire image even in the lowest layers. We investigate to what degree the network makes use of this capability. Specifically, we compute the average distance in image space across which information is integrated, based on the attention weights (Figure 7, right). This “attention distance” is analogous to receptive field size in CNNs.\n\nWe find that some heads attend to most of the image already in the lowest layers, showing that the ability to integrate information globally is indeed used by the model. Other attention heads have consistently small attention distances in the low layers. This highly localized attention is less pronounced in hybrid models that apply a ResNet before the Transformer (Figure 7, right), suggesting that it may serve a similar function as early convolutional layers in CNNs. Further, the attention distance increases with network depth. Globally, we find that the model attends to image regions that are semantically relevant for classification (Figure 6).\n\nFigure 6: Representative examples of attention from the output token to the input space. See Appendix D.7 for details."
+          },
+          {
+            "chunk_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0015",
+            "title": "Deep Residual Learning for Image Recognition",
+            "section_path": [
+              "3 Deep Residual Learning",
+              "3.3 Network Architectures"
+            ],
+            "pages": [
+              4
+            ],
+            "text": "Plain Network. Our plain baselines (Fig. 3, middle) are mainly inspired by the philosophy of VGG nets [41] (Fig. 3, left). The convolutional layers mostly have 3 \\times 3filters and follow two simple design rules: (i) for the same output feature map size, the layers have the same number of filters; and (ii) if the feature map size is halved, the number of filters is doubled so as to preserve the time complexity per layer. We perform downsampling directly by convolutional layers that have a stride of 2. The network ends with a global average pooling layer and a 1000-way fully-connected layer with softmax. The total number of weighted layers is 34 in Fig. 3 (middle).\n\nIt is worth noticing that our model has fewer filters and lower complexity than VGG nets [41] (Fig. 3, left). Our 34- layer baseline has 3.6 billion FLOPs (multiply-adds), which is only 18 \\%of VGG-19 (19.6 billion FLOPs).\n\nFigure 3. Example network architectures for ImageNet. Left: the VGG-19 model [41] (19.6 billion FLOPs) as a reference. Middle: a plain network with 34 parameter layers (3.6 billion FLOPs). Right: a residual network with 34 parameter layers (3.6 billion FLOPs). The dotted shortcuts increase dimensions. Table 1 shows more details and other variants.\n\nResidual Network. Based on the above plain network, we insert shortcut connections (Fig. 3, right) which turn the network into its counterpart residual version. The identity shortcuts (Eqn.(1)) can be directly used when the input and output are of the same dimensions (solid line shortcuts in Fig. 3). When the dimensions increase (dotted line shortcuts in Fig. 3), we consider two options: (A) The shortcut still performs identity mapping, with extra zero entries padded for increasing dimensions. This option introduces no extra parameter; (B) The projection shortcut in Eqn.(2) is used to match dimensions (done by 1 \\times 1convolutions). For both options, when the shortcuts go across feature maps of two sizes, they are performed with a stride of 2."
+          },
+          {
+            "chunk_id": "Attention_is_All_you_Need_d87d482d::chunk_0006",
+            "title": "Attention is All you Need",
+            "section_path": [
+              "3 Model Architecture"
+            ],
+            "pages": [
+              2
+            ],
+            "text": "3 Model Architecture\n\nMost competitive neural sequence transduction models have an encoder-decoder structure [5, 2, 29]. Here, the encoder maps an input sequence of symbol representations ( x _ { 1 } , . . . , x _ { n } )to a sequence of continuous representations \\textbf { z } = ~ ( z _ { 1 } , . . . , z _ { n } ). Given z, the decoder then generates an output sequence \\left( y _ { 1 } , . . . , y _ { m } \\right)of symbols one element at a time. At each step the model is auto-regressive [9], consuming the previously generated symbols as additional input when generating the next.\n\nThe Transformer follows this overall architecture using stacked self-attention and point-wise, fully connected layers for both the encoder and decoder, shown in the left and right halves of Figure 1, respectively."
+          },
+          {
+            "chunk_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0029",
+            "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+            "section_path": [
+              "4 EXPERIMENTS",
+              "4.5 INSPECTING VISION TRANSFORMER"
+            ],
+            "pages": [
+              8
+            ],
+            "text": "4.5 INSPECTING VISION TRANSFORMER\n\nTo begin to understand how the Vision Transformer processes image data, we analyze its internal representations. The first layer of the Vision Transformer linearly projects the flattened patches into a lower-dimensional space (Eq. 1). Figure 7 (left) shows the top principal components of the the learned embedding filters. The components resemble plausible basis functions for a low-dimensional representation of the fine structure within each patch.\n\nAfter the projection, a learned position embedding is added to the patch representations. Figure 7 (center) shows that the model learns to encode distance within the image in the similarity of position embeddings, i.e. closer patches tend to have more similar position embeddings. Further, the row-column structure appears; patches in the same row/column have similar embeddings. Finally, a sinusoidal structure is sometimes apparent for larger grids (Appendix D). That the position embeddings learn to represent 2D image topology explains why hand-crafted 2D-aware embedding variants do not yield improvements (Appendix D.4).\n\nSelf-attention allows ViT to integrate information across the entire image even in the lowest layers. We investigate to what degree the network makes use of this capability. Specifically, we compute the average distance in image space across which information is integrated, based on the attention weights (Figure 7, right). This “attention distance” is analogous to receptive field size in CNNs.\n\nWe find that some heads attend to most of the image already in the lowest layers, showing that the ability to integrate information globally is indeed used by the model. Other attention heads have consistently small attention distances in the low layers. This highly localized attention is less pronounced in hybrid models that apply a ResNet before the Transformer (Figure 7, right), suggesting that it may serve a similar function as early convolutional layers in CNNs. Further, the attention distance increases with network depth. Globally, we find that the model attends to image regions that are semantically relevant for classification (Figure 6)."
+          }
+        ],
+        "groups": [
+          {
+            "scope": [
+              "paper=Deep Residual Learning for Image Recognition"
+            ],
+            "papers": [
+              "Deep Residual Learning for Image Recognition"
+            ],
+            "count": 1,
+            "exists": true,
+            "context_refs": [
+              "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0001",
+              "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0014",
+              "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0015",
+              "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0029",
+              "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0002",
+              "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0005",
+              "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0006",
+              "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0008"
+            ]
+          },
+          {
+            "scope": [
+              "paper=Attention is All you Need"
+            ],
+            "papers": [
+              "Attention is All you Need"
+            ],
+            "count": 1,
+            "exists": true,
+            "context_refs": [
+              "Attention_is_All_you_Need_d87d482d::chunk_0007",
+              "Attention_is_All_you_Need_d87d482d::chunk_0015",
+              "Attention_is_All_you_Need_d87d482d::chunk_0006",
+              "Attention_is_All_you_Need_d87d482d::chunk_0019",
+              "Attention_is_All_you_Need_d87d482d::chunk_0000",
+              "Attention_is_All_you_Need_d87d482d::chunk_0002",
+              "Attention_is_All_you_Need_d87d482d::chunk_0003",
+              "Attention_is_All_you_Need_d87d482d::chunk_0021"
+            ]
+          },
+          {
+            "scope": [
+              "paper=An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale"
+            ],
+            "papers": [
+              "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale"
+            ],
+            "count": 1,
+            "exists": true,
+            "context_refs": [
+              "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0000",
+              "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0030",
+              "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0029",
+              "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0013",
+              "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0023",
+              "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0032",
+              "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0014",
+              "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0031"
+            ]
+          }
+        ]
+      },
+      "debug": {
+        "parser_result": {
+          "intent": "lookup",
+          "paper_groups": [
+            {
+              "semantic": "",
+              "filters": [
+                {
+                  "field": "paper",
+                  "op": "=",
+                  "value": "Deep Residual Learning for Image Recognition",
+                  "negated": false
+                }
+              ]
+            },
+            {
+              "semantic": "",
+              "filters": [
+                {
+                  "field": "paper",
+                  "op": "=",
+                  "value": "Attention is All you Need",
+                  "negated": false
+                }
+              ]
+            },
+            {
+              "semantic": "",
+              "filters": [
+                {
+                  "field": "paper",
+                  "op": "=",
+                  "value": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+                  "negated": false
+                }
+              ]
+            }
+          ],
+          "group_mode": "per",
+          "content_objects": [
+            "网络结构"
+          ]
+        },
+        "parse_status": "ok",
+        "scope_records": [
+          "Deep Residual Learning for Image Recognition",
+          "Attention is All you Need",
+          "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale"
+        ],
+        "group_results": [
+          {
+            "scope": [
+              "paper=Deep Residual Learning for Image Recognition"
+            ],
+            "papers": [
+              "Deep Residual Learning for Image Recognition"
+            ],
+            "count": 1,
+            "exists": true,
+            "context_refs": [
+              "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0001",
+              "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0014",
+              "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0015",
+              "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0029",
+              "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0002",
+              "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0005",
+              "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0006",
+              "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0008"
+            ]
+          },
+          {
+            "scope": [
+              "paper=Attention is All you Need"
+            ],
+            "papers": [
+              "Attention is All you Need"
+            ],
+            "count": 1,
+            "exists": true,
+            "context_refs": [
+              "Attention_is_All_you_Need_d87d482d::chunk_0007",
+              "Attention_is_All_you_Need_d87d482d::chunk_0015",
+              "Attention_is_All_you_Need_d87d482d::chunk_0006",
+              "Attention_is_All_you_Need_d87d482d::chunk_0019",
+              "Attention_is_All_you_Need_d87d482d::chunk_0000",
+              "Attention_is_All_you_Need_d87d482d::chunk_0002",
+              "Attention_is_All_you_Need_d87d482d::chunk_0003",
+              "Attention_is_All_you_Need_d87d482d::chunk_0021"
+            ]
+          },
+          {
+            "scope": [
+              "paper=An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale"
+            ],
+            "papers": [
+              "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale"
+            ],
+            "count": 1,
+            "exists": true,
+            "context_refs": [
+              "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0000",
+              "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0030",
+              "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0029",
+              "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0013",
+              "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0023",
+              "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0032",
+              "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0014",
+              "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0031"
+            ]
+          }
+        ],
+        "context_units": [
+          {
+            "chunk_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0001",
+            "score": 0.03177805800756621,
+            "sources": {
+              "dense": {
+                "rank": 1,
+                "score": 0.444548636674881
+              },
+              "bm25": {
+                "rank": 5,
+                "score": 0.030776515151515152
+              }
+            }
+          },
+          {
+            "chunk_id": "Attention_is_All_you_Need_d87d482d::chunk_0007",
+            "score": 0.032266458495966696,
+            "sources": {
+              "dense": {
+                "rank": 3,
+                "score": 0.34307539463043213
+              },
+              "bm25": {
+                "rank": 1,
+                "score": 0.03177805800756621
+              }
+            }
+          },
+          {
+            "chunk_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0000",
+            "score": 0.032266458495966696,
+            "sources": {
+              "dense": {
+                "rank": 1,
+                "score": 0.33163273334503174
+              },
+              "bm25": {
+                "rank": 3,
+                "score": 0.03125763125763126
+              }
+            }
+          },
+          {
+            "chunk_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0014",
+            "score": 0.03128054740957967,
+            "sources": {
+              "dense": {
+                "rank": 6,
+                "score": 0.3941091299057007
+              },
+              "bm25": {
+                "rank": 2,
+                "score": 0.031754032258064516
+              }
+            }
+          },
+          {
+            "chunk_id": "Attention_is_All_you_Need_d87d482d::chunk_0015",
+            "score": 0.03200204813108039,
+            "sources": {
+              "dense": {
+                "rank": 2,
+                "score": 0.3431965112686157
+              },
+              "bm25": {
+                "rank": 3,
+                "score": 0.03125
+              }
+            }
+          },
+          {
+            "chunk_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0030",
+            "score": 0.032018442622950824,
+            "sources": {
+              "dense": {
+                "rank": 4,
+                "score": 0.2995017468929291
+              },
+              "bm25": {
+                "rank": 1,
+                "score": 0.03278688524590164
+              }
+            }
+          },
+          {
+            "chunk_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6::chunk_0015",
+            "score": 0.030886196246139225,
+            "sources": {
+              "dense": {
+                "rank": 9,
+                "score": 0.3921066224575043
+              },
+              "bm25": {
+                "rank": 1,
+                "score": 0.032266458495966696
+              }
+            }
+          },
+          {
+            "chunk_id": "Attention_is_All_you_Need_d87d482d::chunk_0006",
+            "score": 0.030536130536130537,
+            "sources": {
+              "dense": {
+                "rank": 5,
+                "score": 0.327728807926178
+              },
+              "bm25": {
+                "rank": 6,
+                "score": 0.030621785881252923
+              }
+            }
+          },
+          {
+            "chunk_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0029",
+            "score": 0.0315136476426799,
+            "sources": {
+              "dense": {
+                "rank": 2,
+                "score": 0.324748158454895
+              },
+              "bm25": {
+                "rank": 5,
+                "score": 0.016129032258064516
+              }
+            }
+          }
+        ],
+        "timings_ms": {
+          "top_parser": 2644.42,
+          "domain_parser": 5701.24,
+          "scope": 0.35,
+          "retrieval_query": 2982.98,
+          "load_chunks": 0.13,
+          "dense": 527.96,
+          "bm25": 2.46,
+          "fusion_context": 22.21,
+          "plan": 11882.02,
+          "answer": 16598.36
+        }
+      }
+    },
+    "case": {
+      "id": "Q4",
+      "type": "content-per-3-groups",
+      "query": "ResNet、Transformer 和 ViT 的网络结构分别是什么样的？",
+      "purpose": "验证 per group 独立检索、三对象 context 配额和一次性 LLM 整合回答。"
+    },
+    "_report": {
+      "wall_ms": 28480.42
+    }
+  }
+]

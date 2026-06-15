@@ -1,8 +1,11 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from paper_rag.corpus.chunks import ChunkDocument
 from paper_rag.retrieval.dense.cache import CachedEmbedder, EmbeddingCache, embedding_cache_key
+from paper_rag.retrieval.dense.milvus_store import MilvusStore
 from paper_rag.retrieval.sparse.bm25 import BM25CorpusIndex
 
 
@@ -33,6 +36,54 @@ def test_bm25_derived_index_roundtrip_and_staleness(tmp_path: Path):
 
     changed_chunks = [chunk("p::chunk_0000", "p", "different text")]
     assert BM25CorpusIndex.load(index_path, changed_chunks) is None
+
+
+def test_bm25_save_failure_preserves_existing_index(tmp_path: Path, monkeypatch):
+    chunks = [chunk("p::chunk_0000", "p", "residual connection")]
+    index_path = tmp_path / "bm25_chunks.json"
+    index_path.write_text("old index", encoding="utf-8")
+    original_replace = Path.replace
+
+    def fail_replace(path: Path, target: Path) -> Path:
+        if path.name.startswith("bm25_chunks.json.tmp-"):
+            raise OSError("replace failed")
+        return original_replace(path, target)
+
+    monkeypatch.setattr(Path, "replace", fail_replace)
+
+    with pytest.raises(OSError, match="replace failed"):
+        BM25CorpusIndex.from_chunks(chunks).save(index_path)
+
+    assert index_path.read_text(encoding="utf-8") == "old index"
+    assert not list(tmp_path.glob("bm25_chunks.json.tmp-*"))
+
+
+def test_milvus_rebuild_uses_staging_and_preserves_old_on_insert_failure():
+    client = FakeMilvusClient(collections={"paper_chunks"}, fail_insert=True)
+    store = MilvusStore(uri="", token=None, db_name=None, collection_name="paper_chunks", dimensions=1, client=client)
+
+    with pytest.raises(RuntimeError, match="insert failed"):
+        store.rebuild_collection([chunk("p::chunk_0000", "p", "residual connection")], [[1.0]])
+
+    assert "paper_chunks" in client.collections
+    assert client.aliases == {}
+    assert ("drop", "paper_chunks") not in client.ops
+
+
+def test_milvus_rebuild_switches_alias_after_successful_staging_insert():
+    client = FakeMilvusClient(collections={"paper_chunks"})
+    store = MilvusStore(uri="", token=None, db_name=None, collection_name="paper_chunks", dimensions=1, client=client)
+
+    inserted = store.rebuild_collection([chunk("p::chunk_0000", "p", "residual connection")], [[1.0]])
+
+    assert inserted == 1
+    assert "paper_chunks" not in client.collections
+    assert client.aliases["paper_chunks"].startswith("paper_chunks__staging_")
+    create_index = next(i for i, op in enumerate(client.ops) if op[0] == "create" and op[1].startswith("paper_chunks__staging_"))
+    insert_index = next(i for i, op in enumerate(client.ops) if op[0] == "insert")
+    drop_index = client.ops.index(("drop", "paper_chunks"))
+    alias_index = next(i for i, op in enumerate(client.ops) if op[0] == "create_alias")
+    assert create_index < insert_index < drop_index < alias_index
 
 
 def test_embedding_cache_appends_and_cached_embedder_only_requests_misses(tmp_path: Path):
@@ -98,6 +149,46 @@ class FakeEmbeddingClient:
     def embed_texts(self, texts: list[str]) -> list[list[float]]:
         self.calls.append(list(texts))
         return [self.vectors[text] for text in texts]
+
+
+class FakeMilvusClient:
+    def __init__(self, *, collections: set[str] | None = None, fail_insert: bool = False) -> None:
+        self.collections = set(collections or set())
+        self.aliases: dict[str, str] = {}
+        self.fail_insert = fail_insert
+        self.ops: list[tuple[str, str]] = []
+
+    def has_collection(self, collection_name: str) -> bool:
+        return collection_name in self.collections or collection_name in self.aliases
+
+    def create_collection(self, collection_name: str, **_kwargs) -> None:
+        self.collections.add(collection_name)
+        self.ops.append(("create", collection_name))
+
+    def insert(self, collection_name: str, rows: list[dict]) -> None:
+        self.ops.append(("insert", collection_name))
+        if self.fail_insert:
+            raise RuntimeError("insert failed")
+
+    def load_collection(self, collection_name: str) -> None:
+        self.ops.append(("load", collection_name))
+
+    def drop_collection(self, collection_name: str) -> None:
+        self.collections.discard(collection_name)
+        self.ops.append(("drop", collection_name))
+
+    def describe_alias(self, alias: str) -> dict:
+        if alias not in self.aliases:
+            raise RuntimeError("alias not found")
+        return {"collection_name": self.aliases[alias]}
+
+    def create_alias(self, *, collection_name: str, alias: str) -> None:
+        self.aliases[alias] = collection_name
+        self.ops.append(("create_alias", alias))
+
+    def alter_alias(self, *, collection_name: str, alias: str) -> None:
+        self.aliases[alias] = collection_name
+        self.ops.append(("alter_alias", alias))
 
 
 def bm25_doc(doc_id: str, text: str):

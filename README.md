@@ -155,7 +155,7 @@ data/
 1. 扫描 `data/pdf/*.pdf`
 2. 对 PDF 计算 SHA-256，按 hash 去重
 3. 用 `manifest.jsonl` 维护论文状态
-4. 优先复用已有 MinerU 输出；无法复用时才调用 MinerU API
+4. 优先按 hash sidecar 或唯一标题精确匹配复用 MinerU 输出；无法复用时才调用 MinerU API
 5. 从 MinerU 内容中抽取标题
 6. 用 ArXiv、DBLP、Semantic Scholar 补全元数据
 7. 生成 `metadata / toc / blocks / chunks / references`
@@ -397,6 +397,8 @@ Deep Residual Learning for Image Recognition
 Content planner 不会一上来扫描整个论文库
 
 它先根据 paper aliases、filters 和 groups 得到候选论文，再只保留这些论文的 `abstract/body` chunks
+
+`per/and` 分组会逐组检索，避免某一组的 top-k 覆盖其他组；`or/single` 仍按合并后的 scope 检索
 
 同时：
 
@@ -640,7 +642,7 @@ Planner 的内部状态很多：
 - 论文标题
 - section path
 - 页码
-- chunk text
+- 命中 chunk 及其邻接 block window 文本
 
 `--debug` 时才附加：
 
@@ -697,7 +699,8 @@ OpenAI-compatible 服务的兼容处理：
 | 优化 | 实现 | 收益与语义边界 |
 |---|---|---|
 | Scope First | 先解析论文范围<br />Dense 使用 `paper_id` 标量过滤<br />BM25 使用 `allowed_chunk_ids` | 减少无关候选；结构化范围决定“在哪查”，检索分数只决定“哪些正文相关” |
-| BM25 派生索引 | 保存 `doc_id / text_hash / tokens`<br />内存中预计算 `doc_lengths / term_freqs` | 避免重复分词<br />查询时仍按当前 scope 计算，不改变排序语义 |
+| BM25 派生索引 | 保存 `doc_id / text_hash / tokens`<br />临时文件写完后原子替换 | 避免重复分词<br />查询时仍按当前 scope 计算，不改变排序语义 |
+| Dense staging | 先写临时 collection，再把正式名 alias 切过去 | 插入失败时不先删除旧 collection |
 | `CorpusContext` | 懒加载并复用 manifest、annotations、chunks、citation graph 和 BM25 index | 减少一次命令或 `chat` 会话内的重复 IO；不是全局常驻缓存 |
 | Embedding Cache | chunk/query 分离缓存，按 `model + dimensions + text` 生成 key，append-only 写入 | 避免重复向量化<br />模型或维度变化后不会误用旧向量 |
 

@@ -10,24 +10,22 @@ from paper_rag.corpus.context import CorpusContext
 from paper_rag.retrieval.plan import run_plan
 
 
-EVIDENCE_SOURCE_LIMIT = 5
-SNIPPET_LIMIT = 180
 EXIT_COMMANDS = {"exit", "quit", "退出"}
 
 
 def add_ask_parser(subparsers: argparse._SubParsersAction) -> None:
     ask = subparsers.add_parser("ask", help="基于检索证据回答论文问题")
     ask.add_argument("query", nargs="+", help="要回答的问题")
-    ask.add_argument("--debug", action="store_true", help="输出完整 payload，用于排查 planner 和 retrieval")
-    ask.add_argument("--evidence", action="store_true", help="在答案后附带最多 5 条证据来源")
+    ask.add_argument("--debug", action="store_true", help="输出 planner/retrieval payload")
+    ask.add_argument("--evidence", action="store_true", help="在答案后附带证据来源")
     ask.set_defaults(handler=handle_ask)
 
 
 def add_chat_parser(subparsers: argparse._SubParsersAction) -> None:
     chat = subparsers.add_parser("chat", help="在同一进程中连续执行论文问答或检索规划")
     chat.add_argument("--mode", choices=["ask", "plan"], default="ask", help="连续执行 ask 或 plan，默认 ask")
-    chat.add_argument("--debug", action="store_true", help="输出完整 payload，用于排查 planner 和 retrieval")
-    chat.add_argument("--evidence", action="store_true", help="在 ask 答案后附带最多 5 条证据来源")
+    chat.add_argument("--debug", action="store_true", help="输出 planner/retrieval payload")
+    chat.add_argument("--evidence", action="store_true", help="在 ask 答案后附带证据来源")
     chat.set_defaults(handler=handle_chat, chat_parser=chat)
 
 
@@ -72,9 +70,18 @@ def handle_chat(args: argparse.Namespace) -> int:
 
 
 def print_ask_payload(payload: dict[str, Any], *, debug: bool, evidence: bool) -> None:
-    """按 ask CLI 参数输出答案、来源或完整排查 payload。"""
+    """按 ask CLI 参数输出答案、来源或排查 payload。"""
     if debug:
-        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        evidence_payload = payload.get("evidence") if isinstance(payload.get("evidence"), dict) else {}
+        answer = str(payload.get("answer") or "")
+        if evidence_payload.get("route") != "content":
+            lines = [line for line in answer.splitlines() if line.strip()]
+            answer = "\n".join(lines[:3])
+        print(json.dumps({
+            "answer_mode": payload.get("answer_mode"),
+            "answer": answer,
+            "evidence": payload.get("evidence"),
+        }, ensure_ascii=False, indent=2))
         return
     print(payload["answer"])
     if evidence:
@@ -83,7 +90,7 @@ def print_ask_payload(payload: dict[str, Any], *, debug: bool, evidence: bool) -
 
 def print_evidence_sources(evidence: Any) -> None:
     """打印适合人工快速核对的证据来源摘要。"""
-    sources = list(dict.fromkeys(evidence_sources(evidence)))[:EVIDENCE_SOURCE_LIMIT]
+    sources = list(dict.fromkeys(evidence_sources(evidence)))
     print("\n证据来源：")
     if not sources:
         print("没有可展示的证据来源。")
@@ -93,7 +100,7 @@ def print_evidence_sources(evidence: Any) -> None:
 
 
 def evidence_sources(evidence: Any) -> list[str]:
-    """按 route 提取最多用于展示的来源，不改变内部 evidence。"""
+    """按 route 提取用于展示的来源，不改变内部 evidence。"""
     if not isinstance(evidence, dict):
         return []
     results = evidence.get("results")
@@ -110,14 +117,11 @@ def evidence_sources(evidence: Any) -> list[str]:
 
 
 def format_content_source(context: dict[str, Any]) -> str:
-    """格式化正文 chunk 来源，并附短摘录便于判断召回质量。"""
-    title = str(context.get("title") or "未知论文")
+    """格式化正文 chunk 的回源定位信息。"""
     section = join_values(context.get("section_path")) or "-"
     pages = join_values(context.get("pages")) or "-"
     chunk_id = str(context.get("chunk_id") or "-")
-    snippet = shorten_text(context.get("text"))
-    source = f"{title} | 章节: {section} | 页码: {pages} | chunk: {chunk_id}"
-    return f"{source}\n    摘录: {snippet}" if snippet else source
+    return f"章节: {section} | 页码: {pages} | chunk: {chunk_id}"
 
 
 def reference_sources(results: dict[str, Any]) -> list[str]:
@@ -162,10 +166,3 @@ def join_values(value: Any) -> str:
     if isinstance(value, list):
         return " > ".join(str(item) for item in value)
     return str(value or "")
-
-
-def shorten_text(value: Any) -> str:
-    text = " ".join(str(value or "").split())
-    if len(text) <= SNIPPET_LIMIT:
-        return text
-    return text[:SNIPPET_LIMIT].rstrip() + "..."

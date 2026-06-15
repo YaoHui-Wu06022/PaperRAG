@@ -2,10 +2,14 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+import pytest
+
 from paper_rag.corpus.chunks import filter_content_retrieval_chunks, load_chunk_documents
+from paper_rag.ingest import extract as extract_module
 from paper_rag.ingest.extract import extract_paper_data
 from paper_rag.ingest.manifest import Manifest, ManifestRecord, effective_year
-from paper_rag.ingest.pipeline import lookup_metadata
+from paper_rag.ingest.mineru import MinerUError
+from paper_rag.ingest.pipeline import IngestSummary, build_existing_output_index, ensure_mineru_output, lookup_metadata
 
 
 @dataclass
@@ -133,6 +137,132 @@ def test_extract_mineru_output_splits_blocks_chunks_references_and_appendix(sett
     loaded_chunks = load_chunk_documents(settings.paper_data_dir)
     content_chunks = filter_content_retrieval_chunks(loaded_chunks)
     assert {chunk.region for chunk in content_chunks} == {"abstract", "body"}
+
+
+def test_mineru_reuse_requires_exact_title_or_source_hash(settings):
+    output_dir = make_mineru_output(settings.mineru_output_dir, "old_output", "A Tiny Paper")
+    index = build_existing_output_index(settings.mineru_output_dir)
+
+    reused = ensure_mineru_output(
+        settings,
+        ManifestRecord(file_hash="hash-a", status="new"),
+        settings.pdf_dir / "2014_A_Tiny_Paper.pdf",
+        "hash-a",
+        index,
+        IngestSummary(),
+    )
+
+    assert reused == output_dir
+    sidecar = json.loads((output_dir / "_paper_rag_source.json").read_text(encoding="utf-8"))
+    assert sidecar["file_hash"] == "hash-a"
+
+
+def test_mineru_reuse_rejects_fuzzy_or_ambiguous_title_matches(settings):
+    make_mineru_output(settings.mineru_output_dir, "extended", "A Tiny Paper Extended")
+    fuzzy_index = build_existing_output_index(settings.mineru_output_dir)
+
+    with pytest.raises(MinerUError, match="不精确"):
+        ensure_mineru_output(
+            settings,
+            ManifestRecord(file_hash="hash-a", status="new"),
+            settings.pdf_dir / "2014_A_Tiny_Paper.pdf",
+            "hash-a",
+            fuzzy_index,
+            IngestSummary(),
+        )
+
+    settings.mineru_output_dir.mkdir(parents=True, exist_ok=True)
+    for child in settings.mineru_output_dir.iterdir():
+        if child.is_dir():
+            import shutil
+
+            shutil.rmtree(child)
+    make_mineru_output(settings.mineru_output_dir, "one", "A Tiny Paper")
+    make_mineru_output(settings.mineru_output_dir, "two", "A Tiny Paper")
+    ambiguous_index = build_existing_output_index(settings.mineru_output_dir)
+
+    with pytest.raises(MinerUError, match="不唯一"):
+        ensure_mineru_output(
+            settings,
+            ManifestRecord(file_hash="hash-a", status="new"),
+            settings.pdf_dir / "2014_A_Tiny_Paper.pdf",
+            "hash-a",
+            ambiguous_index,
+            IngestSummary(),
+        )
+
+
+def test_mineru_reuse_manifest_and_archive_paths_have_priority(settings):
+    manifest_output = make_mineru_output(settings.mineru_output_dir, "manifest_output", "Different Title")
+    reused = ensure_mineru_output(
+        settings,
+        ManifestRecord(file_hash="hash-a", status="active", mineru_output_path=str(manifest_output)),
+        settings.pdf_dir / "2014_A_Tiny_Paper.pdf",
+        "hash-a",
+        build_existing_output_index(settings.mineru_output_dir),
+        IngestSummary(),
+    )
+    assert reused == manifest_output
+
+    archived_output = make_mineru_output(settings.archive_dir, "archived_output", "Archived Title")
+    restored = ensure_mineru_output(
+        settings,
+        ManifestRecord(file_hash="hash-b", status="deleted", archived_mineru_output_path=str(archived_output)),
+        settings.pdf_dir / "2015_Archived_Title.pdf",
+        "hash-b",
+        build_existing_output_index(settings.mineru_output_dir),
+        IngestSummary(),
+    )
+    assert restored == settings.mineru_output_dir / "archived_output"
+    assert restored.exists()
+
+
+def test_extract_paper_data_failure_preserves_existing_output(settings, tmp_path: Path, monkeypatch):
+    mineru_dir = make_mineru_output(tmp_path, "mineru", "Stable Paper")
+    target = settings.paper_data_dir / "stable_paper"
+    target.mkdir(parents=True)
+    (target / "metadata.json").write_text("old metadata", encoding="utf-8")
+
+    original_write_jsonl = extract_module.write_jsonl
+
+    def fail_on_chunks(path: Path, rows: list[dict]) -> None:
+        if path.name == "chunks.jsonl":
+            raise RuntimeError("write failed")
+        original_write_jsonl(path, rows)
+
+    monkeypatch.setattr(extract_module, "write_jsonl", fail_on_chunks)
+
+    with pytest.raises(RuntimeError, match="write failed"):
+        extract_module.extract_paper_data(
+            mineru_dir,
+            target,
+            {
+                "title": "Stable Paper",
+                "author": [],
+                "year": {"preprint_year": None, "publish_year": 2020},
+                "venue": "UnitTest",
+                "pdf_path": "stable.pdf",
+            },
+        )
+
+    assert (target / "metadata.json").read_text(encoding="utf-8") == "old metadata"
+
+
+def make_mineru_output(root: Path, name: str, paper_title: str) -> Path:
+    directory = root / name
+    directory.mkdir(parents=True, exist_ok=True)
+    content = [[
+        title(paper_title),
+        title("Abstract"),
+        paragraph("A short abstract."),
+        title("1 Introduction"),
+        paragraph("A short body."),
+    ]]
+    (directory / "upload-id_content_list_v2.json").write_text(
+        json.dumps(content, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    return directory
 
 
 def title(text: str) -> dict:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import uuid
 from dataclasses import dataclass
 from typing import Any
 
@@ -64,8 +65,27 @@ class MilvusStore:
         """删除旧 collection 并按当前 embedding 维度重建。"""
         if self.client.has_collection(self.collection_name):
             self.client.drop_collection(self.collection_name)
+        self.create_collection(self.collection_name)
+
+    def rebuild_collection(self, chunk_documents: list[ChunkDocument], vectors: list[list[float]]) -> int:
+        """在 staging collection 中完整构建索引，成功后再切换正式 alias。"""
+        self.require_alias_support()
+        staging_name = f"{self.collection_name}__staging_{uuid.uuid4().hex[:12]}"
+        self.create_collection(staging_name)
+        try:
+            inserted = self.insert_chunk_documents(chunk_documents, vectors, collection_name=staging_name)
+            if inserted != len(chunk_documents):
+                raise RuntimeError(f"staging collection 写入数量不一致：{inserted}/{len(chunk_documents)}")
+            self.switch_alias_to(staging_name)
+        except Exception:
+            self.drop_collection_if_exists(staging_name)
+            raise
+        return inserted
+
+    def create_collection(self, collection_name: str) -> None:
+        """按当前 embedding 维度创建 collection。"""
         self.client.create_collection(
-            collection_name=self.collection_name,
+            collection_name=collection_name,
             dimension=self.dimensions,
             primary_field_name="chunk_id",
             id_type="string",
@@ -76,17 +96,64 @@ class MilvusStore:
             enable_dynamic_field=True,
         )
 
-    def insert_chunk_documents(self, chunk_documents: list[ChunkDocument], vectors: list[list[float]], batch_size: int = 100) -> int:
+    def insert_chunk_documents(
+        self,
+        chunk_documents: list[ChunkDocument],
+        vectors: list[list[float]],
+        batch_size: int = 100,
+        *,
+        collection_name: str | None = None,
+    ) -> int:
         """把 chunk 元数据和向量成批写入 Milvus。"""
+        if len(chunk_documents) != len(vectors):
+            raise ValueError(f"chunk 数和向量数不一致：{len(chunk_documents)} != {len(vectors)}")
+        target_collection = collection_name or self.collection_name
         rows = [
             build_chunk_row(chunk_document, vector, self.vector_field)
             for chunk_document, vector in zip(chunk_documents, vectors)
         ]
         for start in range(0, len(rows), batch_size):
-            self.client.insert(self.collection_name, rows[start:start + batch_size])
+            self.client.insert(target_collection, rows[start:start + batch_size])
         if hasattr(self.client, "load_collection"):
-            self.client.load_collection(self.collection_name)
+            self.client.load_collection(target_collection)
         return len(rows)
+
+    def require_alias_support(self) -> None:
+        """staging rebuild 依赖 alias API；缺失时拒绝破坏性重建。"""
+        missing = [
+            name
+            for name in ["create_alias", "alter_alias", "describe_alias"]
+            if not hasattr(self.client, name)
+        ]
+        if missing:
+            raise RuntimeError(f"Milvus client 缺少 alias API：{', '.join(missing)}")
+
+    def switch_alias_to(self, collection_name: str) -> None:
+        """把正式 collection 名作为 alias 指向新的 staging collection。"""
+        old_target = self.alias_target(self.collection_name)
+        if old_target:
+            self.client.alter_alias(collection_name=collection_name, alias=self.collection_name)
+            if old_target != collection_name:
+                self.drop_collection_if_exists(old_target)
+            return
+        if self.client.has_collection(self.collection_name):
+            self.client.drop_collection(self.collection_name)
+        self.client.create_alias(collection_name=collection_name, alias=self.collection_name)
+
+    def alias_target(self, alias: str) -> str | None:
+        try:
+            payload = self.client.describe_alias(alias)
+        except Exception:
+            return None
+        if isinstance(payload, dict):
+            target = payload.get("collection_name") or payload.get("collection")
+            return str(target) if target else None
+        target = getattr(payload, "collection_name", None) or getattr(payload, "collection", None)
+        return str(target) if target else None
+
+    def drop_collection_if_exists(self, collection_name: str) -> None:
+        if self.client.has_collection(collection_name):
+            self.client.drop_collection(collection_name)
 
     def search(self, query_vector: list[float], top_k: int, *, paper_ids: list[str] | None = None) -> list[SearchResult]:
         """用 query 向量检索最相近的 chunk。"""

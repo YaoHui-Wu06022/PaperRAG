@@ -3,7 +3,6 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
-paper_rag.zip
 data/index/
 密匙/
 data/

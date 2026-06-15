@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import uuid
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from pathlib import Path
@@ -119,11 +120,6 @@ def extract_paper_data(
         overlap_chars=chunk_overlap_chars,
     )
 
-    if paper_data_dir.exists():
-        # 单篇论文输出目录整体替换，避免旧 chunks/references 残留
-        shutil.rmtree(paper_data_dir)
-    paper_data_dir.mkdir(parents=True, exist_ok=True)
-
     metadata_out = {
         "title": title,
         "author": metadata.get("author") or [],
@@ -132,11 +128,18 @@ def extract_paper_data(
         "pdf_path": metadata.get("pdf_path"),
     }
     toc = {"sections": sections, "tree": tree}
-    write_json(paper_data_dir / "metadata.json", metadata_out)
-    write_json(paper_data_dir / "toc.json", toc)
-    write_jsonl(paper_data_dir / "blocks.jsonl", blocks)
-    write_jsonl(paper_data_dir / "chunks.jsonl", chunks)
-    write_jsonl(paper_data_dir / "references.jsonl", references)
+    tmp_dir = paper_data_dir.with_name(f"{paper_data_dir.name}.tmp-{uuid.uuid4().hex}")
+    try:
+        tmp_dir.mkdir(parents=True, exist_ok=False)
+        write_json(tmp_dir / "metadata.json", metadata_out)
+        write_json(tmp_dir / "toc.json", toc)
+        write_jsonl(tmp_dir / "blocks.jsonl", blocks)
+        write_jsonl(tmp_dir / "chunks.jsonl", chunks)
+        write_jsonl(tmp_dir / "references.jsonl", references)
+        replace_paper_data_dir(tmp_dir, paper_data_dir)
+    finally:
+        if tmp_dir.exists():
+            shutil.rmtree(tmp_dir, ignore_errors=True)
 
     return ExtractionResult(
         title=title,
@@ -152,6 +155,25 @@ def extract_paper_data(
         reference_count=len(references),
         warnings=warnings,
     )
+
+
+def replace_paper_data_dir(tmp_dir: Path, paper_data_dir: Path) -> None:
+    """用完整临时目录替换正式目录；失败时保留或恢复旧目录。"""
+    backup_dir = paper_data_dir.with_name(f"{paper_data_dir.name}.bak-{uuid.uuid4().hex}")
+    moved_old = False
+    try:
+        paper_data_dir.parent.mkdir(parents=True, exist_ok=True)
+        if paper_data_dir.exists():
+            paper_data_dir.rename(backup_dir)
+            moved_old = True
+        tmp_dir.rename(paper_data_dir)
+    except Exception:
+        if moved_old and backup_dir.exists() and not paper_data_dir.exists():
+            backup_dir.rename(paper_data_dir)
+        raise
+    else:
+        if backup_dir.exists():
+            shutil.rmtree(backup_dir, ignore_errors=True)
 
 
 def extraction_warnings(boundaries: dict[str, int | None]) -> list[str]:

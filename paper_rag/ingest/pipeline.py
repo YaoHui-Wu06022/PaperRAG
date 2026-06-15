@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import datetime as dt
+import json
 import re
 import shutil
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 from paper_rag.config import Settings
 from paper_rag.utils import infer_title_from_pdf_name, normalize_text, replace_dir, safe_move_dir, sha256_file, slugify_title
@@ -26,6 +28,21 @@ from paper_rag.ingest.metadata_sources.arxiv import ArxivClient
 from paper_rag.ingest.metadata_sources.dblp import DblpClient
 from paper_rag.ingest.metadata_sources.semantic_scholar import SemanticScholarClient
 from paper_rag.corpus.venues import normalize_venue_for_storage
+
+
+MINERU_SOURCE_SIDECAR = "_paper_rag_source.json"
+
+
+@dataclass
+class MinerUOutputIndex:
+    """可复用 MinerU 输出索引；hash 精确优先，旧数据只允许唯一标题精确命中。"""
+
+    by_source_hash: dict[str, list[Path]] = field(default_factory=dict)
+    by_title: dict[str, list[Path]] = field(default_factory=dict)
+    titles: dict[Path, str] = field(default_factory=dict)
+
+    def __len__(self) -> int:
+        return len(self.titles)
 
 
 @dataclass(frozen=True)
@@ -411,9 +428,9 @@ def archive_deleted_record(settings: Settings, record: ManifestRecord) -> None:
             record.mineru_output_path = None
 
 
-def build_existing_output_index(mineru_output_dir: Path) -> dict[str, Path]:
+def build_existing_output_index(mineru_output_dir: Path) -> MinerUOutputIndex:
     """按目录名和解析出的标题建立 MinerU 输出复用索引。"""
-    index: dict[str, Path] = {}
+    index = MinerUOutputIndex()
     for directory in sorted(mineru_output_dir.iterdir() if mineru_output_dir.exists() else []):
         if not directory.is_dir():
             continue
@@ -421,14 +438,17 @@ def build_existing_output_index(mineru_output_dir: Path) -> dict[str, Path]:
             find_content_list_v2_path(directory)
         except FileNotFoundError:
             continue
-        index[normalize_text(directory.name)] = directory
+        sidecar = load_mineru_source_sidecar(directory)
+        file_hash = str(sidecar.get("file_hash") or "").strip() if sidecar else ""
+        if file_hash:
+            index.by_source_hash.setdefault(file_hash, []).append(directory)
         try:
             title = title_from_output(directory)
         except Exception:
             title = None
         if title:
-            index[normalize_text(title)] = directory
-            index[normalize_text(slugify_title(title))] = directory
+            index.titles[directory] = title
+            index.by_title.setdefault(normalize_text(title), []).append(directory)
     return index
 
 
@@ -443,7 +463,7 @@ def ensure_mineru_output(
     record: ManifestRecord,
     pdf_path: Path,
     file_hash: str,
-    output_index: dict[str, Path],
+    output_index: MinerUOutputIndex,
     summary: IngestSummary,
     report: Reporter | None = None,
 ) -> Path:
@@ -452,21 +472,35 @@ def ensure_mineru_output(
     if record.mineru_output_path and Path(record.mineru_output_path).exists():
         summary.reused.append(pdf_path.name)
         emit("[ingest] 正在复用 manifest 中的 MinerU 输出")
-        return Path(record.mineru_output_path)
+        output_dir = Path(record.mineru_output_path)
+        write_mineru_source_sidecar(output_dir, file_hash, pdf_path)
+        return output_dir
     if record.archived_mineru_output_path and Path(record.archived_mineru_output_path).exists():
         src = Path(record.archived_mineru_output_path)
         dst = settings.mineru_output_dir / src.name
         replace_dir(src, dst)
         summary.restored.append(pdf_path.name)
         emit("[ingest] 已从归档恢复 MinerU 输出")
+        write_mineru_source_sidecar(dst, file_hash, pdf_path)
         return dst
     inferred_title = infer_title_from_pdf_name(pdf_path)
-    inferred_norm = normalize_text(inferred_title)
-    for key, directory in output_index.items():
-        if inferred_norm and (inferred_norm == key or inferred_norm in key or key in inferred_norm):
-            summary.reused.append(pdf_path.name)
-            emit("[ingest] 通过标题匹配复用已有 MinerU 输出")
-            return directory
+    hash_matches = output_index.by_source_hash.get(file_hash) or []
+    if hash_matches:
+        output_dir = unique_mineru_match(hash_matches, f"file_hash={file_hash}")
+        summary.reused.append(pdf_path.name)
+        emit("[ingest] 通过 source sidecar 精确复用 MinerU 输出")
+        return output_dir
+    title_matches = exact_title_matches(output_index, pdf_path)
+    if title_matches:
+        output_dir = unique_mineru_match(title_matches, inferred_title)
+        summary.reused.append(pdf_path.name)
+        emit("[ingest] 通过唯一标题精确匹配复用已有 MinerU 输出")
+        write_mineru_source_sidecar(output_dir, file_hash, pdf_path)
+        return output_dir
+    fuzzy_matches = fuzzy_title_matches(output_index, pdf_path)
+    if fuzzy_matches:
+        names = ", ".join(path.name for path in fuzzy_matches[:3])
+        raise MinerUError(f"找到可能匹配但不精确的 MinerU 输出，已拒绝自动复用：{names}")
     if not settings.mineru_api_key:
         raise MinerUError(".env 中缺少 MINERU_API_KEY，且没有找到可复用的 MinerU 输出")
     title_slug = slugify_title(inferred_title)
@@ -478,7 +512,84 @@ def ensure_mineru_output(
         settings.mineru_language,
     )
     emit("[ingest] 正在调用 MinerU API")
-    return client.parse_local_pdf(pdf_path, output_dir, file_hash)
+    parsed_output = client.parse_local_pdf(pdf_path, output_dir, file_hash)
+    write_mineru_source_sidecar(parsed_output, file_hash, pdf_path)
+    return parsed_output
+
+
+def unique_mineru_match(matches: list[Path], label: str) -> Path:
+    unique = sorted({path.resolve(): path for path in matches}.values(), key=lambda path: path.name.lower())
+    if len(unique) != 1:
+        names = ", ".join(path.name for path in unique[:5])
+        raise MinerUError(f"MinerU 输出匹配不唯一：{label} -> {names}")
+    return unique[0]
+
+
+def exact_title_matches(index: MinerUOutputIndex, pdf_path: Path) -> list[Path]:
+    matches: list[Path] = []
+    for key in inferred_title_keys(pdf_path):
+        matches.extend(index.by_title.get(key) or [])
+    return dedupe_paths(matches)
+
+
+def fuzzy_title_matches(index: MinerUOutputIndex, pdf_path: Path) -> list[Path]:
+    keys = inferred_title_keys(pdf_path)
+    matches: list[Path] = []
+    for directory, title in index.titles.items():
+        title_key = normalize_text(title)
+        if any(key and title_key and key != title_key and (key in title_key or title_key in key) for key in keys):
+            matches.append(directory)
+    return dedupe_paths(matches)
+
+
+def inferred_title_keys(pdf_path: Path) -> list[str]:
+    title = infer_title_from_pdf_name(pdf_path)
+    candidates = [title, strip_leading_year_from_title(title)]
+    return [
+        key
+        for index, key in enumerate(normalize_text(value) for value in candidates)
+        if key and key not in list(normalize_text(item) for item in candidates[:index])
+    ]
+
+
+def strip_leading_year_from_title(title: str) -> str:
+    return re.sub(r"^\s*(?:19|20)\d{2}[\s_\-.]+", "", title).strip()
+
+
+def dedupe_paths(paths: list[Path]) -> list[Path]:
+    output: list[Path] = []
+    seen: set[Path] = set()
+    for path in paths:
+        resolved = path.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        output.append(path)
+    return output
+
+
+def load_mineru_source_sidecar(output_dir: Path) -> dict[str, Any] | None:
+    path = output_dir / MINERU_SOURCE_SIDECAR
+    if not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def write_mineru_source_sidecar(output_dir: Path, file_hash: str, pdf_path: Path) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "file_hash": file_hash,
+        "pdf_name": pdf_path.name,
+        "recorded_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+    }
+    (output_dir / MINERU_SOURCE_SIDECAR).write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
 def rename_pdf_if_needed(pdf_dir: Path, pdf_path: Path, year: int, title: str, file_hash: str) -> Path | None:
