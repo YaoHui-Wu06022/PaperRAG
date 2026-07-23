@@ -29,6 +29,26 @@ QUERY_STOP_PHRASES = (
     "吗",
 )
 
+GENERIC_LATIN_CONTENT_TERMS = {
+    "architecture",
+    "architectures",
+    "dataset",
+    "datasets",
+    "experiment",
+    "experiments",
+    "loss",
+    "method",
+    "methods",
+    "metric",
+    "metrics",
+    "model",
+    "models",
+    "result",
+    "results",
+    "train",
+    "training",
+}
+
 
 def build_content_retrieval_query(
     settings: Settings,
@@ -41,10 +61,15 @@ def build_content_retrieval_query(
     parser_result = route.parser_result or {}
     compare_objects = list(parser_result.get("compare_objects") or [])
     content_objects = list(parser_result.get("content_objects") or [])
+    required_terms = dedupe_text([
+        *(parser_result.get("required_terms") or []),
+        *required_terms_from_content_objects(content_objects),
+    ])
     excluded_scope_terms = scope_query_exclusion_terms(route)
     compare_terms = non_scope_compare_objects(compare_objects, excluded_scope_terms)
     cleaned_query = remove_scope_terms_from_query(route.query, excluded_scope_terms)
-    query_terms = query_keyword_terms(cleaned_query) if not content_objects and not compare_terms else []
+    dense_only = route.intent in {"summary", "compare"} and not content_objects and not compare_terms
+    query_terms = query_keyword_terms(cleaned_query) if not dense_only and not content_objects and not compare_terms else []
     source_terms = {
         # source_terms 只用于 debug，帮助检查哪些词被纳入或排除。
         "content_objects": content_objects,
@@ -54,8 +79,12 @@ def build_content_retrieval_query(
         "excluded_scope_terms": excluded_scope_terms,
     }
     base_bm25_terms = dedupe_text([*content_objects, *compare_terms, *query_terms])
-    translated_terms = translate_bm25_terms(settings, base_bm25_terms, translator=translator, warnings=warnings)
-    bm25_queries = dedupe_text([*base_bm25_terms, *translated_terms]) or [route.query]
+    translated_terms = (
+        translate_bm25_terms(settings, base_bm25_terms, translator=translator, warnings=warnings)
+        if not dense_only
+        else []
+    )
+    bm25_queries = [] if dense_only else dedupe_text([*base_bm25_terms, *translated_terms]) or [route.query]
     return {
         "dense_query": build_dense_query(route.query, route.intent, content_objects, compare_objects),
         "bm25_queries": bm25_queries,
@@ -63,7 +92,23 @@ def build_content_retrieval_query(
         "intent": route.intent,
         "content_objects": content_objects,
         "compare_objects": compare_objects,
+        "required_terms": required_terms,
     }
+
+
+def required_terms_from_content_objects(content_objects: list[str]) -> list[str]:
+    terms: list[str] = []
+    for content_object in content_objects:
+        tokens = [
+            token.casefold()
+            for token in re.findall(r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*", str(content_object or ""))
+        ]
+        meaningful = [token for token in tokens if token not in GENERIC_LATIN_CONTENT_TERMS]
+        if len(meaningful) == 1:
+            terms.append(meaningful[0])
+        elif len(meaningful) > 1:
+            terms.append(" ".join(meaningful))
+    return dedupe_text(terms)
 
 
 def build_dense_query(

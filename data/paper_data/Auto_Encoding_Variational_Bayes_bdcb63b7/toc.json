@@ -11,8 +11,8 @@
       "path": [
         "Abstract"
       ],
-      "start_block_index": 8,
-      "end_block_index": 8
+      "start_block_index": 4,
+      "end_block_index": 4
     },
     {
       "section_id": "sec_1",
@@ -25,8 +25,8 @@
       "path": [
         "1 Introduction"
       ],
-      "start_block_index": 9,
-      "end_block_index": 11
+      "start_block_index": 5,
+      "end_block_index": 7
     },
     {
       "section_id": "sec_2",
@@ -39,7 +39,7 @@
       "path": [
         "2 Method"
       ],
-      "start_block_index": 12,
+      "start_block_index": 8,
       "end_block_index": 62
     },
     {
@@ -54,8 +54,8 @@
         "2 Method",
         "2.1 Problem scenario"
       ],
-      "start_block_index": 18,
-      "end_block_index": 26
+      "start_block_index": 14,
+      "end_block_index": 25
     },
     {
       "section_id": "sec_2_2",
@@ -69,8 +69,8 @@
         "2 Method",
         "2.2 The variational bound"
       ],
-      "start_block_index": 27,
-      "end_block_index": 34
+      "start_block_index": 26,
+      "end_block_index": 33
     },
     {
       "section_id": "sec_2_3",
@@ -84,8 +84,8 @@
         "2 Method",
         "2.3 The SGVB estimator and AEVB algorithm"
       ],
-      "start_block_index": 35,
-      "end_block_index": 52
+      "start_block_index": 34,
+      "end_block_index": 50
     },
     {
       "section_id": "sec_2_4",
@@ -99,7 +99,7 @@
         "2 Method",
         "2.4 The reparameterization trick"
       ],
-      "start_block_index": 53,
+      "start_block_index": 51,
       "end_block_index": 62
     },
     {
@@ -114,7 +114,7 @@
         "3 Example: Variational Auto-Encoder"
       ],
       "start_block_index": 63,
-      "end_block_index": 73
+      "end_block_index": 72
     },
     {
       "section_id": "sec_4",
@@ -127,8 +127,8 @@
       "path": [
         "4 Related work"
       ],
-      "start_block_index": 74,
-      "end_block_index": 79
+      "start_block_index": 73,
+      "end_block_index": 78
     },
     {
       "section_id": "sec_5",
@@ -141,8 +141,8 @@
       "path": [
         "5 Experiments"
       ],
-      "start_block_index": 80,
-      "end_block_index": 93
+      "start_block_index": 79,
+      "end_block_index": 92
     },
     {
       "section_id": "sec_6",
@@ -155,8 +155,8 @@
       "path": [
         "6 Conclusion"
       ],
-      "start_block_index": 94,
-      "end_block_index": 95
+      "start_block_index": 93,
+      "end_block_index": 94
     },
     {
       "section_id": "sec_7",
@@ -169,8 +169,8 @@
       "path": [
         "7 Future work"
       ],
-      "start_block_index": 96,
-      "end_block_index": 98
+      "start_block_index": 95,
+      "end_block_index": 97
     },
     {
       "section_id": "sec_appendix",
@@ -183,8 +183,8 @@
       "path": [
         "Appendix"
       ],
-      "start_block_index": 101,
-      "end_block_index": 176
+      "start_block_index": 116,
+      "end_block_index": 193
     }
   ],
   "tree": [
@@ -198,8 +198,8 @@
       "path": [
         "Abstract"
       ],
-      "start_block_index": 8,
-      "end_block_index": 8,
+      "start_block_index": 4,
+      "end_block_index": 4,
       "children": []
     },
     {
@@ -212,8 +212,8 @@
       "path": [
         "1 Introduction"
       ],
-      "start_block_index": 9,
-      "end_block_index": 11,
+      "start_block_index": 5,
+      "end_block_index": 7,
       "children": []
     },
     {
@@ -226,7 +226,7 @@
       "path": [
         "2 Method"
       ],
-      "start_block_index": 12,
+      "start_block_index": 8,
       "end_block_index": 62,
       "children": [
         {
@@ -240,8 +240,8 @@
             "2 Method",
             "2.1 Problem scenario"
           ],
-          "start_block_index": 18,
-          "end_block_index": 26,
+          "start_block_index": 14,
+          "end_block_index": 25,
           "children": []
         },
         {
@@ -255,8 +255,8 @@
             "2 Method",
             "2.2 The variational bound"
           ],
-          "start_block_index": 27,
-          "end_block_index": 34,
+          "start_block_index": 26,
+          "end_block_index": 33,
           "children": []
         },
         {
@@ -270,8 +270,8 @@
             "2 Method",
             "2.3 The SGVB estimator and AEVB algorithm"
           ],
-          "start_block_index": 35,
-          "end_block_index": 52,
+          "start_block_index": 34,
+          "end_block_index": 50,
           "children": []
         },
         {
@@ -285,7 +285,7 @@
             "2 Method",
             "2.4 The reparameterization trick"
           ],
-          "start_block_index": 53,
+          "start_block_index": 51,
           "end_block_index": 62,
           "children": []
         }
@@ -302,7 +302,7 @@
         "3 Example: Variational Auto-Encoder"
       ],
       "start_block_index": 63,
-      "end_block_index": 73,
+      "end_block_index": 72,
       "children": []
     },
     {
@@ -315,8 +315,8 @@
       "path": [
         "4 Related work"
       ],
-      "start_block_index": 74,
-      "end_block_index": 79,
+      "start_block_index": 73,
+      "end_block_index": 78,
       "children": []
     },
     {
@@ -329,8 +329,8 @@
       "path": [
         "5 Experiments"
       ],
-      "start_block_index": 80,
-      "end_block_index": 93,
+      "start_block_index": 79,
+      "end_block_index": 92,
       "children": []
     },
     {
@@ -343,8 +343,8 @@
       "path": [
         "6 Conclusion"
       ],
-      "start_block_index": 94,
-      "end_block_index": 95,
+      "start_block_index": 93,
+      "end_block_index": 94,
       "children": []
     },
     {
@@ -357,8 +357,8 @@
       "path": [
         "7 Future work"
       ],
-      "start_block_index": 96,
-      "end_block_index": 98,
+      "start_block_index": 95,
+      "end_block_index": 97,
       "children": []
     },
     {
@@ -371,8 +371,8 @@
       "path": [
         "Appendix"
       ],
-      "start_block_index": 101,
-      "end_block_index": 176,
+      "start_block_index": 116,
+      "end_block_index": 193,
       "children": []
     }
   ]

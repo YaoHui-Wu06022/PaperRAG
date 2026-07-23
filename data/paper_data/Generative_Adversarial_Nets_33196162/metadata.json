@@ -1,4 +1,5 @@
 {
+  "title": "Generative Adversarial Nets",
   "author": [
     "Ian J. Goodfellow",
     "Jean Pouget-Abadie",
@@ -9,11 +10,10 @@
     "Aaron Courville",
     "Yoshua Bengio"
   ],
-  "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2014_Generative_Adversarial_Nets.pdf",
-  "title": "Generative Adversarial Nets",
-  "venue": "NeurIPS",
   "year": {
     "preprint_year": 2014,
     "publish_year": 2014
-  }
+  },
+  "venue": "NeurIPS",
+  "pdf_path": "E:\\Pythonproject\\RAG_project\\data\\pdf\\2014_Generative_Adversarial_Nets.pdf"
 }

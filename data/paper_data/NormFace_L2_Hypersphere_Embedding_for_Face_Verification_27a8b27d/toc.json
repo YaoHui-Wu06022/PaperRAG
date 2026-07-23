@@ -11,8 +11,8 @@
       "path": [
         "Abstract"
       ],
-      "start_block_index": 39,
-      "end_block_index": 39
+      "start_block_index": 25,
+      "end_block_index": 25
     },
     {
       "section_id": "sec_1",
@@ -25,8 +25,8 @@
       "path": [
         "1 INTRODUCTION"
       ],
-      "start_block_index": 44,
-      "end_block_index": 78
+      "start_block_index": 30,
+      "end_block_index": 56
     },
     {
       "section_id": "sec_2",
@@ -39,8 +39,8 @@
       "path": [
         "2 RELATED WORKS"
       ],
-      "start_block_index": 79,
-      "end_block_index": 89
+      "start_block_index": 57,
+      "end_block_index": 67
     },
     {
       "section_id": "sec_3",
@@ -53,8 +53,8 @@
       "path": [
         "3 L _ { 2 }NORMALIZATION LAYER"
       ],
-      "start_block_index": 90,
-      "end_block_index": 132
+      "start_block_index": 68,
+      "end_block_index": 110
     },
     {
       "section_id": "sec_3_1",
@@ -68,8 +68,8 @@
         "3 L _ { 2 }NORMALIZATION LAYER",
         "3.1 Necessity of Normalization"
       ],
-      "start_block_index": 92,
-      "end_block_index": 104
+      "start_block_index": 70,
+      "end_block_index": 82
     },
     {
       "section_id": "sec_3_2",
@@ -83,8 +83,8 @@
         "3 L _ { 2 }NORMALIZATION LAYER",
         "3.2 Layer De\u001bnition"
       ],
-      "start_block_index": 105,
-      "end_block_index": 115
+      "start_block_index": 83,
+      "end_block_index": 93
     },
     {
       "section_id": "sec_3_3",
@@ -98,8 +98,8 @@
         "3 L _ { 2 }NORMALIZATION LAYER",
         "3.3 Reformulating Softmax Loss"
       ],
-      "start_block_index": 116,
-      "end_block_index": 132
+      "start_block_index": 94,
+      "end_block_index": 110
     },
     {
       "section_id": "sec_4",
@@ -112,8 +112,8 @@
       "path": [
         "4 REFORMULATING METRIC LEARNING"
       ],
-      "start_block_index": 133,
-      "end_block_index": 158
+      "start_block_index": 111,
+      "end_block_index": 136
     },
     {
       "section_id": "sec_5",
@@ -126,8 +126,8 @@
       "path": [
         "5 EXPERIMENT"
       ],
-      "start_block_index": 159,
-      "end_block_index": 194
+      "start_block_index": 137,
+      "end_block_index": 173
     },
     {
       "section_id": "sec_5_1",
@@ -141,8 +141,8 @@
         "5 EXPERIMENT",
         "5.1 Implementation Details"
       ],
-      "start_block_index": 161,
-      "end_block_index": 164
+      "start_block_index": 139,
+      "end_block_index": 142
     },
     {
       "section_id": "sec_5_2",
@@ -156,8 +156,8 @@
         "5 EXPERIMENT",
         "5.2 Experiments on LFW"
       ],
-      "start_block_index": 165,
-      "end_block_index": 189
+      "start_block_index": 143,
+      "end_block_index": 168
     },
     {
       "section_id": "sec_5_3",
@@ -171,8 +171,8 @@
         "5 EXPERIMENT",
         "5.3 Experiments on YTF"
       ],
-      "start_block_index": 190,
-      "end_block_index": 194
+      "start_block_index": 169,
+      "end_block_index": 173
     },
     {
       "section_id": "sec_6",
@@ -185,8 +185,8 @@
       "path": [
         "6 CONCLUSION AND FUTURE WORK"
       ],
-      "start_block_index": 195,
-      "end_block_index": 198
+      "start_block_index": 174,
+      "end_block_index": 177
     }
   ],
   "tree": [
@@ -200,8 +200,8 @@
       "path": [
         "Abstract"
       ],
-      "start_block_index": 39,
-      "end_block_index": 39,
+      "start_block_index": 25,
+      "end_block_index": 25,
       "children": []
     },
     {
@@ -214,8 +214,8 @@
       "path": [
         "1 INTRODUCTION"
       ],
-      "start_block_index": 44,
-      "end_block_index": 78,
+      "start_block_index": 30,
+      "end_block_index": 56,
       "children": []
     },
     {
@@ -228,8 +228,8 @@
       "path": [
         "2 RELATED WORKS"
       ],
-      "start_block_index": 79,
-      "end_block_index": 89,
+      "start_block_index": 57,
+      "end_block_index": 67,
       "children": []
     },
     {
@@ -242,8 +242,8 @@
       "path": [
         "3 L _ { 2 }NORMALIZATION LAYER"
       ],
-      "start_block_index": 90,
-      "end_block_index": 132,
+      "start_block_index": 68,
+      "end_block_index": 110,
       "children": [
         {
           "section_id": "sec_3_1",
@@ -256,8 +256,8 @@
             "3 L _ { 2 }NORMALIZATION LAYER",
             "3.1 Necessity of Normalization"
           ],
-          "start_block_index": 92,
-          "end_block_index": 104,
+          "start_block_index": 70,
+          "end_block_index": 82,
           "children": []
         },
         {
@@ -271,8 +271,8 @@
             "3 L _ { 2 }NORMALIZATION LAYER",
             "3.2 Layer De\u001bnition"
           ],
-          "start_block_index": 105,
-          "end_block_index": 115,
+          "start_block_index": 83,
+          "end_block_index": 93,
           "children": []
         },
         {
@@ -286,8 +286,8 @@
             "3 L _ { 2 }NORMALIZATION LAYER",
             "3.3 Reformulating Softmax Loss"
           ],
-          "start_block_index": 116,
-          "end_block_index": 132,
+          "start_block_index": 94,
+          "end_block_index": 110,
           "children": []
         }
       ]
@@ -302,8 +302,8 @@
       "path": [
         "4 REFORMULATING METRIC LEARNING"
       ],
-      "start_block_index": 133,
-      "end_block_index": 158,
+      "start_block_index": 111,
+      "end_block_index": 136,
       "children": []
     },
     {
@@ -316,8 +316,8 @@
       "path": [
         "5 EXPERIMENT"
       ],
-      "start_block_index": 159,
-      "end_block_index": 194,
+      "start_block_index": 137,
+      "end_block_index": 173,
       "children": [
         {
           "section_id": "sec_5_1",
@@ -330,8 +330,8 @@
             "5 EXPERIMENT",
             "5.1 Implementation Details"
           ],
-          "start_block_index": 161,
-          "end_block_index": 164,
+          "start_block_index": 139,
+          "end_block_index": 142,
           "children": []
         },
         {
@@ -345,8 +345,8 @@
             "5 EXPERIMENT",
             "5.2 Experiments on LFW"
           ],
-          "start_block_index": 165,
-          "end_block_index": 189,
+          "start_block_index": 143,
+          "end_block_index": 168,
           "children": []
         },
         {
@@ -360,8 +360,8 @@
             "5 EXPERIMENT",
             "5.3 Experiments on YTF"
           ],
-          "start_block_index": 190,
-          "end_block_index": 194,
+          "start_block_index": 169,
+          "end_block_index": 173,
           "children": []
         }
       ]
@@ -376,8 +376,8 @@
       "path": [
         "6 CONCLUSION AND FUTURE WORK"
       ],
-      "start_block_index": 195,
-      "end_block_index": 198,
+      "start_block_index": 174,
+      "end_block_index": 177,
       "children": []
     }
   ]

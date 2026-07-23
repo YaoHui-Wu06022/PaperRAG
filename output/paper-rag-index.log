@@ -1,0 +1,6 @@
+[index] 已加载 854 个 chunk
+[index] 正在生成 chunk embedding
+[index] 正在通过 staging collection 重建 Milvus alias：paper_rag_chunks
+[index] 已写入 854 个向量
+[index] 正在写入 BM25 索引：E:\Pythonproject\RAG_project\data\index\bm25_chunks.json
+已将 854 个 chunk 写入 paper_rag_chunks。

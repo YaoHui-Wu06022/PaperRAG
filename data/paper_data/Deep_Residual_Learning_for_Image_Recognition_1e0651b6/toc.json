@@ -11,8 +11,8 @@
       "path": [
         "Abstract"
       ],
-      "start_block_index": 4,
-      "end_block_index": 5
+      "start_block_index": 7,
+      "end_block_index": 8
     },
     {
       "section_id": "sec_1",
@@ -25,8 +25,8 @@
       "path": [
         "1 Introduction"
       ],
-      "start_block_index": 6,
-      "end_block_index": 24
+      "start_block_index": 9,
+      "end_block_index": 27
     },
     {
       "section_id": "sec_2",
@@ -39,8 +39,8 @@
       "path": [
         "2 Related Work"
       ],
-      "start_block_index": 25,
-      "end_block_index": 31
+      "start_block_index": 28,
+      "end_block_index": 34
     },
     {
       "section_id": "sec_3",
@@ -53,8 +53,8 @@
       "path": [
         "3 Deep Residual Learning"
       ],
-      "start_block_index": 32,
-      "end_block_index": 58
+      "start_block_index": 35,
+      "end_block_index": 64
     },
     {
       "section_id": "sec_3_1",
@@ -68,8 +68,8 @@
         "3 Deep Residual Learning",
         "3.1 Residual Learning"
       ],
-      "start_block_index": 33,
-      "end_block_index": 36
+      "start_block_index": 36,
+      "end_block_index": 39
     },
     {
       "section_id": "sec_3_2",
@@ -83,8 +83,8 @@
         "3 Deep Residual Learning",
         "3.2 Identity Mapping by Shortcuts"
       ],
-      "start_block_index": 37,
-      "end_block_index": 47
+      "start_block_index": 40,
+      "end_block_index": 50
     },
     {
       "section_id": "sec_3_3",
@@ -98,8 +98,8 @@
         "3 Deep Residual Learning",
         "3.3 Network Architectures"
       ],
-      "start_block_index": 48,
-      "end_block_index": 55
+      "start_block_index": 51,
+      "end_block_index": 61
     },
     {
       "section_id": "sec_3_4",
@@ -113,8 +113,8 @@
         "3 Deep Residual Learning",
         "3.4 Implementation"
       ],
-      "start_block_index": 56,
-      "end_block_index": 58
+      "start_block_index": 62,
+      "end_block_index": 64
     },
     {
       "section_id": "sec_4",
@@ -127,8 +127,8 @@
       "path": [
         "4 Experiments"
       ],
-      "start_block_index": 59,
-      "end_block_index": 123
+      "start_block_index": 65,
+      "end_block_index": 129
     },
     {
       "section_id": "sec_4_1",
@@ -142,8 +142,8 @@
         "4 Experiments",
         "4.1 ImageNet Classification"
       ],
-      "start_block_index": 60,
-      "end_block_index": 95
+      "start_block_index": 66,
+      "end_block_index": 100
     },
     {
       "section_id": "sec_4_2",
@@ -157,8 +157,8 @@
         "4 Experiments",
         "4.2 CIFAR-10 and Analysis"
       ],
-      "start_block_index": 96,
-      "end_block_index": 119
+      "start_block_index": 101,
+      "end_block_index": 125
     },
     {
       "section_id": "sec_4_3",
@@ -172,8 +172,8 @@
         "4 Experiments",
         "4.3 Object Detection on PASCAL and MS COCO"
       ],
-      "start_block_index": 120,
-      "end_block_index": 123
+      "start_block_index": 126,
+      "end_block_index": 129
     },
     {
       "section_id": "sec_appendix",
@@ -186,8 +186,8 @@
       "path": [
         "Appendix"
       ],
-      "start_block_index": 128,
-      "end_block_index": 171
+      "start_block_index": 182,
+      "end_block_index": 225
     }
   ],
   "tree": [
@@ -201,8 +201,8 @@
       "path": [
         "Abstract"
       ],
-      "start_block_index": 4,
-      "end_block_index": 5,
+      "start_block_index": 7,
+      "end_block_index": 8,
       "children": []
     },
     {
@@ -215,8 +215,8 @@
       "path": [
         "1 Introduction"
       ],
-      "start_block_index": 6,
-      "end_block_index": 24,
+      "start_block_index": 9,
+      "end_block_index": 27,
       "children": []
     },
     {
@@ -229,8 +229,8 @@
       "path": [
         "2 Related Work"
       ],
-      "start_block_index": 25,
-      "end_block_index": 31,
+      "start_block_index": 28,
+      "end_block_index": 34,
       "children": []
     },
     {
@@ -243,8 +243,8 @@
       "path": [
         "3 Deep Residual Learning"
       ],
-      "start_block_index": 32,
-      "end_block_index": 58,
+      "start_block_index": 35,
+      "end_block_index": 64,
       "children": [
         {
           "section_id": "sec_3_1",
@@ -257,8 +257,8 @@
             "3 Deep Residual Learning",
             "3.1 Residual Learning"
           ],
-          "start_block_index": 33,
-          "end_block_index": 36,
+          "start_block_index": 36,
+          "end_block_index": 39,
           "children": []
         },
         {
@@ -272,8 +272,8 @@
             "3 Deep Residual Learning",
             "3.2 Identity Mapping by Shortcuts"
           ],
-          "start_block_index": 37,
-          "end_block_index": 47,
+          "start_block_index": 40,
+          "end_block_index": 50,
           "children": []
         },
         {
@@ -287,8 +287,8 @@
             "3 Deep Residual Learning",
             "3.3 Network Architectures"
           ],
-          "start_block_index": 48,
-          "end_block_index": 55,
+          "start_block_index": 51,
+          "end_block_index": 61,
           "children": []
         },
         {
@@ -302,8 +302,8 @@
             "3 Deep Residual Learning",
             "3.4 Implementation"
           ],
-          "start_block_index": 56,
-          "end_block_index": 58,
+          "start_block_index": 62,
+          "end_block_index": 64,
           "children": []
         }
       ]
@@ -318,8 +318,8 @@
       "path": [
         "4 Experiments"
       ],
-      "start_block_index": 59,
-      "end_block_index": 123,
+      "start_block_index": 65,
+      "end_block_index": 129,
       "children": [
         {
           "section_id": "sec_4_1",
@@ -332,8 +332,8 @@
             "4 Experiments",
             "4.1 ImageNet Classification"
           ],
-          "start_block_index": 60,
-          "end_block_index": 95,
+          "start_block_index": 66,
+          "end_block_index": 100,
           "children": []
         },
         {
@@ -347,8 +347,8 @@
             "4 Experiments",
             "4.2 CIFAR-10 and Analysis"
           ],
-          "start_block_index": 96,
-          "end_block_index": 119,
+          "start_block_index": 101,
+          "end_block_index": 125,
           "children": []
         },
         {
@@ -362,8 +362,8 @@
             "4 Experiments",
             "4.3 Object Detection on PASCAL and MS COCO"
           ],
-          "start_block_index": 120,
-          "end_block_index": 123,
+          "start_block_index": 126,
+          "end_block_index": 129,
           "children": []
         }
       ]
@@ -378,8 +378,8 @@
       "path": [
         "Appendix"
       ],
-      "start_block_index": 128,
-      "end_block_index": 171,
+      "start_block_index": 182,
+      "end_block_index": 225,
       "children": []
     }
   ]

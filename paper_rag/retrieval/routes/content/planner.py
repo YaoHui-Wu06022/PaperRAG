@@ -156,14 +156,17 @@ def retrieve_context_units(
             )
     except Exception as exc:
         warnings.append(f"Dense 检索失败：{exc}；仅使用 BM25 候选")
-    with timings.measure("bm25"):
-        bm25_results = corpus.bm25_index.search_many(
-            retrieval_query["bm25_queries"],
-            settings.plan_bm25_top_k,
-            allowed_chunk_ids=[chunk_document.chunk_id for chunk_document in chunk_documents],
-        )
+    bm25_results = []
+    if retrieval_query["bm25_queries"]:
+        with timings.measure("bm25"):
+            bm25_results = corpus.bm25_index.search_many(
+                retrieval_query["bm25_queries"],
+                settings.plan_bm25_top_k,
+                allowed_chunk_ids=[chunk_document.chunk_id for chunk_document in chunk_documents],
+            )
     with timings.measure("fusion_context"):
         fused = fuse_chunk_hits(chunk_documents_by_id, dense_results, bm25_results)
+        fused = filter_required_term_candidates(fused, retrieval_query.get("required_terms") or [])
         return [
             context_unit(
                 settings,
@@ -173,6 +176,24 @@ def retrieve_context_units(
             )
             for candidate in fused[:settings.plan_final_top_k]
         ]
+
+
+def filter_required_term_candidates(candidates: list[Any], required_terms: list[Any]) -> list[Any]:
+    terms = [str(term or "").strip().casefold() for term in required_terms if str(term or "").strip()]
+    if not terms:
+        return candidates
+    return [candidate for candidate in candidates if candidate_matches_required_terms(candidate, terms)]
+
+
+def candidate_matches_required_terms(candidate: Any, terms: list[str]) -> bool:
+    chunk_document = candidate.chunk_document
+    haystack = "\n".join([
+        chunk_document.title,
+        chunk_document.section_path_text,
+        chunk_document.text,
+        chunk_document.embedding_text,
+    ]).casefold()
+    return all(term in haystack for term in terms)
 
 
 def merge_group_contexts(group_results: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:

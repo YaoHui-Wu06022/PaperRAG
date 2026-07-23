@@ -1,0 +1,247 @@
+{
+  "query": "Transformer后续论文主要用到了哪些网络结构？",
+  "route": "content",
+  "status": "ok",
+  "intent": "list",
+  "plan": {
+    "scope": [
+      "paper follow Attention is All you Need"
+    ],
+    "content_objects": [
+      "网络结构"
+    ],
+    "retrieval_query": {
+      "dense_query": "查找论文中关于网络结构的相关内容",
+      "bm25_queries": [
+        "网络结构",
+        "network structure",
+        "Network architecture"
+      ]
+    }
+  },
+  "resolved": {
+    "aliases": [
+      {
+        "alias": "Transformer",
+        "canonical": "Attention is All you Need"
+      }
+    ]
+  },
+  "results": {
+    "contexts": [
+      {
+        "chunk_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0000",
+        "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+        "section_path": [
+          "Abstract"
+        ],
+        "pages": [
+          1
+        ],
+        "text": "While the Transformer architecture has become the de-facto standard for natural language processing tasks, its applications to computer vision remain limited. In vision, attention is either applied in conjunction with convolutional networks, or used to replace certain components of convolutional networks while keeping their overall structure in place. We show that this reliance on CNNs is not necessary and a pure transformer applied directly to sequences of image patches can perform very well on image classification tasks. When pre-trained on large amounts of data and transferred to multiple mid-sized or small image recognition benchmarks (ImageNet, CIFAR-100, VTAB, etc.), Vision Transformer (ViT) attains excellent results compared to state-of-the-art convolutional networks while requiring substantially fewer computational resources to train.1"
+      },
+      {
+        "chunk_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0029",
+        "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+        "section_path": [
+          "4 EXPERIMENTS",
+          "4.5 INSPECTING VISION TRANSFORMER"
+        ],
+        "pages": [
+          8
+        ],
+        "text": "4.5 INSPECTING VISION TRANSFORMER\n\nTo begin to understand how the Vision Transformer processes image data, we analyze its internal representations. The first layer of the Vision Transformer linearly projects the flattened patches into a lower-dimensional space (Eq. 1). Figure 7 (left) shows the top principal components of the the learned embedding filters. The components resemble plausible basis functions for a low-dimensional representation of the fine structure within each patch.\n\nAfter the projection, a learned position embedding is added to the patch representations. Figure 7 (center) shows that the model learns to encode distance within the image in the similarity of position embeddings, i.e. closer patches tend to have more similar position embeddings. Further, the row-column structure appears; patches in the same row/column have similar embeddings. Finally, a sinusoidal structure is sometimes apparent for larger grids (Appendix D). That the position embeddings learn to represent 2D image topology explains why hand-crafted 2D-aware embedding variants do not yield improvements (Appendix D.4).\n\nSelf-attention allows ViT to integrate information across the entire image even in the lowest layers. We investigate to what degree the network makes use of this capability. Specifically, we compute the average distance in image space across which information is integrated, based on the attention weights (Figure 7, right). This “attention distance” is analogous to receptive field size in CNNs.\n\nWe find that some heads attend to most of the image already in the lowest layers, showing that the ability to integrate information globally is indeed used by the model. Other attention heads have consistently small attention distances in the low layers. This highly localized attention is less pronounced in hybrid models that apply a ResNet before the Transformer (Figure 7, right), suggesting that it may serve a similar function as early convolutional layers in CNNs. Further, the attention distance increases with network depth. Globally, we find that the model attends to image regions that are semantically relevant for classification (Figure 6)."
+      },
+      {
+        "chunk_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0030",
+        "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+        "section_path": [
+          "4 EXPERIMENTS",
+          "4.5 INSPECTING VISION TRANSFORMER"
+        ],
+        "pages": [
+          8
+        ],
+        "text": "To begin to understand how the Vision Transformer processes image data, we analyze its internal representations. The first layer of the Vision Transformer linearly projects the flattened patches into a lower-dimensional space (Eq. 1). Figure 7 (left) shows the top principal components of the the learned embedding filters. The components resemble plausible basis functions for a low-dimensional representation of the fine structure within each patch.\n\nAfter the projection, a learned position embedding is added to the patch representations. Figure 7 (center) shows that the model learns to encode distance within the image in the similarity of position embeddings, i.e. closer patches tend to have more similar position embeddings. Further, the row-column structure appears; patches in the same row/column have similar embeddings. Finally, a sinusoidal structure is sometimes apparent for larger grids (Appendix D). That the position embeddings learn to represent 2D image topology explains why hand-crafted 2D-aware embedding variants do not yield improvements (Appendix D.4).\n\nSelf-attention allows ViT to integrate information across the entire image even in the lowest layers. We investigate to what degree the network makes use of this capability. Specifically, we compute the average distance in image space across which information is integrated, based on the attention weights (Figure 7, right). This “attention distance” is analogous to receptive field size in CNNs.\n\nWe find that some heads attend to most of the image already in the lowest layers, showing that the ability to integrate information globally is indeed used by the model. Other attention heads have consistently small attention distances in the low layers. This highly localized attention is less pronounced in hybrid models that apply a ResNet before the Transformer (Figure 7, right), suggesting that it may serve a similar function as early convolutional layers in CNNs. Further, the attention distance increases with network depth. Globally, we find that the model attends to image regions that are semantically relevant for classification (Figure 6).\n\nFigure 6: Representative examples of attention from the output token to the input space. See Appendix D.7 for details."
+      },
+      {
+        "chunk_id": "BERT_Pre_training_of_Deep_Bidirectional_Transformers_for_Language_Understanding_5692a551::chunk_0002",
+        "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+        "section_path": [
+          "1 Introduction"
+        ],
+        "pages": [
+          1
+        ],
+        "text": "Language model pre-training has been shown to be effective for improving many natural language processing tasks (Dai and Le, 2015; Peters et al., 2018a; Radford et al., 2018; Howard and Ruder, 2018). These include sentence-level tasks such as natural language inference (Bowman et al., 2015; Williams et al., 2018) and paraphrasing (Dolan and Brockett, 2005), which aim to predict the relationships between sentences by analyzing them holistically, as well as token-level tasks such as named entity recognition and question answering, where models are required to produce fine-grained output at the token level (Tjong Kim Sang and De Meulder, 2003; Rajpurkar et al., 2016).\n\nThere are two existing strategies for applying pre-trained language representations to downstream tasks: feature-based and fine-tuning. The feature-based approach, such as ELMo (Peters et al., 2018a), uses task-specific architectures that include the pre-trained representations as additional features. The fine-tuning approach, such as the Generative Pre-trained Transformer (OpenAI GPT) (Radford et al., 2018), introduces minimal task-specific parameters, and is trained on the downstream tasks by simply fine-tuning all pretrained parameters. The two approaches share the same objective function during pre-training, where they use unidirectional language models to learn general language representations.\n\nWe argue that current techniques restrict the power of the pre-trained representations, especially for the fine-tuning approaches. The major limitation is that standard language models are unidirectional, and this limits the choice of architectures that can be used during pre-training. For example, in OpenAI GPT, the authors use a left-toright architecture, where every token can only attend to previous tokens in the self-attention layers of the Transformer (Vaswani et al., 2017). Such restrictions are sub-optimal for sentence-level tasks, and could be very harmful when applying finetuning based approaches to token-level tasks such as question answering, where it is crucial to incorporate context from both directions.\n\nIn this paper, we improve the fine-tuning based approaches by proposing BERT: Bidirectional Encoder Representations from Transformers. BERT alleviates the previously mentioned unidirectionality constraint by using a “masked language model” (MLM) pre-training objective, inspired by the Cloze task (Taylor, 1953). The masked language model randomly masks some of the tokens from the input, and the objective is to predict the original vocabulary id of the masked\n\nword based only on its context. Unlike left-toright language model pre-training, the MLM objective enables the representation to fuse the left and the right context, which allows us to pretrain a deep bidirectional Transformer. In addition to the masked language model, we also use a “next sentence prediction” task that jointly pretrains text-pair representations. The contributions of our paper are as follows:\n\n• We demonstrate the importance of bidirectional pre-training for language representations. Unlike Radford et al. (2018), which uses unidirectional language models for pre-training, BERT uses masked language models to enable pretrained deep bidirectional representations. This is also in contrast to Peters et al. (2018a), which uses a shallow concatenation of independently trained left-to-right and right-to-left LMs.\n• We show that pre-trained representations reduce the need for many heavily-engineered taskspecific architectures. BERT is the first finetuning based representation model that achieves state-of-the-art performance on a large suite of sentence-level and token-level tasks, outperforming many task-specific architectures.\n• BERT advances the state of the art for eleven NLP tasks. The code and pre-trained models are available at https://github.com/ google-research/bert."
+      },
+      {
+        "chunk_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0013",
+        "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+        "section_path": [
+          "3 METHOD",
+          "3.1 VISION TRANSFORMER (VIT)"
+        ],
+        "pages": [
+          4
+        ],
+        "text": "\\mathbf {z} _ {\\ell} = \\operatorname {M L P} \\left(\\ln \\left(\\mathbf {z} ^ {\\prime} _ {\\ell}\\right)\\right) + \\mathbf {z} ^ {\\prime} _ {\\ell}, \\quad \\ell = 1 \\dots L \\tag {3}\n\n\\mathbf {y} = \\operatorname {L N} \\left(\\mathbf {z} _ {L} ^ {0}\\right) \\tag {4}\n\nInductive bias. We note that Vision Transformer has much less image-specific inductive bias than CNNs. In CNNs, locality, two-dimensional neighborhood structure, and translation equivariance are baked into each layer throughout the whole model. In ViT, only MLP layers are local and translationally equivariant, while the self-attention layers are global. The two-dimensional neighborhood structure is used very sparingly: in the beginning of the model by cutting the image into patches and at fine-tuning time for adjusting the position embeddings for images of different resolution (as described below). Other than that, the position embeddings at initialization time carry no information about the 2D positions of the patches and all spatial relations between the patches have to be learned from scratch.\n\nHybrid Architecture. As an alternative to raw image patches, the input sequence can be formed from feature maps of a CNN (LeCun et al., 1989). In this hybrid model, the patch embedding projection E (Eq. 1) is applied to patches extracted from a CNN feature map. As a special case, the patches can have spatial size 1x1, which means that the input sequence is obtained by simply flattening the spatial dimensions of the feature map and projecting to the Transformer dimension. The classification input embedding and position embeddings are added as described above."
+      },
+      {
+        "chunk_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0023",
+        "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+        "section_path": [
+          "4 EXPERIMENTS",
+          "4.2 COMPARISON TO STATE OF THE ART"
+        ],
+        "pages": [
+          6
+        ],
+        "text": "Table 2 shows the results. The smaller ViT-L/16 model pre-trained on JFT-300M outperforms BiT-L (which is pre-trained on the same dataset) on all tasks, while requiring substantially less computational resources to train. The larger model, ViT-H/14, further improves the performance, especially on the more challenging datasets – ImageNet, CIFAR-100, and the VTAB suite. Interestingly, this\n\nTable: Table 2: Comparison with state of the art on popular image classification benchmarks. We report mean and standard deviation of the accuracies, averaged over three fine-tuning runs. Vision Transformer models pre-trained on the JFT-300M dataset outperform ResNet-based baselines on all datasets, while taking substantially less computational resources to pre-train. ViT pre-trained on the smaller public ImageNet-21k dataset performs well too. ∗Slightly improved 8 8 . 5 \\%result reported in Touvron et al. (2020).\nColumns: column_1, Ours-JFT(ViT-H/14), Ours-JFT(ViT-L/16), Ours-I21k(ViT-L/16), BiT-L(ResNet152x4), Noisy Student(EfficientNet-L2).\nRow 1: column_1 = ImageNet; Ours-JFT(ViT-H/14) = 88.55±0.04; Ours-JFT(ViT-L/16) = 87.76±0.03; Ours-I21k(ViT-L/16) = 85.30±0.02; BiT-L(ResNet152x4) = 87.54±0.02; Noisy Student(EfficientNet-L2) = 88.4/88.5*.\nRow 2: column_1 = ImageNet ReaL; Ours-JFT(ViT-H/14) = 90.72±0.05; Ours-JFT(ViT-L/16) = 90.54±0.03; Ours-I21k(ViT-L/16) = 88.62±0.05; BiT-L(ResNet152x4) = 90.54; Noisy Student(EfficientNet-L2) = 90.55.\nRow 3: column_1 = CIFAR-10; Ours-JFT(ViT-H/14) = 99.50±0.06; Ours-JFT(ViT-L/16) = 99.42±0.03; Ours-I21k(ViT-L/16) = 99.15±0.03; BiT-L(ResNet152x4) = 99.37±0.06; Noisy Student(EfficientNet-L2) = -.\nRow 4: column_1 = CIFAR-100; Ours-JFT(ViT-H/14) = 94.55±0.04; Ours-JFT(ViT-L/16) = 93.90±0.05; Ours-I21k(ViT-L/16) = 93.25±0.05; BiT-L(ResNet152x4) = 93.51±0.08; Noisy Student(EfficientNet-L2) = -.\nRow 5: column_1 = Oxford-IIIT Pets; Ours-JFT(ViT-H/14) = 97.56±0.03; Ours-JFT(ViT-L/16) = 97.32±0.11; Ours-I21k(ViT-L/16) = 94.67±0.15; BiT-L(ResNet152x4) = 96.62±0.23; Noisy Student(EfficientNet-L2) = -.\nRow 6: column_1 = Oxford Flowers-102; Ours-JFT(ViT-H/14) = 99.68±0.02; Ours-JFT(ViT-L/16) = 99.74±0.00; Ours-I21k(ViT-L/16) = 99.61±0.02; BiT-L(ResNet152x4) = 99.63±0.03; Noisy Student(EfficientNet-L2) = -.\nRow 7: column_1 = VTAB (19 tasks); Ours-JFT(ViT-H/14) = 77.63±0.23; Ours-JFT(ViT-L/16) = 76.28±0.46; Ours-I21k(ViT-L/16) = 72.72±0.21; BiT-L(ResNet152x4) = 76.29±1.70; Noisy Student(EfficientNet-L2) = -.\nRow 8: column_1 = TPUv3-core-days; Ours-JFT(ViT-H/14) = 2.5k; Ours-JFT(ViT-L/16) = 0.68k; Ours-I21k(ViT-L/16) = 0.23k; BiT-L(ResNet152x4) = 9.9k; Noisy Student(EfficientNet-L2) = 12.3k.\n\nFigure 2: Breakdown of VTAB performance in Natural, Specialized, and Structured task groups.\n\nmodel still took substantially less compute to pre-train than prior state of the art. However, we note that pre-training efficiency may be affected not only by the architecture choice, but also other parameters, such as training schedule, optimizer, weight decay, etc. We provide a controlled study of performance vs. compute for different architectures in Section 4.4. Finally, the ViT-L/16 model pre-trained on the public ImageNet-21k dataset performs well on most datasets too, while taking fewer resources to pre-train: it could be trained using a standard cloud TPUv3 with 8 cores in approximately 30 days.\n\nFigure 2 decomposes the VTAB tasks into their respective groups, and compares to previous SOTA methods on this benchmark: BiT, VIVI – a ResNet co-trained on ImageNet and Youtube (Tschannen et al., 2020), and S4L – supervised plus semi-supervised learning on ImageNet (Zhai et al., 2019a). ViT-H/14 outperforms BiT-R152x4, and other methods, on the Natural and Structured tasks. On the Specialized the performance of the top two models is similar."
+      },
+      {
+        "chunk_id": "BERT_Pre_training_of_Deep_Bidirectional_Transformers_for_Language_Understanding_5692a551::chunk_0009",
+        "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+        "section_path": [
+          "3 BERT"
+        ],
+        "pages": [
+          3
+        ],
+        "text": "3 BERT\n\nWe introduce BERT and its detailed implementation in this section. There are two steps in our framework: pre-training and fine-tuning. During pre-training, the model is trained on unlabeled data over different pre-training tasks. For finetuning, the BERT model is first initialized with the pre-trained parameters, and all of the parameters are fine-tuned using labeled data from the downstream tasks. Each downstream task has separate fine-tuned models, even though they are initialized with the same pre-trained parameters. The question-answering example in Figure 1 will serve as a running example for this section.\n\nA distinctive feature of BERT is its unified architecture across different tasks. There is mini-\n\nmal difference between the pre-trained architecture and the final downstream architecture.\n\nModel Architecture BERT’s model architecture is a multi-layer bidirectional Transformer encoder based on the original implementation described in Vaswani et al. (2017) and released in the tensor2tensor library.1 Because the use of Transformers has become common and our implementation is almost identical to the original, we will omit an exhaustive background description of the model architecture and refer readers to Vaswani et al. (2017) as well as excellent guides such as “The Annotated Transformer.”2\n\nIn this work, we denote the number of layers (i.e., Transformer blocks) as L, the hidden size as H, and the number of self-attention heads as A.3 We primarily report results on two model sizes: BERTBASE _ { \\mathrm { L } = 1 2 }, _ { \\mathrm { H } = 7 6 8 }, _ { \\mathrm { A } = 1 2 }, Total Parameters \\scriptstyle = 1 1 0 \\mathbf { M }) and BERTLARGE \\mathrm { L } { = } 2 4, _ { \\mathrm { H } = 1 0 2 4 }_ { \\mathrm { A } = 1 6 }, Total Parameter \\scriptstyle : = 3 4 0 \\mathbf { M } ).\n\nBERTBASE was chosen to have the same model size as OpenAI GPT for comparison purposes. Critically, however, the BERT Transformer uses bidirectional self-attention, while the GPT Transformer uses constrained self-attention where every token can only attend to context to its left.4"
+      },
+      {
+        "chunk_id": "BERT_Pre_training_of_Deep_Bidirectional_Transformers_for_Language_Understanding_5692a551::chunk_0000",
+        "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+        "section_path": [
+          "Abstract"
+        ],
+        "pages": [
+          1
+        ],
+        "text": "We introduce a new language representation model called BERT, which stands for Bidirectional Encoder Representations from Transformers. Unlike recent language representation models (Peters et al., 2018a; Radford et al., 2018), BERT is designed to pretrain deep bidirectional representations from unlabeled text by jointly conditioning on both left and right context in all layers. As a result, the pre-trained BERT model can be finetuned with just one additional output layer to create state-of-the-art models for a wide range of tasks, such as question answering and language inference, without substantial taskspecific architecture modifications.\n\nBERT is conceptually simple and empirically powerful. It obtains new state-of-the-art results on eleven natural language processing tasks, including pushing the GLUE score to 8 0 . 5 \\%7 . 7 \\%point absolute improvement), MultiNLI accuracy to 8 6 . 7 \\%4 . 6 \\%absolute improvement), SQuAD v1.1 question answering Test F1 to 93.2 (1.5 point absolute improvement) and SQuAD v2.0 Test F1 to 83.1 (5.1 point absolute improvement)."
+      }
+    ]
+  },
+  "debug": {
+    "parse_status": "ok",
+    "scope_records": [
+      "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+      "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale"
+    ],
+    "context_units": [
+      {
+        "chunk_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0000",
+        "score": 0.03200204813108039,
+        "sources": {
+          "dense": {
+            "rank": 2,
+            "score": 0.33163273334503174
+          },
+          "bm25": {
+            "rank": 3,
+            "score": 0.03076923076923077
+          }
+        }
+      },
+      {
+        "chunk_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0029",
+        "score": 0.03125763125763126,
+        "sources": {
+          "dense": {
+            "rank": 3,
+            "score": 0.324748158454895
+          },
+          "bm25": {
+            "rank": 5,
+            "score": 0.016129032258064516
+          }
+        }
+      },
+      {
+        "chunk_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0030",
+        "score": 0.031099324975891997,
+        "sources": {
+          "dense": {
+            "rank": 8,
+            "score": 0.2995017468929291
+          },
+          "bm25": {
+            "rank": 1,
+            "score": 0.03278688524590164
+          }
+        }
+      },
+      {
+        "chunk_id": "BERT_Pre_training_of_Deep_Bidirectional_Transformers_for_Language_Understanding_5692a551::chunk_0002",
+        "score": 0.02964426877470356,
+        "sources": {
+          "dense": {
+            "rank": 6,
+            "score": 0.302542507648468
+          },
+          "bm25": {
+            "rank": 9,
+            "score": 0.015151515151515152
+          }
+        }
+      },
+      {
+        "chunk_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0013",
+        "score": 0.028958333333333336,
+        "sources": {
+          "dense": {
+            "rank": 15,
+            "score": 0.27535420656204224
+          },
+          "bm25": {
+            "rank": 4,
+            "score": 0.030158730158730156
+          }
+        }
+      },
+      {
+        "chunk_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0023",
+        "score": 0.028381642512077296,
+        "sources": {
+          "dense": {
+            "rank": 9,
+            "score": 0.29611536860466003
+          },
+          "bm25": {
+            "rank": 12,
+            "score": 0.014492753623188406
+          }
+        }
+      },
+      {
+        "chunk_id": "BERT_Pre_training_of_Deep_Bidirectional_Transformers_for_Language_Understanding_5692a551::chunk_0009",
+        "score": 0.02813852813852814,
+        "sources": {
+          "dense": {
+            "rank": 17,
+            "score": 0.27394193410873413
+          },
+          "bm25": {
+            "rank": 6,
+            "score": 0.015873015873015872
+          }
+        }
+      },
+      {
+        "chunk_id": "BERT_Pre_training_of_Deep_Bidirectional_Transformers_for_Language_Understanding_5692a551::chunk_0000",
+        "score": 0.027106227106227107,
+        "sources": {
+          "dense": {
+            "rank": 18,
+            "score": 0.27286452054977417
+          },
+          "bm25": {
+            "rank": 10,
+            "score": 0.014925373134328358
+          }
+        }
+      }
+    ]
+  }
+}

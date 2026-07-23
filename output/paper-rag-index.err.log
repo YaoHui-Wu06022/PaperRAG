@@ -1,0 +1,20 @@
+2026-07-19 20:59:07,110 [ERROR][_log_rpc_error]: RPC error: [describe_alias], <MilvusException: (code=1600, message=alias not found[database=db_1df8803ca7eeec8][alias=paper_rag_chunks])>, <elapsed:62.0ms>
+Traceback:
+Traceback (most recent call last):
+  File "C:\Users\Fallinty\anaconda3\Lib\site-packages\pymilvus\decorators.py", line 404, in handler
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Fallinty\anaconda3\Lib\site-packages\pymilvus\decorators.py", line 451, in handler
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Fallinty\anaconda3\Lib\site-packages\pymilvus\decorators.py", line 342, in handler
+    raise e from e
+  File "C:\Users\Fallinty\anaconda3\Lib\site-packages\pymilvus\decorators.py", line 305, in handler
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Fallinty\anaconda3\Lib\site-packages\pymilvus\client\grpc_handler.py", line 1403, in describe_alias
+    check_status(response.status)
+  File "C:\Users\Fallinty\anaconda3\Lib\site-packages\pymilvus\client\utils.py", line 76, in check_status
+    raise MilvusException(status.code, status.reason, status.error_code)
+pymilvus.exceptions.MilvusException: <MilvusException: (code=1600, message=alias not found[database=db_1df8803ca7eeec8][alias=paper_rag_chunks])>
+ (decorators.py:358)

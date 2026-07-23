@@ -23,7 +23,7 @@
         "Jimmy Ba"
       ],
       "year": {
-        "preprint_year": null,
+        "preprint_year": 2014,
         "publish_year": 2015
       },
       "venue": "ICLR"
@@ -94,7 +94,7 @@
         "Max Welling"
       ],
       "year": {
-        "preprint_year": null,
+        "preprint_year": 2013,
         "publish_year": 2014
       },
       "venue": "ICLR"
@@ -122,7 +122,7 @@
         "Christian Szegedy"
       ],
       "year": {
-        "preprint_year": null,
+        "preprint_year": 2015,
         "publish_year": 2015
       },
       "venue": "ICML"
@@ -216,7 +216,7 @@
         "Yoshua Bengio"
       ],
       "year": {
-        "preprint_year": null,
+        "preprint_year": 2014,
         "publish_year": 2014
       },
       "venue": "NeurIPS"
@@ -342,15 +342,6 @@
       "ref_index": 11,
       "raw_text": "11. He, K., Zhang, X., Ren, S., Sun, J.: Deep residual learning for image recognition. arXiv preprint arXiv:1512.03385 (2015)",
       "page": 15,
-      "source_block_id": "b000131",
-      "match_type": "canonical_title"
-    },
-    {
-      "source_paper_id": "A_Discriminative_Feature_Learning_Approach_for_Deep_Face_Recognition_4770aa24",
-      "target_paper_id": "ImageNet_Classification_with_Deep_Convolutional_Neural_Networks_90137160",
-      "ref_index": 18,
-      "raw_text": "18. Krizhevsky, A., Sutskever, I., Hinton, G.E.: Imagenet classification with deep convolutional neural networks. In: Advances in neural information processing systems. pp. 1097–1105 (2012)",
-      "page": 16,
       "source_block_id": "b000134",
       "match_type": "canonical_title"
     },
@@ -360,7 +351,16 @@
       "ref_index": 33,
       "raw_text": "33. Szegedy, C., Liu, W., Jia, Y., Sermanet, P., Reed, S., Anguelov, D., Erhan, D., Vanhoucke, V., Rabinovich, A.: Going deeper with convolutions. In: Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition. pp. 1–9 (2015)",
       "page": 16,
-      "source_block_id": "b000134",
+      "source_block_id": "b000158",
+      "match_type": "canonical_title"
+    },
+    {
+      "source_paper_id": "Adam_A_Method_for_Stochastic_Optimization_eab9c73a",
+      "target_paper_id": "Auto_Encoding_Variational_Bayes_bdcb63b7",
+      "ref_index": 9,
+      "raw_text": "Kingma, Diederik P and Welling, Max. Auto-Encoding Variational Bayes. In The 2nd International Conference on Learning Representations (ICLR), 2013.",
+      "page": 10,
+      "source_block_id": "b000119",
       "match_type": "canonical_title"
     },
     {
@@ -387,7 +387,7 @@
       "ref_index": 17,
       "raw_text": "[17] S. Ioffe and C. Szegedy. Batch normalization: Accelerating deep network training by reducing internal covariate shift. In ICML, 2015.",
       "page": 9,
-      "source_block_id": "b000140",
+      "source_block_id": "b000143",
       "match_type": "canonical_title"
     },
     {
@@ -396,7 +396,7 @@
       "ref_index": 24,
       "raw_text": "[24] A. Krizhevsky, I. Sutskever, and G. Hinton. Imagenet classification with deep convolutional neural networks. In NIPS, 2012.",
       "page": 9,
-      "source_block_id": "b000141",
+      "source_block_id": "b000150",
       "match_type": "canonical_title"
     },
     {
@@ -405,7 +405,7 @@
       "ref_index": 37,
       "raw_text": "[37] C. Szegedy, S. Ioffe, and V. Vanhoucke. Inception-v4, inception-resnet and the impact of residual connections on learning. In ICLR Workshop, 2016.",
       "page": 9,
-      "source_block_id": "b000141",
+      "source_block_id": "b000163",
       "match_type": "canonical_title"
     },
     {
@@ -414,61 +414,61 @@
       "ref_index": 38,
       "raw_text": "[38] C. Szegedy, W. Liu, Y. Jia, P. Sermanet, S. Reed, D. Anguelov, D. Erhan, V. Vanhoucke, and A. Rabinovich. Going deeper with convolutions. In CVPR, 2015.",
       "page": 9,
-      "source_block_id": "b000141",
+      "source_block_id": "b000164",
       "match_type": "canonical_title"
     },
     {
       "source_paper_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839",
       "target_paper_id": "BERT_Pre_training_of_Deep_Bidirectional_Transformers_for_Language_Understanding_5692a551",
-      "ref_index": 12,
+      "ref_index": 14,
       "raw_text": "Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. BERT: Pre-training of deep bidirectional transformers for language understanding. In NAACL, 2019.",
       "page": 10,
-      "source_block_id": "b000107",
+      "source_block_id": "b000122",
       "match_type": "canonical_title"
     },
     {
       "source_paper_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839",
       "target_paper_id": "Deep_Residual_Learning_for_Image_Recognition_1e0651b6",
-      "ref_index": 14,
+      "ref_index": 16,
       "raw_text": "Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In CVPR, 2016.",
       "page": 10,
-      "source_block_id": "b000107",
+      "source_block_id": "b000124",
       "match_type": "canonical_title"
     },
     {
       "source_paper_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839",
       "target_paper_id": "Batch_Normalization_Accelerating_Deep_Network_Training_by_Reducing_Internal_Covariate_Shift_f2eb20b4",
-      "ref_index": 21,
+      "ref_index": 23,
       "raw_text": "Sergey Ioffe and Christian Szegedy. Batch normalization: Accelerating deep network training by reducing internal covariate shift. 2015.",
       "page": 11,
-      "source_block_id": "b000110",
+      "source_block_id": "b000133",
       "match_type": "canonical_title"
     },
     {
       "source_paper_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839",
       "target_paper_id": "Adam_A_Method_for_Stochastic_Optimization_eab9c73a",
-      "ref_index": 22,
+      "ref_index": 24,
       "raw_text": "Diederik P. Kingma and Jimmy Ba. Adam: A method for stochastic optimization. In ICLR, 2015.",
       "page": 11,
-      "source_block_id": "b000110",
+      "source_block_id": "b000134",
       "match_type": "canonical_title"
     },
     {
       "source_paper_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839",
       "target_paper_id": "ImageNet_Classification_with_Deep_Convolutional_Neural_Networks_90137160",
-      "ref_index": 25,
+      "ref_index": 27,
       "raw_text": "Alex Krizhevsky, Ilya Sutskever, and Geoffrey E. Hinton. Imagenet classification with deep convolutional neural networks. In NIPS, 2012.",
       "page": 11,
-      "source_block_id": "b000110",
+      "source_block_id": "b000137",
       "match_type": "canonical_title"
     },
     {
       "source_paper_id": "An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839",
       "target_paper_id": "Attention_is_All_you_Need_d87d482d",
-      "ref_index": 45,
+      "ref_index": 47,
       "raw_text": "Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin. Attention is all you need. In NIPS, 2017.",
       "page": 12,
-      "source_block_id": "b000113",
+      "source_block_id": "b000159",
       "match_type": "canonical_title"
     },
     {
@@ -477,7 +477,7 @@
       "ref_index": 10,
       "raw_text": "[10] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition, pages 770–778, 2016.",
       "page": 10,
-      "source_block_id": "b000133",
+      "source_block_id": "b000128",
       "match_type": "canonical_title"
     },
     {
@@ -486,7 +486,7 @@
       "ref_index": 12,
       "raw_text": "[12] Sepp Hochreiter and Jürgen Schmidhuber. Long short-term memory. Neural computation, 9(8):1735–1780, 1997.",
       "page": 10,
-      "source_block_id": "b000133",
+      "source_block_id": "b000130",
       "match_type": "canonical_title"
     },
     {
@@ -495,7 +495,7 @@
       "ref_index": 17,
       "raw_text": "[17] Diederik Kingma and Jimmy Ba. Adam: A method for stochastic optimization. In ICLR, 2015.",
       "page": 10,
-      "source_block_id": "b000133",
+      "source_block_id": "b000135",
       "match_type": "canonical_title"
     },
     {
@@ -504,7 +504,7 @@
       "ref_index": 27,
       "raw_text": "[27] Nitish Srivastava, Geoffrey E Hinton, Alex Krizhevsky, Ilya Sutskever, and Ruslan Salakhutdinov. Dropout: a simple way to prevent neural networks from overfitting. Journal of Machine Learning Research, 15(1):1929–1958, 2014.",
       "page": 11,
-      "source_block_id": "b000135",
+      "source_block_id": "b000146",
       "match_type": "canonical_title"
     },
     {
@@ -513,7 +513,7 @@
       "ref_index": 46,
       "raw_text": "Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Lukasz Kaiser, and Illia Polosukhin. 2017. Attention is all you need. In Advances in Neural Information Processing Systems, pages 6000–6010.",
       "page": 11,
-      "source_block_id": "b000120",
+      "source_block_id": "b000168",
       "match_type": "canonical_title"
     },
     {
@@ -522,7 +522,7 @@
       "ref_index": 19,
       "raw_text": "Srivastava, Nitish, Hinton, Geoffrey, Krizhevsky, Alex, Sutskever, Ilya, and Salakhutdinov, Ruslan. Dropout: A simple way to prevent neural networks from overfitting. J. Mach. Learn. Res., 15(1):1929–1958, January 2014.",
       "page": 9,
-      "source_block_id": "b000158",
+      "source_block_id": "b000148",
       "match_type": "canonical_title"
     },
     {
@@ -531,7 +531,7 @@
       "ref_index": 21,
       "raw_text": "Szegedy, Christian, Liu, Wei, Jia, Yangqing, Sermanet, Pierre, Reed, Scott, Anguelov, Dragomir, Erhan, Dumitru, Vanhoucke, Vincent, and Rabinovich, Andrew. Going deeper with convolutions. CoRR, abs/1409.4842, 2014.",
       "page": 9,
-      "source_block_id": "b000160",
+      "source_block_id": "b000150",
       "match_type": "canonical_title"
     },
     {
@@ -540,7 +540,7 @@
       "ref_index": 15,
       "raw_text": "[15] S. Hochreiter and J. Schmidhuber. Long short-term memory. Neural computation, 9(8):1735–1780, 1997.",
       "page": 9,
-      "source_block_id": "b000125",
+      "source_block_id": "b000145",
       "match_type": "canonical_title"
     },
     {
@@ -549,7 +549,7 @@
       "ref_index": 16,
       "raw_text": "[16] S. Ioffe and C. Szegedy. Batch normalization: Accelerating deep network training by reducing internal covariate shift. In ICML, 2015.",
       "page": 9,
-      "source_block_id": "b000125",
+      "source_block_id": "b000146",
       "match_type": "canonical_title"
     },
     {
@@ -558,7 +558,7 @@
       "ref_index": 21,
       "raw_text": "[21] A. Krizhevsky, I. Sutskever, and G. Hinton. Imagenet classification with deep convolutional neural networks. In NIPS, 2012.",
       "page": 9,
-      "source_block_id": "b000125",
+      "source_block_id": "b000151",
       "match_type": "canonical_title"
     },
     {
@@ -567,7 +567,7 @@
       "ref_index": 44,
       "raw_text": "[44] C. Szegedy, W. Liu, Y. Jia, P. Sermanet, S. Reed, D. Anguelov, D. Erhan, V. Vanhoucke, and A. Rabinovich. Going deeper with convolutions. In CVPR, 2015.",
       "page": 9,
-      "source_block_id": "b000126",
+      "source_block_id": "b000174",
       "match_type": "canonical_title"
     },
     {
@@ -576,7 +576,7 @@
       "ref_index": 10,
       "raw_text": "A. Krizhevsky, I. Sutskever, and G. E. Hinton. Imagenet classification with deep convolutional neural networks. In Advances in Neural Information Processing Systems 25, pages 1106–1114, 2012.",
       "page": 28,
-      "source_block_id": "b000291",
+      "source_block_id": "b000288",
       "match_type": "canonical_title"
     },
     {
@@ -585,7 +585,7 @@
       "ref_index": 11,
       "raw_text": "[11] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In CVPR, 2016.",
       "page": 9,
-      "source_block_id": "b000121",
+      "source_block_id": "b000129",
       "match_type": "canonical_title"
     },
     {
@@ -594,7 +594,7 @@
       "ref_index": 14,
       "raw_text": "[14] Jie Hu, Li Shen, and Gang Sun. Squeeze-and-excitation networks. In CVPR, 2018.",
       "page": 9,
-      "source_block_id": "b000121",
+      "source_block_id": "b000132",
       "match_type": "canonical_title"
     },
     {
@@ -603,7 +603,7 @@
       "ref_index": 17,
       "raw_text": "[17] Alex Krizhevsky, Ilya Sutskever, and Geoffrey E Hinton. ImageNet classification with deep convolutional neural networks. In NIPS, 2012.",
       "page": 9,
-      "source_block_id": "b000121",
+      "source_block_id": "b000135",
       "match_type": "canonical_title"
     },
     {
@@ -612,16 +612,16 @@
       "ref_index": 30,
       "raw_text": "[30] Christian Szegedy, Wei Liu, Yangqing Jia, Pierre Sermanet, Scott Reed, Dragomir Anguelov, Dumitru Erhan, Vincent Vanhoucke, and Andrew Rabinovich. Going deeper with convolutions. In CVPR, 2015.",
       "page": 9,
-      "source_block_id": "b000122",
+      "source_block_id": "b000148",
       "match_type": "canonical_title"
     },
     {
       "source_paper_id": "ECA_Net_Efficient_Channel_Attention_for_Deep_Convolutional_Neural_Networks_4e782a60",
       "target_paper_id": "Aggregated_Residual_Transformations_for_Deep_Neural_Networks_1ebca04b",
       "ref_index": 34,
-      "raw_text": "[34] Saining Xie, Ross B. Girshick, Piotr Dollar, Zhuowen Tu, ´ and Kaiming He. Aggregated residual transformations for deep neural networks. In CVPR, 2017.",
+      "raw_text": "[34] Saining Xie, Ross B. Girshick, Piotr Dollar, Zhuowen Tu,´ and Kaiming He. Aggregated residual transformations for deep neural networks. In CVPR, 2017.",
       "page": 9,
-      "source_block_id": "b000122",
+      "source_block_id": "b000152",
       "match_type": "canonical_title"
     },
     {
@@ -630,7 +630,7 @@
       "ref_index": 9,
       "raw_text": "He, K., Zhang, X., Ren, S., and Sun, J. Deep residual learning for image recognition. CVPR, pp. 770–778, 2016.",
       "page": 9,
-      "source_block_id": "b000118",
+      "source_block_id": "b000122",
       "match_type": "canonical_title"
     },
     {
@@ -639,7 +639,7 @@
       "ref_index": 14,
       "raw_text": "Hu, J., Shen, L., and Sun, G. Squeeze-and-excitation networks. CVPR, 2018.",
       "page": 9,
-      "source_block_id": "b000118",
+      "source_block_id": "b000127",
       "match_type": "canonical_title"
     },
     {
@@ -648,7 +648,7 @@
       "ref_index": 19,
       "raw_text": "Ioffe, S. and Szegedy, C. Batch normalization: Accelerating deep network training by reducing internal covariate shift. ICML, pp. 448–456, 2015.",
       "page": 10,
-      "source_block_id": "b000120",
+      "source_block_id": "b000133",
       "match_type": "canonical_title"
     },
     {
@@ -657,7 +657,7 @@
       "ref_index": 23,
       "raw_text": "Krizhevsky, A., Sutskever, I., and Hinton, G. E. Imagenet classification with deep convolutional neural networks. In NIPS, pp. 1097–1105, 2012.",
       "page": 10,
-      "source_block_id": "b000120",
+      "source_block_id": "b000137",
       "match_type": "canonical_title"
     },
     {
@@ -666,7 +666,7 @@
       "ref_index": 40,
       "raw_text": "Srivastava, N., Hinton, G., Krizhevsky, A., Sutskever, I., and Salakhutdinov, R. Dropout: a simple way to prevent neural networks from overfitting. The Journal of Machine Learning Research, 15(1):1929–1958, 2014.",
       "page": 10,
-      "source_block_id": "b000121",
+      "source_block_id": "b000154",
       "match_type": "canonical_title"
     },
     {
@@ -675,7 +675,7 @@
       "ref_index": 41,
       "raw_text": "Szegedy, C., Liu, W., Jia, Y., Sermanet, P., Reed, S., Anguelov, D., Erhan, D., Vanhoucke, V., and Rabinovich, A. Going deeper with convolutions. CVPR, pp. 1–9, 2015.",
       "page": 10,
-      "source_block_id": "b000121",
+      "source_block_id": "b000155",
       "match_type": "canonical_title"
     },
     {
@@ -684,7 +684,7 @@
       "ref_index": 43,
       "raw_text": "Szegedy, C., Ioffe, S., Vanhoucke, V., and Alemi, A. A. Inception-v4, inception-resnet and the impact of residual connections on learning. AAAI, 4:12, 2017.",
       "page": 10,
-      "source_block_id": "b000121",
+      "source_block_id": "b000157",
       "match_type": "canonical_title"
     },
     {
@@ -693,7 +693,16 @@
       "ref_index": 20,
       "raw_text": "Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In Proceedings of the IEEE conference on computer vision and pattern recognition, pp. 770–778, 2016.",
       "page": 13,
-      "source_block_id": "b000115",
+      "source_block_id": "b000133",
+      "match_type": "canonical_title"
+    },
+    {
+      "source_paper_id": "Exponential_Moving_Average_of_Weights_in_Deep_Learning_Dynamics_and_Benefits_133ecc4d",
+      "target_paper_id": "Adam_A_Method_for_Stochastic_Optimization_eab9c73a",
+      "ref_index": 29,
+      "raw_text": "Diederik P Kingma and Jimmy Ba. Adam: A method for stochastic optimization. arXiv preprint arXiv:1412.6980, 2014.",
+      "page": 13,
+      "source_block_id": "b000142",
       "match_type": "canonical_title"
     },
     {
@@ -701,8 +710,8 @@
       "target_paper_id": "Auto_Encoding_Variational_Bayes_bdcb63b7",
       "ref_index": 18,
       "raw_text": "[18] Kingma, D. P. and Welling, M. (2014). Auto-encoding variational bayes. In Proceedings of the International Conference on Learning Representations (ICLR).",
-      "page": 8,
-      "source_block_id": "b000097",
+      "page": 9,
+      "source_block_id": "b000105",
       "match_type": "canonical_title"
     },
     {
@@ -710,17 +719,17 @@
       "target_paper_id": "ImageNet_Classification_with_Deep_Convolutional_Neural_Networks_90137160",
       "ref_index": 20,
       "raw_text": "[20] Krizhevsky, A., Sutskever, I., and Hinton, G. (2012). ImageNet classification with deep convolutional neural networks. In NIPS’2012.",
-      "page": 8,
-      "source_block_id": "b000097",
+      "page": 9,
+      "source_block_id": "b000107",
       "match_type": "canonical_title"
     },
     {
       "source_paper_id": "Going_deeper_with_convolutions_66a9f13f",
       "target_paper_id": "ImageNet_Classification_with_Deep_Convolutional_Neural_Networks_90137160",
       "ref_index": 9,
-      "raw_text": "[9] A. Krizhevsky, I. Sutskever, and G. Hinton. ImageNet classification with deep convolutional neural networks. In Advances in Neural Information Processing Systems 25, pages 1106-1114, 2012.",
+      "raw_text": "[9] A. Krizhevsky, I. Sutskever, and G. Hinton. Imagenet classification with deep convolutional neural networks. In Advances in Neural Information Processing Systems 25, pages 1106–1114, 2012.",
       "page": 9,
-      "source_block_id": "b000093",
+      "source_block_id": "b000107",
       "match_type": "canonical_title"
     },
     {
@@ -729,25 +738,25 @@
       "ref_index": 6,
       "raw_text": "He, K.; Zhang, X.; Ren, S.; and Sun, J. 2015. Deep residual learning for image recognition. arXiv preprint arXiv:1512.03385.",
       "page": 7,
-      "source_block_id": "b000088",
+      "source_block_id": "b000086",
       "match_type": "canonical_title"
     },
     {
       "source_paper_id": "Inception_v4_Inception_ResNet_and_the_Impact_of_Residual_Connections_on_Learning_cbf756a4",
       "target_paper_id": "Batch_Normalization_Accelerating_Deep_Network_Training_by_Reducing_Internal_Covariate_Shift_f2eb20b4",
       "ref_index": 7,
-      "raw_text": "Ioffe, S., and Szegedy, C. 2015. Batch normalization: Accelerating deep network training by reducing internal covariate shift. In Proceedings of The 32nd International Conference on Machine Learning, 448-456.",
+      "raw_text": "Ioffe, S., and Szegedy, C. 2015. Batch normalization: Accelerating deep network training by reducing internal covariate shift. In Proceedings of The 32nd International Conference on Machine Learning, 448–456.",
       "page": 7,
-      "source_block_id": "b000088",
+      "source_block_id": "b000087",
       "match_type": "canonical_title"
     },
     {
       "source_paper_id": "Inception_v4_Inception_ResNet_and_the_Impact_of_Residual_Connections_on_Learning_cbf756a4",
       "target_paper_id": "ImageNet_Classification_with_Deep_Convolutional_Neural_Networks_90137160",
       "ref_index": 9,
-      "raw_text": "Krizhevsky, A.; Sutskever, I.; and Hinton, G. E. 2012. Imagenet classification with deep convolutional neural networks. In Advances in neural information processing systems, 1097-1105.",
+      "raw_text": "Krizhevsky, A.; Sutskever, I.; and Hinton, G. E. 2012. Imagenet classification with deep convolutional neural networks. In Advances in neural information processing systems, 1097–1105.",
       "page": 7,
-      "source_block_id": "b000088",
+      "source_block_id": "b000089",
       "match_type": "canonical_title"
     },
     {
@@ -756,7 +765,7 @@
       "ref_index": 7,
       "raw_text": "[7] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. 2016. Deep residual learning for image recognition. In IEEE Conference on Computer Vision and Pattern Recognition. 770–778.",
       "page": 10,
-      "source_block_id": "b000206",
+      "source_block_id": "b000191",
       "match_type": "canonical_title"
     },
     {
@@ -765,7 +774,7 @@
       "ref_index": 32,
       "raw_text": "[32] Christian Szegedy, Wei Liu, Yangqing Jia, Pierre Sermanet, Scott Reed, Dragomir Anguelov, Dumitru Erhan, Vincent Vanhoucke, and Andrew Rabinovich. 2015. Going deeper with convolutions. In IEEE Conference on Computer Vision and Pattern Recognition. 1–9.",
       "page": 10,
-      "source_block_id": "b000207",
+      "source_block_id": "b000216",
       "match_type": "canonical_title"
     },
     {
@@ -774,7 +783,7 @@
       "ref_index": 36,
       "raw_text": "[36] Yandong Wen, Kaipeng Zhang, Zhifeng Li, and Yu Qiao. 2016. A Discriminative Feature Learning Approach for Deep Face Recognition. In European Conference on Computer Vision. Springer, 499–515.",
       "page": 10,
-      "source_block_id": "b000207",
+      "source_block_id": "b000220",
       "match_type": "canonical_title"
     },
     {
@@ -783,7 +792,7 @@
       "ref_index": 9,
       "raw_text": "[9] K. He, X. Zhang, S. Ren, and J. Sun. Deep residual learning for image recognition. In CVPR, 2016.",
       "page": 10,
-      "source_block_id": "b000122",
+      "source_block_id": "b000123",
       "match_type": "canonical_title"
     },
     {
@@ -792,7 +801,7 @@
       "ref_index": 11,
       "raw_text": "[11] S. Hochreiter and J. Schmidhuber. Long short-term memory. Neural computation, 1997.",
       "page": 10,
-      "source_block_id": "b000122",
+      "source_block_id": "b000125",
       "match_type": "canonical_title"
     },
     {
@@ -801,7 +810,7 @@
       "ref_index": 14,
       "raw_text": "[14] S. Ioffe and C. Szegedy. Batch normalization: Accelerating deep network training by reducing internal covariate shift. In ICML, 2015.",
       "page": 10,
-      "source_block_id": "b000122",
+      "source_block_id": "b000128",
       "match_type": "canonical_title"
     },
     {
@@ -810,7 +819,7 @@
       "ref_index": 19,
       "raw_text": "[19] A. Krizhevsky, I. Sutskever, and G. E. Hinton. ImageNet classification with deep convolutional neural networks. In NIPS, 2012.",
       "page": 10,
-      "source_block_id": "b000123",
+      "source_block_id": "b000133",
       "match_type": "canonical_title"
     },
     {
@@ -819,7 +828,7 @@
       "ref_index": 39,
       "raw_text": "[39] C. Szegedy, W. Liu, Y. Jia, P. Sermanet, S. Reed, D. Anguelov, D. Erhan, V. Vanhoucke, and A. Rabinovich. Going deeper with convolutions. In CVPR, 2015.",
       "page": 11,
-      "source_block_id": "b000125",
+      "source_block_id": "b000154",
       "match_type": "canonical_title"
     },
     {
@@ -828,7 +837,7 @@
       "ref_index": 43,
       "raw_text": "[43] S. Xie, R. Girshick, P. Dollar, Z. Tu, and K. He. Aggregated residual transformations for deep neural networks. In CVPR, 2017.",
       "page": 11,
-      "source_block_id": "b000125",
+      "source_block_id": "b000158",
       "match_type": "canonical_title"
     },
     {
@@ -837,7 +846,7 @@
       "ref_index": 8,
       "raw_text": "[8] Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. Bert: Pre-training of deep bidirectional transformers for language understanding. arXiv preprint arXiv:1810.04805, 2018. 3",
       "page": 10,
-      "source_block_id": "b000109",
+      "source_block_id": "b000116",
       "match_type": "canonical_title"
     },
     {
@@ -846,7 +855,7 @@
       "ref_index": 17,
       "raw_text": "[17] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In Proceedings of the IEEE conference on computer vision and pattern recognition, pages 770–778, 2016. 2, 5, 6, 7, 8",
       "page": 11,
-      "source_block_id": "b000111",
+      "source_block_id": "b000126",
       "match_type": "canonical_title"
     },
     {
@@ -855,7 +864,7 @@
       "ref_index": 28,
       "raw_text": "[28] Alex Krizhevsky, Ilya Sutskever, and Geoffrey E Hinton. Imagenet classification with deep convolutional neural networks. In Advances in neural information processing systems, pages 1097–1105, 2012. 8",
       "page": 11,
-      "source_block_id": "b000111",
+      "source_block_id": "b000137",
       "match_type": "canonical_title"
     }
   ]

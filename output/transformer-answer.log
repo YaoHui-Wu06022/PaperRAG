@@ -1,0 +1,23 @@
+根据提供的 evidence，Transformer 后续论文中主要使用了以下网络结构：
+
+1. **Vision Transformer (ViT)**：在《An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale》一文中提出。该模型将图像分割为多个 patch，并直接将其输入 Transformer 结构进行处理。ViT 的结构包括：
+   - **Patch Embedding**：将图像划分为固定大小的 patches，并通过线性投影转换为嵌入向量。
+   - **Position Embedding**：添加位置编码以保留图像的空间信息。
+   - **Transformer Encoder**：由多层自注意力机制和前馈神经网络组成，用于提取全局特征。
+
+2. **BERT（Bidirectional Encoder Representations from Transformers）**：在《BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding》一文中提出。BERT 使用了基于 Transformer 的双向编码器架构，其特点包括：
+   - **Masked Language Model (MLM)**：随机掩码部分词元并预测其原始值，从而融合左右上下文信息。
+   - **Next Sentence Prediction (NSP)**：训练模型理解句子之间的关系。
+   - **多层 Transformer 编码器**：采用深度 Transformer 架构，包含多个自注意力头和前馈网络。
+
+这些网络结构展示了 Transformer 在不同任务中的扩展应用，如 ViT 在计算机视觉领域、BERT 在自然语言处理领域的成功实践。
+
+证据来源：
+[1] 章节: Abstract | 页码: 1 | chunk: An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0000
+[2] 章节: 4 EXPERIMENTS > 4.5 INSPECTING VISION TRANSFORMER | 页码: 8 | chunk: An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0029
+[3] 章节: 4 EXPERIMENTS > 4.5 INSPECTING VISION TRANSFORMER | 页码: 8 | chunk: An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0030
+[4] 章节: 1 Introduction | 页码: 1 | chunk: BERT_Pre_training_of_Deep_Bidirectional_Transformers_for_Language_Understanding_5692a551::chunk_0002
+[5] 章节: 3 METHOD > 3.1 VISION TRANSFORMER (VIT) | 页码: 4 | chunk: An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0013
+[6] 章节: 4 EXPERIMENTS > 4.2 COMPARISON TO STATE OF THE ART | 页码: 6 | chunk: An_Image_is_Worth_16x16_Words_Transformers_for_Image_Recognition_at_Scale_8ce7b839::chunk_0023
+[7] 章节: 3 BERT | 页码: 3 | chunk: BERT_Pre_training_of_Deep_Bidirectional_Transformers_for_Language_Understanding_5692a551::chunk_0009
+[8] 章节: Abstract | 页码: 1 | chunk: BERT_Pre_training_of_Deep_Bidirectional_Transformers_for_Language_Understanding_5692a551::chunk_0000

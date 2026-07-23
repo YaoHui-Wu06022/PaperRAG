@@ -11,8 +11,8 @@
       "path": [
         "Abstract"
       ],
-      "start_block_index": 8,
-      "end_block_index": 8
+      "start_block_index": 5,
+      "end_block_index": 5
     },
     {
       "section_id": "sec_1",
@@ -25,8 +25,8 @@
       "path": [
         "1 Introduction"
       ],
-      "start_block_index": 9,
-      "end_block_index": 15
+      "start_block_index": 6,
+      "end_block_index": 12
     },
     {
       "section_id": "sec_2",
@@ -39,8 +39,8 @@
       "path": [
         "2 The Dataset"
       ],
-      "start_block_index": 16,
-      "end_block_index": 19
+      "start_block_index": 13,
+      "end_block_index": 16
     },
     {
       "section_id": "sec_3",
@@ -53,8 +53,8 @@
       "path": [
         "3 The Architecture"
       ],
-      "start_block_index": 20,
-      "end_block_index": 47
+      "start_block_index": 17,
+      "end_block_index": 44
     },
     {
       "section_id": "sec_3_1",
@@ -68,8 +68,8 @@
         "3 The Architecture",
         "3.1 ReLU Nonlinearity"
       ],
-      "start_block_index": 24,
-      "end_block_index": 27
+      "start_block_index": 21,
+      "end_block_index": 24
     },
     {
       "section_id": "sec_3_2",
@@ -83,8 +83,8 @@
         "3 The Architecture",
         "3.2 Training on Multiple GPUs"
       ],
-      "start_block_index": 28,
-      "end_block_index": 32
+      "start_block_index": 25,
+      "end_block_index": 29
     },
     {
       "section_id": "sec_3_3",
@@ -98,8 +98,8 @@
         "3 The Architecture",
         "3.3 Local Response Normalization"
       ],
-      "start_block_index": 33,
-      "end_block_index": 37
+      "start_block_index": 30,
+      "end_block_index": 34
     },
     {
       "section_id": "sec_3_4",
@@ -113,8 +113,8 @@
         "3 The Architecture",
         "3.4 Overlapping Pooling"
       ],
-      "start_block_index": 38,
-      "end_block_index": 39
+      "start_block_index": 35,
+      "end_block_index": 36
     },
     {
       "section_id": "sec_3_5",
@@ -128,8 +128,8 @@
         "3 The Architecture",
         "3.5 Overall Architecture"
       ],
-      "start_block_index": 40,
-      "end_block_index": 47
+      "start_block_index": 37,
+      "end_block_index": 44
     },
     {
       "section_id": "sec_4",
@@ -142,8 +142,8 @@
       "path": [
         "4 Reducing Overfitting"
       ],
-      "start_block_index": 48,
-      "end_block_index": 61
+      "start_block_index": 45,
+      "end_block_index": 58
     },
     {
       "section_id": "sec_4_1",
@@ -157,8 +157,8 @@
         "4 Reducing Overfitting",
         "4.1 Data Augmentation"
       ],
-      "start_block_index": 50,
-      "end_block_index": 58
+      "start_block_index": 47,
+      "end_block_index": 55
     },
     {
       "section_id": "sec_4_2",
@@ -172,8 +172,8 @@
         "4 Reducing Overfitting",
         "4.2 Dropout"
       ],
-      "start_block_index": 59,
-      "end_block_index": 61
+      "start_block_index": 56,
+      "end_block_index": 58
     },
     {
       "section_id": "sec_5",
@@ -186,8 +186,8 @@
       "path": [
         "5 Details of learning"
       ],
-      "start_block_index": 62,
-      "end_block_index": 71
+      "start_block_index": 59,
+      "end_block_index": 67
     },
     {
       "section_id": "sec_6",
@@ -200,8 +200,8 @@
       "path": [
         "6 Results"
       ],
-      "start_block_index": 72,
-      "end_block_index": 88
+      "start_block_index": 68,
+      "end_block_index": 83
     },
     {
       "section_id": "sec_6_1",
@@ -215,8 +215,8 @@
         "6 Results",
         "6.1 Qualitative Evaluations"
       ],
-      "start_block_index": 80,
-      "end_block_index": 88
+      "start_block_index": 76,
+      "end_block_index": 83
     },
     {
       "section_id": "sec_7",
@@ -229,8 +229,8 @@
       "path": [
         "7 Discussion"
       ],
-      "start_block_index": 89,
-      "end_block_index": 92
+      "start_block_index": 84,
+      "end_block_index": 87
     }
   ],
   "tree": [
@@ -244,8 +244,8 @@
       "path": [
         "Abstract"
       ],
-      "start_block_index": 8,
-      "end_block_index": 8,
+      "start_block_index": 5,
+      "end_block_index": 5,
       "children": []
     },
     {
@@ -258,8 +258,8 @@
       "path": [
         "1 Introduction"
       ],
-      "start_block_index": 9,
-      "end_block_index": 15,
+      "start_block_index": 6,
+      "end_block_index": 12,
       "children": []
     },
     {
@@ -272,8 +272,8 @@
       "path": [
         "2 The Dataset"
       ],
-      "start_block_index": 16,
-      "end_block_index": 19,
+      "start_block_index": 13,
+      "end_block_index": 16,
       "children": []
     },
     {
@@ -286,8 +286,8 @@
       "path": [
         "3 The Architecture"
       ],
-      "start_block_index": 20,
-      "end_block_index": 47,
+      "start_block_index": 17,
+      "end_block_index": 44,
       "children": [
         {
           "section_id": "sec_3_1",
@@ -300,8 +300,8 @@
             "3 The Architecture",
             "3.1 ReLU Nonlinearity"
           ],
-          "start_block_index": 24,
-          "end_block_index": 27,
+          "start_block_index": 21,
+          "end_block_index": 24,
           "children": []
         },
         {
@@ -315,8 +315,8 @@
             "3 The Architecture",
             "3.2 Training on Multiple GPUs"
           ],
-          "start_block_index": 28,
-          "end_block_index": 32,
+          "start_block_index": 25,
+          "end_block_index": 29,
           "children": []
         },
         {
@@ -330,8 +330,8 @@
             "3 The Architecture",
             "3.3 Local Response Normalization"
           ],
-          "start_block_index": 33,
-          "end_block_index": 37,
+          "start_block_index": 30,
+          "end_block_index": 34,
           "children": []
         },
         {
@@ -345,8 +345,8 @@
             "3 The Architecture",
             "3.4 Overlapping Pooling"
           ],
-          "start_block_index": 38,
-          "end_block_index": 39,
+          "start_block_index": 35,
+          "end_block_index": 36,
           "children": []
         },
         {
@@ -360,8 +360,8 @@
             "3 The Architecture",
             "3.5 Overall Architecture"
           ],
-          "start_block_index": 40,
-          "end_block_index": 47,
+          "start_block_index": 37,
+          "end_block_index": 44,
           "children": []
         }
       ]
@@ -376,8 +376,8 @@
       "path": [
         "4 Reducing Overfitting"
       ],
-      "start_block_index": 48,
-      "end_block_index": 61,
+      "start_block_index": 45,
+      "end_block_index": 58,
       "children": [
         {
           "section_id": "sec_4_1",
@@ -390,8 +390,8 @@
             "4 Reducing Overfitting",
             "4.1 Data Augmentation"
           ],
-          "start_block_index": 50,
-          "end_block_index": 58,
+          "start_block_index": 47,
+          "end_block_index": 55,
           "children": []
         },
         {
@@ -405,8 +405,8 @@
             "4 Reducing Overfitting",
             "4.2 Dropout"
           ],
-          "start_block_index": 59,
-          "end_block_index": 61,
+          "start_block_index": 56,
+          "end_block_index": 58,
           "children": []
         }
       ]
@@ -421,8 +421,8 @@
       "path": [
         "5 Details of learning"
       ],
-      "start_block_index": 62,
-      "end_block_index": 71,
+      "start_block_index": 59,
+      "end_block_index": 67,
       "children": []
     },
     {
@@ -435,8 +435,8 @@
       "path": [
         "6 Results"
       ],
-      "start_block_index": 72,
-      "end_block_index": 88,
+      "start_block_index": 68,
+      "end_block_index": 83,
       "children": [
         {
           "section_id": "sec_6_1",
@@ -449,8 +449,8 @@
             "6 Results",
             "6.1 Qualitative Evaluations"
           ],
-          "start_block_index": 80,
-          "end_block_index": 88,
+          "start_block_index": 76,
+          "end_block_index": 83,
           "children": []
         }
       ]
@@ -465,8 +465,8 @@
       "path": [
         "7 Discussion"
       ],
-      "start_block_index": 89,
-      "end_block_index": 92,
+      "start_block_index": 84,
+      "end_block_index": 87,
       "children": []
     }
   ]

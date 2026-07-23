@@ -906,7 +906,7 @@ def structured_block_fields(block: FlatBlock) -> dict[str, Any]:
 
 
 def build_references(blocks: list[FlatBlock], boundaries: dict[str, int | None]) -> list[dict[str, Any]]:
-    """只从 references 区域的 reference_list block 抽取原始引用证据"""
+    """按 MinerU reference_list 的原始顺序抽取引用证据。"""
     output: list[dict[str, Any]] = []
     for block in blocks:
         if region_for_block(block, boundaries) != "reference":
@@ -917,7 +917,7 @@ def build_references(blocks: list[FlatBlock], boundaries: dict[str, int | None])
             raw_text = pieces_to_text(item.get("item_content") if isinstance(item, dict) else item).strip()
             if not raw_text:
                 continue
-            ref_index = reference_index(raw_text, len(output) + 1)
+            ref_index = len(output) + 1
             output.append(
                 {
                     "reference_id": f"ref_{ref_index:03d}",
@@ -928,14 +928,6 @@ def build_references(blocks: list[FlatBlock], boundaries: dict[str, int | None])
                 }
             )
     return output
-
-
-def reference_index(raw_text: str, fallback_index: int) -> int:
-    match = re.match(r"^\s*(\[(\d+)\]|\(?(\d+)\)?[.)])\s*", raw_text)
-    if not match:
-        return fallback_index
-    number = match.group(2) or match.group(3)
-    return int(number)
 
 
 # chunks.jsonl 构建 ------------------------------------------------------------
@@ -995,8 +987,22 @@ def group_chunk_blocks(blocks: list[dict[str, Any]]) -> list[list[dict[str, Any]
             continue
         key = (str(region), str(block.get("section_id") or ""))
         if current and key != current_key:
-            groups.append(current)
-            current = []
+            parent_path = list(current[0].get("section_path") or [])
+            child_path = list(block.get("section_path") or [])
+            if (
+                current_key[0] == key[0]
+                and all(item.get("type") == "title" for item in current)
+                and parent_path
+                and child_path[:len(parent_path)] == parent_path
+                and len(child_path) > len(parent_path)
+            ):
+                current = [
+                    item | {"section_id": block.get("section_id"), "section_path": child_path}
+                    for item in current
+                ]
+            else:
+                groups.append(current)
+                current = []
         if current and key == current_key and is_appendix_chunk_boundary(block):
             if not is_appendix_marker_group(current):
                 groups.append(current)

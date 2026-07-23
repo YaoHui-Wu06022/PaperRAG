@@ -11,8 +11,8 @@
       "path": [
         "Abstract"
       ],
-      "start_block_index": 15,
-      "end_block_index": 15
+      "start_block_index": 5,
+      "end_block_index": 5
     },
     {
       "section_id": "sec_1",
@@ -25,8 +25,8 @@
       "path": [
         "1 INTRODUCTION"
       ],
-      "start_block_index": 16,
-      "end_block_index": 22
+      "start_block_index": 6,
+      "end_block_index": 12
     },
     {
       "section_id": "sec_2",
@@ -39,8 +39,8 @@
       "path": [
         "2 PREVIOUS WORK"
       ],
-      "start_block_index": 23,
-      "end_block_index": 35
+      "start_block_index": 13,
+      "end_block_index": 25
     },
     {
       "section_id": "sec_3",
@@ -53,8 +53,8 @@
       "path": [
         "3 CONSTANT ERROR BACKPROP"
       ],
-      "start_block_index": 36,
-      "end_block_index": 100
+      "start_block_index": 26,
+      "end_block_index": 90
     },
     {
       "section_id": "sec_3_1",
@@ -68,8 +68,8 @@
         "3 CONSTANT ERROR BACKPROP",
         "3.1 EXPONENTIALLY DECAYING ERROR"
       ],
-      "start_block_index": 37,
-      "end_block_index": 86
+      "start_block_index": 27,
+      "end_block_index": 76
     },
     {
       "section_id": "sec_3_2",
@@ -83,8 +83,8 @@
         "3 CONSTANT ERROR BACKPROP",
         "3.2 CONSTANT ERROR FLOW: NAIVE APPROACH"
       ],
-      "start_block_index": 87,
-      "end_block_index": 100
+      "start_block_index": 77,
+      "end_block_index": 90
     },
     {
       "section_id": "sec_4",
@@ -97,8 +97,8 @@
       "path": [
         "4 LONG SHORT-TERM MEMORY"
       ],
-      "start_block_index": 101,
-      "end_block_index": 133
+      "start_block_index": 91,
+      "end_block_index": 126
     },
     {
       "section_id": "sec_5",
@@ -111,23 +111,23 @@
       "path": [
         "5 EXPERIMENTS"
       ],
-      "start_block_index": 134,
-      "end_block_index": 251
+      "start_block_index": 127,
+      "end_block_index": 243
     },
     {
       "section_id": "sec_5_1",
       "parent_id": "sec_5",
       "number": "5.1",
-      "title": "EXPERIMENT 1 : EMBEDDED REBER GRAMMAR",
+      "title": "EXPERIMENT 1: EMBEDDED REBER GRAMMAR",
       "region": "body",
       "order": 8,
       "level": 2,
       "path": [
         "5 EXPERIMENTS",
-        "5.1 EXPERIMENT 1 : EMBEDDED REBER GRAMMAR"
+        "5.1 EXPERIMENT 1: EMBEDDED REBER GRAMMAR"
       ],
-      "start_block_index": 150,
-      "end_block_index": 160
+      "start_block_index": 146,
+      "end_block_index": 156
     },
     {
       "section_id": "sec_5_2",
@@ -141,8 +141,8 @@
         "5 EXPERIMENTS",
         "5.2 EXPERIMENT 2: NOISE-FREE AND NOISY SEQUENCES"
       ],
-      "start_block_index": 161,
-      "end_block_index": 186
+      "start_block_index": 157,
+      "end_block_index": 182
     },
     {
       "section_id": "sec_5_3",
@@ -156,8 +156,8 @@
         "5 EXPERIMENTS",
         "5.3 EXPERIMENT 3: NOISE AND SIGNAL ON SAME CHANNEL"
       ],
-      "start_block_index": 187,
-      "end_block_index": 207
+      "start_block_index": 183,
+      "end_block_index": 203
     },
     {
       "section_id": "sec_5_4",
@@ -171,8 +171,8 @@
         "5 EXPERIMENTS",
         "5.4 EXPERIMENT 4: ADDING PROBLEM"
       ],
-      "start_block_index": 208,
-      "end_block_index": 218
+      "start_block_index": 204,
+      "end_block_index": 214
     },
     {
       "section_id": "sec_5_5",
@@ -186,8 +186,8 @@
         "5 EXPERIMENTS",
         "5.5 EXPERIMENT 5: MULTIPLICATION PROBLEM"
       ],
-      "start_block_index": 219,
-      "end_block_index": 228
+      "start_block_index": 215,
+      "end_block_index": 224
     },
     {
       "section_id": "sec_5_6",
@@ -201,8 +201,8 @@
         "5 EXPERIMENTS",
         "5.6 EXPERIMENT 6: TEMPORAL ORDER"
       ],
-      "start_block_index": 229,
-      "end_block_index": 242
+      "start_block_index": 225,
+      "end_block_index": 236
     },
     {
       "section_id": "sec_5_7",
@@ -216,21 +216,21 @@
         "5 EXPERIMENTS",
         "5.7 SUMMARY OF EXPERIMENTAL CONDITIONS"
       ],
-      "start_block_index": 243,
-      "end_block_index": 251
+      "start_block_index": 237,
+      "end_block_index": 243
     },
     {
       "section_id": "sec_6",
       "parent_id": null,
       "number": "6",
-      "title": "DIS CUSSION",
+      "title": "DISCUSSION",
       "region": "body",
       "order": 15,
       "level": 1,
       "path": [
-        "6 DIS CUSSION"
+        "6 DISCUSSION"
       ],
-      "start_block_index": 252,
+      "start_block_index": 244,
       "end_block_index": 257
     },
     {
@@ -259,7 +259,7 @@
         "Appendix"
       ],
       "start_block_index": 263,
-      "end_block_index": 398
+      "end_block_index": 383
     }
   ],
   "tree": [
@@ -273,8 +273,8 @@
       "path": [
         "Abstract"
       ],
-      "start_block_index": 15,
-      "end_block_index": 15,
+      "start_block_index": 5,
+      "end_block_index": 5,
       "children": []
     },
     {
@@ -287,8 +287,8 @@
       "path": [
         "1 INTRODUCTION"
       ],
-      "start_block_index": 16,
-      "end_block_index": 22,
+      "start_block_index": 6,
+      "end_block_index": 12,
       "children": []
     },
     {
@@ -301,8 +301,8 @@
       "path": [
         "2 PREVIOUS WORK"
       ],
-      "start_block_index": 23,
-      "end_block_index": 35,
+      "start_block_index": 13,
+      "end_block_index": 25,
       "children": []
     },
     {
@@ -315,8 +315,8 @@
       "path": [
         "3 CONSTANT ERROR BACKPROP"
       ],
-      "start_block_index": 36,
-      "end_block_index": 100,
+      "start_block_index": 26,
+      "end_block_index": 90,
       "children": [
         {
           "section_id": "sec_3_1",
@@ -329,8 +329,8 @@
             "3 CONSTANT ERROR BACKPROP",
             "3.1 EXPONENTIALLY DECAYING ERROR"
           ],
-          "start_block_index": 37,
-          "end_block_index": 86,
+          "start_block_index": 27,
+          "end_block_index": 76,
           "children": []
         },
         {
@@ -344,8 +344,8 @@
             "3 CONSTANT ERROR BACKPROP",
             "3.2 CONSTANT ERROR FLOW: NAIVE APPROACH"
           ],
-          "start_block_index": 87,
-          "end_block_index": 100,
+          "start_block_index": 77,
+          "end_block_index": 90,
           "children": []
         }
       ]
@@ -360,8 +360,8 @@
       "path": [
         "4 LONG SHORT-TERM MEMORY"
       ],
-      "start_block_index": 101,
-      "end_block_index": 133,
+      "start_block_index": 91,
+      "end_block_index": 126,
       "children": []
     },
     {
@@ -374,22 +374,22 @@
       "path": [
         "5 EXPERIMENTS"
       ],
-      "start_block_index": 134,
-      "end_block_index": 251,
+      "start_block_index": 127,
+      "end_block_index": 243,
       "children": [
         {
           "section_id": "sec_5_1",
           "number": "5.1",
-          "title": "EXPERIMENT 1 : EMBEDDED REBER GRAMMAR",
+          "title": "EXPERIMENT 1: EMBEDDED REBER GRAMMAR",
           "region": "body",
           "order": 8,
           "level": 2,
           "path": [
             "5 EXPERIMENTS",
-            "5.1 EXPERIMENT 1 : EMBEDDED REBER GRAMMAR"
+            "5.1 EXPERIMENT 1: EMBEDDED REBER GRAMMAR"
           ],
-          "start_block_index": 150,
-          "end_block_index": 160,
+          "start_block_index": 146,
+          "end_block_index": 156,
           "children": []
         },
         {
@@ -403,8 +403,8 @@
             "5 EXPERIMENTS",
             "5.2 EXPERIMENT 2: NOISE-FREE AND NOISY SEQUENCES"
           ],
-          "start_block_index": 161,
-          "end_block_index": 186,
+          "start_block_index": 157,
+          "end_block_index": 182,
           "children": []
         },
         {
@@ -418,8 +418,8 @@
             "5 EXPERIMENTS",
             "5.3 EXPERIMENT 3: NOISE AND SIGNAL ON SAME CHANNEL"
           ],
-          "start_block_index": 187,
-          "end_block_index": 207,
+          "start_block_index": 183,
+          "end_block_index": 203,
           "children": []
         },
         {
@@ -433,8 +433,8 @@
             "5 EXPERIMENTS",
             "5.4 EXPERIMENT 4: ADDING PROBLEM"
           ],
-          "start_block_index": 208,
-          "end_block_index": 218,
+          "start_block_index": 204,
+          "end_block_index": 214,
           "children": []
         },
         {
@@ -448,8 +448,8 @@
             "5 EXPERIMENTS",
             "5.5 EXPERIMENT 5: MULTIPLICATION PROBLEM"
           ],
-          "start_block_index": 219,
-          "end_block_index": 228,
+          "start_block_index": 215,
+          "end_block_index": 224,
           "children": []
         },
         {
@@ -463,8 +463,8 @@
             "5 EXPERIMENTS",
             "5.6 EXPERIMENT 6: TEMPORAL ORDER"
           ],
-          "start_block_index": 229,
-          "end_block_index": 242,
+          "start_block_index": 225,
+          "end_block_index": 236,
           "children": []
         },
         {
@@ -478,8 +478,8 @@
             "5 EXPERIMENTS",
             "5.7 SUMMARY OF EXPERIMENTAL CONDITIONS"
           ],
-          "start_block_index": 243,
-          "end_block_index": 251,
+          "start_block_index": 237,
+          "end_block_index": 243,
           "children": []
         }
       ]
@@ -487,14 +487,14 @@
     {
       "section_id": "sec_6",
       "number": "6",
-      "title": "DIS CUSSION",
+      "title": "DISCUSSION",
       "region": "body",
       "order": 15,
       "level": 1,
       "path": [
-        "6 DIS CUSSION"
+        "6 DISCUSSION"
       ],
-      "start_block_index": 252,
+      "start_block_index": 244,
       "end_block_index": 257,
       "children": []
     },
@@ -523,7 +523,7 @@
         "Appendix"
       ],
       "start_block_index": 263,
-      "end_block_index": 398,
+      "end_block_index": 383,
       "children": []
     }
   ]

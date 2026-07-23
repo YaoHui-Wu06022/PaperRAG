@@ -11,8 +11,8 @@
       "path": [
         "Abstract"
       ],
-      "start_block_index": 8,
-      "end_block_index": 8
+      "start_block_index": 4,
+      "end_block_index": 4
     },
     {
       "section_id": "sec_1",
@@ -25,8 +25,8 @@
       "path": [
         "1 INTRODUCTION"
       ],
-      "start_block_index": 9,
-      "end_block_index": 18
+      "start_block_index": 5,
+      "end_block_index": 13
     },
     {
       "section_id": "sec_2",
@@ -39,8 +39,8 @@
       "path": [
         "2 ALGORITHM"
       ],
-      "start_block_index": 19,
-      "end_block_index": 27
+      "start_block_index": 14,
+      "end_block_index": 22
     },
     {
       "section_id": "sec_2_1",
@@ -54,8 +54,8 @@
         "2 ALGORITHM",
         "2.1 ADAM’S UPDATE RULE"
       ],
-      "start_block_index": 23,
-      "end_block_index": 27
+      "start_block_index": 18,
+      "end_block_index": 22
     },
     {
       "section_id": "sec_3",
@@ -68,8 +68,8 @@
       "path": [
         "3 INITIALIZATION BIAS CORRECTION"
       ],
-      "start_block_index": 28,
-      "end_block_index": 36
+      "start_block_index": 23,
+      "end_block_index": 33
     },
     {
       "section_id": "sec_4",
@@ -82,8 +82,8 @@
       "path": [
         "4 CONVERGENCE ANALYSIS"
       ],
-      "start_block_index": 37,
-      "end_block_index": 47
+      "start_block_index": 34,
+      "end_block_index": 44
     },
     {
       "section_id": "sec_5",
@@ -96,8 +96,8 @@
       "path": [
         "5 RELATED WORK"
       ],
-      "start_block_index": 48,
-      "end_block_index": 54
+      "start_block_index": 45,
+      "end_block_index": 51
     },
     {
       "section_id": "sec_6",
@@ -110,8 +110,8 @@
       "path": [
         "6 EXPERIMENTS"
       ],
-      "start_block_index": 55,
-      "end_block_index": 86
+      "start_block_index": 52,
+      "end_block_index": 84
     },
     {
       "section_id": "sec_6_1",
@@ -125,8 +125,8 @@
         "6 EXPERIMENTS",
         "6.1 EXPERIMENT: LOGISTIC REGRESSION"
       ],
-      "start_block_index": 58,
-      "end_block_index": 65
+      "start_block_index": 55,
+      "end_block_index": 62
     },
     {
       "section_id": "sec_6_2",
@@ -140,8 +140,8 @@
         "6 EXPERIMENTS",
         "6.2 EXPERIMENT: MULTI-LAYER NEURAL NETWORKS"
       ],
-      "start_block_index": 66,
-      "end_block_index": 69
+      "start_block_index": 63,
+      "end_block_index": 66
     },
     {
       "section_id": "sec_6_3",
@@ -155,8 +155,8 @@
         "6 EXPERIMENTS",
         "6.3 EXPERIMENT: CONVOLUTIONAL NEURAL NETWORKS"
       ],
-      "start_block_index": 70,
-      "end_block_index": 83
+      "start_block_index": 67,
+      "end_block_index": 81
     },
     {
       "section_id": "sec_6_4",
@@ -170,8 +170,8 @@
         "6 EXPERIMENTS",
         "6.4 EXPERIMENT: BIAS-CORRECTION TERM"
       ],
-      "start_block_index": 84,
-      "end_block_index": 86
+      "start_block_index": 82,
+      "end_block_index": 84
     },
     {
       "section_id": "sec_7",
@@ -184,8 +184,8 @@
       "path": [
         "7 EXTENSIONS"
       ],
-      "start_block_index": 87,
-      "end_block_index": 111
+      "start_block_index": 85,
+      "end_block_index": 102
     },
     {
       "section_id": "sec_7_1",
@@ -199,8 +199,8 @@
         "7 EXTENSIONS",
         "7.1 ADAMAX"
       ],
-      "start_block_index": 88,
-      "end_block_index": 109
+      "start_block_index": 86,
+      "end_block_index": 100
     },
     {
       "section_id": "sec_7_2",
@@ -214,8 +214,8 @@
         "7 EXTENSIONS",
         "7.2 TEMPORAL AVERAGING"
       ],
-      "start_block_index": 110,
-      "end_block_index": 111
+      "start_block_index": 101,
+      "end_block_index": 102
     },
     {
       "section_id": "sec_8",
@@ -228,8 +228,8 @@
       "path": [
         "8 CONCLUSION"
       ],
-      "start_block_index": 112,
-      "end_block_index": 116
+      "start_block_index": 103,
+      "end_block_index": 107
     },
     {
       "section_id": "sec_appendix",
@@ -242,8 +242,8 @@
       "path": [
         "Appendix"
       ],
-      "start_block_index": 126,
-      "end_block_index": 185
+      "start_block_index": 138,
+      "end_block_index": 193
     }
   ],
   "tree": [
@@ -257,8 +257,8 @@
       "path": [
         "Abstract"
       ],
-      "start_block_index": 8,
-      "end_block_index": 8,
+      "start_block_index": 4,
+      "end_block_index": 4,
       "children": []
     },
     {
@@ -271,8 +271,8 @@
       "path": [
         "1 INTRODUCTION"
       ],
-      "start_block_index": 9,
-      "end_block_index": 18,
+      "start_block_index": 5,
+      "end_block_index": 13,
       "children": []
     },
     {
@@ -285,8 +285,8 @@
       "path": [
         "2 ALGORITHM"
       ],
-      "start_block_index": 19,
-      "end_block_index": 27,
+      "start_block_index": 14,
+      "end_block_index": 22,
       "children": [
         {
           "section_id": "sec_2_1",
@@ -299,8 +299,8 @@
             "2 ALGORITHM",
             "2.1 ADAM’S UPDATE RULE"
           ],
-          "start_block_index": 23,
-          "end_block_index": 27,
+          "start_block_index": 18,
+          "end_block_index": 22,
           "children": []
         }
       ]
@@ -315,8 +315,8 @@
       "path": [
         "3 INITIALIZATION BIAS CORRECTION"
       ],
-      "start_block_index": 28,
-      "end_block_index": 36,
+      "start_block_index": 23,
+      "end_block_index": 33,
       "children": []
     },
     {
@@ -329,8 +329,8 @@
       "path": [
         "4 CONVERGENCE ANALYSIS"
       ],
-      "start_block_index": 37,
-      "end_block_index": 47,
+      "start_block_index": 34,
+      "end_block_index": 44,
       "children": []
     },
     {
@@ -343,8 +343,8 @@
       "path": [
         "5 RELATED WORK"
       ],
-      "start_block_index": 48,
-      "end_block_index": 54,
+      "start_block_index": 45,
+      "end_block_index": 51,
       "children": []
     },
     {
@@ -357,8 +357,8 @@
       "path": [
         "6 EXPERIMENTS"
       ],
-      "start_block_index": 55,
-      "end_block_index": 86,
+      "start_block_index": 52,
+      "end_block_index": 84,
       "children": [
         {
           "section_id": "sec_6_1",
@@ -371,8 +371,8 @@
             "6 EXPERIMENTS",
             "6.1 EXPERIMENT: LOGISTIC REGRESSION"
           ],
-          "start_block_index": 58,
-          "end_block_index": 65,
+          "start_block_index": 55,
+          "end_block_index": 62,
           "children": []
         },
         {
@@ -386,8 +386,8 @@
             "6 EXPERIMENTS",
             "6.2 EXPERIMENT: MULTI-LAYER NEURAL NETWORKS"
           ],
-          "start_block_index": 66,
-          "end_block_index": 69,
+          "start_block_index": 63,
+          "end_block_index": 66,
           "children": []
         },
         {
@@ -401,8 +401,8 @@
             "6 EXPERIMENTS",
             "6.3 EXPERIMENT: CONVOLUTIONAL NEURAL NETWORKS"
           ],
-          "start_block_index": 70,
-          "end_block_index": 83,
+          "start_block_index": 67,
+          "end_block_index": 81,
           "children": []
         },
         {
@@ -416,8 +416,8 @@
             "6 EXPERIMENTS",
             "6.4 EXPERIMENT: BIAS-CORRECTION TERM"
           ],
-          "start_block_index": 84,
-          "end_block_index": 86,
+          "start_block_index": 82,
+          "end_block_index": 84,
           "children": []
         }
       ]
@@ -432,8 +432,8 @@
       "path": [
         "7 EXTENSIONS"
       ],
-      "start_block_index": 87,
-      "end_block_index": 111,
+      "start_block_index": 85,
+      "end_block_index": 102,
       "children": [
         {
           "section_id": "sec_7_1",
@@ -446,8 +446,8 @@
             "7 EXTENSIONS",
             "7.1 ADAMAX"
           ],
-          "start_block_index": 88,
-          "end_block_index": 109,
+          "start_block_index": 86,
+          "end_block_index": 100,
           "children": []
         },
         {
@@ -461,8 +461,8 @@
             "7 EXTENSIONS",
             "7.2 TEMPORAL AVERAGING"
           ],
-          "start_block_index": 110,
-          "end_block_index": 111,
+          "start_block_index": 101,
+          "end_block_index": 102,
           "children": []
         }
       ]
@@ -477,8 +477,8 @@
       "path": [
         "8 CONCLUSION"
       ],
-      "start_block_index": 112,
-      "end_block_index": 116,
+      "start_block_index": 103,
+      "end_block_index": 107,
       "children": []
     },
     {
@@ -491,8 +491,8 @@
       "path": [
         "Appendix"
       ],
-      "start_block_index": 126,
-      "end_block_index": 185,
+      "start_block_index": 138,
+      "end_block_index": 193,
       "children": []
     }
   ]

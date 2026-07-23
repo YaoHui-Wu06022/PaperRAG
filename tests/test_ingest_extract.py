@@ -92,7 +92,11 @@ def test_extract_mineru_output_splits_blocks_chunks_references_and_appendix(sett
         title("Appendix"),
         paragraph("Extra ablation details live in the appendix."),
         title("References"),
-        reference_list("[1] He K. Deep Residual Learning for Image Recognition. 2016."),
+        reference_list(
+            "[7] He K. Deep Residual Learning for Image Recognition. 2016.",
+            "Smith J. A reference without a printed number. 2017.",
+            "[2] Zhang X. A later entry with a non-sequential number. 2018.",
+        ),
     ]]
     (mineru_dir / "upload-id_content_list_v2.json").write_text(json.dumps(content, ensure_ascii=False), encoding="utf-8")
 
@@ -111,9 +115,11 @@ def test_extract_mineru_output_splits_blocks_chunks_references_and_appendix(sett
     )
 
     assert result.block_count >= 3
-    assert result.reference_count == 1
+    assert result.reference_count == 3
     references = read_jsonl(result.references_path)
-    assert references[0]["raw_text"].startswith("[1] He K.")
+    assert references[0]["raw_text"].startswith("[7] He K.")
+    assert [reference["ref_index"] for reference in references] == [1, 2, 3]
+    assert [reference["reference_id"] for reference in references] == ["ref_001", "ref_002", "ref_003"]
 
     blocks = read_jsonl(result.blocks_path)
     image_block = next(block for block in blocks if block["type"] == "image")
@@ -293,12 +299,12 @@ def table(caption: str, html: str) -> dict:
     }
 
 
-def reference_list(text: str) -> dict:
+def reference_list(*texts: str) -> dict:
     return {
         "type": "list",
         "content": {
             "list_type": "reference_list",
-            "list_items": [{"item_content": [{"content": text}]}],
+            "list_items": [{"item_content": [{"content": text}]} for text in texts],
         },
     }
 

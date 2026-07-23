@@ -11,8 +11,8 @@
       "path": [
         "Abstract"
       ],
-      "start_block_index": 5,
-      "end_block_index": 5
+      "start_block_index": 8,
+      "end_block_index": 8
     },
     {
       "section_id": "sec_1",
@@ -25,8 +25,8 @@
       "path": [
         "1 Introduction"
       ],
-      "start_block_index": 6,
-      "end_block_index": 10
+      "start_block_index": 9,
+      "end_block_index": 13
     },
     {
       "section_id": "sec_2",
@@ -39,8 +39,8 @@
       "path": [
         "2 Related Work"
       ],
-      "start_block_index": 11,
-      "end_block_index": 20
+      "start_block_index": 14,
+      "end_block_index": 23
     },
     {
       "section_id": "sec_3",
@@ -53,8 +53,8 @@
       "path": [
         "3 Motivation and High Level Considerations"
       ],
-      "start_block_index": 21,
-      "end_block_index": 34
+      "start_block_index": 24,
+      "end_block_index": 36
     },
     {
       "section_id": "sec_4",
@@ -67,8 +67,8 @@
       "path": [
         "4 Architectural Details"
       ],
-      "start_block_index": 35,
-      "end_block_index": 47
+      "start_block_index": 37,
+      "end_block_index": 49
     },
     {
       "section_id": "sec_5",
@@ -81,8 +81,8 @@
       "path": [
         "5 GoogLeNet"
       ],
-      "start_block_index": 48,
-      "end_block_index": 61
+      "start_block_index": 50,
+      "end_block_index": 66
     },
     {
       "section_id": "sec_6",
@@ -95,8 +95,8 @@
       "path": [
         "6 Training Methodology"
       ],
-      "start_block_index": 62,
-      "end_block_index": 64
+      "start_block_index": 67,
+      "end_block_index": 69
     },
     {
       "section_id": "sec_7",
@@ -109,8 +109,8 @@
       "path": [
         "7 ILSVRC 2014 Classification Challenge Setup and Results"
       ],
-      "start_block_index": 65,
-      "end_block_index": 76
+      "start_block_index": 70,
+      "end_block_index": 83
     },
     {
       "section_id": "sec_8",
@@ -123,8 +123,8 @@
       "path": [
         "8 ILSVRC 2014 Detection Challenge Setup and Results"
       ],
-      "start_block_index": 77,
-      "end_block_index": 83
+      "start_block_index": 84,
+      "end_block_index": 90
     },
     {
       "section_id": "sec_9",
@@ -137,8 +137,8 @@
       "path": [
         "9 Conclusions"
       ],
-      "start_block_index": 84,
-      "end_block_index": 89
+      "start_block_index": 91,
+      "end_block_index": 96
     }
   ],
   "tree": [
@@ -152,8 +152,8 @@
       "path": [
         "Abstract"
       ],
-      "start_block_index": 5,
-      "end_block_index": 5,
+      "start_block_index": 8,
+      "end_block_index": 8,
       "children": []
     },
     {
@@ -166,8 +166,8 @@
       "path": [
         "1 Introduction"
       ],
-      "start_block_index": 6,
-      "end_block_index": 10,
+      "start_block_index": 9,
+      "end_block_index": 13,
       "children": []
     },
     {
@@ -180,8 +180,8 @@
       "path": [
         "2 Related Work"
       ],
-      "start_block_index": 11,
-      "end_block_index": 20,
+      "start_block_index": 14,
+      "end_block_index": 23,
       "children": []
     },
     {
@@ -194,8 +194,8 @@
       "path": [
         "3 Motivation and High Level Considerations"
       ],
-      "start_block_index": 21,
-      "end_block_index": 34,
+      "start_block_index": 24,
+      "end_block_index": 36,
       "children": []
     },
     {
@@ -208,8 +208,8 @@
       "path": [
         "4 Architectural Details"
       ],
-      "start_block_index": 35,
-      "end_block_index": 47,
+      "start_block_index": 37,
+      "end_block_index": 49,
       "children": []
     },
     {
@@ -222,8 +222,8 @@
       "path": [
         "5 GoogLeNet"
       ],
-      "start_block_index": 48,
-      "end_block_index": 61,
+      "start_block_index": 50,
+      "end_block_index": 66,
       "children": []
     },
     {
@@ -236,8 +236,8 @@
       "path": [
         "6 Training Methodology"
       ],
-      "start_block_index": 62,
-      "end_block_index": 64,
+      "start_block_index": 67,
+      "end_block_index": 69,
       "children": []
     },
     {
@@ -250,8 +250,8 @@
       "path": [
         "7 ILSVRC 2014 Classification Challenge Setup and Results"
       ],
-      "start_block_index": 65,
-      "end_block_index": 76,
+      "start_block_index": 70,
+      "end_block_index": 83,
       "children": []
     },
     {
@@ -264,8 +264,8 @@
       "path": [
         "8 ILSVRC 2014 Detection Challenge Setup and Results"
       ],
-      "start_block_index": 77,
-      "end_block_index": 83,
+      "start_block_index": 84,
+      "end_block_index": 90,
       "children": []
     },
     {
@@ -278,8 +278,8 @@
       "path": [
         "9 Conclusions"
       ],
-      "start_block_index": 84,
-      "end_block_index": 89,
+      "start_block_index": 91,
+      "end_block_index": 96,
       "children": []
     }
   ]

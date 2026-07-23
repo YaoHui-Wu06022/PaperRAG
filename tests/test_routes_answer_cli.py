@@ -11,6 +11,7 @@ from paper_rag.retrieval.dense.milvus_store import SearchResult
 from paper_rag.retrieval.evidence import build_content_evidence
 from paper_rag.retrieval.route import RouteDecision
 from paper_rag.retrieval.routes.content.planner import GROUP_CONTEXTS_PER_GROUP, merge_group_contexts, plan_body
+from paper_rag.retrieval.routes.content.router import build_content_decision
 from paper_rag.retrieval.routes.metadata.planner import plan_metadata
 from paper_rag.retrieval.routes.reference.planner import plan_reference
 from paper_rag.corpus.scope import records_for_scope
@@ -214,6 +215,78 @@ def test_group_context_merge_budget_scales_for_more_than_two_groups():
 
     assert limit == 9
     assert len(merge_group_contexts(group_results, limit)) == 9
+
+
+def test_content_router_reclassifies_unmarked_semantic_scope(settings):
+    decision = build_content_decision(
+        settings,
+        RouteDecision(route="content", query="deepseek用到了什么模型", parse_status="ok"),
+        [],
+        plan_parser=StaticContentParser({
+            "intent": "lookup",
+            "paper_semantic": "deepseek",
+            "filters": [],
+            "paper_groups": [],
+            "group_mode": "single",
+            "content_objects": ["模型"],
+            "compare_objects": [],
+        }),
+    )
+
+    assert decision.paper_semantic == ""
+    assert decision.parser_result["paper_semantic"] == ""
+    assert decision.parser_result["content_objects"] == ["deepseek", "模型"]
+    assert decision.parser_result["required_terms"] == ["deepseek"]
+
+
+def test_content_router_keeps_semantic_scope_with_paper_marker(settings):
+    decision = build_content_decision(
+        settings,
+        RouteDecision(route="content", query="deepseek论文用到了什么模型", parse_status="ok"),
+        [],
+        plan_parser=StaticContentParser({
+            "intent": "lookup",
+            "paper_semantic": "deepseek",
+            "filters": [],
+            "paper_groups": [],
+            "group_mode": "single",
+            "content_objects": ["模型"],
+            "compare_objects": [],
+        }),
+    )
+
+    assert decision.paper_semantic == "deepseek"
+    assert decision.parser_result["content_objects"] == ["模型"]
+
+
+def test_content_required_terms_filter_unrelated_reclassified_hits(settings):
+    paper = add_paper(
+        settings,
+        file_hash="generic-model-hash",
+        paper_id="generic-model",
+        title="Generic Model Paper",
+        chunks=[chunk_row("generic-model", 0, region="body", text="This paper describes a generic model architecture.")],
+    )
+    save_manifest(settings, [paper])
+
+    content = plan_body(
+        settings,
+        RouteDecision(
+            route="content",
+            query="deepseek用到了什么模型",
+            intent="lookup",
+            parser_result={
+                "content_objects": ["deepseek", "模型"],
+                "compare_objects": [],
+            },
+            parse_status="ok",
+        ),
+        [],
+        embedder=FakeEmbedder(),
+        store=FakeStore("generic-model::chunk_0000"),
+    )
+
+    assert "contexts" not in content["results"]
 
 
 def test_content_and_groups_report_missing_group_evidence(settings):
@@ -594,6 +667,14 @@ class FakeStoreByPaper:
                 )
             )
         return results[:top_k]
+
+
+class StaticContentParser:
+    def __init__(self, parser_result: dict) -> None:
+        self.parser_result = parser_result
+
+    def parse_content(self, query: str) -> dict:
+        return self.parser_result
 
 
 def paper_title(paper_id: str) -> str:
