@@ -14,6 +14,7 @@ from paper_rag.retrieval.routes.content.planner import GROUP_CONTEXTS_PER_GROUP,
 from paper_rag.retrieval.routes.content.router import build_content_decision
 from paper_rag.retrieval.routes.metadata.planner import plan_metadata
 from paper_rag.retrieval.routes.reference.planner import plan_reference
+from paper_rag.corpus.resolver import resolve_filter_values
 from paper_rag.corpus.scope import records_for_scope
 
 from conftest import add_paper, chunk_row, save_manifest, write_json, write_jsonl
@@ -476,6 +477,68 @@ def test_paper_semantic_strips_chinese_paper_suffix_and_uses_alias(settings):
     for semantic in ["BERT 论文", "BERT 这篇论文", "BERT 原论文"]:
         records = records_for_scope(settings, semantic, [])
         assert [record["title"] for record in records] == [bert.title]
+
+
+def test_unresolved_paper_name_falls_back_to_title_contains_with_explanation(settings):
+    paper = add_paper(
+        settings,
+        file_hash="attention-hash",
+        paper_id="attention",
+        title="Attention Is All You Need",
+    )
+    save_manifest(settings, [paper])
+
+    filters, matches, papers = resolve_filter_values(settings, [{
+        "field": "paper",
+        "op": "=",
+        "value": "Need",
+        "negated": False,
+    }])
+
+    assert matches == []
+    assert papers == []
+    assert filters == [{
+        "field": "title",
+        "op": "contains",
+        "value": "Need",
+        "negated": False,
+        "resolution": "title_contains_fallback",
+    }]
+
+    warnings: list[str] = []
+    evidence = plan_metadata(
+        settings,
+        RouteDecision(route="metadata", query="Need 这篇论文的标题", intent="lookup", filters=filters, parse_status="ok"),
+        warnings,
+    )
+    assert evidence["results"]["items"] == [{"title": paper.title}]
+    assert warnings == ["论文别名和精确标题未命中，已降级为标题包含匹配：Need"]
+
+
+def test_unresolved_paper_name_reports_empty_result_after_title_contains_fallback(settings):
+    warnings: list[str] = []
+    evidence = plan_metadata(
+        settings,
+        RouteDecision(
+            route="metadata",
+            query="Unknown Paper 的发表地",
+            intent="lookup",
+            filters=[{
+                "field": "title",
+                "op": "contains",
+                "value": "Unknown Paper",
+                "negated": False,
+                "resolution": "title_contains_fallback",
+            }],
+            parse_status="ok",
+        ),
+        warnings,
+    )
+    assert evidence["results"] == {}
+    assert warnings == [
+        "论文别名和精确标题未命中，已降级为标题包含匹配：Unknown Paper",
+        "metadata 路由没有匹配到 manifest 记录",
+    ]
 
 
 def test_ask_uses_local_answers_and_falls_back_when_answer_llm_fails(settings):

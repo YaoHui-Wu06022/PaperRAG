@@ -85,11 +85,22 @@ def resolve_filter_values(
         field = item.get("field")
         if field == "paper":
             # paper = / follow / prior 都先把 value 解析成本地 canonical title。
-            value, matches, papers = resolve_paper_filter_value(settings, item.get("value"), corpus=corpus)
+            original_value = item.get("value")
+            value, matches, papers = resolve_paper_filter_value(settings, original_value, corpus=corpus)
             item["value"] = value
             alias_matches.extend(matches)
             if not item.get("negated"):
                 resolved_papers = merge_paper_records(resolved_papers, papers)
+            if item.get("op") == "=" and not item.get("negated") and not papers:
+                # 别名和标题轻量召回都失败时，保留用户原文并降级为 title contains。
+                # 不放宽 follow/prior 或 negated 条件，避免扩大引用关系或排除范围。
+                item = {
+                    **item,
+                    "field": "title",
+                    "op": "contains",
+                    "value": original_value,
+                    "resolution": "title_contains_fallback",
+                }
         elif field == "year" and item.get("op") == "interval":
             # year interval 允许边界写论文名，例如 ["ResNet", "inf"]。
             value, matches, papers = resolve_interval_paper_bounds(settings, item.get("value"), corpus=corpus)

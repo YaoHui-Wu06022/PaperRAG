@@ -7,7 +7,7 @@ from typing import Any
 from paper_rag.config import Settings
 from paper_rag.corpus.context import CorpusContext
 from paper_rag.corpus.records import paper_record_keys
-from paper_rag.corpus.scope import resolve_scope_records
+from paper_rag.corpus.scope import append_scope_fallback_warnings, resolve_scope_records
 from paper_rag.retrieval.chunk_fusion import fuse_chunk_hits
 from paper_rag.retrieval.dense.service import search_dense_chunks
 from paper_rag.retrieval.evidence import build_content_evidence
@@ -46,8 +46,9 @@ def plan_body(
             context_units=[],
             parser_error=route.parser_error,
             debug=debug,
-    )
+        )
 
+    append_scope_fallback_warnings(warnings, route.filters, route.paper_groups)
     with timings.measure("scope"):
         scope_records, group_results = resolve_scope_records(
             settings,

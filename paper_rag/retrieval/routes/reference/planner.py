@@ -9,7 +9,7 @@ from paper_rag.retrieval.evidence import build_reference_evidence
 from paper_rag.retrieval.route import RouteDecision
 from paper_rag.corpus.citation_index import load_citation_graph
 from paper_rag.corpus.records import paper_record_key
-from paper_rag.corpus.scope import combined_semantic, resolve_scope_records
+from paper_rag.corpus.scope import append_scope_fallback_warnings, combined_semantic, resolve_scope_records
 
 if TYPE_CHECKING:
     from paper_rag.corpus.context import CorpusContext
@@ -48,6 +48,8 @@ def plan_reference(
             debug=debug,
         )
 
+    append_scope_fallback_warnings(warnings, route.source_filters, route.source_groups)
+    append_scope_fallback_warnings(warnings, route.object_filters, route.object_groups)
     source_scope = scope_result(
         settings,
         route.source_semantic,

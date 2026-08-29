@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from paper_rag.config import Settings
-from paper_rag.corpus.scope import resolve_scope_records
+from paper_rag.corpus.scope import append_scope_fallback_warnings, resolve_scope_records
 from paper_rag.retrieval.evidence import build_metadata_evidence
 from paper_rag.retrieval.route import RouteDecision
 
@@ -35,6 +35,7 @@ def plan_metadata(
 
     group_results: list[dict[str, Any]] | None = None
     exists: bool | None = None
+    append_scope_fallback_warnings(warnings, route.filters, route.paper_groups)
     records, resolved_groups = resolve_scope_records(
         settings,
         route.paper_semantic,

@@ -82,6 +82,21 @@ def resolve_scope_records(
     return records, group_results
 
 
+def append_scope_fallback_warnings(
+    warnings: list[str],
+    filters: list[dict[str, Any]],
+    groups: list[dict[str, Any]],
+) -> None:
+    """说明未解析论文名已降级为 title contains。"""
+    for filter_item in [*filters, *(item for group in groups for item in group.get("filters") or [])]:
+        if filter_item.get("resolution") != "title_contains_fallback":
+            continue
+        value = ", ".join(value_to_text_list(filter_item.get("value")))
+        warning = f"论文别名和精确标题未命中，已降级为标题包含匹配：{value}"
+        if warning not in warnings:
+            warnings.append(warning)
+
+
 def match_scope_filters(
     settings: Settings,
     record: ManifestRecord,
