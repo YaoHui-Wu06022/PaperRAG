@@ -4,13 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "paper-rag"
-version = "0.1.0"
-description = "Local PDF paper ingestion pipeline for Paper_RAG."
-requires-python = ">=3.10"
-dependencies = ["pymilvus>=2.6"]
+version = "0.2.0"
+description = "Agent research tools with versioned paper evidence, Milvus retrieval, and a Markdown Wiki."
+requires-python = ">=3.12"
+dependencies = ["pymilvus>=2.6", "pydantic>=2.7", "jieba==0.42.1", "tiktoken>=0.7"]
 
 [project.scripts]
 paper-rag = "paper_rag.cli.main:main"
 
 [tool.setuptools.packages.find]
 include = ["paper_rag*"]
+
+[tool.black]
+target-version = ["py312"]

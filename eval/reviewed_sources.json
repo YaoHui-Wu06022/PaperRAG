@@ -1,0 +1,106 @@
+{
+  "Exponential Moving Average of Weights in Deep Learning: Dynamics and Benefits": {
+    "source_hash": "133ecc4d73d2928566e13d8a30b851be611a09a90ec66273e8d9d16f7026076c",
+    "parser_hash": "eea26bc1959e9b8e83c5a743c4661e7c975d3c4935dce5fd14729e1879235195"
+  },
+  "Deep Residual Learning for Image Recognition": {
+    "source_hash": "1e0651b6810ecba34a3dbc5b5b0209226f889004607c1f203540a48d64e5a93a",
+    "parser_hash": "cc0c02c26e4fdfdeab069382c6e097d007cca25f0118b9cb324b1989a0d92dca"
+  },
+  "Aggregated Residual Transformations for Deep Neural Networks": {
+    "source_hash": "1ebca04b3460b1dcf254092f48f420d48e9c23a50f077e78179ef9b42fa5324b",
+    "parser_hash": "1b1b61e3e40e57b1315f6f2459cbab1d95d682bb89da3bc6db97d196c1726fe5"
+  },
+  "NormFace: L2 Hypersphere Embedding for Face Verification": {
+    "source_hash": "27a8b27d6a421f0c1ecc62927fd95213d306d926b92d67b3168a8b32c967644f",
+    "parser_hash": "43081af0172127bcb4ddafa932948be5e457ffbbf35202061463068bd41c61f1"
+  },
+  "Generative Adversarial Nets": {
+    "source_hash": "331961622a2f6588c48a34ecddc6a3d052ffe8fcfba333f233d5f27b2da5565d",
+    "parser_hash": "6457dfedfe78b8df2ea53258a08a672f55662433f043907d83eaf1e6972d3753"
+  },
+  "KGVoyager: Knowledge Graph Agnostic Question Answering via Agentic Navigation": {
+    "source_hash": "3bab3a5f2e9435403f04b2c325ab5705c1e2d7c427a377501417d05a52dd25df",
+    "parser_hash": "ac38359cf7f9996b0b8a106d1c82a6cfcc96a0e6daa8610354b8c8d47986660d"
+  },
+  "Supervised Contrastive Learning": {
+    "source_hash": "3da9d0812b27de20e3623ea0f71933dd866f10459fdf04e1129f9f5abdc093cd",
+    "parser_hash": "10cd8ccd7d27f6a69a5c07e26605830f81137fd48c79cc3e50317534370dd33b"
+  },
+  "A Discriminative Feature Learning Approach for Deep Face Recognition": {
+    "source_hash": "4770aa24dc2d1ae1620ebdb4533855e2918ab6f252db670a7c3877cfe2dc9030",
+    "parser_hash": "010b9c83fad06295e94686d8da5c62ec7d63f20ba46ebf6fb0b604d2a70d6271"
+  },
+  "ECA-Net: Efficient Channel Attention for Deep Convolutional Neural Networks": {
+    "source_hash": "4e782a60f7f01ec552a725c021779f8dd694d12ece217ab1a9b5e09c75958d77",
+    "parser_hash": "75657ffdcdb72e82bbc81aacb977c9dbb66c0092431fbffd2c11dd8d5f22324e"
+  },
+  "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding": {
+    "source_hash": "5692a5514787a8c6727b4ff3b726a3385798bc68e12138d1d4af83947e2acf6e",
+    "parser_hash": "57e9086287f1eac4c236257d8437c63ebfa44eda6e9c91f140c80a2d26e5ece7"
+  },
+  "Reconcile Once, Write Anytime: A Trust-Tiered Librarian and a Multi-Agent Writer for Drift-Free, Point-in-Time Research": {
+    "source_hash": "5a1da78860757f17fbaf7b8e4403116db1c23d16883158a05f800f7d5e3378d2",
+    "parser_hash": "11c5c17c6a69361c0c6263f8edd5776e27361b9c2d4ca1989198d384f787d4dd"
+  },
+  "Only Ask What You Don't Know: Grounded Delta Planning for Efficient Multi-step RAG": {
+    "source_hash": "5acc7eb2bca46368b5c131a60cba252c1b0d2d05e751348ca3c3c28889b7f98f",
+    "parser_hash": "4ad7891d287393131a6d4f8f196dfce9ce8eadec2507752168c3b63c94ec2ffe"
+  },
+  "Squeeze-and-Excitation Networks": {
+    "source_hash": "60e7a8e033ca861eb88d84e71cad1951904bd355e5dec6fa596f6f2ad0087683",
+    "parser_hash": "77d0543ee19489dd3f6b5a5558465f502cb29e7025101c7f20837add60d8e9d0"
+  },
+  "Going deeper with convolutions": {
+    "source_hash": "66a9f13f2635290ca3900a87a6548badbe8fba154a0478555a16e15a8c907c96",
+    "parser_hash": "f2409cc0357212b67f7007b614f0d42278484d083a7c2709f03dc8ff7891048e"
+  },
+  "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale": {
+    "source_hash": "8ce7b83971a14508ca711a27c875c9b6914c4f6767cf3150fb1ca6c07aa056d6",
+    "parser_hash": "e77d1942b062b8b67efdc925434086e0e4668464a1fe4c3673ccedc7e431a07f"
+  },
+  "ImageNet Classification with Deep Convolutional Neural Networks": {
+    "source_hash": "90137160c57217953d5f61857e64ca58e85f06e1b13b4f475c918b1b582b9771",
+    "parser_hash": "0f6d46773cf9348a566ad362e2ddc0592f902bfb05fbc22dc3410a2fbb14c677"
+  },
+  "Dropout: a simple way to prevent neural networks from overfitting": {
+    "source_hash": "9c196ccbe6c6a595a1adba6cd030d35f7c2e548bbf5e7f1278b0109d8dd9ebaa",
+    "parser_hash": "009c41c872af01158c0c856b492ee5be3eea5a39c6cfad986e5783b33a44b5fb"
+  },
+  "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks": {
+    "source_hash": "af6b1bd620f81bfaea81edf8227484588e1fcc2427d6b5020fa17454d7566c70",
+    "parser_hash": "e92b66a5a66dde6a0563922289728b220482f87fc43ee4557cc412edbe4bb604"
+  },
+  "Auto-Encoding Variational Bayes": {
+    "source_hash": "bdcb63b79ed88f64f8ee2d43a721930d01dde5441a4dba20ecaa2342b34e017c",
+    "parser_hash": "6fbb7aa9307d8810ef3ffb4131ecbe1b2d715b1220d232b1837bad4ae47acc0c"
+  },
+  "Inception-v4, Inception-ResNet and the Impact of Residual Connections on Learning": {
+    "source_hash": "cbf756a42355674bc3d6ff2ff39276b51706e82efe3b102aa356dafc3bdc0b05",
+    "parser_hash": "9b2cd377f3abd280e60558de420257960d8b9fe59512fbe8766c96fe488fdfe1"
+  },
+  "Long Short-Term Memory": {
+    "source_hash": "ceb9e53dbc0493f5b3bf5520ed940f3e6b526064d17b2118d77e51f79c0edcc6",
+    "parser_hash": "ffb4ac71a6b6e7a7ce37b2a224c823ddc27f3f2c383755275c37f7b795fdda8f"
+  },
+  "Attention is All you Need": {
+    "source_hash": "d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537",
+    "parser_hash": "8cf414b34ff084eb05820faa99c8b2a259211cee6057cc0263850702e5dcdd83"
+  },
+  "Adam: A Method for Stochastic Optimization": {
+    "source_hash": "eab9c73ae2ceda884b94830bda99312254bac4806f6c9f045cbab90721ecda31",
+    "parser_hash": "d2bf505d2c318b2dcae7d884d0afd693abad85082260a7397581e2341f283f54"
+  },
+  "Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift": {
+    "source_hash": "f2eb20b4e97409aef516a6506ea76c7c051860eeded3006a6d9687c364847b27",
+    "parser_hash": "04292772946311187d2c4fc6f9525aa446ad239ecfb93285fa45ba47e91f3469"
+  },
+  "Learning on the Job: Continual Learning from Deployment Feedback for Frozen-Weights Agents": {
+    "source_hash": "f74a89e90e463008b872109c8a7fdbe42f15c886a5f8967bc054f312fe41fb11",
+    "parser_hash": "8af6cbbd349be0ec3ee58c03586a3d24845baf7ff149c64e95fc20b9770fbf94"
+  },
+  "Citation-Enforced RAG for Fiscal Document Intelligence: Cited, Explainable Knowledge Retrieval in Tax Compliance": {
+    "source_hash": "0f2377e9ae78e1b8585fd7fb0cacbb8634192fc4d03aa5eb7d18e2a111c3f342",
+    "parser_hash": "2f06caccd2dd32a6e493ae7b6834d66b2ae5a41d613b3679f6dc742ad333230a"
+  }
+}

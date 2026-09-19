@@ -2,33 +2,50 @@ from __future__ import annotations
 
 import argparse
 import sys
-from pathlib import Path
+import json
 
-from paper_rag.cli.ask import add_ask_parser, add_chat_parser
-from paper_rag.cli.ingest import add_ingest_parser
-from paper_rag.cli.retrieval import add_retrieval_parsers
-from paper_rag.retrieval.probe import add_probe_parser
+from paper_rag.cli.library import main as library_main
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="paper-rag")
-    parser.add_argument("--project-root", type=Path, default=Path.cwd(), help="项目根目录，默认当前目录")
-    subparsers = parser.add_subparsers(dest="command", required=True)
-    add_ingest_parser(subparsers)
-    add_retrieval_parsers(subparsers)
-    add_ask_parser(subparsers)
-    add_chat_parser(subparsers)
-    add_probe_parser(subparsers)
-    return parser
+    from paper_rag.cli.library import parser
+
+    return parser()
 
 
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
-    parser = build_parser()
-    args = parser.parse_args(argv)
-    handler = getattr(args, "handler", None)
-    if handler:
-        return handler(args)
-    parser.error(f"未知命令：{args.command}")
-    return 2
+    effective_argv = list(sys.argv[1:] if argv is None else argv)
+    # Global options may precede commands. Normalize only actual command tokens.
+    position = 0
+    if effective_argv[:1] == ["--project-root"]:
+        position = 2
+    if position < len(effective_argv):
+        command = effective_argv[position]
+        if command in {"ask", "chat", "plan"}:
+            print(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "status": "error",
+                        "data": None,
+                        "warnings": [
+                            {
+                                "code": "host_agent_required",
+                                "message": "Use paper-research with search/read; answer generation belongs to the host Agent.",
+                            }
+                        ],
+                    }
+                )
+            )
+            return 2
+        if command == "status":
+            effective_argv[position] = "doctor"
+        if command == "index" and position + 1 < len(effective_argv) and effective_argv[position + 1] in {"inspect", "archive", "restore", "retire"}:
+            effective_argv[position : position + 2] = ["index-" + effective_argv[position + 1]]
+        if command in {"papers", "wiki"} and position + 1 < len(effective_argv):
+            effective_argv[position : position + 2] = [
+                command + "-" + effective_argv[position + 1]
+            ]
+    return library_main(effective_argv)

@@ -51,31 +51,6 @@ class Settings:
     embedding_cache_path: Path
     query_embedding_cache_path: Path
     bm25_index_path: Path
-    plan_dense_top_k: int
-    plan_bm25_top_k: int
-    plan_final_top_k: int
-    plan_block_window: int
-    plan_bm25_translate_providers: list[str]
-    plan_bm25_translate_timeout_seconds: int
-    plan_parser_base_url: str
-    plan_parser_api_key: str | None
-    plan_parser_model: str
-    plan_parser_timeout_seconds: int
-    answer_base_url: str
-    answer_api_key: str | None
-    answer_model: str
-    answer_timeout_seconds: int
-    answer_temperature: float
-    tencent_translate_secret_id: str | None
-    tencent_translate_secret_key: str | None
-    tencent_translate_region: str
-    tencent_translate_endpoint: str
-    aliyun_translate_access_key_id: str | None
-    aliyun_translate_access_key_secret: str | None
-    aliyun_translate_region: str
-    aliyun_translate_endpoint: str
-    aliyun_translate_version: str
-
     @classmethod
     def load(cls, project_root: Path | None = None) -> "Settings":
         root = (project_root or Path.cwd()).resolve()
@@ -127,30 +102,6 @@ class Settings:
                 data_dir / "index" / "query_embedding_cache.jsonl",
             ),
             bm25_index_path=data_dir / "index" / "bm25_chunks.json",
-            plan_dense_top_k=int(env.get("PLAN_DENSE_TOP_K", "20")),
-            plan_bm25_top_k=int(env.get("PLAN_BM25_TOP_K", "20")),
-            plan_final_top_k=int(env.get("PLAN_FINAL_TOP_K", "8")),
-            plan_block_window=int(env.get("PLAN_BLOCK_WINDOW", "2")),
-            plan_bm25_translate_providers=parse_csv(env.get("PLAN_BM25_TRANSLATE_PROVIDERS", "tencent,aliyun")),
-            plan_bm25_translate_timeout_seconds=int(env.get("PLAN_BM25_TRANSLATE_TIMEOUT_SECONDS", "10")),
-            plan_parser_base_url=env.get("PLAN_PARSER_BASE_URL", "").rstrip("/"),
-            plan_parser_api_key=env.get("PLAN_PARSER_API_KEY") or None,
-            plan_parser_model=env.get("PLAN_PARSER_MODEL", "").strip(),
-            plan_parser_timeout_seconds=int(env.get("PLAN_PARSER_TIMEOUT_SECONDS", "30")),
-            answer_base_url=(env.get("ANSWER_BASE_URL") or env.get("PLAN_PARSER_BASE_URL", "")).rstrip("/"),
-            answer_api_key=env.get("ANSWER_API_KEY") or env.get("PLAN_PARSER_API_KEY") or None,
-            answer_model=(env.get("ANSWER_MODEL") or env.get("PLAN_PARSER_MODEL", "")).strip(),
-            answer_timeout_seconds=int(env.get("ANSWER_TIMEOUT_SECONDS", "60")),
-            answer_temperature=float(env.get("ANSWER_TEMPERATURE", "0.2")),
-            tencent_translate_secret_id=env.get("TENCENT_TRANSLATE_SECRET_ID") or None,
-            tencent_translate_secret_key=env.get("TENCENT_TRANSLATE_SECRET_KEY") or None,
-            tencent_translate_region=env.get("TENCENT_TRANSLATE_REGION", "ap-shanghai"),
-            tencent_translate_endpoint=env.get("TENCENT_TRANSLATE_ENDPOINT", "tmt.tencentcloudapi.com"),
-            aliyun_translate_access_key_id=env.get("ALIYUN_TRANSLATE_ACCESS_KEY_ID") or None,
-            aliyun_translate_access_key_secret=env.get("ALIYUN_TRANSLATE_ACCESS_KEY_SECRET") or None,
-            aliyun_translate_region=env.get("ALIYUN_TRANSLATE_REGION", "cn-hangzhou"),
-            aliyun_translate_endpoint=env.get("ALIYUN_TRANSLATE_ENDPOINT", "mt.aliyuncs.com"),
-            aliyun_translate_version=env.get("ALIYUN_TRANSLATE_VERSION", "2018-10-12"),
         )
 
 

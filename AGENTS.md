@@ -1,65 +1,122 @@
-# AGENTS.md
+# 编码规范
 
-Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+## 1. 编码前先思考
 
-**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+**不要擅自假设。不要掩盖困惑。明确说明各种权衡。**
 
-## 1. Think Before Coding
+开始实现之前：
 
-**Don't assume. Don't hide confusion. Surface tradeoffs.**
+- 明确说明你的假设。如果存在不确定之处，应先询问。
+- 如果存在多种可能的理解方式，应将它们列出来，不要在没有说明的情况下自行选择。
+- 如果存在更简单的解决方案，应明确指出。必要时，应对不合理的需求提出异议。
+- 如果某些内容不清楚，应暂停实现，指出具体困惑之处，并提出问题。
 
-Before implementing:
-- State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them - don't pick silently.
-- If a simpler approach exists, say so. Push back when warranted.
-- If something is unclear, stop. Name what's confusing. Ask.
+## 2. 简单优先
 
-## 2. Simplicity First
+**只编写能够解决问题的最少代码，不做任何推测性扩展。**
 
-**Minimum code that solves the problem. Nothing speculative.**
+- 不要实现用户没有要求的功能。
+- 不要为只使用一次的逻辑设计抽象层。
+- 不要添加未经要求的“灵活性”或“可配置性”。
+- 不要为理论上不可能发生的情况编写错误处理逻辑。
+- 如果一段代码写了 200 行，而实际上可以用 50 行完成，应重新简化。
 
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios.
-- If you write 200 lines and it could be 50, rewrite it.
+问问自己："一位资深工程师会不会认为这个实现过度复杂？"
 
-Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+如果答案是肯定的，就应继续简化
 
-## 3. Surgical Changes
+## 3. 外科手术式修改
 
-**Touch only what you must. Clean up only your own mess.**
+**只修改必须修改的内容，只清理由你自己的改动造成的问题。**
 
-When editing existing code:
-- Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken.
-- Match existing style, even if you'd do it differently.
-- If you notice unrelated dead code, mention it - don't delete it.
+修改现有代码时：
 
-When your changes create orphans:
-- Remove imports/variables/functions that YOUR changes made unused.
-- Don't remove pre-existing dead code unless asked.
+- 不要顺手“改进”相邻代码、注释或格式。
+- 不要重构没有问题的代码。
+- 遵循项目现有的代码风格，即使你个人会采用其他写法。
+- 如果发现与当前任务无关的无用代码，应指出它，但不要自行删除。
 
-The test: Every changed line should trace directly to the user's request.
+当你的修改产生了孤立或无用内容时：
 
-## 4. Goal-Driven Execution
+- 删除因你的修改而变得未使用的导入、变量或函数。
+- 不要删除原本就存在的无用代码，除非用户明确要求。
 
-**Define success criteria. Loop until verified.**
+检验标准：每一行被修改的代码，都应当能够直接追溯到用户提出的需求。
 
-Transform tasks into verifiable goals:
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
+## 4. 以目标为导向执行
 
-For multi-step tasks, state a brief plan:
+**定义明确的成功标准，并持续迭代，直到完成验证。**
+
+将任务转换为可验证的目标：
+
+- “添加输入验证”
+  → “先为非法输入编写测试，再修改代码使测试通过”
+- “修复这个错误”
+  → “先编写能够复现该错误的测试，再修改代码使测试通过”
+- “重构 X”
+  → “确保重构前后的测试均能通过”
+
+对于多步骤任务，应先说明一个简短计划：
+
 ```
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
+1. [步骤] → 验证方式：[检查内容]
+2. [步骤] → 验证方式：[检查内容]
+3. [步骤] → 验证方式：[检查内容]
 ```
 
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+明确而严格的成功标准，可以使任务独立地持续推进和验证。
+
+模糊的成功标准，例如“让它能用”，通常会导致实现过程中需要不断向用户确认。
+
+## 5. Windows、PowerShell 与 Unicode 安全
+
+**为了避免 Unicode 相关故障，面向机器的接口应只使用 ASCII 字符。**
+
+在 Windows 环境下或通过 PowerShell 运行脚本时：
+
+- 不要将中文数据集名称、非 ASCII 标签或包含 Unicode 字符的路径作为命令行参数传递。
+
+- 命令行参数应使用稳定的 ASCII 标识符，例如 `profile_id`、`dataset_id` 或 `slug`。
+
+- 将展示名称、Unicode 路径、图表标题和数据集元数据存储在 UTF-8 编码的 JSON 或 YAML 配置文件中。
+
+- 尽可能以 UTF-8 模式运行 Python：
+
+  - 使用 `python -X utf8 ...`
+  - 或设置环境变量 `PYTHONUTF8=1`
+
+- 在 Python 中读写文本文件时，应始终显式指定 `encoding="utf-8"`，除非对应的数据集配置明确指定了其他编码。
+
+- 使用 `pathlib.Path` 处理文件系统路径。
+
+- 不要通过字符串拼接构造 Shell 命令。
+
+- 优先使用：
+
+  ```
+  subprocess.run(
+      [...],
+      shell=False,
+      check=True,
+      text=True,
+      encoding="utf-8",
+  )
+  ```
+
+  而不是执行拼接后的 Shell 命令字符串。
+
+  - 在重新生成结果之前，绝不要删除已经存在的输出目录。
+  - 应先将输出生成到临时目录中，完成验证后，再替换最终输出目录。
+  - 如果生成过程失败，应保留上一次成功生成的输出结果。
+
+  对于名称中包含中文的数据集，不要通过 PowerShell 或其他 Shell 的命令行参数直接传递中文名称。
 
 ---
 
-**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+**当这些准则发挥作用时，应表现为：**
+
+- 代码差异中不必要的修改更少；
+- 因过度设计而重新编写代码的情况更少；
+- 澄清问题发生在实现之前，而不是在错误发生之后。
+
+默认环境为conda的RAG_project环境，写函数时加上适当的中文注释
