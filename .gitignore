@@ -6,3 +6,7 @@ __pycache__/
 data/index/
 密匙/
 data/
+
+# 工具与本地工作目录：不进版本库，避免持续污染 `git status`
+.ua/
+.workbuddy-ai/
