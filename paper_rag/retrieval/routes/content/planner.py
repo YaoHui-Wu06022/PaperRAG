@@ -37,6 +37,7 @@ def plan_body(
     """执行正文检索计划，并构造 content evidence。"""
     corpus = corpus or CorpusContext(settings)
     timings = timings or Timings(False)
+    retrieval_stats = new_retrieval_stats()
     if route.parse_status == "parse_failed":
         return build_content_evidence(
             route,
@@ -44,6 +45,7 @@ def plan_body(
             warnings=warnings,
             scope_records=[],
             context_units=[],
+            retrieval=retrieval_summary(retrieval_stats, context_units=[], scope_records=[]),
             parser_error=route.parser_error,
             debug=debug,
         )
@@ -66,6 +68,7 @@ def plan_body(
             warnings=warnings,
             scope_records=scope_records,
             context_units=[],
+            retrieval=retrieval_summary(retrieval_stats, context_units=[], scope_records=[]),
             group_results=group_results or None,
             debug=debug,
         )
@@ -90,6 +93,7 @@ def plan_body(
                 timings=timings,
                 embedder=embedder,
                 store=store,
+                retrieval_stats=retrieval_stats,
             )
             group["context_units"] = group_contexts
             group["exists"] = bool(group_contexts)
@@ -109,10 +113,12 @@ def plan_body(
             timings=timings,
             embedder=embedder,
             store=store,
+            retrieval_stats=retrieval_stats,
         )
 
     if not context_units:
         warnings.append("正文检索没有命中 Dense/BM25 候选")
+    retrieval = retrieval_summary(retrieval_stats, context_units=context_units, scope_records=scope_records)
     return build_content_evidence(
         route,
         status="ok",
@@ -120,6 +126,7 @@ def plan_body(
         scope_records=scope_records,
         context_units=context_units,
         retrieval_query=retrieval_query,
+        retrieval=retrieval,
         group_results=group_results or None,
         debug=debug,
     )
@@ -135,6 +142,7 @@ def retrieve_context_units(
     timings: Timings,
     embedder=None,
     store=None,
+    retrieval_stats: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """在一组论文 scope 内执行一次 Dense/BM25/RRF/context 扩展。"""
     with timings.measure("load_chunks"):
@@ -145,6 +153,7 @@ def retrieve_context_units(
         chunk_document.chunk_id: chunk_document
         for chunk_document in chunk_documents
     }
+    stats = retrieval_stats if retrieval_stats is not None else new_retrieval_stats()
     dense_results = []
     try:
         with timings.measure("dense"):
@@ -156,18 +165,30 @@ def retrieve_context_units(
                 store=store,
             )
     except Exception as exc:
+        stats["dense_available"] = False
         warnings.append(f"Dense 检索失败：{exc}；仅使用 BM25 候选")
     bm25_results = []
     if retrieval_query["bm25_queries"]:
-        with timings.measure("bm25"):
-            bm25_results = corpus.bm25_index.search_many(
-                retrieval_query["bm25_queries"],
-                settings.plan_bm25_top_k,
-                allowed_chunk_ids=[chunk_document.chunk_id for chunk_document in chunk_documents],
-            )
+        try:
+            with timings.measure("bm25"):
+                bm25_results = corpus.bm25_index.search_many(
+                    retrieval_query["bm25_queries"],
+                    settings.plan_bm25_top_k,
+                    allowed_chunk_ids=[chunk_document.chunk_id for chunk_document in chunk_documents],
+                )
+        except Exception as exc:
+            stats["bm25_available"] = False
+            warnings.append(f"BM25 检索失败：{exc}")
+    stats["dense_hits"] += len(dense_results)
+    stats["bm25_hits"] += len(bm25_results)
     with timings.measure("fusion_context"):
         fused = fuse_chunk_hits(chunk_documents_by_id, dense_results, bm25_results)
+        stats["fused_hits"] += len(fused)
         fused = filter_required_term_candidates(fused, retrieval_query.get("required_terms") or [])
+        if retrieval_query.get("required_terms") and not fused:
+            stats["required_terms_covered"] = False
+        for candidate in fused:
+            stats["unique_papers"].add(candidate.chunk_document.paper_id)
         return [
             context_unit(
                 settings,
@@ -177,6 +198,45 @@ def retrieve_context_units(
             )
             for candidate in fused[:settings.plan_final_top_k]
         ]
+
+
+def new_retrieval_stats() -> dict[str, Any]:
+    return {
+        "dense_available": True,
+        "bm25_available": True,
+        "dense_hits": 0,
+        "bm25_hits": 0,
+        "fused_hits": 0,
+        "unique_papers": set(),
+        "required_terms_covered": True,
+    }
+
+
+def retrieval_summary(
+    stats: dict[str, Any],
+    *,
+    context_units: list[dict[str, Any]],
+    scope_records: list[dict[str, Any]],
+) -> dict[str, Any]:
+    dense_hits = int(stats.get("dense_hits", 0))
+    bm25_hits = int(stats.get("bm25_hits", 0))
+    fused_hits = int(stats.get("fused_hits", 0))
+    if not scope_records:
+        status = "insufficient"
+    elif not context_units and not stats.get("dense_available", True) and not stats.get("bm25_available", True):
+        status = "backend_unavailable"
+    elif not context_units or not stats.get("required_terms_covered", True):
+        status = "insufficient"
+    else:
+        status = "sufficient"
+    return {
+        "status": status,
+        "dense_hits": dense_hits,
+        "bm25_hits": bm25_hits,
+        "fused_hits": fused_hits,
+        "unique_papers": len(stats.get("unique_papers") or set()),
+        "required_terms_covered": bool(stats.get("required_terms_covered", True)),
+    }
 
 
 def filter_required_term_candidates(candidates: list[Any], required_terms: list[Any]) -> list[Any]:

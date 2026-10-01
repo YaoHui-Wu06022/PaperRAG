@@ -1,4 +1,4 @@
-"""content router：调用 parser，并解析正文检索前的论文范围。"""
+"""content 路由：使用统一大模型抽取结果建立正文检索 scope。"""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING, Any
 from paper_rag.config import Settings
 from paper_rag.corpus.utils import dedupe_text
 from paper_rag.retrieval.route import RouteDecision
-from paper_rag.retrieval.routes.common.parser_client import ContentParserClient
-from paper_rag.retrieval.routes.common.router import build_paper_scope_decision, apply_paper_scope_year_filters
+from paper_rag.retrieval.routes.common.model_parser import ModelQueryParser
+from paper_rag.retrieval.routes.common.router import apply_paper_scope_year_filters, build_paper_scope_decision
 
 if TYPE_CHECKING:
     from paper_rag.corpus.context import CorpusContext
@@ -23,15 +23,15 @@ def build_content_decision(
     plan_parser=None,
     corpus: "CorpusContext | None" = None,
 ) -> RouteDecision:
-    """把 content parser result 归一化成 RouteDecision。"""
+    """调用统一抽取器并把结果转换为正文 planner 的 RouteDecision。"""
     enriched = build_paper_scope_decision(
         settings,
         decision,
         warnings,
-        parser_factory=ContentParserClient.from_settings,
+        parser_factory=lambda current_settings: ModelQueryParser(current_settings, decision.query, decision),
         parser_method="parse_content",
         warning_prefix="content",
-        missing_parser_message="plan_parser 必须提供 parse_content(query)",
+        missing_parser_message="query parser 必须提供 parse_content(query)",
         plan_parser=plan_parser,
         corpus=corpus,
     )
@@ -49,15 +49,13 @@ EXPLICIT_PAPER_SCOPE_MARKERS = (
     "本文",
     "该文",
     "这篇",
-    "这篇工作",
-    "该工作",
     "paper",
     "article",
 )
 
 
 def normalize_unmarked_entity_scope(decision: RouteDecision) -> RouteDecision:
-    """Move unmarked entity-like soft scopes back into content_objects."""
+    """把未标记为论文范围的语义移动到正文对象，避免误当论文 scope。"""
     semantic = decision.paper_semantic.strip()
     if not semantic or not should_treat_semantic_as_content_object(decision):
         return decision

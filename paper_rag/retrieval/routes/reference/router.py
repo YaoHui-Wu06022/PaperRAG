@@ -11,7 +11,7 @@ from paper_rag.corpus.aliases import dedupe_alias_matches
 from paper_rag.corpus.records import merge_paper_records
 from paper_rag.corpus.resolver import resolve_parser_paper_scope, resolve_scope_year_filters
 from paper_rag.retrieval.route import RouteDecision
-from paper_rag.retrieval.routes.common.parser_client import ReferenceParserClient
+from paper_rag.retrieval.routes.common.model_parser import ModelQueryParser
 
 if TYPE_CHECKING:
     from paper_rag.corpus.context import CorpusContext
@@ -27,20 +27,29 @@ def build_reference_decision(
 ) -> RouteDecision:
     """把 reference parser result 归一化成 RouteDecision。"""
     query = decision.query
+    parser = None
     try:
-        parser = plan_parser or ReferenceParserClient.from_settings(settings)
+        parser = plan_parser or ModelQueryParser(settings, query, decision)
         if not hasattr(parser, "parse_reference"):
-            raise PlanParseError("plan_parser 必须提供 parse_reference(query)")
+            raise PlanParseError("本地 parser 必须提供 parse_reference(query)")
         parser_result = parser.parse_reference(query)
     except (PlanParseError, OSError, ValueError) as exc:
-        warnings.append(f"reference parser 解析失败：{exc}")
+        code = str(exc)
+        if code in {"extraction_failed", "extraction_low_confidence", "alias_unresolved"}:
+            warnings.append(f"{code}：reference 停止检索")
+        else:
+            warnings.append(f"local_scope_parse_failed：reference parser 解析失败：{exc}")
         return RouteDecision(
             route=decision.route,
             intent=None,
             query=query,
             resolved_papers=decision.resolved_papers,
             alias_matches=decision.alias_matches,
-            parser_result=decision.parser_result,
+                parser_result=(
+                    {**(decision.parser_result or {}), "extraction_debug": getattr(parser, "_extraction_debug", None)}
+                    if getattr(parser, "_extraction_debug", None)
+                    else decision.parser_result
+                ),
             parse_status="parse_failed",
             parser_error=str(exc),
             return_side=decision.return_side,
@@ -52,9 +61,20 @@ def build_reference_decision(
             object_filters=decision.object_filters,
             object_groups=decision.object_groups,
             object_mode=decision.object_mode,
+            decision_backend=decision.decision_backend,
+            decision_confidence=decision.decision_confidence,
+            decision_probabilities=decision.decision_probabilities,
+            decision_fallback=decision.decision_fallback,
+            decision_fallback_reason=decision.decision_fallback_reason,
+            decision_policy_version=decision.decision_policy_version,
+            needs_synthesis=decision.needs_synthesis,
+            complexity=decision.complexity,
         )
 
     parser_result = correct_active_cites_scope(query, parser_result, warnings)
+    extraction_debug = parser_result.get("extraction_debug")
+    if isinstance(extraction_debug, dict) and extraction_debug.get("backend") == "rules":
+        warnings.append("extraction_failed：DeepSeek 不可用，reference 使用有限规则兜底")
 
     source_resolved = resolve_parser_paper_scope(settings, {
         "filters": parser_result["source_filters"],
@@ -64,6 +84,42 @@ def build_reference_decision(
         "filters": parser_result["object_filters"],
         "paper_groups": parser_result["object_groups"],
     }, corpus=corpus)
+    extraction_debug = parser_result.get("extraction_debug")
+    extraction_result = extraction_debug.get("result") if isinstance(extraction_debug, dict) else {}
+    if isinstance(extraction_result, dict):
+        mentioned = list(extraction_result.get("paper_mentions") or [])
+        mentioned.extend(extraction_result.get("reference_mentions") or [])
+        if mentioned and getattr(settings, "manifest_path", None) and settings.manifest_path.exists() and not (
+            source_resolved["resolved_papers"] or object_resolved["resolved_papers"]
+        ):
+            warnings.append("alias_unresolved：抽取出的引用论文实体未映射到本地库，停止检索")
+            return RouteDecision(
+                route=decision.route,
+                intent=None,
+                query=query,
+                resolved_papers=decision.resolved_papers,
+                alias_matches=decision.alias_matches,
+                parser_result=parser_result,
+                parse_status="parse_failed",
+                parser_error="alias_unresolved",
+                return_side=decision.return_side,
+                source_semantic=decision.source_semantic,
+                source_filters=decision.source_filters,
+                source_groups=decision.source_groups,
+                source_mode=decision.source_mode,
+                object_semantic=decision.object_semantic,
+                object_filters=decision.object_filters,
+                object_groups=decision.object_groups,
+                object_mode=decision.object_mode,
+                decision_backend=decision.decision_backend,
+                decision_confidence=decision.decision_confidence,
+                decision_probabilities=decision.decision_probabilities,
+                decision_fallback=decision.decision_fallback,
+                decision_fallback_reason=decision.decision_fallback_reason,
+                decision_policy_version=decision.decision_policy_version,
+                needs_synthesis=decision.needs_synthesis,
+                complexity=decision.complexity,
+            )
     parser_result = {
         **parser_result,
         # parser_result 中保留两侧 resolved_papers，debug 时能看 source/object 是否放反。
@@ -99,6 +155,14 @@ def build_reference_decision(
         object_filters=parser_result["object_filters"],
         object_groups=parser_result["object_groups"],
         object_mode=parser_result["object_mode"],
+        decision_backend=decision.decision_backend,
+        decision_confidence=decision.decision_confidence,
+        decision_probabilities=decision.decision_probabilities,
+        decision_fallback=decision.decision_fallback,
+        decision_fallback_reason=decision.decision_fallback_reason,
+        decision_policy_version=decision.decision_policy_version,
+        needs_synthesis=decision.needs_synthesis,
+        complexity=decision.complexity,
     )
     return apply_reference_year_filters(settings, enriched, warnings, corpus=corpus)
 
@@ -213,4 +277,12 @@ def apply_reference_year_filters(
         object_filters=object_filters,
         object_groups=object_groups,
         object_mode=decision.object_mode,
+        decision_backend=decision.decision_backend,
+        decision_confidence=decision.decision_confidence,
+        decision_probabilities=decision.decision_probabilities,
+        decision_fallback=decision.decision_fallback,
+        decision_fallback_reason=decision.decision_fallback_reason,
+        decision_policy_version=decision.decision_policy_version,
+        needs_synthesis=decision.needs_synthesis,
+        complexity=decision.complexity,
     )

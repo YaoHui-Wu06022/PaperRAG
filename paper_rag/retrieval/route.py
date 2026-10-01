@@ -37,3 +37,11 @@ class RouteDecision:
     object_filters: list[dict[str, Any]] = field(default_factory=list)
     object_groups: list[dict[str, Any]] = field(default_factory=list)
     object_mode: str = "single"
+    decision_backend: str = "legacy"
+    decision_confidence: float | None = None
+    decision_probabilities: dict[str, float] = field(default_factory=dict)
+    decision_fallback: bool = False
+    decision_fallback_reason: str | None = None
+    decision_policy_version: str = "v1"
+    needs_synthesis: bool = False
+    complexity: int | None = None

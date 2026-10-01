@@ -1,4 +1,4 @@
-"""统一的 planner/prompt/retrieval 手动调试入口。
+"""统一的 planner/decision/retrieval 手动调试入口。
 
 这个文件把原来分散的 *_probe.py 收到一个 CLI 里，默认行为尽量贴近
 “直接运行旧 probe 文件”：不传 query 时使用内置示例，只保留必要的 route/debug。
@@ -10,7 +10,6 @@ python -m paper_rag probe --help
 python -m paper_rag probe evidence
 python -m paper_rag probe evidence --debug "ResNet 的结构是什么？"
 python -m paper_rag probe planner --route content
-python -m paper_rag probe prompt --route content
 python -m paper_rag probe retrieval
 ```
 
@@ -18,7 +17,6 @@ python -m paper_rag probe retrieval
 
 - `evidence`：执行完整 planner，查看最终 evidence。
 - `planner`：绕过 top route，直接运行某个 domain router + planner。
-- `prompt`：查看 parser LLM 输出；content route 会顺手写入 retrieval case。
 - `retrieval`：固定读取 data/probe_cases/retrieval_probe_cases.json，复测 Dense/BM25/fused 召回。
 """
 
@@ -37,20 +35,15 @@ from paper_rag.retrieval.chunk_fusion import fuse_chunk_hits
 from paper_rag.retrieval.dense.service import search_dense_chunks
 from paper_rag.retrieval.plan import run_plan
 from paper_rag.retrieval.route import RouteDecision
-from paper_rag.retrieval.routes.common.parser_client import PlanParserClient
 from paper_rag.retrieval.routes.content.context import context_unit
 from paper_rag.retrieval.routes.content.planner import plan_body
-from paper_rag.retrieval.routes.content.prompt import content_parser_system_prompt
 from paper_rag.retrieval.routes.content.retrieval_query import build_content_retrieval_query
 from paper_rag.retrieval.routes.content.router import build_content_decision
 from paper_rag.retrieval.routes.content.schema import validate_content_parse
 from paper_rag.retrieval.routes.metadata.planner import plan_metadata
-from paper_rag.retrieval.routes.metadata.prompt import metadata_parser_system_prompt
 from paper_rag.retrieval.routes.metadata.router import build_metadata_decision
 from paper_rag.retrieval.routes.reference.planner import plan_reference
-from paper_rag.retrieval.routes.reference.prompt import reference_parser_prompt
 from paper_rag.retrieval.routes.reference.router import build_reference_decision
-from paper_rag.retrieval.routes.top.prompt import top_route_prompt
 
 
 EVIDENCE_DEFAULT_QUERIES = {
@@ -65,18 +58,11 @@ PLANNER_DEFAULT_QUERIES = {
     "content": "ResNet 的模型结构是什么？",
 }
 
-PROMPT_DEFAULT_QUERIES = {
-    "top": "ResNet 和 Transformer 分别是哪一年发表的？",
-    "metadata": "ResNet后续有哪些论文标题里带Resnet",
-    "reference": "VIT之前，有哪些论文引用了Transformer",
-    "content": "作者包含 Smith 或 Lee 的论文是否报告了消融实验？",
-}
-
 RETRIEVAL_TOP_K = 5
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = new_probe_parser(description="调试 Paper_RAG 的 parser、planner 和正文召回链路。")
+    parser = new_probe_parser(description="调试 Paper_RAG 的 Jev decision、planner 和正文召回链路。")
     parser.add_argument("--project-root", type=Path, default=Path.cwd(), help="项目根目录，需包含 .env 或 data 目录")
     subparsers = parser.add_subparsers(dest="command", required=True)
     add_probe_subcommands(subparsers)
@@ -85,7 +71,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def add_probe_parser(subparsers: argparse._SubParsersAction) -> None:
-    parser = subparsers.add_parser("probe", help="调试 parser、planner 和正文召回内部结果", add_help=False)
+    parser = subparsers.add_parser("probe", help="调试 Jev decision、planner 和正文召回内部结果", add_help=False)
     add_chinese_help(parser)
     probe_subparsers = parser.add_subparsers(dest="probe_command", required=True)
     add_probe_subcommands(probe_subparsers)
@@ -104,7 +90,6 @@ def add_chinese_help(parser: argparse.ArgumentParser) -> None:
 def add_probe_subcommands(subparsers: argparse._SubParsersAction) -> None:
     add_evidence_parser(subparsers)
     add_planner_parser(subparsers)
-    add_prompt_parser(subparsers)
     add_retrieval_parser(subparsers)
 
 
@@ -130,14 +115,6 @@ def add_planner_parser(subparsers: argparse._SubParsersAction) -> None:
     parser.set_defaults(handler=handle_planner)
 
 
-def add_prompt_parser(subparsers: argparse._SubParsersAction) -> None:
-    parser = subparsers.add_parser("prompt", help="查看某条 parser prompt 输出", add_help=False)
-    add_chinese_help(parser)
-    add_query(parser)
-    parser.add_argument("--route", choices=["top", "metadata", "reference", "content"], required=True, help="选择要查看的 parser prompt")
-    parser.set_defaults(handler=handle_prompt)
-
-
 def add_retrieval_parser(subparsers: argparse._SubParsersAction) -> None:
     parser = subparsers.add_parser("retrieval", help="用手写 content parser JSON 调试 Dense/BM25/fused 召回", add_help=False)
     add_chinese_help(parser)
@@ -160,31 +137,6 @@ def handle_planner(args: argparse.Namespace) -> int:
     settings = Settings.load(args.project_root)
     query = selected_query(args.query, PLANNER_DEFAULT_QUERIES[args.route])
     print_json(run_domain_probe(settings, args.route, query, debug=args.debug))
-    return 0
-
-
-def handle_prompt(args: argparse.Namespace) -> int:
-    settings = Settings.load(args.project_root)
-    client = PlanParserClient.from_settings(settings)
-    query = selected_query(args.query, PROMPT_DEFAULT_QUERIES[args.route])
-    content = ""
-    try:
-        content = client.complete_json(prompt_for_route(args.route), query)
-        if args.route != "content":
-            print(pretty_json_or_raw(content))
-            return 0
-
-        # 保留旧 content prompt probe 的核心效果：校验 parser_result，并沉淀为 retrieval case。
-        parser_result = validate_content_parse(strip_code_fence(content), query)
-        case_path = default_probe_cases_path(settings)
-        saved = upsert_cases(case_path, [{"query": query, "parser_result": parser_result}])
-        print_json({"results": [{"query": query, "status": "ok", "parser_result": parser_result}], "cases_path": str(case_path), "saved": saved})
-    except Exception as exc:
-        payload: dict[str, Any] = {"error": str(exc)}
-        if content:
-            payload["raw"] = content
-        print_json(payload)
-        return 1
     return 0
 
 
@@ -237,20 +189,8 @@ def plan_domain(settings: Settings, route: RouteDecision, warnings: list[str], *
     raise ValueError(f"不支持的 route：{route.route}")
 
 
-def prompt_for_route(route: str) -> str:
-    if route == "top":
-        return top_route_prompt()
-    if route == "metadata":
-        return metadata_parser_system_prompt()
-    if route == "reference":
-        return reference_parser_prompt()
-    if route == "content":
-        return content_parser_system_prompt()
-    raise ValueError(f"不支持的 prompt route：{route}")
-
-
 class StaticContentParser:
-    """把手写 JSON 伪装成 content parser，绕过 prompt/LLM"""
+    """把固定 JSON 作为本地 parser 结果，调试正文召回。"""
 
     def __init__(self, parser_result: dict[str, Any]) -> None:
         self.parser_result = parser_result

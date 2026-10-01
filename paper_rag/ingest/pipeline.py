@@ -25,7 +25,7 @@ from paper_rag.ingest.extract import (
 from paper_rag.ingest.manifest import Manifest, ManifestRecord, effective_year, normalize_year
 from paper_rag.ingest.mineru import MinerUClient, MinerUError
 from paper_rag.ingest.metadata_sources.arxiv import ArxivClient
-from paper_rag.ingest.metadata_sources.dblp import DblpClient
+from paper_rag.ingest.metadata_sources.crossref import CrossrefClient
 from paper_rag.ingest.metadata_sources.semantic_scholar import SemanticScholarClient
 from paper_rag.corpus.venues import normalize_venue_for_storage
 
@@ -73,7 +73,7 @@ Reporter = Callable[[str], None]
 
 
 def clean_author_name(name: str) -> str:
-    """清理 DBLP 作者名末尾常见的四位消歧编号。"""
+    """清理外部元数据源作者名末尾常见的四位消歧编号。"""
     text = name.strip() if isinstance(name, str) else ""
     return re.sub(r"\s+\d{4}$", "", text).strip()
 
@@ -127,11 +127,11 @@ def run_ingest(
     # 先尝试复用本地 MinerU 输出，避免无谓重复上传和等待解析。
     output_index = build_existing_output_index(settings.mineru_output_dir)
     report(f"[ingest] 已索引 {len(output_index)} 个 MinerU 查找 key")
-    dblp = DblpClient()
+    crossref = CrossrefClient(settings.crossref_mailto)
     semantic_scholar = SemanticScholarClient(settings.semantic_scholar_api_key)
     arxiv = ArxivClient()
     # 外部源的节流状态放在 run_ingest 内，避免不同命令执行之间互相影响。
-    last_lookup_at = {"arxiv": 0.0, "dblp": 0.0, "semantic_scholar": 0.0}
+    last_lookup_at = {"arxiv": 0.0, "crossref": 0.0, "semantic_scholar": 0.0}
     total = len(pdf_by_hash)
     for ordinal, (file_hash, pdf_path) in enumerate(pdf_by_hash.items(), start=1):
         report(f"[ingest] [{ordinal}/{total}] 正在处理 {pdf_path.name}")
@@ -161,11 +161,11 @@ def run_ingest(
                 # 三个外部源都有速率限制，闭包让每个源各自维护上次请求时间。
                 match = lookup_metadata(
                     title,
-                    dblp,
+                    crossref,
                     semantic_scholar,
                     arxiv,
-                    dblp_candidate_limit=settings.dblp_candidate_limit,
-                    dblp_retry_delay_seconds=settings.dblp_delay_seconds,
+                    crossref_candidate_limit=20,
+                    crossref_retry_delay_seconds=settings.crossref_delay_seconds,
                     semantic_scholar_retry_delay_seconds=settings.semantic_scholar_delay_seconds,
                     arxiv_retry_delay_seconds=settings.arxiv_delay_seconds,
                     report=lambda message: report(f"[ingest] [{ordinal}/{total}] {message}"),
@@ -182,8 +182,8 @@ def run_ingest(
                         f"期刊/会议={venue or '未解析'}"
                     )
                 else:
-                    summary.unresolved.append(f"{pdf_path.name}: ArXiv/DBLP/Semantic Scholar 未找到精确标题匹配")
-                    report(f"[ingest] [{ordinal}/{total}] ArXiv、DBLP 和 Semantic Scholar 均未解析出元数据")
+                    summary.unresolved.append(f"{pdf_path.name}: ArXiv/Crossref/Semantic Scholar 未找到精确标题匹配")
+                    report(f"[ingest] [{ordinal}/{total}] ArXiv、Crossref 和 Semantic Scholar 均未解析出元数据")
             else:
                 report(f"[ingest] [{ordinal}/{total}] 元数据已有作者和有效年份，跳过外部检索")
             target_pdf = pdf_path
@@ -284,17 +284,17 @@ def run_ingest(
 
 def lookup_metadata(
     title: str,
-    dblp: DblpClient,
+    crossref: CrossrefClient,
     semantic_scholar: SemanticScholarClient,
     arxiv: ArxivClient,
-    dblp_candidate_limit: int = 20,
-    dblp_retry_delay_seconds: float = 1.0,
+    crossref_candidate_limit: int = 20,
+    crossref_retry_delay_seconds: float = 1.0,
     semantic_scholar_retry_delay_seconds: float = 1.0,
     arxiv_retry_delay_seconds: float = 1.0,
     report: Reporter | None = None,
     last_lookup_at: dict[str, float] | None = None,
 ) -> MetadataMatch | None:
-    """按 ArXiv -> DBLP -> Semantic Scholar 的顺序补全论文元数据。"""
+    """按 ArXiv -> Crossref -> Semantic Scholar 的顺序补全论文元数据。"""
     emit = report or (lambda _: None)
     preprint_year: int | None = None
 
@@ -327,32 +327,30 @@ def lookup_metadata(
     else:
         emit("ArXiv 未找到精确标题匹配")
 
-    # DBLP 通常能给出更稳定的正式会议/期刊信息，所以优先于 Semantic Scholar。
-    emit("正在查询 DBLP")
-    wait_for_lookup("dblp", "DBLP", dblp_retry_delay_seconds)
+    emit("正在查询 Crossref")
+    wait_for_lookup("crossref", "Crossref", crossref_retry_delay_seconds)
     try:
-        dblp_match = dblp.lookup_exact_title(
+        crossref_match = crossref.lookup_exact_title(
             title,
-            limit=dblp_candidate_limit,
-            retry_delay_seconds=dblp_retry_delay_seconds,
+            limit=crossref_candidate_limit,
+            retry_delay_seconds=crossref_retry_delay_seconds,
         )
     except Exception as exc:
-        dblp_match = None
-        emit(f"DBLP 查询失败：{exc}")
+        crossref_match = None
+        emit(f"Crossref 查询失败：{exc}")
     finally:
-        mark_lookup("dblp")
-    if dblp_match and is_formal_venue(dblp_match.venue):
-        # ArXiv 提供预印本年份，正式发表信息优先来自 DBLP。
+        mark_lookup("crossref")
+    if crossref_match and is_formal_venue(crossref_match.venue):
         return MetadataMatch(
-            title=dblp_match.title,
-            authors=clean_author_list(dblp_match.authors),
-            year={"preprint_year": preprint_year, "publish_year": formal_publish_year(dblp_match.year, dblp_match.venue)},
-            venue=dblp_match.venue,
+            title=crossref_match.title,
+            authors=clean_author_list(crossref_match.authors),
+            year={"preprint_year": preprint_year, "publish_year": formal_publish_year(crossref_match.year, crossref_match.venue)},
+            venue=crossref_match.venue,
         )
-    if dblp_match:
-        emit(f"DBLP 命中非正式 venue，已忽略：{dblp_match.venue}")
+    if crossref_match:
+        emit(f"Crossref 命中非正式 venue，已忽略：{crossref_match.venue}")
 
-    emit("DBLP 未找到精确标题匹配，继续查询 Semantic Scholar")
+    emit("Crossref 未找到精确标题匹配，继续查询 Semantic Scholar")
     wait_for_lookup("semantic_scholar", "Semantic Scholar", semantic_scholar_retry_delay_seconds)
     try:
         semantic_scholar_match = semantic_scholar.lookup_exact_title(
@@ -365,7 +363,7 @@ def lookup_metadata(
     finally:
         mark_lookup("semantic_scholar")
     if semantic_scholar_match and is_formal_venue(semantic_scholar_match.venue):
-        # DBLP 没有正式 venue 时，再用 Semantic Scholar 的正式发表信息兜底。
+        # Crossref 没有正式 venue 时，再用 Semantic Scholar 的正式发表信息兜底。
         return MetadataMatch(
             title=semantic_scholar_match.title,
             authors=clean_author_list(semantic_scholar_match.authors),

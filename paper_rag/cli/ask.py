@@ -14,18 +14,18 @@ EXIT_COMMANDS = {"exit", "quit", "退出"}
 
 
 def add_ask_parser(subparsers: argparse._SubParsersAction) -> None:
-    ask = subparsers.add_parser("ask", help="基于检索证据回答论文问题")
-    ask.add_argument("query", nargs="+", help="要回答的问题")
+    ask = subparsers.add_parser("ask", help="检索论文证据（最终回答由 Agent 生成）")
+    ask.add_argument("query", nargs="+", help="查询问题")
     ask.add_argument("--debug", action="store_true", help="输出 planner/retrieval payload")
-    ask.add_argument("--evidence", action="store_true", help="在答案后附带证据来源")
+    ask.add_argument("--evidence", action="store_true", help="以 JSON 输出证据")
     ask.set_defaults(handler=handle_ask)
 
 
 def add_chat_parser(subparsers: argparse._SubParsersAction) -> None:
-    chat = subparsers.add_parser("chat", help="在同一进程中连续执行论文问答或检索规划")
-    chat.add_argument("--mode", choices=["ask", "plan"], default="ask", help="连续执行 ask 或 plan，默认 ask")
+    chat = subparsers.add_parser("chat", help="连续执行论文检索问题")
+    chat.add_argument("--mode", choices=["ask", "plan"], default="ask")
     chat.add_argument("--debug", action="store_true", help="输出 planner/retrieval payload")
-    chat.add_argument("--evidence", action="store_true", help="在 ask 答案后附带证据来源")
+    chat.add_argument("--evidence", action="store_true", help="以 JSON 输出证据")
     chat.set_defaults(handler=handle_chat, chat_parser=chat)
 
 
@@ -38,12 +38,11 @@ def handle_ask(args: argparse.Namespace) -> int:
 
 
 def handle_chat(args: argparse.Namespace) -> int:
-    """连续执行相互独立的问题，并复用一次会话中的本地语料。"""
     if args.mode == "plan" and args.evidence:
         args.chat_parser.error("--evidence 仅适用于 ask 模式")
     settings = Settings.load(args.project_root)
     corpus = CorpusContext(settings)
-    print("已进入连续模式。输入 exit、quit 或 退出结束。")
+    print("已进入连续检索模式。输入 exit 或 quit 退出。")
     while True:
         try:
             query = input("问题> ").strip()
@@ -66,30 +65,20 @@ def handle_chat(args: argparse.Namespace) -> int:
             return 0
         except Exception as exc:
             print(f"本轮执行失败：{exc}")
-    return 0
 
 
 def print_ask_payload(payload: dict[str, Any], *, debug: bool, evidence: bool) -> None:
-    """按 ask CLI 参数输出答案、来源或排查 payload。"""
-    if debug:
-        evidence_payload = payload.get("evidence") if isinstance(payload.get("evidence"), dict) else {}
-        answer = str(payload.get("answer") or "")
-        if evidence_payload.get("route") != "content":
-            lines = [line for line in answer.splitlines() if line.strip()]
-            answer = "\n".join(lines[:3])
+    """输出检索 evidence，不生成最终自然语言答案。"""
+    if debug or evidence:
         print(json.dumps({
-            "answer_mode": payload.get("answer_mode"),
-            "answer": answer,
+            "answer_mode": payload.get("answer_mode", "evidence"),
             "evidence": payload.get("evidence"),
         }, ensure_ascii=False, indent=2))
         return
-    print(payload["answer"])
-    if evidence:
-        print_evidence_sources(payload.get("evidence"))
+    print(json.dumps(payload.get("evidence") or {}, ensure_ascii=False, indent=2))
 
 
 def print_evidence_sources(evidence: Any) -> None:
-    """打印适合人工快速核对的证据来源摘要。"""
     sources = list(dict.fromkeys(evidence_sources(evidence)))
     print("\n证据来源：")
     if not sources:
@@ -100,7 +89,6 @@ def print_evidence_sources(evidence: Any) -> None:
 
 
 def evidence_sources(evidence: Any) -> list[str]:
-    """按 route 提取用于展示的来源，不改变内部 evidence。"""
     if not isinstance(evidence, dict):
         return []
     results = evidence.get("results")
@@ -117,7 +105,6 @@ def evidence_sources(evidence: Any) -> list[str]:
 
 
 def format_content_source(context: dict[str, Any]) -> str:
-    """格式化正文 chunk 的回源定位信息。"""
     section = join_values(context.get("section_path")) or "-"
     pages = join_values(context.get("pages")) or "-"
     chunk_id = str(context.get("chunk_id") or "-")
@@ -125,20 +112,16 @@ def format_content_source(context: dict[str, Any]) -> str:
 
 
 def reference_sources(results: dict[str, Any]) -> list[str]:
-    """优先展示引用边；缺少边时退回命中论文标题。"""
     sources = []
     for edge in results.get("edges") or []:
         source = str(edge.get("source") or "未知论文")
         obj = str(edge.get("object") or "未知论文")
         location = format_location(edge)
         sources.append(f"{source} -> {obj}{location}")
-    if sources:
-        return sources
-    return [str(paper) for paper in results.get("papers") or []]
+    return sources or [str(paper) for paper in results.get("papers") or []]
 
 
 def metadata_sources(results: dict[str, Any]) -> list[str]:
-    """展示 metadata 命中的论文及本地字段。"""
     items = list(results.get("items") or results.get("actual") or [])
     for group in results.get("groups") or []:
         items.extend(group.get("items") or [])
@@ -148,9 +131,7 @@ def metadata_sources(results: dict[str, Any]) -> list[str]:
 def format_metadata_source(item: dict[str, Any]) -> str:
     title = str(item.get("title") or "未知论文")
     values = item.get("values")
-    if not values:
-        return title
-    return f"{title} | {json.dumps(values, ensure_ascii=False, separators=(',', ':'))}"
+    return title if not values else f"{title} | {json.dumps(values, ensure_ascii=False, separators=(',', ':'))}"
 
 
 def format_location(edge: dict[str, Any]) -> str:
@@ -163,6 +144,4 @@ def format_location(edge: dict[str, Any]) -> str:
 
 
 def join_values(value: Any) -> str:
-    if isinstance(value, list):
-        return " > ".join(str(item) for item in value)
-    return str(value or "")
+    return " > ".join(str(item) for item in value) if isinstance(value, list) else str(value or "")

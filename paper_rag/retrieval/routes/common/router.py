@@ -34,6 +34,7 @@ def build_paper_scope_decision(
 ) -> RouteDecision:
     """调用 domain parser，并把 metadata/content paper scope 归一化为 RouteDecision。"""
     query = decision.query
+    parser = None
     try:
         parser = plan_parser or parser_factory(settings)
         parse = getattr(parser, parser_method, None)
@@ -41,11 +42,26 @@ def build_paper_scope_decision(
             raise PlanParseError(missing_parser_message)
         parser_result = parse(query)
     except (PlanParseError, OSError, ValueError) as exc:
-        warnings.append(f"{warning_prefix} parser 解析失败：{exc}")
+        error_code = str(exc)
+        if error_code in {"extraction_failed", "extraction_low_confidence"}:
+            warnings.append(
+                f"{error_code}：DeepSeek query 抽取失败或置信度不足，{warning_prefix} 停止检索"
+            )
+        elif error_code == "alias_unresolved":
+            warnings.append(
+                f"alias_unresolved：论文实体没有映射到本地库，{warning_prefix} 停止检索"
+            )
+        else:
+            warnings.append(f"local_scope_parse_failed：{warning_prefix} parser 解析失败：{exc}")
+        failed_parser_result = dict(decision.parser_result or {})
+        extraction_debug = getattr(locals().get("parser"), "_extraction_debug", None)
+        if isinstance(extraction_debug, dict):
+            failed_parser_result["extraction_debug"] = extraction_debug
         return paper_scope_parse_failed_decision(
             decision,
             str(exc),
             include_return_fields=include_return_fields,
+            parser_result=failed_parser_result,
         )
 
     parser_result = {
@@ -54,11 +70,31 @@ def build_paper_scope_decision(
         "filters": [*decision.filters, *parser_result["filters"]],
     }
     resolved = resolve_parser_scope(settings, parser_result, corpus=corpus)
+    extraction_debug = parser_result.get("extraction_debug")
+    extraction_result = extraction_debug.get("result") if isinstance(extraction_debug, dict) else {}
+    explicit_mentions = []
+    if isinstance(extraction_result, dict):
+        explicit_mentions.extend(extraction_result.get("paper_mentions") or [])
+        for group in extraction_result.get("paper_groups") or []:
+            if isinstance(group, list):
+                explicit_mentions.extend(group)
+    if explicit_mentions and not resolved["resolved_papers"] and settings.manifest_path.exists():
+        warnings.append("alias_unresolved：抽取出的论文实体未映射到本地库，停止检索")
+        return paper_scope_parse_failed_decision(
+            decision,
+            "alias_unresolved",
+            include_return_fields=include_return_fields,
+        )
     parser_result = {
         **parser_result,
         "filters": resolved["filters"],
         "paper_groups": resolved["paper_groups"],
     }
+    extraction_debug = parser_result.get("extraction_debug")
+    if isinstance(extraction_debug, dict) and extraction_debug.get("backend") == "rules":
+        warnings.append("extraction_failed：DeepSeek 不可用，metadata/reference 使用有限规则兜底")
+    if any(item.get("resolution") == "title_contains_fallback" for item in resolved["filters"] if isinstance(item, dict)):
+        warnings.append("alias_unresolved：论文别名未命中，已降级为 title contains，并在 evidence 中保留说明")
     payload: dict[str, Any] = {
         "route": decision.route,
         "intent": parser_result["intent"],
@@ -71,6 +107,14 @@ def build_paper_scope_decision(
         "filters": parser_result["filters"],
         "paper_groups": parser_result["paper_groups"],
         "group_mode": parser_result["group_mode"],
+        "decision_backend": decision.decision_backend,
+        "decision_confidence": decision.decision_confidence,
+        "decision_probabilities": decision.decision_probabilities,
+        "decision_fallback": decision.decision_fallback,
+        "decision_fallback_reason": decision.decision_fallback_reason,
+        "decision_policy_version": decision.decision_policy_version,
+        "needs_synthesis": decision.needs_synthesis,
+        "complexity": decision.complexity,
     }
     if include_return_fields:
         payload["return_fields"] = parser_result["return_fields"]
@@ -82,6 +126,7 @@ def paper_scope_parse_failed_decision(
     parser_error: str,
     *,
     include_return_fields: bool = False,
+    parser_result: dict[str, Any] | None = None,
 ) -> RouteDecision:
     """保留已有 scope 字段，把 metadata/content parser 失败包装成 RouteDecision。"""
     payload: dict[str, Any] = {
@@ -90,13 +135,21 @@ def paper_scope_parse_failed_decision(
         "query": decision.query,
         "resolved_papers": decision.resolved_papers,
         "alias_matches": decision.alias_matches,
-        "parser_result": decision.parser_result,
+        "parser_result": parser_result if parser_result is not None else decision.parser_result,
         "parse_status": "parse_failed",
         "parser_error": parser_error,
         "paper_semantic": decision.paper_semantic,
         "filters": decision.filters,
         "paper_groups": decision.paper_groups,
         "group_mode": decision.group_mode,
+        "decision_backend": decision.decision_backend,
+        "decision_confidence": decision.decision_confidence,
+        "decision_probabilities": decision.decision_probabilities,
+        "decision_fallback": decision.decision_fallback,
+        "decision_fallback_reason": decision.decision_fallback_reason,
+        "decision_policy_version": decision.decision_policy_version,
+        "needs_synthesis": decision.needs_synthesis,
+        "complexity": decision.complexity,
     }
     if include_return_fields:
         payload["return_fields"] = []
@@ -139,6 +192,14 @@ def apply_paper_scope_year_filters(
         "filters": filters,
         "paper_groups": paper_groups,
         "group_mode": decision.group_mode,
+        "decision_backend": decision.decision_backend,
+        "decision_confidence": decision.decision_confidence,
+        "decision_probabilities": decision.decision_probabilities,
+        "decision_fallback": decision.decision_fallback,
+        "decision_fallback_reason": decision.decision_fallback_reason,
+        "decision_policy_version": decision.decision_policy_version,
+        "needs_synthesis": decision.needs_synthesis,
+        "complexity": decision.complexity,
     }
     if include_return_fields:
         payload["return_fields"] = decision.return_fields

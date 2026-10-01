@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+import os
 from pathlib import Path
 
 
@@ -32,8 +33,6 @@ class Settings:
     mineru_api_base_url: str
     mineru_model_version: str
     mineru_language: str
-    dblp_delay_seconds: float
-    dblp_candidate_limit: int
     semantic_scholar_delay_seconds: float
     semantic_scholar_api_key: str | None
     arxiv_delay_seconds: float
@@ -57,15 +56,6 @@ class Settings:
     plan_block_window: int
     plan_bm25_translate_providers: list[str]
     plan_bm25_translate_timeout_seconds: int
-    plan_parser_base_url: str
-    plan_parser_api_key: str | None
-    plan_parser_model: str
-    plan_parser_timeout_seconds: int
-    answer_base_url: str
-    answer_api_key: str | None
-    answer_model: str
-    answer_timeout_seconds: int
-    answer_temperature: float
     tencent_translate_secret_id: str | None
     tencent_translate_secret_key: str | None
     tencent_translate_region: str
@@ -75,11 +65,35 @@ class Settings:
     aliyun_translate_region: str
     aliyun_translate_endpoint: str
     aliyun_translate_version: str
+    # 第二版运行时配置。
+    jev_base_url: str = "https://jevmodel.org/v1/systemone"
+    jev_api_key: str | None = None
+    jev_model: str = "jev-1.13.0"
+    jev_timeout_seconds: int = 20
+    jev_min_confidence: float = 0.55
+    deepseek_base_url: str = "https://api.deepseek.com"
+    deepseek_api_key: str | None = None
+    deepseek_model: str = "deepseek-flash"
+    deepseek_timeout_seconds: int = 60
+    extraction_cache_path: Path | None = None
+    crossref_delay_seconds: float = 1.0
+    crossref_mailto: str | None = None
+    embedding_profile: str = "qwen_v4"
+    embedding_fallback_base_url: str = ""
+    embedding_fallback_api_key: str | None = None
+    embedding_fallback_model: str = ""
+    embedding_fallback_dim: int = 0
+    mcp_job_log_path: Path | None = None
+    mcp_index_state_path: Path | None = None
+    mcp_input_roots: list[Path] = field(default_factory=list)
+    mcp_max_download_mb: int = 100
 
     @classmethod
     def load(cls, project_root: Path | None = None) -> "Settings":
         root = (project_root or Path.cwd()).resolve()
         env = load_dotenv(root / ".env")
+        # Conda 或系统环境变量覆盖 .env，部署密钥无需写入仓库，CI 也可按进程注入。
+        env.update({key: value for key, value in os.environ.items() if value is not None})
         data_dir = root / "data"
         pdf_dir = resolve_config_path(root, env.get("PDF_DIR"), data_dir / "pdf")
         mineru_output_dir = resolve_config_path(root, env.get("MINERU_DIR"), data_dir / "mineru_output")
@@ -97,8 +111,6 @@ class Settings:
             mineru_api_base_url=env.get("MINERU_API_BASE_URL", "https://mineru.net/api/v4").rstrip("/"),
             mineru_model_version=env.get("MINERU_MODEL_VERSION", "vlm"),
             mineru_language=env.get("MINERU_LANGUAGE", "en"),
-            dblp_delay_seconds=float(env.get("DBLP_DELAY_SECONDS", "1.0")),
-            dblp_candidate_limit=int(env.get("DBLP_CANDIDATE_LIMIT", "20")),
             semantic_scholar_delay_seconds=float(env.get("SEMANTIC_SCHOLAR_DELAY_SECONDS", "5.0")),
             semantic_scholar_api_key=env.get("SEMANTIC_SCHOLAR_API_KEY") or None,
             arxiv_delay_seconds=float(env.get("ARXIV_DELAY_SECONDS", "3.0")),
@@ -133,15 +145,6 @@ class Settings:
             plan_block_window=int(env.get("PLAN_BLOCK_WINDOW", "2")),
             plan_bm25_translate_providers=parse_csv(env.get("PLAN_BM25_TRANSLATE_PROVIDERS", "tencent,aliyun")),
             plan_bm25_translate_timeout_seconds=int(env.get("PLAN_BM25_TRANSLATE_TIMEOUT_SECONDS", "10")),
-            plan_parser_base_url=env.get("PLAN_PARSER_BASE_URL", "").rstrip("/"),
-            plan_parser_api_key=env.get("PLAN_PARSER_API_KEY") or None,
-            plan_parser_model=env.get("PLAN_PARSER_MODEL", "").strip(),
-            plan_parser_timeout_seconds=int(env.get("PLAN_PARSER_TIMEOUT_SECONDS", "30")),
-            answer_base_url=(env.get("ANSWER_BASE_URL") or env.get("PLAN_PARSER_BASE_URL", "")).rstrip("/"),
-            answer_api_key=env.get("ANSWER_API_KEY") or env.get("PLAN_PARSER_API_KEY") or None,
-            answer_model=(env.get("ANSWER_MODEL") or env.get("PLAN_PARSER_MODEL", "")).strip(),
-            answer_timeout_seconds=int(env.get("ANSWER_TIMEOUT_SECONDS", "60")),
-            answer_temperature=float(env.get("ANSWER_TEMPERATURE", "0.2")),
             tencent_translate_secret_id=env.get("TENCENT_TRANSLATE_SECRET_ID") or None,
             tencent_translate_secret_key=env.get("TENCENT_TRANSLATE_SECRET_KEY") or None,
             tencent_translate_region=env.get("TENCENT_TRANSLATE_REGION", "ap-shanghai"),
@@ -151,6 +154,43 @@ class Settings:
             aliyun_translate_region=env.get("ALIYUN_TRANSLATE_REGION", "cn-hangzhou"),
             aliyun_translate_endpoint=env.get("ALIYUN_TRANSLATE_ENDPOINT", "mt.aliyuncs.com"),
             aliyun_translate_version=env.get("ALIYUN_TRANSLATE_VERSION", "2018-10-12"),
+            jev_base_url=env.get("JEV_BASE_URL", "https://jevmodel.org/v1/systemone").rstrip("/"),
+            jev_api_key=env.get("JEV_API_KEY") or None,
+            jev_model=env.get("JEV_MODEL", "jev-1.13.0"),
+            jev_timeout_seconds=int(env.get("JEV_TIMEOUT_SECONDS", "20")),
+            jev_min_confidence=float(env.get("JEV_MIN_CONFIDENCE", "0.55")),
+            deepseek_base_url=env.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com").rstrip("/"),
+            deepseek_api_key=env.get("DEEPSEEK_API_KEY") or None,
+            deepseek_model=env.get("DEEPSEEK_MODEL", "deepseek-flash"),
+            deepseek_timeout_seconds=int(env.get("DEEPSEEK_TIMEOUT_SECONDS", "60")),
+            extraction_cache_path=resolve_config_path(
+                root,
+                env.get("EXTRACTION_CACHE_PATH"),
+                data_dir / "index" / "extraction_cache.jsonl",
+            ),
+            crossref_delay_seconds=float(env.get("CROSSREF_DELAY_SECONDS", "1.0")),
+            crossref_mailto=env.get("CROSSREF_MAILTO") or None,
+            embedding_profile=env.get("EMBEDDING_PROFILE", "qwen_v4"),
+            embedding_fallback_base_url=env.get("EMBEDDING_FALLBACK_BASE_URL", "").rstrip("/"),
+            embedding_fallback_api_key=env.get("EMBEDDING_FALLBACK_API_KEY") or None,
+            embedding_fallback_model=env.get("EMBEDDING_FALLBACK_MODEL", ""),
+            embedding_fallback_dim=int(env.get("EMBEDDING_FALLBACK_DIM", "0")),
+            mcp_job_log_path=resolve_config_path(
+                root,
+                env.get("MCP_JOB_LOG_PATH"),
+                data_dir / "index" / "mcp_jobs.jsonl",
+            ),
+            mcp_index_state_path=resolve_config_path(
+                root,
+                env.get("MCP_INDEX_STATE_PATH"),
+                data_dir / "index" / "index_state.json",
+            ),
+            mcp_input_roots=parse_path_list(
+                root,
+                env.get("PAPER_RAG_INPUT_ROOTS"),
+                [root, pdf_dir],
+            ),
+            mcp_max_download_mb=int(env.get("MCP_MAX_DOWNLOAD_MB", "100")),
         )
 
 
@@ -167,3 +207,9 @@ def parse_csv(value: str | None) -> list[str]:
     if not value:
         return []
     return [part.strip() for part in value.split(",") if part.strip()]
+
+
+def parse_path_list(root: Path, value: str | None, defaults: list[Path]) -> list[Path]:
+    values = parse_csv(value)
+    paths = [resolve_config_path(root, item, root) for item in values]
+    return list(dict.fromkeys(path.resolve() for path in (paths or defaults)))

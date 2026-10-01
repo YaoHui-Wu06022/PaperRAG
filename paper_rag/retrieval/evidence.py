@@ -65,6 +65,7 @@ def build_content_evidence(
     scope_records: list[dict[str, Any]] | None = None,
     context_units: list[dict[str, Any]] | None = None,
     retrieval_query: dict[str, Any] | None = None,
+    retrieval: dict[str, Any] | None = None,
     group_results: list[dict[str, Any]] | None = None,
     parser_error: str | None = None,
     debug: bool = False,
@@ -92,6 +93,8 @@ def build_content_evidence(
         results=results,
         parser_error=parser_error,
     )
+    if retrieval:
+        evidence["retrieval"] = compact_payload(retrieval)
     if debug:
         evidence["debug"] = route_debug(
             route,
@@ -183,6 +186,16 @@ def build_base_evidence(
         "plan": compact_payload(plan),
         "resolved": compact_payload(resolved),
         "warnings": list(warnings),
+        "decision": {
+            "backend": route.decision_backend,
+            "route": route.route,
+            "confidence": route.decision_confidence,
+            "fallback": route.decision_fallback,
+            "fallback_reason": route.decision_fallback_reason,
+            "policy_version": route.decision_policy_version,
+            "needs_synthesis": route.needs_synthesis,
+            "complexity": route.complexity,
+        },
     })
     evidence["results"] = compact_payload(results)
     if parser_error:
@@ -409,9 +422,18 @@ def format_value(value: Any) -> str:
 
 def route_debug(route: RouteDecision, **extra: Any) -> dict[str, Any]:
     """生成 debug 模式下完整 route/parser/result 中间态。"""
+    parser_result = route.parser_result or {}
     debug = compact_payload({
         "parse_status": route.parse_status,
         "parser_error": route.parser_error,
+        "local_parse_result": parser_result,
+        "extraction": parser_result.get("extraction_debug"),
+        "decision_probabilities": route.decision_probabilities,
+        "decision_backend": route.decision_backend,
+        "decision_fallback": route.decision_fallback,
+        "decision_fallback_reason": route.decision_fallback_reason,
+        "needs_synthesis": route.needs_synthesis,
+        "complexity": route.complexity,
     })
     debug.update(compact_payload(extra))
     return debug

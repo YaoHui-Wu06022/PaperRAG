@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from paper_rag.config import Settings
 from paper_rag.retrieval.route import RouteDecision
-from paper_rag.retrieval.routes.common.parser_client import MetadataParserClient
+from paper_rag.retrieval.routes.common.model_parser import ModelQueryParser
 from paper_rag.retrieval.routes.common.router import build_paper_scope_decision, apply_paper_scope_year_filters
 
 if TYPE_CHECKING:
@@ -26,10 +26,10 @@ def build_metadata_decision(
         settings,
         decision,
         warnings,
-        parser_factory=MetadataParserClient.from_settings,
+        parser_factory=lambda current_settings: ModelQueryParser(current_settings, decision.query, decision),
         parser_method="parse_metadata",
         warning_prefix="metadata",
-        missing_parser_message="plan_parser 必须提供 parse_metadata(query)",
+        missing_parser_message="本地 parser 必须提供 parse_metadata(query)",
         include_return_fields=True,
         plan_parser=plan_parser,
         corpus=corpus,

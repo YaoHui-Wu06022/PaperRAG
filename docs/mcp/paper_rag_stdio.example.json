@@ -1,0 +1,11 @@
+{
+  "type": "mcp",
+  "server_label": "paper_rag",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\Fallinty\\anaconda3\\envs\\RAG_project\\python.exe",
+    "args": ["-m", "paper_rag.mcp.server"],
+    "cwd": "E:\\Pythonproject\\paper_RAG"
+  },
+  "required": true
+}

@@ -19,7 +19,7 @@ from paper_rag.retrieval.routes.common.schema import (
 CONTENT_INTENTS = {"lookup", "reason", "compare", "summary", "list", "count", "exists", None}
 
 # content parser 只允许这些字段
-# 否则会被视为 prompt/schema 未对齐而直接报错
+# 否则会被视为 local parser/schema 未对齐而直接报错
 CONTENT_FIELDS = {
     "intent",
     "paper_semantic",
@@ -39,7 +39,7 @@ def validate_content_parse(content: str | dict[str, Any], fallback_query: str = 
     # load_payload 会处理原始 JSON 字符串 / dict，并统一抛 PlanParseError。
     payload = load_payload(content, PARSER_NAME)
 
-    # 不忽略未知字段：content prompt 经常调，字段漂移要尽早暴露
+    # 不忽略未知字段：本地 parser 字段漂移要尽早暴露
     extra_fields = set(payload) - CONTENT_FIELDS
     if extra_fields:
         fields = ", ".join(sorted(extra_fields))

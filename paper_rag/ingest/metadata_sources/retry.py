@@ -10,7 +10,9 @@ from collections.abc import Callable
 from http.client import HTTPResponse
 
 
-RETRIABLE_HTTP_CODES = {429, 500, 502, 503, 504}
+# 406 不在 HTTP 语义的限流范围内，但 arXiv 在连续查询触发临时封禁时返回 406，
+# 且该响应是瞬时的（同一请求稍后重试即 200），故一并重试。
+RETRIABLE_HTTP_CODES = {406, 429, 500, 502, 503, 504}
 
 
 def urlopen_with_retry(

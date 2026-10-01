@@ -3,7 +3,6 @@ from argparse import Namespace
 
 import pytest
 
-from paper_rag.answer.llm import AnswerError
 from paper_rag.answer.service import run_ask
 from paper_rag.cli.ask import handle_chat, print_evidence_sources
 from paper_rag.cli.main import build_parser
@@ -541,7 +540,7 @@ def test_unresolved_paper_name_reports_empty_result_after_title_contains_fallbac
     ]
 
 
-def test_ask_uses_local_answers_and_falls_back_when_answer_llm_fails(settings):
+def test_ask_only_returns_evidence_and_does_not_call_answer_llm(settings):
     metadata_payload = {
         "query": "CVPR 有几篇论文？",
         "route": "metadata",
@@ -550,13 +549,23 @@ def test_ask_uses_local_answers_and_falls_back_when_answer_llm_fails(settings):
         "results": {"count": 1},
     }
     local = run_ask(settings, "CVPR 有几篇论文？", planner=lambda *_args, **_kwargs: metadata_payload)
-    assert local["answer_mode"] == "local"
-    assert "共找到 1 篇" in local["answer"]
+    assert local["answer_mode"] == "evidence"
+    assert local["evidence"] == metadata_payload
 
     content_payload = {
         "query": "ResNet 的结构是什么？",
         "route": "content",
         "status": "ok",
+        "intent": "lookup",
+        "decision": {"complexity": 2},
+        "retrieval": {
+            "status": "sufficient",
+            "dense_hits": 1,
+            "bm25_hits": 1,
+            "fused_hits": 1,
+            "unique_papers": 1,
+            "required_terms_covered": True,
+        },
         "results": {
             "contexts": [
                 {
@@ -569,15 +578,9 @@ def test_ask_uses_local_answers_and_falls_back_when_answer_llm_fails(settings):
             ]
         },
     }
-    fallback = run_ask(
-        settings,
-        "ResNet 的结构是什么？",
-        planner=lambda *_args, **_kwargs: content_payload,
-        answer_client=FailingAnswerClient(),
-    )
-    assert fallback["answer_mode"] == "local"
-    assert "回答模型调用失败" in fallback["answer"]
-    assert any("回答生成失败" in warning for warning in fallback["warnings"])
+    result = run_ask(settings, "ResNet 的结构是什么？", planner=lambda *_args, **_kwargs: content_payload)
+    assert result["answer_mode"] == "evidence"
+    assert result["evidence"] == content_payload
 
 
 def test_cli_registers_main_and_probe_subcommands():
@@ -619,7 +622,7 @@ def test_chat_reuses_corpus_skips_empty_input_and_continues_after_error(monkeypa
     assert calls == [("first", False, corpus), ("second", False, corpus)]
     output = capsys.readouterr().out
     assert "本轮执行失败：temporary failure" in output
-    assert "second answer" in output
+    assert '"route": "metadata"' in output
 
 
 def test_chat_plan_mode_outputs_json_and_rejects_evidence(monkeypatch, capsys):
@@ -747,8 +750,3 @@ def paper_title(paper_id: str) -> str:
         "vit": "An Image is Worth 16x16 Words",
         "paper": "Window Paper",
     }.get(paper_id, paper_id)
-
-
-class FailingAnswerClient:
-    def complete_answer(self, evidence: dict) -> str:
-        raise AnswerError("boom")

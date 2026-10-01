@@ -32,7 +32,7 @@ class FakeArxiv:
         )
 
 
-class FakeDblp:
+class FakeCrossref:
     def lookup_exact_title(self, title: str, *, limit: int, retry_delay_seconds: float):
         return MetadataSourceHit(
             title=title,
@@ -44,7 +44,7 @@ class FakeDblp:
 
 class FakeSemanticScholar:
     def lookup_exact_title(self, title: str, *, retry_delay_seconds: float):
-        raise AssertionError("DBLP formal venue should stop Semantic Scholar fallback")
+        raise AssertionError("Crossref formal venue should stop Semantic Scholar fallback")
 
 
 def test_manifest_roundtrip_and_metadata_lookup_prefers_formal_venue(settings):
@@ -64,7 +64,7 @@ def test_manifest_roundtrip_and_metadata_lookup_prefers_formal_venue(settings):
 
     match = lookup_metadata(
         "Deep Residual Learning for Image Recognition",
-        FakeDblp(),
+        FakeCrossref(),
         FakeSemanticScholar(),
         FakeArxiv(),
     )
