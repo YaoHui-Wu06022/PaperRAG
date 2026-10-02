@@ -62,7 +62,10 @@ class Settings:
             arxiv_timeout_seconds=int(values.get("ARXIV_TIMEOUT_SECONDS", "30")),
             arxiv_download_timeout_seconds=int(values.get("ARXIV_DOWNLOAD_TIMEOUT_SECONDS", "300")),
             arxiv_max_download_mb=int(values.get("ARXIV_MAX_DOWNLOAD_MB", "100")),
-            arxiv_user_agent=values.get("ARXIV_USER_AGENT", "paper-rag/0.1"),
+            arxiv_user_agent=values.get(
+                "ARXIV_USER_AGENT",
+                "paper-rag/0.1 (https://github.com/YaoHui-Wu06022/PaperRAG)",
+            ),
             mineru_api_key=values.get("MINERU_API_KEY", ""),
             mineru_api_base_url=values.get("MINERU_API_BASE_URL", "https://mineru.net/api/v4").rstrip("/"),
             mineru_model_version=values.get("MINERU_MODEL_VERSION", "vlm"),

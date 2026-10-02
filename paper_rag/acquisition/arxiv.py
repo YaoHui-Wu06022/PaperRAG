@@ -177,8 +177,9 @@ class ArxivClient:
             raise ArxivError(f"ArXiv 元数据 XML 无法解析：{exc}") from exc
 
     def download_pdf(self, metadata: ArxivMetadata, target: Path) -> tuple[str, int]:
+        # 当前网络环境下 arxiv.org 的 PDF 端点可能返回 406，export 端点提供相同内容。
         request = urllib.request.Request(
-            metadata.pdf_url,
+            _export_pdf_url(metadata.pdf_url),
             headers={"User-Agent": self.settings.arxiv_user_agent, "Accept": "application/pdf"},
         )
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -584,6 +585,15 @@ def _validate_arxiv_url(value: str) -> None:
         or (parsed.hostname or "").casefold() not in ARXIV_HOSTS
     ):
         raise ArxivError("ArXiv 请求重定向到了不允许的地址")
+
+
+def _export_pdf_url(value: str) -> str:
+    """把标准 arxiv.org PDF 地址切换到同源的 export 下载端点。"""
+
+    parsed = urllib.parse.urlparse(value)
+    if (parsed.hostname or "").casefold() in {"arxiv.org", "www.arxiv.org"}:
+        return urllib.parse.urlunparse(parsed._replace(netloc="export.arxiv.org"))
+    return value
 
 
 def emit(reporter: Progress | None, message: str) -> None:

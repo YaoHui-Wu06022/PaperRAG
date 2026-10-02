@@ -12,6 +12,7 @@ from paper_rag.acquisition.arxiv import (
     ArxivStore,
     normalize_arxiv_input,
     parse_latest_metadata,
+    _export_pdf_url,
 )
 from paper_rag.config import Settings
 
@@ -62,6 +63,12 @@ def test_normalize_modern_legacy_and_urls():
         normalize_arxiv_input("https://example.com/paper.pdf")
     with pytest.raises(ValueError):
         normalize_arxiv_input("http://arxiv.org/abs/1706.03762")
+
+
+def test_pdf_download_uses_export_endpoint_for_arxiv_org():
+    assert _export_pdf_url("https://arxiv.org/pdf/1706.03762v7.pdf") == (
+        "https://export.arxiv.org/pdf/1706.03762v7.pdf"
+    )
 
 
 def test_parse_atom_metadata_reads_version_from_pdf_link():
