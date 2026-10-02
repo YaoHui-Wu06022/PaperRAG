@@ -7,6 +7,7 @@ from collections.abc import Iterable
 
 TOOLSETS: dict[str, frozenset[str]] = {
     "acquisition": frozenset({"paper_arxiv_download", "paper_job_status"}),
+    "ingestion": frozenset({"paper_arxiv_ingest"}),
 }
 
 

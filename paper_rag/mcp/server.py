@@ -12,6 +12,7 @@ from paper_rag.config import Settings
 from paper_rag.mcp.jobs import JobManager
 from paper_rag.mcp.runtime import get_settings
 from paper_rag.mcp.toolsets import TOOLSETS, validate_toolsets
+from paper_rag.mcp.tools.ingestion import paper_arxiv_ingest
 
 
 # 保留旧入口的可替换钩子，便于已有调用方在迁移期间注入测试配置。
@@ -55,7 +56,7 @@ def _registered_tool_names() -> set[str]:
     tools_by_name = getattr(registry, "_tools", None)
     if isinstance(tools_by_name, dict):
         return set(tools_by_name)
-    return {"paper_arxiv_download", "paper_job_status"}
+    return {"paper_arxiv_download", "paper_arxiv_ingest", "paper_job_status"}
 
 
 validate_toolsets(_registered_tool_names())
@@ -64,6 +65,7 @@ __all__ = [
     "TOOLSETS",
     "mcp",
     "paper_arxiv_download",
+    "paper_arxiv_ingest",
     "paper_job_status",
 ]
 

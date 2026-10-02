@@ -36,6 +36,14 @@ class Settings:
     arxiv_download_timeout_seconds: int
     arxiv_max_download_mb: int
     arxiv_user_agent: str
+    mineru_api_key: str
+    mineru_api_base_url: str
+    mineru_model_version: str
+    mineru_language: str
+    mineru_request_timeout_seconds: int
+    mineru_upload_timeout_seconds: int
+    mineru_poll_interval_seconds: float
+    mineru_poll_timeout_seconds: int
     mcp_job_log_path: Path
 
     @classmethod
@@ -55,6 +63,14 @@ class Settings:
             arxiv_download_timeout_seconds=int(values.get("ARXIV_DOWNLOAD_TIMEOUT_SECONDS", "300")),
             arxiv_max_download_mb=int(values.get("ARXIV_MAX_DOWNLOAD_MB", "100")),
             arxiv_user_agent=values.get("ARXIV_USER_AGENT", "paper-rag/0.1"),
+            mineru_api_key=values.get("MINERU_API_KEY", ""),
+            mineru_api_base_url=values.get("MINERU_API_BASE_URL", "https://mineru.net/api/v4").rstrip("/"),
+            mineru_model_version=values.get("MINERU_MODEL_VERSION", "vlm"),
+            mineru_language=values.get("MINERU_LANGUAGE", "en"),
+            mineru_request_timeout_seconds=int(values.get("MINERU_REQUEST_TIMEOUT_SECONDS", "60")),
+            mineru_upload_timeout_seconds=int(values.get("MINERU_UPLOAD_TIMEOUT_SECONDS", "300")),
+            mineru_poll_interval_seconds=float(values.get("MINERU_POLL_INTERVAL_SECONDS", "10")),
+            mineru_poll_timeout_seconds=int(values.get("MINERU_POLL_TIMEOUT_SECONDS", "1800")),
             mcp_job_log_path=resolve_path(
                 root,
                 values.get("MCP_JOB_LOG_PATH"),

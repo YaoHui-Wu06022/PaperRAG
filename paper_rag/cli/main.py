@@ -11,8 +11,10 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
     # CLI 解析阶段不加载 MCP 和网络组件，保持启动轻量。
     from paper_rag.cli.acquire import add_acquire_parser
+    from paper_rag.cli.ingest import add_ingest_parser
 
     add_acquire_parser(subparsers)
+    add_ingest_parser(subparsers)
     return parser
 
 
