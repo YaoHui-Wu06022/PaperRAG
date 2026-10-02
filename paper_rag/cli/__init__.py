@@ -1,5 +1,2 @@
-from __future__ import annotations
+"""命令行入口。"""
 
-from paper_rag.cli.main import main
-
-__all__ = ["main"]

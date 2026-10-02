@@ -5,9 +5,9 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "paper-rag"
 version = "0.1.0"
-description = "Local PDF paper ingestion pipeline for Paper_RAG."
+description = "ArXiv source acquisition for a MinerU-backed MCP RAG knowledge base."
 requires-python = ">=3.10"
-dependencies = ["pymilvus>=2.6", "mcp>=1.26,<2"]
+dependencies = ["mcp>=1.26,<2"]
 
 [project.scripts]
 paper-rag = "paper_rag.cli.main:main"
@@ -15,3 +15,4 @@ paper-rag-mcp = "paper_rag.mcp.server:main"
 
 [tool.setuptools.packages.find]
 include = ["paper_rag*"]
+

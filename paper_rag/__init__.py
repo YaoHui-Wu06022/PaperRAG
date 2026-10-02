@@ -1,6 +1,4 @@
-"""Paper_RAG ingestion package."""
-
-__all__ = ["__version__"]
+"""Paper_RAG 的最小运行时包。"""
 
 __version__ = "0.1.0"
 

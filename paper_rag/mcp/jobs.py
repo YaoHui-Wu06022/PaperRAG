@@ -16,15 +16,14 @@ from uuid import uuid4
 from paper_rag.config import Settings
 
 
-ProgressReporter = Callable[..., None]
 JobWorker = Callable[..., dict[str, Any]]
 
 
 class JobManager:
-    """用单线程执行器串行运行会修改本地库的任务。"""
+    """用单线程执行器串行运行会修改本地原始资料的任务。"""
 
     def __init__(self, settings: Settings):
-        self.path = Path(settings.mcp_job_log_path or settings.data_dir / "index" / "mcp_jobs.jsonl")
+        self.path = settings.mcp_job_log_path
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.RLock()
         self._records: dict[str, dict[str, Any]] = {}
@@ -41,15 +40,12 @@ class JobManager:
                     continue
                 if isinstance(record, dict) and record.get("job_id"):
                     self._records[str(record["job_id"])] = record
-        interrupted: list[dict[str, Any]] = []
-        for record in self._records.values():
+        for record in list(self._records.values()):
             if record.get("status") in {"queued", "running"}:
                 record["status"] = "interrupted"
                 record["finished_at"] = _utc_now()
                 record["error"] = "MCP 进程重启，任务未自动恢复"
-                interrupted.append(record.copy())
-        for record in interrupted:
-            self._append(record)
+                self._append(record)
 
     def submit(self, kind: str, worker: JobWorker) -> dict[str, Any]:
         job_id = f"job_{uuid4().hex}"
@@ -71,46 +67,26 @@ class JobManager:
         return self._copy(record)
 
     def _run(self, job_id: str, worker: JobWorker) -> None:
-        self._update(
-            job_id,
-            status="running",
-            started_at=_utc_now(),
-            progress={"phase": "queued", "completed": 0, "total": None, "message": "任务已开始"},
-        )
+        self._update(job_id, status="running", started_at=_utc_now())
         try:
-            reporter = lambda phase, message, completed=None, total=None: self.update_progress(
-                job_id, phase, message, completed, total
-            )
+            reporter = lambda message: self.update_progress(job_id, message)
             parameters = inspect.signature(worker).parameters
-            result = worker(reporter, job_id) if len(parameters) >= 2 else worker(reporter)
-            self._update(job_id, status="succeeded", finished_at=_utc_now(), result=_json_safe(result), error=None)
+            result = worker(reporter) if parameters else worker()
+            self._update(job_id, status="succeeded", finished_at=_utc_now(), result=_json_safe(result))
         except Exception as exc:
             self._update(job_id, status="failed", finished_at=_utc_now(), error=sanitize_error(exc))
 
-    def update_progress(
-        self,
-        job_id: str,
-        phase: str,
-        message: str,
-        completed: int | None = None,
-        total: int | None = None,
-    ) -> None:
+    def update_progress(self, job_id: str, message: str) -> None:
         with self._lock:
             record = self._records.get(job_id)
-            if not record:
-                return
-            progress = dict(record.get("progress") or {})
-            progress.update({"phase": phase, "message": str(message)})
-            if completed is not None:
-                progress["completed"] = int(completed)
-            if total is not None:
-                progress["total"] = int(total)
-            self._update(job_id, progress=progress)
+            if record:
+                progress = dict(record.get("progress") or {})
+                progress.update({"phase": "download", "message": str(message)})
+                self._update(job_id, progress=progress)
 
     def status(self, job_id: str) -> dict[str, Any]:
         with self._lock:
-            record = self._records.get(str(job_id))
-            return self._copy(record) if record else {"job_id": str(job_id), "status": "not_found"}
+            return self._copy(self._records.get(str(job_id))) or {"job_id": str(job_id), "status": "not_found"}
 
     def active_jobs(self) -> list[dict[str, Any]]:
         with self._lock:
@@ -121,12 +97,11 @@ class JobManager:
             ]
 
     def _update(self, job_id: str, **changes: Any) -> None:
-        with self._lock:
-            record = self._records.get(job_id)
-            if not record:
-                return
-            record.update(changes)
-            self._append(record)
+        record = self._records.get(job_id)
+        if record is None:
+            return
+        record.update(changes)
+        self._append(record)
 
     def _append(self, record: dict[str, Any]) -> None:
         with self.path.open("a", encoding="utf-8") as handle:
@@ -154,8 +129,7 @@ def _json_safe(value: Any) -> Any:
 
 
 def sanitize_error(exc: Exception) -> str:
-    """去除 API key、Authorization 和完整请求头后保留错误摘要。"""
     message = str(exc) or exc.__class__.__name__
-    message = re.sub(r"sk-[A-Za-z0-9_-]+", "[REDACTED]", message)
     message = re.sub(r"(?i)(authorization|api[-_ ]?key|bearer)\s*[:=]\s*[^,; ]+", r"\1=[REDACTED]", message)
     return f"{exc.__class__.__name__}: {message[:1000]}"
+
