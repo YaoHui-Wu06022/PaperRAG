@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import os
 from pathlib import Path
 
@@ -36,7 +36,7 @@ class Settings:
     arxiv_download_timeout_seconds: int
     arxiv_max_download_mb: int
     arxiv_user_agent: str
-    mineru_api_key: str
+    mineru_api_key: str = field(repr=False)
     mineru_api_base_url: str
     mineru_model_version: str
     mineru_language: str

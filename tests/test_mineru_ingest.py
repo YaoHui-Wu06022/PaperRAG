@@ -91,6 +91,7 @@ def test_settings_load_mineru_values_without_exposing_key(tmp_path: Path):
     assert settings.mineru_model_version == "vlm"
     assert settings.mineru_language == "en"
     assert settings.mineru_api_key == "test-secret"
+    assert "test-secret" not in repr(settings)
 
 
 def test_ingest_signed_upload_poll_and_atomic_result(tmp_path: Path, monkeypatch):
