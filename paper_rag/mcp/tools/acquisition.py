@@ -34,10 +34,10 @@ def paper_arxiv_download(inputs: list[str], confirm: bool = False) -> dict[str, 
 
 @mcp.tool(
     name="paper_job_status",
-    description="查询 ArXiv 下载任务状态。",
+    description="查询 ArXiv 下载或 MinerU 入库异步任务状态。",
 )
 def paper_job_status(job_id: str) -> dict[str, Any]:
-    """返回异步 ArXiv 下载任务的最新状态。"""
+    """返回 JobManager 中异步任务的最新状态。"""
 
     return get_jobs().status(job_id)
 

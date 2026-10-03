@@ -154,40 +154,40 @@ def test_failed_download_preserves_existing_asset(tmp_path: Path):
 
 
 def test_mcp_confirmation_does_not_write(tmp_path: Path, monkeypatch):
-    from paper_rag.mcp import server
+    from paper_rag.mcp.tools import acquisition
 
     settings = Settings.load(tmp_path)
-    monkeypatch.setattr(server, "_settings", lambda: settings)
-    monkeypatch.setattr(server, "preview_arxiv_inputs", lambda *_args: [{"input": "1706.03762", "status": "new"}])
-    monkeypatch.setattr(server, "download_arxiv_inputs", lambda *_args, **_kwargs: None)
-    server._jobs.cache_clear()
+    monkeypatch.setattr(acquisition, "get_settings", lambda: settings)
+    monkeypatch.setattr(acquisition, "preview_arxiv_inputs", lambda *_args: [{"input": "1706.03762", "status": "new"}])
 
-    preview = server.paper_arxiv_download(["1706.03762"], confirm=False)
+    preview = acquisition.paper_arxiv_download(["1706.03762"], confirm=False)
     assert preview["status"] == "confirmation_required"
     assert not settings.arxiv_data_dir.exists()
 
 
 def test_mcp_confirmation_queues_download_job(tmp_path: Path, monkeypatch):
-    from paper_rag.mcp import server
+    from paper_rag.mcp.tools import acquisition
+    from paper_rag.mcp.jobs import JobManager
 
     settings = Settings.load(tmp_path)
-    monkeypatch.setattr(server, "_settings", lambda: settings)
-    monkeypatch.setattr(server, "preview_arxiv_inputs", lambda *_args: [{"input": "1706.03762", "status": "new"}])
+    jobs = JobManager(settings)
+    monkeypatch.setattr(acquisition, "get_settings", lambda: settings)
+    monkeypatch.setattr(acquisition, "get_jobs", lambda: jobs)
+    monkeypatch.setattr(acquisition, "preview_arxiv_inputs", lambda *_args: [{"input": "1706.03762", "status": "new"}])
 
     class Result:
         def to_dict(self):
             return {"items": [], "downloaded": 1, "skipped": 0, "failed": 0}
 
-    monkeypatch.setattr(server, "download_arxiv_inputs", lambda *_args, **_kwargs: Result())
-    server._jobs.cache_clear()
-    queued = server.paper_arxiv_download(["1706.03762"], confirm=True)
+    monkeypatch.setattr(acquisition, "download_arxiv_inputs", lambda *_args, **_kwargs: Result())
+    queued = acquisition.paper_arxiv_download(["1706.03762"], confirm=True)
     job_id = queued["job"]["job_id"]
     for _ in range(100):
-        status = server.paper_job_status(job_id)
+        status = acquisition.paper_job_status(job_id)
         if status["status"] in {"succeeded", "failed"}:
             break
         time.sleep(0.01)
-    status = server.paper_job_status(job_id)
+    status = acquisition.paper_job_status(job_id)
     assert status["status"] == "succeeded"
     assert status["result"]["downloaded"] == 1
 

@@ -5,9 +5,8 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 
 try:
-    # 生产依赖使用独立的 fastmcp 包。
     from fastmcp import FastMCP
-except ImportError:  # pragma: no cover - 仅兼容旧版本地 MCP 运行时
+except ImportError:  # pragma: no cover - 本地运行时尚未安装 FastMCP 时使用 MCP SDK
     from mcp.server.fastmcp import FastMCP
 
 

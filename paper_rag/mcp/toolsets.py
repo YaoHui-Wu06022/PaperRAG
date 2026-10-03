@@ -6,8 +6,20 @@ from collections.abc import Iterable
 
 
 TOOLSETS: dict[str, frozenset[str]] = {
-    "acquisition": frozenset({"paper_arxiv_download", "paper_job_status"}),
+    "core": frozenset(
+        {
+            "paper_query",
+            "paper_list",
+            "paper_search",
+            "paper_get_metadata",
+            "paper_get_assets",
+            "paper_asset_status",
+            "paper_job_status",
+        }
+    ),
+    "acquisition": frozenset({"paper_arxiv_download"}),
     "ingestion": frozenset({"paper_arxiv_ingest"}),
+    "search-admin": frozenset({"paper_catalog_sync"}),
 }
 
 

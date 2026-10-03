@@ -44,6 +44,14 @@ class Settings:
     mineru_upload_timeout_seconds: int
     mineru_poll_interval_seconds: float
     mineru_poll_timeout_seconds: int
+    jev_enabled: bool
+    jev_api_key: str = field(repr=False)
+    jev_base_url: str
+    jev_model: str
+    jev_timeout_seconds: int
+    jev_retry_count: int
+    jev_route_probability_threshold: float
+    paper_catalog_db_path: Path
     mcp_job_log_path: Path
 
     @classmethod
@@ -52,6 +60,7 @@ class Settings:
         values = load_dotenv(root / ".env")
         values.update({key: value for key, value in os.environ.items() if value is not None})
         data_dir = root / "data"
+        jev_api_key = values.get("JEV_API_KEY", "")
         return cls(
             project_root=root,
             arxiv_data_dir=resolve_path(root, values.get("ARXIV_DATA_DIR"), data_dir / "sources" / "arxiv"),
@@ -74,10 +83,30 @@ class Settings:
             mineru_upload_timeout_seconds=int(values.get("MINERU_UPLOAD_TIMEOUT_SECONDS", "300")),
             mineru_poll_interval_seconds=float(values.get("MINERU_POLL_INTERVAL_SECONDS", "10")),
             mineru_poll_timeout_seconds=int(values.get("MINERU_POLL_TIMEOUT_SECONDS", "1800")),
+            jev_enabled=_parse_bool(values.get("JEV_ENABLED", "true")),
+            jev_api_key=jev_api_key,
+            jev_base_url=values.get("JEV_BASE_URL", "https://jevmodel.org/v1/systemone").strip(),
+            jev_model=values.get("JEV_MODEL", "jev-1.13.0").strip(),
+            jev_timeout_seconds=int(values.get("JEV_TIMEOUT_SECONDS", "15")),
+            jev_retry_count=int(values.get("JEV_RETRY_COUNT", "2")),
+            jev_route_probability_threshold=float(
+                values.get("JEV_ROUTE_PROBABILITY_THRESHOLD", "0.65")
+            ),
+            paper_catalog_db_path=resolve_path(
+                root,
+                values.get("PAPER_CATALOG_DB_PATH"),
+                data_dir / "index" / "paper_catalog.sqlite3",
+            ),
             mcp_job_log_path=resolve_path(
                 root,
                 values.get("MCP_JOB_LOG_PATH"),
                 data_dir / "index" / "mcp_jobs.jsonl",
             ),
         )
+
+
+def _parse_bool(value: str) -> bool:
+    """解析环境变量中的布尔值。"""
+
+    return str(value).strip().casefold() in {"1", "true", "yes", "on"}
 
