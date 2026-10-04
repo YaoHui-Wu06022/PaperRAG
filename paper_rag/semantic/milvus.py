@@ -53,6 +53,18 @@ class MilvusStore:
             schema.add_field("embedding_version", datatype=self._data_type.VARCHAR, max_length=64)
             schema.add_field("embedding", datatype=self._data_type.FLOAT_VECTOR, dim=self.settings.milvus_dimension)
             self.client.create_collection(collection_name=collection, schema=schema)
+        try:
+            indexes = self.client.list_indexes(collection_name=collection)
+            if not indexes:
+                index_params = self.client.prepare_index_params()
+                index_params.add_index(field_name="embedding", index_type="AUTOINDEX", metric_type="COSINE")
+                self.client.create_index(collection_name=collection, index_params=index_params)
+        except Exception as exc:
+            raise MilvusError(f"Milvus 向量索引创建失败：{type(exc).__name__}") from exc
+        try:
+            self.client.load_collection(collection_name=collection)
+        except Exception as exc:
+            raise MilvusError(f"Milvus Collection 加载失败：{type(exc).__name__}") from exc
         self._active_collection = collection
         return collection
 
