@@ -4,10 +4,7 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
-try:
-    from fastmcp import FastMCP
-except ImportError:  # pragma: no cover - 本地运行时尚未安装 FastMCP 时使用 MCP SDK
-    from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 
 @asynccontextmanager
@@ -19,7 +16,7 @@ async def server_lifespan(_server: FastMCP):
 
 mcp = FastMCP(
     "paper-rag",
-    instructions="Paper RAG MCP：提供原始论文获取工具，解析和检索由后续阶段接入。",
+    instructions="Paper RAG MCP：提供 ArXiv 获取、MinerU 入库和本地论文知识库查询工具。",
     lifespan=server_lifespan,
 )
 

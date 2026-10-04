@@ -51,6 +51,7 @@ class Settings:
     jev_timeout_seconds: int
     jev_retry_count: int
     jev_route_probability_threshold: float
+    paper_rag_toolsets: str
     paper_catalog_db_path: Path
     mcp_job_log_path: Path
 
@@ -92,6 +93,7 @@ class Settings:
             jev_route_probability_threshold=float(
                 values.get("JEV_ROUTE_PROBABILITY_THRESHOLD", "0.65")
             ),
+            paper_rag_toolsets=values.get("PAPER_RAG_TOOLSETS", "").strip(),
             paper_catalog_db_path=resolve_path(
                 root,
                 values.get("PAPER_CATALOG_DB_PATH"),

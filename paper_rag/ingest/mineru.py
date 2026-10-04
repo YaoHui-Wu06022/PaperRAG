@@ -475,8 +475,26 @@ def _plan_to_dict(plan: _IngestPlan, settings: Settings) -> dict[str, Any]:
 
 def _normalize_result_tree(extracted: Path, destination: Path) -> None:
     markdown_files = sorted(extracted.rglob("full.md"))
-    if not markdown_files:
-        raise MinerUError("MinerU ZIP 结果缺少 full.md")
+    if len(markdown_files) != 1:
+        if not markdown_files:
+            raise MinerUError("MinerU ZIP 结果缺少 full.md")
+        raise MinerUError("MinerU ZIP 结果包含多个 full.md，无法确定主结果")
+    try:
+        if not markdown_files[0].read_text(encoding="utf-8").strip():
+            raise MinerUError("MinerU ZIP 结果缺少 full.md")
+    except (OSError, UnicodeError) as exc:
+        raise MinerUError("MinerU ZIP 的 full.md 无法读取") from exc
+    all_content_lists = sorted(path for path in extracted.rglob("*.json") if "content_list" in path.name.casefold())
+    exact_lists = [path for path in all_content_lists if path.name.casefold() in {"content_list.json", "_content_list.json"} or path.name.casefold().endswith("_content_list.json")]
+    content_lists = exact_lists if exact_lists else all_content_lists
+    if len(content_lists) != 1:
+        raise MinerUError("MinerU ZIP 结果必须包含唯一主 content_list.json")
+    try:
+        parsed = json.loads(content_lists[0].read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise MinerUError("MinerU ZIP 的 content_list.json 无法解析") from exc
+    if not isinstance(parsed, (list, dict)):
+        raise MinerUError("MinerU ZIP 的 content_list.json 格式无效")
     root = markdown_files[0].parent
     for source in root.rglob("*"):
         relative = source.relative_to(root)
@@ -486,13 +504,27 @@ def _normalize_result_tree(extracted: Path, destination: Path) -> None:
         elif source.is_file():
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, target)
-    if not (destination / "full.md").is_file():
-        raise MinerUError("MinerU ZIP 结果无法定位 full.md")
+    if not (destination / "content_list.json").is_file():
+        candidates = sorted(path for path in destination.glob("*.json") if "content_list" in path.name.casefold())
+        if len(candidates) == 1:
+            candidates[0].replace(destination / "content_list.json")
+        else:
+            shutil.copy2(content_lists[0], destination / "content_list.json")
+    if not (destination / "full.md").is_file() or not (destination / "content_list.json").is_file():
+        raise MinerUError("MinerU ZIP 结果缺少必要文件")
 
 
 def _validate_zip_members(archive: zipfile.ZipFile) -> None:
+    total = 0
     for member in archive.infolist():
         safe_zip_member_target(Path("/safe-root"), member.filename)
+        if member.is_dir():
+            continue
+        if (member.external_attr >> 16) & 0o170000 == 0o120000:
+            raise MinerUError(f"MinerU ZIP 不允许符号链接: {member.filename}")
+        total += int(member.file_size)
+        if total > _MAX_RESULT_BYTES:
+            raise MinerUError("MinerU ZIP 解压总大小超过 200MB 限制")
 
 
 def safe_zip_member_target(root: Path, member_name: str) -> Path:

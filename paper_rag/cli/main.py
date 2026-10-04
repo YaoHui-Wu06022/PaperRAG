@@ -14,11 +14,13 @@ def build_parser() -> argparse.ArgumentParser:
     from paper_rag.cli.catalog import add_catalog_parser
     from paper_rag.cli.ingest import add_ingest_parser
     from paper_rag.cli.query import add_query_parser
+    from paper_rag.cli.read import add_read_parser
 
     add_acquire_parser(subparsers)
     add_catalog_parser(subparsers)
     add_ingest_parser(subparsers)
     add_query_parser(subparsers)
+    add_read_parser(subparsers)
     return parser
 
 

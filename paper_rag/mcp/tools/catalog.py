@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from paper_rag.catalog.service import (
+    CatalogIndexNotReady,
     catalog_status,
     get_asset_status,
     get_assets,
@@ -12,9 +13,12 @@ from paper_rag.catalog.service import (
     list_papers,
     rebuild_catalog,
     search_catalog,
+    search_chunks,
+    get_chunk,
 )
 from paper_rag.mcp._app import mcp
 from paper_rag.mcp.runtime import get_settings
+from paper_rag.reading.service import read_fulltext
 
 
 @mcp.tool(name="paper_list", description="按结构化条件列出本地 ArXiv 论文。")
@@ -33,7 +37,15 @@ def paper_search(
 ) -> dict[str, Any]:
     """执行确定性的 Catalog 搜索，不调用 Jev。"""
 
-    records = search_catalog(get_settings(), query, filters, limit=max(1, min(int(limit), 100)))
+    try:
+        records = search_catalog(get_settings(), query, filters, limit=max(1, min(int(limit), 100)))
+    except CatalogIndexNotReady:
+        return {
+            "query": query,
+            "status": "index_not_ready",
+            "items": [],
+            "count": 0,
+        }
     return {"query": query, "items": [record.to_dict() for record in records], "count": len(records)}
 
 
@@ -59,6 +71,29 @@ def paper_asset_status(paper_id: str) -> dict[str, Any]:
     return get_asset_status(get_settings(), paper_id)
 
 
+@mcp.tool(name="paper_search_chunks", description="使用 Chunk FTS5 检索论文正文证据。")
+def paper_search_chunks(query: str, paper_ids: list[str] | None = None, limit: int = 8) -> dict[str, Any]:
+    try:
+        items = search_chunks(get_settings(), query, paper_ids, max(1, min(int(limit), 50)))
+    except CatalogIndexNotReady:
+        return {"status": "index_not_ready", "query": query, "items": []}
+    return {"status": "ok", "query": query, "items": items, "count": len(items)}
+
+
+@mcp.tool(name="paper_get_chunk", description="读取指定 Chunk 的完整原文及来源定位。")
+def paper_get_chunk(chunk_id: str) -> dict[str, Any]:
+    try:
+        item = get_chunk(get_settings(), chunk_id)
+    except CatalogIndexNotReady:
+        return {"status": "index_not_ready", "chunk": None}
+    return {"status": "ok" if item else "not_found", "chunk": item}
+
+
+@mcp.tool(name="paper_get_fulltext", description="按 Unicode 字符分页读取论文 MinerU 正文。")
+def paper_get_fulltext(paper_id: str, offset: int = 0, limit: int = 12000) -> dict[str, Any]:
+    return read_fulltext(get_settings(), paper_id, offset, limit)
+
+
 @mcp.tool(name="paper_catalog_sync", description="预览或重建本地论文 Catalog 派生索引。")
 def paper_catalog_sync(confirm: bool = False) -> dict[str, Any]:
     """确认后重建 SQLite Catalog，不修改 ArXiv 原始文件。"""
@@ -69,6 +104,7 @@ def paper_catalog_sync(confirm: bool = False) -> dict[str, Any]:
         return {
             "status": "confirmation_required",
             "current": status,
+            "source_papers": status["source_papers"],
             "planned_action": "扫描 data/sources/arxiv 并重建 SQLite Catalog",
         }
     return {"status": "completed", "result": rebuild_catalog(settings)}
@@ -81,4 +117,7 @@ __all__ = [
     "paper_get_metadata",
     "paper_list",
     "paper_search",
+    "paper_search_chunks",
+    "paper_get_chunk",
+    "paper_get_fulltext",
 ]

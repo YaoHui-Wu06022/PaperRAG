@@ -131,7 +131,7 @@ def test_operational_terms_are_not_knowledge_rules(tmp_path: Path):
     assert result.decision.fallback_used is True
 
 
-def test_query_returns_local_metadata_and_content(tmp_path: Path):
+def test_query_reports_content_boundary_without_reading_fulltext(tmp_path: Path):
     settings = Settings.load(tmp_path)
     source = settings.arxiv_data_dir / "1706.03762"
     (source / "mineru").mkdir(parents=True)
@@ -157,14 +157,17 @@ def test_query_returns_local_metadata_and_content(tmp_path: Path):
 
     assert result.decision.intent == QueryIntent.PAPER_CONTENT
     assert result.items[0]["canonical_id"] == "1706.03762v7"
-    assert "attention" in result.context[0]["text"].casefold()
+    assert result.context == []
+    assert result.capabilities["content_available"] is False
+    assert result.capabilities["requires_ingestion"] is False
 
 
 def test_mcp_registers_query_tool():
     from paper_rag.mcp import server
+    from paper_rag.mcp.toolsets import CORE_TOOLS
 
     assert "paper_query" in server._registered_tool_names()
-    assert "paper_query" in server.TOOLSETS["core"]
+    assert "paper_query" in CORE_TOOLS
 
 
 def test_rules_cover_common_chinese_intents_and_delegate_other_languages():

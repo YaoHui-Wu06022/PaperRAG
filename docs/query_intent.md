@@ -22,6 +22,10 @@ paper_query(query)
 
 下载、MinerU 解析、任务状态、论文资产状态和索引管理属于 MCP 操作层，使用专用工具，不由 `paper_query` 读取或执行。
 
+当前阶段的 `paper_discovery` 使用显式同步的 SQLite FTS5 元数据索引；索引不存在时返回
+`index_not_ready`，查询不会自动写入数据库。`paper_summary`、`paper_comparison` 和
+`paper_content` 暂不读取正文，只返回元数据和正文资产可用性提示。
+
 ## 配置
 
 ```text
@@ -41,6 +45,8 @@ JEV_ROUTE_PROBABILITY_THRESHOLD=0.65
 ```powershell
 python -m paper_rag query "找出关于 LoRA 的论文" --json
 python -m paper_rag query "总结 2106.09685" --json
+python -m paper_rag catalog sync --dry-run --json
+python -m paper_rag catalog sync --json
 ```
 
 CLI 和 MCP 共用同一个查询服务；查询不会写入 PDF、MinerU 目录或任务日志。
