@@ -15,6 +15,7 @@ class QueryIntent(str, Enum):
     PAPER_COMPARISON = "paper_comparison"
     PAPER_CONTENT = "paper_content"
     METADATA_LOOKUP = "metadata_lookup"
+    CITATION_GRAPH = "citation_graph"
     CLARIFY = "clarify"
     UNSUPPORTED = "unsupported"
 

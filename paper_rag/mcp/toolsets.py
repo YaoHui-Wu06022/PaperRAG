@@ -20,13 +20,16 @@ CORE_TOOLS: frozenset[str] = frozenset(
         "paper_search_chunks",
         "paper_get_chunk",
         "paper_get_fulltext",
+        "paper_get_references",
+        "paper_get_citations",
+        "paper_citation_graph",
     }
 )
 
 TOOLSETS: dict[str, frozenset[str]] = {
     "acquisition": frozenset({"paper_arxiv_download"}),
     "ingestion": frozenset({"paper_arxiv_ingest"}),
-    "search-admin": frozenset({"paper_catalog_sync"}),
+    "search-admin": frozenset({"paper_catalog_sync", "paper_embedding_status", "paper_embedding_rebuild"}),
     # 管理工具尚未注册，先保留组名以便配置文件稳定演进。
     "management": frozenset(),
 }

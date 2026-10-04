@@ -142,6 +142,7 @@ def _questions() -> dict[str, Any]:
                 "paper_comparison": "比较论文、方法或实验结果",
                 "paper_content": "回答论文正文中的具体问题",
                 "metadata_lookup": "查询作者、日期、分类或版本",
+                "citation_graph": "查询论文引用关系、被引用论文和发展脉络",
                 "clarify": "信息不足，需要用户补充",
                 "unsupported": "当前系统无法处理",
             },

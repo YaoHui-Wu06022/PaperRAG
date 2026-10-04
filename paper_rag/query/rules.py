@@ -29,6 +29,10 @@ _INTENT_RULES = (
         QueryIntent.PAPER_DISCOVERY,
         re.compile(r"(?:找|搜索|查找|推荐).{0,16}(?:论文|文章|文献|研究)|有哪些.{0,16}(?:论文|研究|相关工作)"),
     ),
+    (
+        QueryIntent.CITATION_GRAPH,
+        re.compile(r"引用关系|引用了|被哪些论文引用|哪些论文引用|发展脉络|后续工作|发展关系"),
+    ),
 )
 
 

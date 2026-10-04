@@ -15,6 +15,9 @@ from paper_rag.catalog.service import (
     search_catalog,
     search_chunks,
     get_chunk,
+    get_references,
+    get_citations,
+    citation_graph,
 )
 from paper_rag.mcp._app import mcp
 from paper_rag.mcp.runtime import get_settings
@@ -71,13 +74,66 @@ def paper_asset_status(paper_id: str) -> dict[str, Any]:
     return get_asset_status(get_settings(), paper_id)
 
 
-@mcp.tool(name="paper_search_chunks", description="使用 Chunk FTS5 检索论文正文证据。")
-def paper_search_chunks(query: str, paper_ids: list[str] | None = None, limit: int = 8) -> dict[str, Any]:
+@mcp.tool(name="paper_search_chunks", description="使用词法、语义或混合方式检索论文正文证据。")
+def paper_search_chunks(query: str, paper_ids: list[str] | None = None, limit: int = 8, mode: str = "hybrid") -> dict[str, Any]:
+    if mode in {"semantic", "hybrid"}:
+        from paper_rag.semantic.service import hybrid_search
+        try:
+            return {"query": query, **hybrid_search(get_settings(), query, paper_ids, max(1, min(int(limit), 50)), mode)}
+        except Exception as exc:
+            return {"status": "failed", "query": query, "items": [], "error": str(exc)}
+    if mode != "lexical":
+        return {"status": "invalid_mode", "query": query, "items": []}
     try:
         items = search_chunks(get_settings(), query, paper_ids, max(1, min(int(limit), 50)))
     except CatalogIndexNotReady:
         return {"status": "index_not_ready", "query": query, "items": []}
     return {"status": "ok", "query": query, "items": items, "count": len(items)}
+
+
+@mcp.tool(name="paper_get_references", description="读取论文的参考文献条目和解析状态。")
+def paper_get_references(paper_id: str) -> dict[str, Any]:
+    try:
+        return get_references(get_settings(), paper_id)
+    except CatalogIndexNotReady:
+        return {"status": "index_not_ready", "paper_id": paper_id, "items": []}
+
+
+@mcp.tool(name="paper_get_citations", description="读取本地 Catalog 中引用指定论文的论文。")
+def paper_get_citations(paper_id: str) -> dict[str, Any]:
+    try:
+        return get_citations(get_settings(), paper_id)
+    except CatalogIndexNotReady:
+        return {"status": "index_not_ready", "paper_id": paper_id, "items": []}
+
+
+@mcp.tool(name="paper_citation_graph", description="读取指定论文的本地引用关系图。")
+def paper_citation_graph(paper_id: str, direction: str = "both", depth: int = 1) -> dict[str, Any]:
+    if direction not in {"in", "out", "both"}:
+        return {"status": "invalid_direction", "paper_id": paper_id, "nodes": [], "edges": []}
+    try:
+        return citation_graph(get_settings(), paper_id, direction, depth)
+    except CatalogIndexNotReady:
+        return {"status": "index_not_ready", "paper_id": paper_id, "nodes": [], "edges": []}
+
+
+@mcp.tool(name="paper_embedding_status", description="查询正文 Chunk 向量索引配置和同步状态。")
+def paper_embedding_status() -> dict[str, Any]:
+    from paper_rag.semantic.service import embedding_status
+    return embedding_status(get_settings())
+
+
+@mcp.tool(name="paper_embedding_rebuild", description="预览或显式重建 Milvus Chunk 向量索引。")
+def paper_embedding_rebuild(confirm: bool = False) -> dict[str, Any]:
+    settings = get_settings()
+    from paper_rag.semantic.service import embedding_status, rebuild_embeddings
+    if not confirm:
+        status = embedding_status(settings)
+        return {"status": "confirmation_required", "planned_chunks": status.get("chunks", 0), "model": settings.embedding_model, "dimensions": settings.embedding_dimensions}
+    try:
+        return rebuild_embeddings(settings)
+    except Exception as exc:
+        return {"status": "failed", "error": str(exc)}
 
 
 @mcp.tool(name="paper_get_chunk", description="读取指定 Chunk 的完整原文及来源定位。")
@@ -120,4 +176,9 @@ __all__ = [
     "paper_search_chunks",
     "paper_get_chunk",
     "paper_get_fulltext",
+    "paper_get_references",
+    "paper_get_citations",
+    "paper_citation_graph",
+    "paper_embedding_status",
+    "paper_embedding_rebuild",
 ]

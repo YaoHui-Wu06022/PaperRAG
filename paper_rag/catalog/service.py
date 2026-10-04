@@ -15,6 +15,7 @@ from uuid import uuid4
 
 from paper_rag.config import Settings
 from paper_rag.catalog.chunks import Chunk, build_chunks, load_content_list
+from paper_rag.catalog.references import extract_references
 
 
 class CatalogIndexNotReady(RuntimeError):
@@ -240,11 +241,12 @@ def catalog_status(settings: Settings) -> dict[str, Any]:
             indexed_at = connection.execute(
                 "SELECT value FROM catalog_meta WHERE key = 'indexed_at'"
             ).fetchone()
+            indexed_chunks = connection.execute("SELECT COUNT(*) FROM chunks").fetchone()[0] if _table_exists(connection, "chunks") else 0
         result.update(
             {
                 "index_ready": True,
                 "indexed_papers": int(indexed_papers),
-                "indexed_chunks": int(connection.execute("SELECT COUNT(*) FROM chunks").fetchone()[0]) if _table_exists(connection, "chunks") else 0,
+                "indexed_chunks": int(indexed_chunks),
                 "indexed_at": indexed_at[0] if indexed_at else None,
             }
         )
@@ -295,13 +297,19 @@ def _create_database(path: Path, records: list[CatalogRecord], settings: Setting
                     paper_id TEXT NOT NULL,
                     canonical_id TEXT NOT NULL,
                     ordinal INTEGER NOT NULL,
+                    region TEXT NOT NULL,
+                    chapter_number TEXT,
+                    chapter_title TEXT,
                     section_path TEXT NOT NULL,
+                    section_label TEXT,
                     type TEXT NOT NULL,
                     text TEXT NOT NULL,
+                    retrieval_text TEXT NOT NULL,
                     page_start INTEGER,
                     page_end INTEGER,
                     source_blocks TEXT NOT NULL,
                     asset_refs TEXT NOT NULL,
+                    content_hash TEXT NOT NULL,
                     FOREIGN KEY (paper_id) REFERENCES papers(paper_id)
                 );
                 CREATE VIRTUAL TABLE chunks_fts USING fts5(
@@ -309,13 +317,46 @@ def _create_database(path: Path, records: list[CatalogRecord], settings: Setting
                     paper_id UNINDEXED,
                     canonical_id UNINDEXED,
                     section_path,
+                    region,
+                    chapter_title,
                     type UNINDEXED,
-                    text,
+                    retrieval_text,
                     content='chunks', content_rowid='rowid'
+                );
+                CREATE TABLE "references" (
+                    reference_id TEXT PRIMARY KEY,
+                    source_paper_id TEXT NOT NULL,
+                    source_canonical_id TEXT NOT NULL,
+                    ordinal INTEGER NOT NULL,
+                    raw_text TEXT NOT NULL,
+                    page_start INTEGER,
+                    page_end INTEGER,
+                    target_arxiv_id TEXT,
+                    target_doi TEXT,
+                    resolution TEXT NOT NULL
+                );
+                CREATE VIRTUAL TABLE references_fts USING fts5(reference_id UNINDEXED, source_paper_id UNINDEXED, raw_text);
+                CREATE TABLE citation_edges (
+                    source_paper_id TEXT NOT NULL,
+                    target_arxiv_id TEXT NOT NULL,
+                    relation TEXT NOT NULL,
+                    resolution TEXT NOT NULL,
+                    PRIMARY KEY (source_paper_id, target_arxiv_id, relation)
                 );
                 CREATE TABLE catalog_meta (
                     key TEXT PRIMARY KEY,
                     value TEXT NOT NULL
+                );
+                CREATE TABLE embedding_state (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                );
+                CREATE TABLE embedding_items (
+                    chunk_id TEXT PRIMARY KEY,
+                    content_hash TEXT NOT NULL,
+                    model TEXT NOT NULL,
+                    dimensions INTEGER NOT NULL,
+                    synced_at TEXT NOT NULL
                 );
                 """
             )
@@ -335,13 +376,26 @@ def _create_database(path: Path, records: list[CatalogRecord], settings: Setting
                     issues.append({"paper_id": record.paper_id, "error": warning})
                 for chunk in chunks:
                     connection.execute(
-                        "INSERT INTO chunks (chunk_id, paper_id, canonical_id, ordinal, section_path, type, text, page_start, page_end, source_blocks, asset_refs) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                        (chunk.chunk_id, chunk.paper_id, chunk.canonical_id, chunk.ordinal, json.dumps(chunk.section_path, ensure_ascii=False), chunk.type, chunk.text, chunk.page_start, chunk.page_end, json.dumps(chunk.source_blocks, ensure_ascii=False), json.dumps(chunk.asset_refs, ensure_ascii=False)),
+                        "INSERT INTO chunks (chunk_id, paper_id, canonical_id, ordinal, region, chapter_number, chapter_title, section_path, section_label, type, text, retrieval_text, page_start, page_end, source_blocks, asset_refs, content_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        (chunk.chunk_id, chunk.paper_id, chunk.canonical_id, chunk.ordinal, chunk.region, chunk.chapter_number, chunk.chapter_title, json.dumps(chunk.section_path, ensure_ascii=False), chunk.section_label, chunk.type, chunk.text, chunk.retrieval_text, chunk.page_start, chunk.page_end, json.dumps(chunk.source_blocks, ensure_ascii=False), json.dumps(chunk.asset_refs, ensure_ascii=False), chunk.content_hash),
                     )
                     connection.execute(
-                        "INSERT INTO chunks_fts (rowid, chunk_id, paper_id, canonical_id, section_path, type, text) SELECT rowid, chunk_id, paper_id, canonical_id, section_path, type, text FROM chunks WHERE chunk_id = ?",
+                        "INSERT INTO chunks_fts (rowid, chunk_id, paper_id, canonical_id, section_path, region, chapter_title, type, retrieval_text) SELECT rowid, chunk_id, paper_id, canonical_id, section_path, region, chapter_title, type, retrieval_text FROM chunks WHERE chunk_id = ?",
                         (chunk.chunk_id,),
                     )
+                try:
+                    content = load_content_list(record.mineru_dir / "content_list.json") if record.mineru_dir else []
+                    refs, ref_warnings = extract_references(content, source_paper_id=record.paper_id, source_canonical_id=record.canonical_id, local_ids={r.base_id.casefold() for r in records})
+                    for warning in ref_warnings:
+                        issues.append({"paper_id": record.paper_id, "error": warning})
+                    for ref in refs:
+                        connection.execute("INSERT INTO \"references\" VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (ref.reference_id, ref.source_paper_id, ref.source_canonical_id, ref.ordinal, ref.raw_text, ref.page_start, ref.page_end, ref.target_arxiv_id, ref.target_doi, ref.resolution))
+                        connection.execute("INSERT INTO references_fts (reference_id, source_paper_id, raw_text) VALUES (?, ?, ?)", (ref.reference_id, ref.source_paper_id, ref.raw_text))
+                        if ref.target_arxiv_id:
+                            connection.execute("INSERT OR IGNORE INTO citation_edges VALUES (?, ?, 'cites', ?)", (record.paper_id, ref.target_arxiv_id.split('v', 1)[0], ref.resolution))
+                except (OSError, ValueError, json.JSONDecodeError) as exc:
+                    if record.mineru_dir and (record.mineru_dir / "content_list.json").is_file():
+                        issues.append({"paper_id": record.paper_id, "error": f"reference parse failed: {exc}"})
                 connection.execute(
                     """
                     INSERT INTO papers_fts (
@@ -401,9 +455,11 @@ def search_chunks(settings: Settings, query: str, paper_ids: list[str] | None = 
         clauses.append(f"c.paper_id IN ({placeholders})")
         params.extend(paper_ids)
     params.append(max(1, min(int(limit), 50)))
-    sql = f"""SELECT c.chunk_id, c.paper_id, c.canonical_id, c.ordinal, c.section_path,
-                     c.type, c.text, c.page_start, c.page_end, c.source_blocks, c.asset_refs,
-                     snippet(chunks_fts, 5, '[', ']', '…', 32), bm25(chunks_fts)
+    sql = f"""SELECT c.chunk_id, c.paper_id, c.canonical_id, c.ordinal, c.region,
+                     c.chapter_number, c.chapter_title, c.section_path, c.section_label,
+                     c.type, c.text, c.retrieval_text, c.page_start, c.page_end,
+                     c.source_blocks, c.asset_refs, c.content_hash,
+                     snippet(chunks_fts, 7, '[', ']', '…', 32), bm25(chunks_fts)
                 FROM chunks AS c JOIN chunks_fts ON chunks_fts.rowid = c.rowid
                WHERE {' AND '.join(clauses)} ORDER BY bm25(chunks_fts) LIMIT ?"""
     with sqlite3.connect(settings.paper_catalog_db_path) as connection:
@@ -415,7 +471,7 @@ def get_chunk(settings: Settings, chunk_id: str) -> dict[str, Any] | None:
     _require_index(settings)
     _require_chunk_index(settings)
     with sqlite3.connect(settings.paper_catalog_db_path) as connection:
-        row = connection.execute("SELECT chunk_id, paper_id, canonical_id, ordinal, section_path, type, text, page_start, page_end, source_blocks, asset_refs FROM chunks WHERE chunk_id = ?", (chunk_id,)).fetchone()
+        row = connection.execute("SELECT chunk_id, paper_id, canonical_id, ordinal, region, chapter_number, chapter_title, section_path, section_label, type, text, retrieval_text, page_start, page_end, source_blocks, asset_refs, content_hash FROM chunks WHERE chunk_id = ?", (chunk_id,)).fetchone()
     return _chunk_row(row) if row else None
 
 
@@ -423,12 +479,38 @@ def list_chunks(settings: Settings, paper_id: str, limit: int = 50) -> list[dict
     _require_index(settings)
     _require_chunk_index(settings)
     with sqlite3.connect(settings.paper_catalog_db_path) as connection:
-        rows = connection.execute("SELECT chunk_id, paper_id, canonical_id, ordinal, section_path, type, text, page_start, page_end, source_blocks, asset_refs FROM chunks WHERE paper_id = ? ORDER BY ordinal LIMIT ?", (paper_id, max(1, int(limit)))).fetchall()
+        rows = connection.execute("SELECT chunk_id, paper_id, canonical_id, ordinal, region, chapter_number, chapter_title, section_path, section_label, type, text, retrieval_text, page_start, page_end, source_blocks, asset_refs, content_hash FROM chunks WHERE paper_id = ? ORDER BY ordinal LIMIT ?", (paper_id, max(1, int(limit)))).fetchall()
     return [_chunk_row(row) for row in rows]
 
 
 def _chunk_row(row: tuple[Any, ...]) -> dict[str, Any]:
-    return {"chunk_id": row[0], "paper_id": row[1], "canonical_id": row[2], "ordinal": row[3], "section_path": json.loads(row[4] or "[]"), "type": row[5], "text": row[6], "page_start": row[7], "page_end": row[8], "source_blocks": json.loads(row[9] or "[]"), "asset_refs": json.loads(row[10] or "[]"), **({"excerpt": row[11], "score": row[12]} if len(row) > 11 else {})}
+    result = {"chunk_id": row[0], "paper_id": row[1], "canonical_id": row[2], "ordinal": row[3], "region": row[4], "chapter_number": row[5], "chapter_title": row[6], "section_path": json.loads(row[7] or "[]"), "section_label": row[8], "type": row[9], "text": row[10], "retrieval_text": row[11], "page_start": row[12], "page_end": row[13], "page_start_display": row[12] + 1 if isinstance(row[12], int) else None, "page_end_display": row[13] + 1 if isinstance(row[13], int) else None, "source_blocks": json.loads(row[14] or "[]"), "asset_refs": json.loads(row[15] or "[]"), "content_hash": row[16]}
+    if len(row) > 17:
+        result.update({"excerpt": row[17], "score": row[18]})
+    return result
+
+
+def get_references(settings: Settings, paper_id: str) -> dict[str, Any]:
+    _require_index(settings)
+    with sqlite3.connect(settings.paper_catalog_db_path) as connection:
+        rows = connection.execute('SELECT reference_id, source_paper_id, source_canonical_id, ordinal, raw_text, page_start, page_end, target_arxiv_id, target_doi, resolution FROM "references" WHERE source_paper_id = ? ORDER BY ordinal', (paper_id,)).fetchall()
+    keys = ("reference_id", "source_paper_id", "source_canonical_id", "ordinal", "raw_text", "page_start", "page_end", "target_arxiv_id", "target_doi", "resolution")
+    return {"paper_id": paper_id, "items": [dict(zip(keys, row)) for row in rows], "scope": "local_catalog"}
+
+
+def get_citations(settings: Settings, paper_id: str) -> dict[str, Any]:
+    _require_index(settings)
+    base = str(paper_id).split("v", 1)[0]
+    with sqlite3.connect(settings.paper_catalog_db_path) as connection:
+        rows = connection.execute("SELECT source_paper_id, target_arxiv_id, relation, resolution FROM citation_edges WHERE target_arxiv_id = ? ORDER BY source_paper_id", (base,)).fetchall()
+    return {"paper_id": paper_id, "items": [{"source_paper_id": r[0], "target_arxiv_id": r[1], "relation": r[2], "resolution": r[3]} for r in rows], "scope": "local_catalog"}
+
+
+def citation_graph(settings: Settings, paper_id: str, direction: str = "both", depth: int = 1) -> dict[str, Any]:
+    references = get_references(settings, paper_id) if direction in {"both", "out"} else {"items": []}
+    citations = get_citations(settings, paper_id) if direction in {"both", "in"} else {"items": []}
+    edges = references["items"] + citations["items"]
+    return {"paper_id": paper_id, "direction": direction, "depth": max(1, int(depth)), "nodes": sorted({paper_id, *[str(item.get("target_arxiv_id") or item.get("source_paper_id")) for item in edges]}), "edges": edges, "scope": "local_catalog"}
 
 
 def _table_exists(connection: sqlite3.Connection, name: str) -> bool:
@@ -632,4 +714,7 @@ __all__ = [
     "search_chunks",
     "get_chunk",
     "list_chunks",
+    "get_references",
+    "get_citations",
+    "citation_graph",
 ]

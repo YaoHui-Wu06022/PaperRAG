@@ -6,6 +6,8 @@ from paper_rag.catalog.service import CatalogIndexNotReady, search_catalog
 from paper_rag.config import Settings
 from paper_rag.query.schemas import QueryIntent, QueryIntentDecision, QueryRequest
 from paper_rag.reading.service import context_chunks, get_context, search_content
+from paper_rag.catalog.service import citation_graph
+from paper_rag.semantic.service import hybrid_search
 
 
 def execute_query(settings: Settings, request: QueryRequest, decision: QueryIntentDecision) -> tuple[list[dict[str, Any]], list[dict[str, Any]], str | None, dict[str, Any]]:
@@ -19,13 +21,19 @@ def execute_query(settings: Settings, request: QueryRequest, decision: QueryInte
     if decision.intent == QueryIntent.METADATA_LOOKUP:
         context = get_context(settings, request.query, mode="metadata", paper_ids=request.paper_ids)
         return context.records, [], context.message, {"content_available": context.content_available}
+    if decision.intent == QueryIntent.CITATION_GRAPH:
+        ids = list(request.paper_ids) or _extract_ids(request.query)
+        if not ids:
+            return [], [], "请提供要查询引用关系的论文 ID。", {"scope": "local_catalog"}
+        graph = citation_graph(settings, ids[0])
+        return [], graph.get("edges", []), None, {"scope": graph.get("scope"), "nodes": graph.get("nodes", [])}
     if decision.intent in {QueryIntent.PAPER_SUMMARY, QueryIntent.PAPER_COMPARISON, QueryIntent.PAPER_CONTENT}:
         mode = {QueryIntent.PAPER_SUMMARY: "summary", QueryIntent.PAPER_COMPARISON: "comparison", QueryIntent.PAPER_CONTENT: "content"}[decision.intent]
         context = get_context(settings, request.query, mode=mode, paper_ids=request.paper_ids)
         if not context.content_available:
             return context.records, [], context.message, {"content_available": False, "requires_ingestion": bool(context.missing_assets), "missing_assets": context.missing_assets}
         if decision.intent == QueryIntent.PAPER_CONTENT:
-            found = search_content(settings, request.query, list(request.paper_ids) or None, 8)
+            found = hybrid_search(settings, request.query, list(request.paper_ids) or None, 8, "hybrid")
             if found["status"] != "ok":
                 return context.records, [], "论文 Chunk 索引尚未同步，请先执行 paper_catalog_sync。", {"status": found["status"], "content_available": False, "missing_assets": []}
             return context.records, found["items"], None if found["items"] else "没有找到匹配的正文证据。", {"content_available": bool(found["items"]), "status": "ok", "missing_assets": []}
@@ -38,6 +46,11 @@ def execute_query(settings: Settings, request: QueryRequest, decision: QueryInte
         items = found.get("items", []) if found.get("status") == "ok" else []
         return context.records, items, None if items else "没有找到匹配的正文证据。", {"content_available": bool(items), "status": found.get("status", "ok")}
     return [], [], decision.error or "当前 Paper RAG 不支持该查询类型。", {}
+
+
+def _extract_ids(query: str) -> list[str]:
+    import re
+    return re.findall(r"(?:\d{4}\.\d{4,5}|[A-Za-z][A-Za-z0-9.-]*/\d{7})(?:v\d+)?", query, flags=re.I)
 
 
 def _limit_context(items: list[dict[str, Any]], budget: int, *, separate: bool = False) -> tuple[list[dict[str, Any]], bool]:

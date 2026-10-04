@@ -54,6 +54,18 @@ class Settings:
     paper_rag_toolsets: str
     paper_catalog_db_path: Path
     mcp_job_log_path: Path
+    dashscope_base_url: str
+    dashscope_api_key: str = field(repr=False)
+    embedding_model: str
+    embedding_dimensions: int
+    embedding_batch_size: int
+    embedding_timeout_seconds: int
+    embedding_retry_count: int
+    milvus_uri: str
+    milvus_token: str = field(repr=False)
+    milvus_db_name: str
+    milvus_collection: str
+    milvus_dimension: int
 
     @classmethod
     def load(cls, project_root: Path | None = None) -> "Settings":
@@ -104,6 +116,20 @@ class Settings:
                 values.get("MCP_JOB_LOG_PATH"),
                 data_dir / "index" / "mcp_jobs.jsonl",
             ),
+            dashscope_base_url=values.get(
+                "DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"
+            ).rstrip("/"),
+            dashscope_api_key=values.get("DASHSCOPE_API_KEY", ""),
+            embedding_model=values.get("EMBEDDING_MODEL", "qwen3.7-text-embedding-flash"),
+            embedding_dimensions=int(values.get("EMBEDDING_DIMENSIONS", "1024")),
+            embedding_batch_size=min(20, max(1, int(values.get("EMBEDDING_BATCH_SIZE", "20")))),
+            embedding_timeout_seconds=int(values.get("EMBEDDING_TIMEOUT_SECONDS", "60")),
+            embedding_retry_count=int(values.get("EMBEDDING_RETRY_COUNT", "2")),
+            milvus_uri=values.get("MILVUS_URI", ""),
+            milvus_token=values.get("MILVUS_TOKEN", ""),
+            milvus_db_name=values.get("MILVUS_DB_NAME", "default"),
+            milvus_collection=values.get("MILVUS_COLLECTION", "paper_rag_chunks"),
+            milvus_dimension=int(values.get("MILVUS_DIMENSION", "1024")),
         )
 
 

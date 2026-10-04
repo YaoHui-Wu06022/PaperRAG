@@ -18,6 +18,11 @@ from paper_rag.mcp.tools.catalog import (
     paper_search_chunks,
     paper_get_chunk,
     paper_get_fulltext,
+    paper_get_references,
+    paper_get_citations,
+    paper_citation_graph,
+    paper_embedding_status,
+    paper_embedding_rebuild,
 )
 from paper_rag.mcp.tools.query import paper_query
 
@@ -53,6 +58,11 @@ __all__ = [
     "paper_search_chunks",
     "paper_get_chunk",
     "paper_get_fulltext",
+    "paper_get_references",
+    "paper_get_citations",
+    "paper_citation_graph",
+    "paper_embedding_status",
+    "paper_embedding_rebuild",
     "paper_query",
 ]
 

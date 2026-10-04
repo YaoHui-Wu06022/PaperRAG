@@ -11,6 +11,7 @@ def add_read_parser(subparsers: argparse._SubParsersAction) -> None:
     chunks.add_argument("query")
     chunks.add_argument("--paper-id", action="append", default=[])
     chunks.add_argument("--limit", type=int, default=8)
+    chunks.add_argument("--mode", choices=("lexical", "semantic", "hybrid"), default="hybrid")
     chunks.add_argument("--json", action="store_true")
     chunks.set_defaults(handler=handle_search_chunks)
 
@@ -29,8 +30,8 @@ def add_read_parser(subparsers: argparse._SubParsersAction) -> None:
 
 
 def handle_search_chunks(args: argparse.Namespace) -> int:
-    from paper_rag.reading.service import search_content
-    payload = search_content(Settings.load(args.project_root), args.query, args.paper_id or None, args.limit)
+    from paper_rag.semantic.service import hybrid_search
+    payload = hybrid_search(Settings.load(args.project_root), args.query, args.paper_id or None, args.limit, args.mode)
     print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else json.dumps(payload, ensure_ascii=False))
     return 0 if payload.get("status") == "ok" else 1
 
