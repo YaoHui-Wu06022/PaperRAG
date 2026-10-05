@@ -86,6 +86,13 @@ def build_chunks(content_list: list[dict[str, Any]], *, paper_id: str, canonical
             if heading_key == "abstract":
                 flush(); region = "abstract"; section = ["abstract"]; heading_stack = []; chapter_number = chapter_title = None
                 continue
+            if heading_key in {"acknowledgement", "acknowledgements", "acknowledgment", "acknowledgments"}:
+                flush()
+                heading_stack = [text]
+                section = [region, text]
+                chapter_number = None
+                chapter_title = text
+                continue
             if heading_key in {"references", "reference", "bibliography"}:
                 flush(); region = "reference"; section = ["reference"]; heading_stack = []; chapter_number = chapter_title = None
                 continue
@@ -212,8 +219,10 @@ def _appendix_heading(text: str) -> tuple[str | None, str | None]:
     """识别 MinerU 常见的 A、A.1 形式附录标题。"""
 
     value = re.sub(r"<[^>]+>", "", text or "").strip()
-    match = re.match(r"^([A-Z](?:\.\d+)*)\s+(.+)$", value)
-    return (match.group(1), match.group(2).strip()) if match else (None, None)
+    match = re.match(r"^([A-Z](?:\.\d+)*\.?)\s+(.+)$", value)
+    if not match:
+        return None, None
+    return match.group(1).rstrip("."), match.group(2).strip()
 
 
 def _heading_key(text: str) -> str:

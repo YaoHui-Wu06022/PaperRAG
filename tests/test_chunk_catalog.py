@@ -102,3 +102,43 @@ def test_appendix_after_references_is_indexed_as_appendix():
     assert len(appendix) == 2
     assert appendix[0].section_path == ("appendix", "A ADDITIONAL DETAILS")
     assert appendix[1].section_path == ("appendix", "A ADDITIONAL DETAILS", "A.1 MORE DETAILS")
+
+
+def test_lettered_appendix_headings_are_siblings():
+    chunks, _ = build_chunks([
+        {"type": "text", "text": "References", "text_level": 1},
+        {"type": "ref_text", "text": "[1] Reference"},
+        {"type": "text", "text": "A. Training dataset", "text_level": 2},
+        {"type": "text", "text": "A evidence"},
+        {"type": "text", "text": "B. Optimal cosine cycle length", "text_level": 2},
+        {"type": "text", "text": "B evidence"},
+        {"type": "text", "text": "D. Details on the scaling analyses", "text_level": 2},
+        {"type": "text", "text": "D evidence"},
+        {"type": "text", "text": "D.1. Approach 1", "text_level": 2},
+        {"type": "text", "text": "D1 evidence"},
+        {"type": "text", "text": "C XXX", "text_level": 2},
+        {"type": "text", "text": "C evidence"},
+        {"type": "text", "text": "C.1 Details", "text_level": 2},
+        {"type": "text", "text": "C1 evidence"},
+    ], paper_id="2203.15556", canonical_id="2203.15556v1", content_hash="test")
+    appendix = [item for item in chunks if item.region == "appendix"]
+    assert appendix[0].section_path == ("appendix", "A. Training dataset")
+    assert appendix[1].section_path == ("appendix", "B. Optimal cosine cycle length")
+    assert appendix[2].section_path == ("appendix", "D. Details on the scaling analyses")
+    assert appendix[3].section_path == ("appendix", "D. Details on the scaling analyses", "D.1. Approach 1")
+    assert appendix[4].section_path == ("appendix", "C XXX")
+    assert appendix[5].section_path == ("appendix", "C XXX", "C.1 Details")
+
+
+def test_acknowledgements_starts_a_new_top_level_section():
+    chunks, _ = build_chunks([
+        {"type": "text", "text": "Abstract", "text_level": 1},
+        {"type": "text", "text": "abstract text"},
+        {"type": "text", "text": "9 Broader Impacts", "text_level": 2},
+        {"type": "text", "text": "impact text"},
+        {"type": "text", "text": "Acknowledgements", "text_level": 2},
+        {"type": "text", "text": "We thank the team."},
+    ], paper_id="2305.14314", canonical_id="2305.14314v1", content_hash="test")
+    acknowledgement = next(item for item in chunks if item.text == "We thank the team.")
+    assert acknowledgement.section_path == ("content", "Acknowledgements")
+    assert acknowledgement.retrieval_text == "content\nAcknowledgements\nWe thank the team."
