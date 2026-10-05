@@ -105,3 +105,7 @@ Chunk 检查：
 ## 6. 返回结果
 
 library_retrieve 返回 status/data/warnings/read_only 包装。data.items 中每个来源都包含 source_id、chunk_id、paper_id、canonical_id、章节、页码、正文和资源引用。客户端使用 [S1] 等标记生成最终回答；证据编号和页码组织方式参考 [PaperQA 示例输出](https://github.com/future-house/paper-qa#example-output)。
+
+元数据和引用工具会在 `data.presentation` 中返回确定性答案模板。`library_search` 与 `library_citation` 的 `render_policy` 为 `verbatim`，Agent 应原样输出 `answer_text`，不重新总结或补充。参考文献答案只显示本地匹配数量和前 10 条本地论文题目；被引论文答案只显示数量和前 10 个来源论文题目；引用图答案显示方向、深度、节点数、边数以及前 10 条“引用方 引用 被引用方”关系。题目从本地 Catalog 读取，缺失时才回退到论文 ID。
+
+`library_retrieve(mode="hybrid")` 的 `render_policy` 为 `compose`，Agent 可以根据正文证据、`source_id` 和 `context_text` 组织最终答案。lexical 和 semantic 模式仍只提供证据上下文。MCP 服务端不调用答案生成模型。

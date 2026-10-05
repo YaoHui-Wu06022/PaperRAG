@@ -59,7 +59,7 @@ def library_read(paper_id: str, offset: int = 0, limit: int = 12000) -> dict[str
     return _read_only(status, result)
 
 
-@mcp.tool(name="library_citation", description="读取论文参考文献、被引论文或本地引用关系图；引用查询只访问 SQLite 图，不检索正文。")
+@mcp.tool(name="library_citation", description="读取论文参考文献、被引论文或本地引用关系图；引用查询只访问 SQLite 图，不检索正文。data.presentation.answer_text 为确定性答案，Agent 应原样输出。")
 def library_citation(paper_id: str, mode: str = "graph", direction: str = "both", depth: int = 1, filters: dict[str, Any] | None = None) -> dict[str, Any]:
     if mode not in {"references", "citations", "graph"}:
         return _read_only("invalid_input", {"paper_id": paper_id, "mode": mode, "items": [], "nodes": [], "edges": []})
@@ -76,10 +76,44 @@ def library_citation(paper_id: str, mode: str = "graph", direction: str = "both"
             data = get_citations(settings, paper_id, filters)
         else:
             data = citation_graph(settings, paper_id, direction, depth, filters)
-        return attach_presentation(_read_only("ok", data), citation_presentation(data, mode, title_or_paper_id=title))
+        title_ids = [paper_id]
+        if mode == "references":
+            local_reference_items = [
+                item
+                for item in data.get("items", [])
+                if item.get("resolution") == "local" and item.get("matched_paper_id")
+            ]
+            title_ids.extend(str(item.get("matched_paper_id")) for item in local_reference_items[:10])
+        elif mode == "citations":
+            title_ids.extend(str(item.get("source_paper_id")) for item in data.get("items", [])[:10] if item.get("source_paper_id"))
+        else:
+            for edge in data.get("edges", [])[:10]:
+                if edge.get("source_paper_id"):
+                    title_ids.append(str(edge["source_paper_id"]))
+                if edge.get("target_arxiv_id"):
+                    title_ids.append(str(edge["target_arxiv_id"]))
+        titles = _load_titles(settings, title_ids)
+        return attach_presentation(
+            _read_only("ok", data),
+            citation_presentation(data, mode, title_or_paper_id=title, title_lookup=titles),
+        )
     except CatalogIndexNotReady:
         data = {"paper_id": paper_id, "mode": mode, "items": [], "nodes": [], "edges": []}
         return attach_presentation(_read_only("catalog_not_ready", data), citation_presentation(data, mode))
+
+
+def _load_titles(settings: Any, paper_ids: list[str]) -> dict[str, str]:
+    """读取展示所需的少量本地论文题目，不改变结构化引用结果。"""
+
+    titles: dict[str, str] = {}
+    for paper_id in dict.fromkeys(paper_ids):
+        record = get_metadata(settings, paper_id)
+        if not record:
+            continue
+        for identifier in (record.paper_id, record.base_id, record.canonical_id):
+            if identifier:
+                titles[str(identifier).casefold()] = record.title
+    return titles
 
 
 @mcp.tool(name="library_index_status", description="查询 LlamaIndex 和 Milvus 正文索引状态。")

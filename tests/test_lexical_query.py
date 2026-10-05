@@ -135,6 +135,7 @@ def test_metadata_search_uses_translated_free_text_query(tmp_path: Path, monkeyp
     assert seen == ["attention mechanism"]
     assert result["data"]["query_debug"]["translation_used"] is True
     assert result["data"]["query_debug"]["translation_provider"] == "tencent"
+    assert result["data"]["presentation"]["render_policy"] == "verbatim"
 
 
 def test_hybrid_keeps_original_query_for_semantic_retriever(tmp_path: Path, monkeypatch):

@@ -161,11 +161,18 @@ def handle_index_rebuild(args: argparse.Namespace) -> int:
 def handle_citation_graph(args: argparse.Namespace) -> int:
     """读取 SQLite 本地引用图，不访问正文索引。"""
 
-    from paper_rag.catalog.service import CatalogIndexNotReady, citation_graph
+    from paper_rag.catalog.service import CatalogIndexNotReady, citation_graph, get_metadata
 
     try:
-        data = citation_graph(Settings.load(args.project_root), args.paper_id, args.direction, args.depth)
-        payload = attach_presentation({"status": "ok", "data": data, "warnings": [], "read_only": True}, citation_presentation(data, "graph"))
+        settings = Settings.load(args.project_root)
+        data = citation_graph(settings, args.paper_id, args.direction, args.depth)
+        record = get_metadata(settings, args.paper_id)
+        titles = {}
+        if record:
+            for identifier in (record.paper_id, record.base_id, record.canonical_id):
+                if identifier:
+                    titles[str(identifier).casefold()] = record.title
+        payload = attach_presentation({"status": "ok", "data": data, "warnings": [], "read_only": True}, citation_presentation(data, "graph", title_lookup=titles))
     except CatalogIndexNotReady:
         data = {"paper_id": args.paper_id, "nodes": [], "edges": []}
         payload = attach_presentation({"status": "catalog_not_ready", "data": data, "warnings": [], "read_only": True}, citation_presentation(data, "graph"))

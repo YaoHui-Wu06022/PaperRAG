@@ -125,6 +125,13 @@ def test_lexical_retrieval_returns_citations_without_milvus(tmp_path: Path):
     item = result["data"]["items"][0]
     assert item["source_id"] == "S1"
     assert item["page_start_display"] == 2
+    assert result["data"]["presentation"]["render_policy"] == "verbatim"
+
+
+def test_hybrid_retrieval_marks_client_composition(tmp_path: Path):
+    settings = make_index_fixture(tmp_path)
+    result = retrieve(settings, "attention", mode="hybrid")
+    assert result["data"]["presentation"]["render_policy"] == "compose"
 
 
 def test_single_rag_tool_returns_client_side_context(tmp_path: Path):

@@ -47,6 +47,7 @@ def citation_presentation(
     mode: str,
     *,
     title_or_paper_id: str | None = None,
+    title_lookup: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     """生成三种本地引用查询的精简确定性答案。"""
 
@@ -64,7 +65,7 @@ def citation_presentation(
         if local_items:
             lines.append("")
             lines.extend(
-                f"{number}. {_value(item.get('matched_paper_id'))}"
+                f"{number}. {_title(item.get('matched_paper_id'), title_lookup)}"
                 for number, item in enumerate(local_items[:10], start=1)
             )
         return _presentation("references_list", "verbatim", "\n".join(lines))
@@ -72,25 +73,32 @@ def citation_presentation(
     if mode == "citations":
         items = [item for item in data.get("items", []) if isinstance(item, Mapping)]
         lines = [
-            f"在当前本地论文库中，共有 {len(items)} 篇论文引用了 {_value(data.get('paper_id'))}：",
+            f"在当前本地论文库中，共有 {len(items)} 篇论文引用了 {_title(data.get('paper_id'), title_lookup)}：",
         ]
         if items:
             lines.append("")
             lines.extend(
-                f"{number}. {_value(item.get('source_paper_id'))}"
+                f"{number}. {_title(item.get('source_paper_id'), title_lookup)}"
                 for number, item in enumerate(items[:10], start=1)
             )
         return _presentation("citations_list", "verbatim", "\n".join(lines))
 
     if mode == "graph":
+        edges = [edge for edge in data.get("edges", []) if isinstance(edge, Mapping)]
         lines = [
-            f"已查询论文 {_value(data.get('paper_id'))} 的本地引用关系图",
+            f"已查询论文 {_title(data.get('paper_id'), title_lookup)} 的本地引用关系图",
             "",
             f"方向: {_value(data.get('direction'))}",
             f"深度: {_value(data.get('depth'))}",
             f"节点数: {len(data.get('nodes') or [])}",
-            f"边数: {len(data.get('edges') or [])}",
+            f"边数: {len(edges)}",
         ]
+        if edges:
+            lines.extend(["", "引用关系（前10条）："])
+            lines.extend(
+                f"{number}. {_title(edge.get('source_paper_id'), title_lookup)} 引用 {_title(edge.get('target_arxiv_id'), title_lookup)}"
+                for number, edge in enumerate(edges[:10], start=1)
+            )
         return _presentation("citation_graph", "verbatim", "\n".join(lines))
 
     raise ValueError(f"unsupported citation mode: {mode}")
@@ -117,6 +125,15 @@ def _value(value: Any) -> str:
     if value is None or value == "":
         return "-"
     return str(value)
+
+
+def _title(value: Any, title_lookup: Mapping[str, str] | None) -> str:
+    """优先使用本地论文题目，元数据缺失时回退到稳定 ID。"""
+
+    identifier = _value(value)
+    if title_lookup:
+        return _value(title_lookup.get(identifier.casefold(), identifier))
+    return identifier
 
 
 def _join_values(value: Any) -> str:
