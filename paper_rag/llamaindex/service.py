@@ -11,6 +11,8 @@ from paper_rag.config import Settings
 from paper_rag.llamaindex.index import IndexService, LlamaIndexError
 from paper_rag.llamaindex.nodes import node_metadata
 from paper_rag.llamaindex.retrievers import HybridRetriever
+from paper_rag.llamaindex.translation import prepare_lexical_query
+from paper_rag.presentation import attach_presentation, retrieve_presentation, search_presentation
 from paper_rag.routing import RetrieveDecision, RetrieveTask, RouteIntent, classify_retrieve
 
 
@@ -20,74 +22,82 @@ _FILTER_KEYS = {"author", "category", "year", "year_from", "year_to", "state"}
 
 def search(settings: Settings, query: str, filters: dict[str, Any] | None = None, limit: int = 20) -> dict[str, Any]:
     """只搜索论文元数据，不读取正文。"""
+    prepared = prepare_lexical_query(query, settings)
     try:
-        records = search_catalog(settings, query, _normalize_filters(filters), _limit(limit, 100))
+        records = search_catalog(
+            settings,
+            prepared.query,
+            _normalize_filters(filters),
+            _limit(limit, 100),
+            fts_query=prepared.fts_query,
+        )
     except ValueError as exc:
-        return _envelope("invalid_input", {"query": query, "items": [], "count": 0}, [str(exc)])
+        return _search_response("invalid_input", {"query": query, "items": [], "count": 0, "query_debug": prepared.debug()}, [*prepared.warnings, str(exc)])
     except CatalogIndexNotReady:
-        return _envelope("index_not_ready", {"query": query, "items": [], "count": 0})
-    return _envelope("ok", {"query": query, "items": [record.to_dict() for record in records], "count": len(records)})
+        return _search_response("index_not_ready", {"query": query, "items": [], "count": 0, "query_debug": prepared.debug()}, list(prepared.warnings))
+    return _search_response("ok", {"query": query, "items": [record.to_dict() for record in records], "count": len(records), "query_debug": prepared.debug()}, list(prepared.warnings))
 
 
 def retrieve(settings: Settings, query: str, paper_ids: list[str] | None = None, *, filters: dict[str, Any] | None = None, task: str = "auto", limit: int = 8, mode: str = "hybrid", regions: list[str] | None = None, max_chars: int = 24000) -> dict[str, Any]:
     """执行唯一正文 RAG 入口；JEV 只在 task=auto 时细分正文任务。"""
     normalized_mode = str(mode).casefold()
     if normalized_mode not in {"lexical", "semantic", "hybrid"}:
-        return _envelope("invalid_input", _empty_payload(query), ["mode must be lexical, semantic or hybrid"])
+        return _retrieve_response("invalid_input", _empty_payload(query), ["mode must be lexical, semantic or hybrid"], normalized_mode)
     try:
         selected_regions = _normalize_regions(regions)
         normalized_filters = _normalize_filters(filters)
         bounded_limit = _limit(limit, 50)
         bounded_chars = max(1, int(max_chars))
     except (TypeError, ValueError) as exc:
-        return _envelope("invalid_input", _empty_payload(query), [str(exc)])
+        return _retrieve_response("invalid_input", _empty_payload(query), [str(exc)], normalized_mode)
     try:
         decision = classify_retrieve(settings, query, paper_ids) if str(task).casefold() == "auto" else _explicit_task(task)
     except ValueError as exc:
-        return _envelope("invalid_input", _empty_payload(query), [str(exc)])
+        return _retrieve_response("invalid_input", _empty_payload(query), [str(exc)], normalized_mode)
     try:
         candidates = _resolve_candidates(settings, paper_ids, normalized_filters)
         if decision.task in {RetrieveTask.SUMMARY, RetrieveTask.COMPARISON} and candidates is None:
             candidates = _discover_candidates(settings, query, bounded_limit)
         if candidates is not None and not candidates:
-            return _envelope("not_found", {**_empty_payload(query), "task": decision.task.value}, ["no papers match the supplied constraints"])
+            return _retrieve_response("not_found", {**_empty_payload(query), "task": decision.task.value}, ["no papers match the supplied constraints"], normalized_mode)
         if decision.task is RetrieveTask.COMPARISON and len(candidates or []) < 2:
-            return _envelope("invalid_input", {**_empty_payload(query), "task": decision.task.value}, ["comparison requires at least two unique papers"])
+            return _retrieve_response("invalid_input", {**_empty_payload(query), "task": decision.task.value}, ["comparison requires at least two unique papers"], normalized_mode)
     except CatalogIndexNotReady:
-        return _envelope("catalog_not_ready", {**_empty_payload(query), "task": decision.task.value})
+        return _retrieve_response("catalog_not_ready", {**_empty_payload(query), "task": decision.task.value}, [], normalized_mode)
 
     papers = _paper_records(settings, candidates)
     warnings = [decision.warning] if decision.warning else []
     status = "ok"
+    retrieval_debug: dict[str, Any] = {}
     try:
         if decision.task in {RetrieveTask.SUMMARY, RetrieveTask.COMPARISON}:
             items = _ordered_sources(settings, candidates or (), bounded_limit, query)
             for item in items:
                 item["evidence_role"] = "direct"
         else:
-            items, retrieve_warnings = _retrieve_items(settings, query, candidates, selected_regions, normalized_mode, bounded_limit)
+            items, retrieve_warnings, retrieval_debug = _retrieve_items(settings, query, candidates, selected_regions, normalized_mode, bounded_limit)
             warnings.extend(retrieve_warnings)
             if decision.task is RetrieveTask.REASON:
                 items = _reason_items(settings, items, bounded_limit)
             status = _warning_status(retrieve_warnings)
     except CatalogIndexNotReady:
-        return _envelope("catalog_not_ready", {**_empty_payload(query), "task": decision.task.value})
+        return _retrieve_response("catalog_not_ready", {**_empty_payload(query), "task": decision.task.value}, [], normalized_mode)
     except LlamaIndexError as exc:
         warnings.extend([f"semantic_unavailable:{type(exc).__name__}", "lexical_fallback"])
         try:
-            items, lexical_warnings = _retrieve_items(settings, query, candidates, selected_regions, "lexical", bounded_limit)
+            items, lexical_warnings, retrieval_debug = _retrieve_items(settings, query, candidates, selected_regions, "lexical", bounded_limit)
             warnings.extend(lexical_warnings)
         except CatalogIndexNotReady:
-            return _envelope("catalog_not_ready", {**_empty_payload(query), "task": decision.task.value})
+            return _retrieve_response("catalog_not_ready", {**_empty_payload(query), "task": decision.task.value}, [], normalized_mode)
         status = _index_error_status(exc)
     if not papers:
         papers = _paper_records(settings, _unique_ids(item.get("paper_id") for item in items))
     _assign_source_ids(items)
     context_text, truncated = _render_context(items, bounded_chars, decision.task is RetrieveTask.COMPARISON)
-    return _envelope(status, {"query": query, "task": decision.task.value, "routing": decision.to_dict(), "papers": [record.to_dict() for record in papers], "items": items, "count": len(items), "context_text": context_text, "truncated": truncated}, warnings)
+    return _retrieve_response(status, {"query": query, "task": decision.task.value, "routing": decision.to_dict(), "papers": [record.to_dict() for record in papers], "items": items, "count": len(items), "context_text": context_text, "truncated": truncated, "retrieval_debug": retrieval_debug}, warnings, normalized_mode)
 
 
-def _retrieve_items(settings: Settings, query: str, candidates: list[str] | None, regions: tuple[str, ...], mode: str, limit: int) -> tuple[list[dict[str, Any]], list[str]]:
+def _retrieve_items(settings: Settings, query: str, candidates: list[str] | None, regions: tuple[str, ...], mode: str, limit: int) -> tuple[list[dict[str, Any]], list[str], dict[str, Any]]:
     """执行统一的 lexical/semantic/hybrid 证据召回。"""
     service = _get_index_service(settings)
     index = None if mode == "lexical" else service.load()
@@ -99,7 +109,7 @@ def _retrieve_items(settings: Settings, query: str, candidates: list[str] | None
         item = node_metadata(result.node)
         item.update({"score": result.score, "semantic_score": result.node.metadata.get("semantic_score"), "lexical_rank": result.node.metadata.get("lexical_rank"), "semantic_rank": result.node.metadata.get("semantic_rank"), "rrf_score": result.node.metadata.get("rrf_score", result.score), "page_start_display": _display_page(item.get("page_start")), "page_end_display": _display_page(item.get("page_end")), "evidence_role": "direct"})
         items.append(item)
-    return items, list(retriever.warnings)
+    return items, list(retriever.warnings), dict(retriever.lexical_debug)
 
 
 def _build_semantic_retriever(index: Any, paper_ids: list[str] | None, regions: tuple[str, ...], top_k: int) -> Any:
@@ -139,7 +149,14 @@ def _resolve_candidates(settings: Settings, paper_ids: list[str] | None, filters
 
 def _discover_candidates(settings: Settings, query: str, limit: int) -> list[str]:
     """summary/comparison 无显式范围时，使用元数据索引确定论文集合。"""
-    records = search_catalog(settings, query, {}, max(2, min(limit, 20)))
+    prepared = prepare_lexical_query(query, settings)
+    records = search_catalog(
+        settings,
+        prepared.query,
+        {},
+        max(2, min(limit, 20)),
+        fts_query=prepared.fts_query,
+    )
     return _unique_ids(record.base_id for record in records)
 
 
@@ -289,26 +306,41 @@ def _warning_status(warnings: Iterable[str]) -> str:
 
 
 def _empty_payload(query: str) -> dict[str, Any]:
-    return {"query": query, "task": None, "papers": [], "items": [], "count": 0, "context_text": "", "truncated": False}
+    return {"query": query, "task": None, "papers": [], "items": [], "count": 0, "context_text": "", "truncated": False, "retrieval_debug": {}}
 
 
 def index_status(settings: Settings) -> dict[str, Any]:
     return _envelope("ok", _get_index_service(settings).status())
 
 
-def rebuild_index(settings: Settings) -> dict[str, Any]:
+def rebuild_index(settings: Settings, mode: str = "auto") -> dict[str, Any]:
     try:
-        result = _get_index_service(settings).rebuild()
+        result = _get_index_service(settings).rebuild(mode=mode)
         _get_index_service.cache_clear()
         return _envelope("completed", result)
     except CatalogIndexNotReady:
         return _envelope("catalog_not_ready", {})
     except LlamaIndexError as exc:
-        return _envelope("failed", {}, [str(exc)])
+        status = str(exc.details.get("status") or "failed")
+        return _envelope(status, exc.details, [str(exc)])
 
 
 def _envelope(status: str, data: dict[str, Any], warnings: list[str] | None = None) -> dict[str, Any]:
     return {"status": status, "data": data, "warnings": [item for item in (warnings or []) if item], "read_only": status not in {"completed"}}
+
+
+def _search_response(status: str, data: dict[str, Any], warnings: list[str] | None = None) -> dict[str, Any]:
+    """为元数据查询附加必须原样输出的确定性答案。"""
+
+    payload = _envelope(status, data, warnings)
+    return attach_presentation(payload, search_presentation(payload["data"]))
+
+
+def _retrieve_response(status: str, data: dict[str, Any], warnings: list[str] | None, mode: str) -> dict[str, Any]:
+    """标记正文证据由客户端原样使用还是组织生成。"""
+
+    payload = _envelope(status, data, warnings)
+    return attach_presentation(payload, retrieve_presentation(payload["data"], mode))
 
 
 @lru_cache(maxsize=4)

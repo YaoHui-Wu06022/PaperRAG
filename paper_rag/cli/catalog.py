@@ -8,6 +8,7 @@ import json
 import random
 
 from paper_rag.config import Settings
+from paper_rag.presentation import attach_presentation, citation_presentation
 
 
 def add_catalog_parser(subparsers: argparse._SubParsersAction) -> None:
@@ -40,8 +41,18 @@ def add_catalog_parser(subparsers: argparse._SubParsersAction) -> None:
     index_status.add_argument("--json", action="store_true")
     index_status.set_defaults(handler=handle_index_status)
     index_rebuild = index_commands.add_parser("rebuild", help="重建 LlamaIndex 向量索引")
+    index_rebuild.add_argument("--mode", choices=("auto", "incremental", "full"), default="auto")
     index_rebuild.add_argument("--json", action="store_true")
     index_rebuild.set_defaults(handler=handle_index_rebuild)
+
+    citation = subparsers.add_parser("citation", help="查询本地引用关系")
+    citation_commands = citation.add_subparsers(dest="citation_command", required=True)
+    graph = citation_commands.add_parser("graph", help="查询本地引用关系图")
+    graph.add_argument("--paper-id", required=True)
+    graph.add_argument("--direction", choices=("in", "out", "both"), default="both")
+    graph.add_argument("--depth", type=int, default=1)
+    graph.add_argument("--json", action="store_true")
+    graph.set_defaults(handler=handle_citation_graph)
 
 
 def handle_sync(args: argparse.Namespace) -> int:
@@ -142,9 +153,26 @@ def handle_index_status(args: argparse.Namespace) -> int:
 def handle_index_rebuild(args: argparse.Namespace) -> int:
     from paper_rag.llamaindex.service import rebuild_index
 
-    payload = rebuild_index(Settings.load(args.project_root))
+    payload = rebuild_index(Settings.load(args.project_root), mode=args.mode)
     print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else format_catalog(payload.get("data", payload)))
     return 0 if payload.get("status") == "completed" else 1
 
 
-__all__ = ["add_catalog_parser", "handle_chunks", "handle_index_rebuild", "handle_index_status", "handle_status", "handle_sync"]
+def handle_citation_graph(args: argparse.Namespace) -> int:
+    """读取 SQLite 本地引用图，不访问正文索引。"""
+
+    from paper_rag.catalog.service import CatalogIndexNotReady, citation_graph
+
+    try:
+        data = citation_graph(Settings.load(args.project_root), args.paper_id, args.direction, args.depth)
+        payload = attach_presentation({"status": "ok", "data": data, "warnings": [], "read_only": True}, citation_presentation(data, "graph"))
+    except CatalogIndexNotReady:
+        data = {"paper_id": args.paper_id, "nodes": [], "edges": []}
+        payload = attach_presentation({"status": "catalog_not_ready", "data": data, "warnings": [], "read_only": True}, citation_presentation(data, "graph"))
+    except ValueError as exc:
+        payload = {"status": "invalid_input", "data": {"paper_id": args.paper_id}, "warnings": [str(exc)], "read_only": True}
+    print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else format_catalog(payload.get("data", payload)))
+    return 0 if payload["status"] == "ok" else 1
+
+
+__all__ = ["add_catalog_parser", "handle_chunks", "handle_citation_graph", "handle_index_rebuild", "handle_index_status", "handle_status", "handle_sync"]

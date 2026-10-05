@@ -43,13 +43,17 @@ JEV 只处理 RouteIntent.RETRIEVE 内部的正文任务，不选择 MCP 工具�
 
 ## 3. 元数据的两种作用
 
-纯元数据问题直接使用 library_search。例如“2018 年以后有哪些文章”只查询 SQLite papers_fts 和结构化过滤条件，不读取正文。
+纯元数据问题直接使用 library_search。例如“2018 年以后有哪些文章”只查询 SQLite papers_fts 和结构化过滤条件，不读取正文。自由文本查询先通过 OpenAI 兼容的 Query Rewriter 提取完整核心检索短语，再由腾讯云翻译后查询论文元数据。Query Rewriter 只返回 `core_terms` 数组，例如“注意力机制”返回 `{"core_terms": ["注意力机制"]}`，不拆分成独立的“注意力”和“机制”，也不修改 filters。Query Rewriter 不可用时回退到原始查询翻译和停用词清洗；作者、分类、年份和状态等结构化 filters 不参与翻译。
 
 正文问题可以把元数据作为检索约束。library_retrieve.filters 支持 author、category、year、year_from、year_to、state；系统先筛选论文，再在候选论文的正文 Chunk 中执行 lexical、semantic 或 hybrid 检索。paper_ids 支持 base ID 和 canonical ID，重复版本会合并；regions 只允许 abstract、content、appendix。
 
 ## 4. 引用图
 
 Catalog 同步时从 MinerU Reference 区域解析 ArXiv ID、DOI 和原始引用文本，写入 references 与 citation_edges。这些数据不进入正文 Chunk 向量索引。
+
+引用目标采用本地混合匹配：先匹配规范化 ArXiv ID，再匹配规范化 DOI，最后使用标题、作者和年份进行严格相似匹配。`references` 保留所有原始引用，并记录 `matched_paper_id`、`match_method`、`match_score`、`resolution` 和 `duplicate_of_reference_id`；只有目标存在于本地 Catalog 且达到高置信度时，才写入 `citation_edges`。同一篇论文重复出现在原始参考文献中时，只保留一个主引用建立图边，其余条目保留并指向主引用。外部引用和歧义引用仍可查看，但不会污染本地图。
+
+Catalog 同步结果中的 `citation_match_stats` 会分别统计 `arxiv_exact`、`doi_exact`、`title_author_year`、`external`、`ambiguous` 和 `unresolved`。引用匹配不调用外部服务，也不触发 Embedding、Milvus 或正文检索。
 
 统一工具 `library_citation` 支持：
 
@@ -61,6 +65,8 @@ Catalog 同步时从 MinerU Reference 区域解析 ArXiv ID、DOI 和原始引�
     }
 
 depth 最大为 3，图查询使用 SQLite BFS；查询引用关系不会触发 Embedding、Milvus 或正文检索。
+
+每次 Catalog 同步还会生成 UTF-8 文件 `data/index/citation_graph.json`，包含本地论文节点、唯一引用边、引用数量和匹配统计，便于直接查看或导入图分析工具。原始重复参考条目仍在 SQLite `references` 中，并通过 `duplicate_of_reference_id` 指向主条目；JSON 图不会重复建边。
 
 ## 5. 索引与运行
 

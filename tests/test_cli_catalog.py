@@ -32,3 +32,8 @@ def test_catalog_cli_dry_run_and_sync_json(tmp_path: Path, capsys):
     synced = json.loads(capsys.readouterr().out)
     assert synced["status"] == "rebuilt"
     assert synced["papers"] == 1
+
+    assert main(["--project-root", str(tmp_path), "citation", "graph", "--paper-id", "1706.03762", "--json"]) == 0
+    graph = json.loads(capsys.readouterr().out)
+    assert graph["status"] == "ok"
+    assert graph["data"]["scope"] == "local_catalog"

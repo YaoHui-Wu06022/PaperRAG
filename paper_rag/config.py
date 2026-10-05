@@ -51,6 +51,12 @@ class Settings:
     jev_timeout_seconds: int
     jev_retry_count: int
     jev_route_probability_threshold: float
+    query_rewriter_enabled: bool
+    query_rewriter_api_key: str = field(repr=False)
+    query_rewriter_base_url: str
+    query_rewriter_model: str
+    query_rewriter_timeout_seconds: int
+    query_rewriter_retry_count: int
     paper_rag_toolsets: str
     paper_catalog_db_path: Path
     mcp_job_log_path: Path
@@ -72,6 +78,14 @@ class Settings:
     llamaindex_lexical_top_k: int
     llamaindex_semantic_top_k: int
     llamaindex_rrf_k: int
+    bm25_translation_enabled: bool
+    bm25_translation_timeout_seconds: int
+    bm25_translation_retry_count: int
+    bm25_translation_max_chars: int
+    tencent_translate_secret_id: str = field(repr=False)
+    tencent_translate_secret_key: str = field(repr=False)
+    tencent_translate_region: str
+    tencent_translate_endpoint: str
 
     @classmethod
     def load(cls, project_root: Path | None = None) -> "Settings":
@@ -111,6 +125,16 @@ class Settings:
             jev_route_probability_threshold=float(
                 values.get("JEV_ROUTE_PROBABILITY_THRESHOLD", "0.65")
             ),
+            query_rewriter_enabled=_parse_bool(values.get("QUERY_REWRITER_ENABLED", "true")),
+            query_rewriter_api_key=values.get("QUERY_REWRITER_API_KEY") or values.get("DASHSCOPE_API_KEY", ""),
+            query_rewriter_base_url=values.get(
+                "QUERY_REWRITER_BASE_URL",
+                values.get("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"),
+            ).strip()
+            or values.get("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1").strip(),
+            query_rewriter_model=values.get("QUERY_REWRITER_MODEL") or "qwen-plus",
+            query_rewriter_timeout_seconds=int(values.get("QUERY_REWRITER_TIMEOUT_SECONDS", "15")),
+            query_rewriter_retry_count=max(0, int(values.get("QUERY_REWRITER_RETRY_COUNT", "2"))),
             paper_rag_toolsets=values.get("PAPER_RAG_TOOLSETS", "").strip(),
             paper_catalog_db_path=resolve_path(
                 root,
@@ -148,6 +172,14 @@ class Settings:
             llamaindex_lexical_top_k=max(1, int(values.get("LLAMAINDEX_LEXICAL_TOP_K", "50"))),
             llamaindex_semantic_top_k=max(1, int(values.get("LLAMAINDEX_SEMANTIC_TOP_K", "50"))),
             llamaindex_rrf_k=max(1, int(values.get("LLAMAINDEX_RRF_K", "60"))),
+            bm25_translation_enabled=_parse_bool(values.get("BM25_TRANSLATION_ENABLED", "true")),
+            bm25_translation_timeout_seconds=max(1, int(values.get("BM25_TRANSLATION_TIMEOUT_SECONDS", "5"))),
+            bm25_translation_retry_count=max(0, int(values.get("BM25_TRANSLATION_RETRY_COUNT", "1"))),
+            bm25_translation_max_chars=max(1, int(values.get("BM25_TRANSLATION_MAX_CHARS", "2000"))),
+            tencent_translate_secret_id=values.get("TENCENT_TRANSLATE_SECRET_ID", ""),
+            tencent_translate_secret_key=values.get("TENCENT_TRANSLATE_SECRET_KEY", ""),
+            tencent_translate_region=values.get("TENCENT_TRANSLATE_REGION", "ap-shanghai"),
+            tencent_translate_endpoint=values.get("TENCENT_TRANSLATE_ENDPOINT", "tmt.tencentcloudapi.com"),
         )
 
 

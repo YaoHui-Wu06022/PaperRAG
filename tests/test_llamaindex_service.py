@@ -3,12 +3,17 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import sqlite3
+
+from llama_index.core.schema import MetadataMode
 
 from paper_rag.catalog.service import rebuild_catalog
+from paper_rag.catalog.chunks import CHUNK_RULE_VERSION
 from paper_rag.config import Settings
 from paper_rag.llamaindex.embedding import DashScopeEmbedding
+from paper_rag.llamaindex.index import _cache_key_matches
 from paper_rag.llamaindex.nodes import load_nodes
-from paper_rag.llamaindex.service import index_status, retrieve
+from paper_rag.llamaindex.service import index_status, rebuild_index, retrieve
 
 
 def make_index_fixture(tmp_path: Path, *, include_second: bool = False) -> Settings:
@@ -58,6 +63,59 @@ def test_chunk_nodes_preserve_stable_id_and_metadata(tmp_path: Path):
     assert nodes[0].node_id == nodes[0].metadata["chunk_id"]
     assert nodes[0].metadata["content_text"] == "attention evidence"
     assert nodes[0].metadata["page_start"] == 1
+    assert nodes[0].metadata["retrieval_text_hash"] == hashlib.sha256(nodes[0].text.encode("utf-8")).hexdigest()
+    assert nodes[0].metadata["chunk_rule_version"] == CHUNK_RULE_VERSION
+
+
+def test_catalog_stores_retrieval_hash_and_embedding_cache_schema(tmp_path: Path):
+    settings = make_index_fixture(tmp_path)
+    with sqlite3.connect(settings.paper_catalog_db_path) as connection:
+        chunk_columns = {row[1] for row in connection.execute("PRAGMA table_info(chunks)")}
+        cache_columns = {row[1] for row in connection.execute("PRAGMA table_info(embedding_items)")}
+        row = connection.execute("SELECT retrieval_text, retrieval_text_hash FROM chunks LIMIT 1").fetchone()
+    assert "retrieval_text_hash" in chunk_columns
+    assert {"retrieval_text_hash", "embedding_model", "embedding_dimensions", "chunk_rule_version", "milvus_collection"} <= cache_columns
+    assert row[1] == hashlib.sha256(row[0].encode("utf-8")).hexdigest()
+
+
+def test_catalog_sync_carries_forward_embedding_cache(tmp_path: Path):
+    settings = make_index_fixture(tmp_path)
+    connection = sqlite3.connect(settings.paper_catalog_db_path)
+    try:
+        chunk_id, retrieval_hash = connection.execute("SELECT chunk_id, retrieval_text_hash FROM chunks LIMIT 1").fetchone()
+        connection.execute("INSERT INTO embedding_state (key, value) VALUES ('active_collection', 'old_collection')")
+        connection.execute("INSERT INTO embedding_items (chunk_id, retrieval_text_hash, embedding_model, embedding_dimensions, chunk_rule_version, milvus_collection, synced_at) VALUES (?, ?, ?, ?, ?, ?, ?)", (chunk_id, retrieval_hash, settings.embedding_model, settings.embedding_dimensions, CHUNK_RULE_VERSION, "old_collection", "now"))
+        connection.commit()
+    finally:
+        connection.close()
+    rebuild_catalog(settings)
+    with sqlite3.connect(settings.paper_catalog_db_path) as connection:
+        assert connection.execute("SELECT value FROM embedding_state WHERE key='active_collection'").fetchone()[0] == "old_collection"
+        assert connection.execute("SELECT COUNT(*) FROM embedding_items").fetchone()[0] == 1
+
+
+def test_incremental_mode_requires_compatible_active_index(tmp_path: Path):
+    settings = make_index_fixture(tmp_path)
+    result = rebuild_index(settings, mode="incremental")
+    assert result["status"] == "rebuild_required"
+    assert "manifest_missing" in result["data"]["stale_reasons"]
+
+
+def test_embedding_cache_key_changes_when_retrieval_text_changes(tmp_path: Path):
+    settings = make_index_fixture(tmp_path)
+    node = load_nodes(settings)[0]
+    item = {"chunk_id": node.node_id, "retrieval_text_hash": node.metadata["retrieval_text_hash"], "embedding_model": settings.embedding_model, "embedding_dimensions": settings.embedding_dimensions, "chunk_rule_version": CHUNK_RULE_VERSION}
+    assert _cache_key_matches(item, node, settings)
+    node.metadata["retrieval_text_hash"] = "changed"
+    assert not _cache_key_matches(item, node, settings)
+
+
+def test_embedding_content_is_retrieval_text_without_metadata(tmp_path: Path):
+    settings = make_index_fixture(tmp_path)
+    node = load_nodes(settings)[0]
+
+    assert node.get_content(metadata_mode=MetadataMode.EMBED) == node.text
+    assert node.get_content(metadata_mode=MetadataMode.EMBED) == "abstract\nattention evidence"
 
 
 def test_lexical_retrieval_returns_citations_without_milvus(tmp_path: Path):

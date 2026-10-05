@@ -4,18 +4,25 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 import datetime as dt
+import gc
 import hashlib
 import json
 import os
 from pathlib import Path
-import re
 import sqlite3
+import time
 from typing import Any
 from uuid import uuid4
 
 from paper_rag.config import Settings
 from paper_rag.catalog.chunks import CHUNK_RULE_VERSION, Chunk, build_chunks, load_content_list
-from paper_rag.catalog.references import extract_references, normalize_arxiv_id
+from paper_rag.catalog.references import (
+    PaperIdentity,
+    extract_references,
+    normalize_arxiv_id,
+    resolve_references,
+)
+from paper_rag.lexical import build_fts_query
 
 
 class CatalogIndexNotReady(RuntimeError):
@@ -37,6 +44,7 @@ class CatalogRecord:
     updated_at: str | None = None
     abs_url: str | None = None
     pdf_url: str | None = None
+    doi: str | None = None
     metadata_path: Path | None = None
     pdf_path: Path | None = None
     mineru_dir: Path | None = None
@@ -58,6 +66,7 @@ class CatalogRecord:
             "updated_at": self.updated_at,
             "abs_url": self.abs_url,
             "pdf_url": self.pdf_url,
+            "doi": self.doi,
             "metadata_path": str(self.metadata_path) if self.metadata_path else None,
             "pdf_path": str(self.pdf_path) if self.pdf_path else None,
             "mineru_dir": str(self.mineru_dir) if self.mineru_dir else None,
@@ -81,7 +90,7 @@ def _mineru_chunks(record: CatalogRecord, settings: Settings) -> tuple[list[Chun
         if not isinstance(manifest, dict) or manifest.get("canonical_id") != record.canonical_id or (source_hash and manifest.get("source_sha256") != source_hash) or manifest.get("model_version") != settings.mineru_model_version or manifest.get("language") != settings.mineru_language:
             return [], "mineru output is stale"
         content = load_content_list(content_path)
-        chunks, warnings = build_chunks(content, paper_id=record.paper_id, canonical_id=record.canonical_id, content_hash=_sha256(content_path))
+        chunks, warnings = build_chunks(content, paper_id=record.paper_id, canonical_id=record.canonical_id, content_hash=_sha256(content_path), document_title=record.title)
         return chunks, "; ".join(warnings) if warnings else None
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         return [], f"mineru output invalid: {exc}"
@@ -117,12 +126,14 @@ def search_catalog(
     query: str,
     filters: dict[str, Any] | None = None,
     limit: int = 50,
+    *,
+    fts_query: str | None = None,
 ) -> list[CatalogRecord]:
     """使用已经同步的 SQLite FTS5 索引检索元数据。"""
 
     _require_index(settings)
     filters = filters or {}
-    fts_query = _build_fts_query(str(query or "").strip())
+    fts_query = fts_query if fts_query is not None else build_fts_query(str(query or "").strip())
     clauses = ["1=1"]
     parameters: list[Any] = []
     if fts_query:
@@ -133,7 +144,7 @@ def search_catalog(
         SELECT p.paper_id, p.base_id, p.canonical_id, p.title, p.authors,
                p.abstract, p.categories, p.published_at, p.updated_at,
                p.state, p.metadata_path, p.pdf_path, p.mineru_dir,
-               p.abs_url, p.pdf_url
+               p.abs_url, p.pdf_url, p.doi
         FROM papers AS p
         {"JOIN papers_fts ON papers_fts.paper_id = p.paper_id" if fts_query else ""}
         WHERE {' AND '.join(clauses)}
@@ -192,14 +203,27 @@ def rebuild_catalog(settings: Settings) -> dict[str, Any]:
     db_path = settings.paper_catalog_db_path
     db_path.parent.mkdir(parents=True, exist_ok=True)
     temporary_path = db_path.with_name(f".{db_path.name}.{uuid4().hex}.tmp")
+    previous_db = db_path if db_path.is_file() else None
     chunk_json_temps: list[tuple[Path, Path]] = []
+    citation_graph_temp: tuple[Path, Path] | None = None
     issues: list[dict[str, str]] = []
     try:
-        issues = _create_database(temporary_path, records, settings)
+        issues = _create_database(temporary_path, records, settings, previous_db=previous_db)
         chunk_json_temps = _prepare_chunk_json_exports(records, settings)
-        os.replace(temporary_path, db_path)
+        citation_graph_temp = _prepare_citation_graph_json(temporary_path, records, db_path.parent)
+        for attempt in range(4):
+            try:
+                os.replace(temporary_path, db_path)
+                break
+            except PermissionError:
+                if attempt == 3:
+                    raise
+                gc.collect()
+                time.sleep(0.05 * (attempt + 1))
         for staged, target in chunk_json_temps:
             os.replace(staged, target)
+        if citation_graph_temp:
+            os.replace(*citation_graph_temp)
     except Exception:
         try:
             temporary_path.unlink(missing_ok=True)
@@ -210,14 +234,22 @@ def rebuild_catalog(settings: Settings) -> dict[str, Any]:
                 staged.unlink(missing_ok=True)
             except OSError:
                 pass
+        if citation_graph_temp:
+            try:
+                citation_graph_temp[0].unlink(missing_ok=True)
+            except OSError:
+                pass
         raise
     chunk_count = _count_chunks(db_path)
+    citation_stats = _read_catalog_meta_json(db_path, "citation_match_stats")
     return {
         "database": str(db_path),
         "papers": len(records),
         "status": "rebuilt",
         "indexed_at": _read_indexed_at(db_path),
         "chunks": chunk_count,
+        "citation_match_stats": citation_stats,
+        "citation_graph": str(db_path.with_name("citation_graph.json")),
         "issues": issues,
     }
 
@@ -255,6 +287,49 @@ def _prepare_chunk_json_exports(records: list[CatalogRecord], settings: Settings
     return staged_files
 
 
+def _prepare_citation_graph_json(path: Path, records: list[CatalogRecord], output_dir: Path) -> tuple[Path, Path]:
+    """准备可直接查看的本地引用图 JSON，不包含外部节点。"""
+
+    with sqlite3.connect(path) as connection:
+        edges = [
+            {
+                "source_paper_id": str(source),
+                "target_arxiv_id": str(target),
+                "relation": str(relation),
+                "resolution": str(resolution),
+            }
+            for source, target, relation, resolution in connection.execute(
+                "SELECT source_paper_id, target_arxiv_id, relation, resolution FROM citation_edges ORDER BY source_paper_id, target_arxiv_id"
+            ).fetchall()
+        ]
+        stats = _read_catalog_meta_json(path, "citation_match_stats")
+        reference_count = int(connection.execute('SELECT COUNT(*) FROM "references"').fetchone()[0])
+    payload = {
+        "schema_version": 1,
+        "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "scope": "local_catalog",
+        "paper_count": len(records),
+        "reference_count": reference_count,
+        "edge_count": len(edges),
+        "citation_match_stats": stats,
+        "nodes": [
+            {
+                "paper_id": record.base_id,
+                "canonical_id": record.canonical_id,
+                "title": record.title,
+                "authors": list(record.authors),
+                "published_at": record.published_at,
+            }
+            for record in records
+        ],
+        "edges": edges,
+    }
+    target = output_dir / "citation_graph.json"
+    staged = output_dir / f".citation_graph-{uuid4().hex}.tmp"
+    staged.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    return staged, target
+
+
 def catalog_status(settings: Settings) -> dict[str, Any]:
     """返回源目录和派生索引状态，不查询异步任务。"""
 
@@ -266,6 +341,8 @@ def catalog_status(settings: Settings) -> dict[str, Any]:
         "source_papers": len(source_records),
         "indexed_papers": 0,
         "indexed_at": None,
+        "citation_graph": str(settings.paper_catalog_db_path.with_name("citation_graph.json")),
+        "citation_graph_exists": False,
         "states": _state_counts(source_records),
     }
     if not settings.paper_catalog_db_path.is_file():
@@ -275,13 +352,16 @@ def catalog_status(settings: Settings) -> dict[str, Any]:
             paper_columns = {
                 row[1] for row in connection.execute("PRAGMA table_info(papers)").fetchall()
             }
-            required_columns = {"paper_id", "base_id", "canonical_id", "abs_url", "pdf_url"}
+            required_columns = {"paper_id", "base_id", "canonical_id", "abs_url", "pdf_url", "doi"}
             if not required_columns <= paper_columns:
                 raise sqlite3.DatabaseError("catalog schema is outdated")
             indexed_papers = connection.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
             connection.execute("SELECT 1 FROM papers_fts LIMIT 1")
             indexed_at = connection.execute(
                 "SELECT value FROM catalog_meta WHERE key = 'indexed_at'"
+            ).fetchone()
+            citation_stats = connection.execute(
+                "SELECT value FROM catalog_meta WHERE key = 'citation_match_stats'"
             ).fetchone()
             indexed_chunks = connection.execute("SELECT COUNT(*) FROM chunks").fetchone()[0] if _table_exists(connection, "chunks") else 0
         result.update(
@@ -290,6 +370,8 @@ def catalog_status(settings: Settings) -> dict[str, Any]:
                 "indexed_papers": int(indexed_papers),
                 "indexed_chunks": int(indexed_chunks),
                 "indexed_at": indexed_at[0] if indexed_at else None,
+                "citation_match_stats": json.loads(citation_stats[0]) if citation_stats else {},
+                "citation_graph_exists": settings.paper_catalog_db_path.with_name("citation_graph.json").is_file(),
             }
         )
     except sqlite3.Error:
@@ -297,11 +379,12 @@ def catalog_status(settings: Settings) -> dict[str, Any]:
     return result
 
 
-def _create_database(path: Path, records: list[CatalogRecord], settings: Settings) -> list[dict[str, str]]:
+def _create_database(path: Path, records: list[CatalogRecord], settings: Settings, *, previous_db: Path | None = None) -> list[dict[str, str]]:
     """创建完整的临时 Catalog 数据库并执行完整性校验。"""
 
     indexed_at = dt.datetime.now(dt.timezone.utc).isoformat()
     issues: list[dict[str, str]] = []
+    citation_totals = {key: 0 for key in ("arxiv_exact", "doi_exact", "title_author_year", "external", "ambiguous", "unresolved")}
     connection = sqlite3.connect(path)
     try:
         with connection:
@@ -323,7 +406,8 @@ def _create_database(path: Path, records: list[CatalogRecord], settings: Setting
                     pdf_path TEXT,
                     mineru_dir TEXT,
                     abs_url TEXT,
-                    pdf_url TEXT
+                    pdf_url TEXT,
+                    doi TEXT
                 );
                 CREATE VIRTUAL TABLE papers_fts USING fts5(
                     paper_id UNINDEXED,
@@ -352,6 +436,7 @@ def _create_database(path: Path, records: list[CatalogRecord], settings: Setting
                     source_blocks TEXT NOT NULL,
                     asset_refs TEXT NOT NULL,
                     content_hash TEXT NOT NULL,
+                    retrieval_text_hash TEXT NOT NULL,
                     FOREIGN KEY (paper_id) REFERENCES papers(paper_id)
                 );
                 CREATE VIRTUAL TABLE chunks_fts USING fts5(
@@ -375,7 +460,11 @@ def _create_database(path: Path, records: list[CatalogRecord], settings: Setting
                     page_end INTEGER,
                     target_arxiv_id TEXT,
                     target_doi TEXT,
-                    resolution TEXT NOT NULL
+                    resolution TEXT NOT NULL,
+                    matched_paper_id TEXT,
+                    match_method TEXT,
+                    match_score REAL,
+                    duplicate_of_reference_id TEXT
                 );
                 CREATE VIRTUAL TABLE references_fts USING fts5(reference_id UNINDEXED, source_paper_id UNINDEXED, raw_text);
                 CREATE TABLE citation_edges (
@@ -395,21 +484,24 @@ def _create_database(path: Path, records: list[CatalogRecord], settings: Setting
                 );
                 CREATE TABLE embedding_items (
                     chunk_id TEXT PRIMARY KEY,
-                    content_hash TEXT NOT NULL,
-                    model TEXT NOT NULL,
-                    dimensions INTEGER NOT NULL,
+                    retrieval_text_hash TEXT NOT NULL,
+                    embedding_model TEXT NOT NULL,
+                    embedding_dimensions INTEGER NOT NULL,
+                    chunk_rule_version TEXT NOT NULL,
+                    milvus_collection TEXT NOT NULL,
                     synced_at TEXT NOT NULL
                 );
                 """
             )
+            _copy_embedding_cache(connection, previous_db)
             for record in records:
                 connection.execute(
                     """
                     INSERT INTO papers (
                         paper_id, base_id, canonical_id, title, authors, abstract,
                         categories, published_at, updated_at, state,
-                        metadata_path, pdf_path, mineru_dir, abs_url, pdf_url
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        metadata_path, pdf_path, mineru_dir, abs_url, pdf_url, doi
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     _record_values(record),
                 )
@@ -418,8 +510,8 @@ def _create_database(path: Path, records: list[CatalogRecord], settings: Setting
                     issues.append({"paper_id": record.paper_id, "error": warning})
                 for chunk in chunks:
                     connection.execute(
-                        "INSERT INTO chunks (chunk_id, paper_id, canonical_id, ordinal, region, chapter_number, chapter_title, section_path, section_label, type, text, retrieval_text, page_start, page_end, source_blocks, asset_refs, content_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                        (chunk.chunk_id, chunk.paper_id, chunk.canonical_id, chunk.ordinal, chunk.region, chunk.chapter_number, chunk.chapter_title, json.dumps(chunk.section_path, ensure_ascii=False), chunk.section_label, chunk.type, chunk.text, chunk.retrieval_text, chunk.page_start, chunk.page_end, json.dumps(chunk.source_blocks, ensure_ascii=False), json.dumps(chunk.asset_refs, ensure_ascii=False), chunk.content_hash),
+                        "INSERT INTO chunks (chunk_id, paper_id, canonical_id, ordinal, region, chapter_number, chapter_title, section_path, section_label, type, text, retrieval_text, page_start, page_end, source_blocks, asset_refs, content_hash, retrieval_text_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        (chunk.chunk_id, chunk.paper_id, chunk.canonical_id, chunk.ordinal, chunk.region, chunk.chapter_number, chunk.chapter_title, json.dumps(chunk.section_path, ensure_ascii=False), chunk.section_label, chunk.type, chunk.text, chunk.retrieval_text, chunk.page_start, chunk.page_end, json.dumps(chunk.source_blocks, ensure_ascii=False), json.dumps(chunk.asset_refs, ensure_ascii=False), chunk.content_hash, chunk.retrieval_text_hash),
                     )
                     connection.execute(
                         "INSERT INTO chunks_fts (rowid, chunk_id, paper_id, canonical_id, section_path, region, chapter_title, type, retrieval_text) SELECT rowid, chunk_id, paper_id, canonical_id, section_path, region, chapter_title, type, retrieval_text FROM chunks WHERE chunk_id = ?",
@@ -428,13 +520,31 @@ def _create_database(path: Path, records: list[CatalogRecord], settings: Setting
                 try:
                     content = load_content_list(record.mineru_dir / "content_list.json") if record.mineru_dir else []
                     refs, ref_warnings = extract_references(content, source_paper_id=record.paper_id, source_canonical_id=record.canonical_id, local_ids={r.base_id.casefold() for r in records})
+                    identities = [
+                        PaperIdentity(
+                            paper_id=item.paper_id,
+                            base_id=item.base_id,
+                            canonical_id=item.canonical_id,
+                            title=item.title,
+                            authors=item.authors,
+                            published_at=item.published_at,
+                            doi=item.doi,
+                        )
+                        for item in records
+                    ]
+                    refs, match_stats, match_warnings = resolve_references(refs, identities)
+                    for method, count in match_stats.items():
+                        citation_totals[method] += count
                     for warning in ref_warnings:
                         issues.append({"paper_id": record.paper_id, "error": warning})
+                    for warning in match_warnings:
+                        if warning.startswith(("external:", "ambiguous:", "unresolved:", "duplicates:")):
+                            issues.append({"paper_id": record.paper_id, "error": warning})
                     for ref in refs:
-                        connection.execute("INSERT INTO \"references\" VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (ref.reference_id, ref.source_paper_id, ref.source_canonical_id, ref.ordinal, ref.raw_text, ref.page_start, ref.page_end, ref.target_arxiv_id, ref.target_doi, ref.resolution))
+                        connection.execute("INSERT INTO \"references\" VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (ref.reference_id, ref.source_paper_id, ref.source_canonical_id, ref.ordinal, ref.raw_text, ref.page_start, ref.page_end, ref.target_arxiv_id, ref.target_doi, ref.resolution, ref.matched_paper_id, ref.match_method, ref.match_score, ref.duplicate_of_reference_id))
                         connection.execute("INSERT INTO references_fts (reference_id, source_paper_id, raw_text) VALUES (?, ?, ?)", (ref.reference_id, ref.source_paper_id, ref.raw_text))
-                        if ref.target_arxiv_id:
-                            connection.execute("INSERT OR IGNORE INTO citation_edges VALUES (?, ?, 'cites', ?)", (record.paper_id, normalize_arxiv_id(ref.target_arxiv_id), ref.resolution))
+                        if ref.matched_paper_id and not ref.duplicate_of_reference_id:
+                            connection.execute("INSERT OR IGNORE INTO citation_edges VALUES (?, ?, 'cites', 'local')", (record.paper_id, normalize_arxiv_id(ref.matched_paper_id)))
                 except (OSError, ValueError, json.JSONDecodeError) as exc:
                     if record.mineru_dir and (record.mineru_dir / "content_list.json").is_file():
                         issues.append({"paper_id": record.paper_id, "error": f"reference parse failed: {exc}"})
@@ -458,12 +568,46 @@ def _create_database(path: Path, records: list[CatalogRecord], settings: Setting
                 "INSERT INTO catalog_meta (key, value) VALUES ('indexed_at', ?)",
                 (indexed_at,),
             )
+            connection.execute(
+                "INSERT INTO catalog_meta (key, value) VALUES ('citation_match_stats', ?)",
+                (json.dumps(citation_totals, ensure_ascii=False),),
+            )
             integrity = connection.execute("PRAGMA integrity_check").fetchone()[0]
             if integrity != "ok":
                 raise sqlite3.DatabaseError(f"catalog integrity check failed: {integrity}")
     finally:
         connection.close()
     return issues
+
+
+def _copy_embedding_cache(connection: sqlite3.Connection, previous_db: Path | None) -> None:
+    """在 Catalog 原子重建时复制兼容的 Embedding 缓存元数据。"""
+
+    if previous_db is None:
+        return
+    source = None
+    try:
+        source = sqlite3.connect(previous_db)
+        state_columns = {row[1] for row in source.execute("PRAGMA table_info(embedding_state)").fetchall()}
+        item_columns = {row[1] for row in source.execute("PRAGMA table_info(embedding_items)").fetchall()}
+        required_state = {"key", "value"}
+        required_items = {"chunk_id", "retrieval_text_hash", "embedding_model", "embedding_dimensions", "chunk_rule_version", "milvus_collection", "synced_at"}
+        if not required_state <= state_columns or not required_items <= item_columns:
+            connection.execute("INSERT INTO embedding_state (key, value) VALUES ('cache_status', 'cache_schema_mismatch')")
+            return
+        state_rows = source.execute("SELECT key, value FROM embedding_state").fetchall()
+        for key, value in state_rows:
+            connection.execute("INSERT INTO embedding_state (key, value) VALUES (?, ?)", (key, value))
+        item_rows = source.execute("SELECT chunk_id, retrieval_text_hash, embedding_model, embedding_dimensions, chunk_rule_version, milvus_collection, synced_at FROM embedding_items").fetchall()
+        connection.executemany(
+            "INSERT INTO embedding_items (chunk_id, retrieval_text_hash, embedding_model, embedding_dimensions, chunk_rule_version, milvus_collection, synced_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            item_rows,
+        )
+    except (OSError, sqlite3.Error):
+        connection.execute("INSERT OR REPLACE INTO embedding_state (key, value) VALUES ('cache_status', 'cache_schema_mismatch')")
+    finally:
+        if source is not None:
+            source.close()
 
 
 def _require_index(settings: Settings) -> None:
@@ -474,7 +618,7 @@ def _require_index(settings: Settings) -> None:
             paper_columns = {
                 row[1] for row in connection.execute("PRAGMA table_info(papers)").fetchall()
             }
-            required_columns = {"paper_id", "base_id", "canonical_id", "abs_url", "pdf_url"}
+            required_columns = {"paper_id", "base_id", "canonical_id", "abs_url", "pdf_url", "doi"}
             if not required_columns <= paper_columns:
                 raise sqlite3.DatabaseError("catalog schema is outdated")
             connection.execute("SELECT 1 FROM papers_fts LIMIT 1")
@@ -489,11 +633,13 @@ def search_chunks(
     paper_ids: list[str] | None = None,
     limit: int = 8,
     regions: list[str] | tuple[str, ...] | None = None,
+    *,
+    fts_query: str | None = None,
 ) -> list[dict[str, Any]]:
     """使用 Chunk FTS5 返回正文证据。"""
     _require_index(settings)
     _require_chunk_index(settings)
-    terms = _build_fts_query(str(query or "").strip())
+    terms = fts_query if fts_query is not None else build_fts_query(str(query or "").strip(), remove_stopwords=True)
     if not terms:
         return []
     clauses = ["chunks_fts MATCH ?"]
@@ -511,7 +657,7 @@ def search_chunks(
     sql = f"""SELECT c.chunk_id, c.paper_id, c.canonical_id, c.ordinal, c.region,
                      c.chapter_number, c.chapter_title, c.section_path, c.section_label,
                      c.type, c.text, c.retrieval_text, c.page_start, c.page_end,
-                     c.source_blocks, c.asset_refs, c.content_hash,
+                     c.source_blocks, c.asset_refs, c.content_hash, c.retrieval_text_hash,
                      snippet(chunks_fts, 7, '[', ']', '…', 32), bm25(chunks_fts)
                 FROM chunks AS c JOIN chunks_fts ON chunks_fts.rowid = c.rowid
                WHERE {' AND '.join(clauses)} ORDER BY bm25(chunks_fts) LIMIT ?"""
@@ -524,7 +670,7 @@ def get_chunk(settings: Settings, chunk_id: str) -> dict[str, Any] | None:
     _require_index(settings)
     _require_chunk_index(settings)
     with sqlite3.connect(settings.paper_catalog_db_path) as connection:
-        row = connection.execute("SELECT chunk_id, paper_id, canonical_id, ordinal, region, chapter_number, chapter_title, section_path, section_label, type, text, retrieval_text, page_start, page_end, source_blocks, asset_refs, content_hash FROM chunks WHERE chunk_id = ?", (chunk_id,)).fetchone()
+        row = connection.execute("SELECT chunk_id, paper_id, canonical_id, ordinal, region, chapter_number, chapter_title, section_path, section_label, type, text, retrieval_text, page_start, page_end, source_blocks, asset_refs, content_hash, retrieval_text_hash FROM chunks WHERE chunk_id = ?", (chunk_id,)).fetchone()
     return _chunk_row(row) if row else None
 
 
@@ -532,14 +678,14 @@ def list_chunks(settings: Settings, paper_id: str, limit: int = 50) -> list[dict
     _require_index(settings)
     _require_chunk_index(settings)
     with sqlite3.connect(settings.paper_catalog_db_path) as connection:
-        rows = connection.execute("SELECT chunk_id, paper_id, canonical_id, ordinal, region, chapter_number, chapter_title, section_path, section_label, type, text, retrieval_text, page_start, page_end, source_blocks, asset_refs, content_hash FROM chunks WHERE paper_id = ? ORDER BY ordinal LIMIT ?", (paper_id, max(1, int(limit)))).fetchall()
+        rows = connection.execute("SELECT chunk_id, paper_id, canonical_id, ordinal, region, chapter_number, chapter_title, section_path, section_label, type, text, retrieval_text, page_start, page_end, source_blocks, asset_refs, content_hash, retrieval_text_hash FROM chunks WHERE paper_id = ? ORDER BY ordinal LIMIT ?", (paper_id, max(1, int(limit)))).fetchall()
     return [_chunk_row(row) for row in rows]
 
 
 def _chunk_row(row: tuple[Any, ...]) -> dict[str, Any]:
-    result = {"chunk_id": row[0], "paper_id": row[1], "canonical_id": row[2], "ordinal": row[3], "region": row[4], "chapter_number": row[5], "chapter_title": row[6], "section_path": json.loads(row[7] or "[]"), "section_label": row[8], "type": row[9], "text": row[10], "retrieval_text": row[11], "page_start": row[12], "page_end": row[13], "page_start_display": row[12] + 1 if isinstance(row[12], int) else None, "page_end_display": row[13] + 1 if isinstance(row[13], int) else None, "source_blocks": json.loads(row[14] or "[]"), "asset_refs": json.loads(row[15] or "[]"), "content_hash": row[16]}
-    if len(row) > 17:
-        result.update({"excerpt": row[17], "score": row[18]})
+    result = {"chunk_id": row[0], "paper_id": row[1], "canonical_id": row[2], "ordinal": row[3], "region": row[4], "chapter_number": row[5], "chapter_title": row[6], "section_path": json.loads(row[7] or "[]"), "section_label": row[8], "type": row[9], "text": row[10], "retrieval_text": row[11], "page_start": row[12], "page_end": row[13], "page_start_display": row[12] + 1 if isinstance(row[12], int) else None, "page_end_display": row[13] + 1 if isinstance(row[13], int) else None, "source_blocks": json.loads(row[14] or "[]"), "asset_refs": json.loads(row[15] or "[]"), "content_hash": row[16], "retrieval_text_hash": row[17]}
+    if len(row) > 18:
+        result.update({"excerpt": row[18], "score": row[19]})
     return result
 
 
@@ -547,8 +693,8 @@ def get_references(settings: Settings, paper_id: str) -> dict[str, Any]:
     _require_index(settings)
     source_id = _base_arxiv_id(paper_id)
     with sqlite3.connect(settings.paper_catalog_db_path) as connection:
-        rows = connection.execute('SELECT reference_id, source_paper_id, source_canonical_id, ordinal, raw_text, page_start, page_end, target_arxiv_id, target_doi, resolution FROM "references" WHERE source_paper_id = ? ORDER BY ordinal', (source_id,)).fetchall()
-    keys = ("reference_id", "source_paper_id", "source_canonical_id", "ordinal", "raw_text", "page_start", "page_end", "target_arxiv_id", "target_doi", "resolution")
+        rows = connection.execute('SELECT reference_id, source_paper_id, source_canonical_id, ordinal, raw_text, page_start, page_end, target_arxiv_id, target_doi, resolution, matched_paper_id, match_method, match_score, duplicate_of_reference_id FROM "references" WHERE source_paper_id = ? ORDER BY ordinal', (source_id,)).fetchall()
+    keys = ("reference_id", "source_paper_id", "source_canonical_id", "ordinal", "raw_text", "page_start", "page_end", "target_arxiv_id", "target_doi", "resolution", "matched_paper_id", "match_method", "match_score", "duplicate_of_reference_id")
     return {"paper_id": paper_id, "items": [dict(zip(keys, row)) for row in rows], "scope": "local_catalog"}
 
 
@@ -637,8 +783,11 @@ def _require_chunk_index(settings: Settings) -> None:
 
 
 def _count_chunks(path: Path) -> int:
-    with sqlite3.connect(path) as connection:
+    connection = sqlite3.connect(path)
+    try:
         return int(connection.execute("SELECT COUNT(*) FROM chunks").fetchone()[0])
+    finally:
+        connection.close()
 
 
 def _append_filter_sql(clauses: list[str], parameters: list[Any], filters: dict[str, Any]) -> None:
@@ -660,19 +809,6 @@ def _append_filter_sql(clauses: list[str], parameters: list[Any], filters: dict[
     if filters.get("year_to"):
         clauses.append("substr(p.published_at, 1, 4) <= ?")
         parameters.append(str(filters["year_to"]))
-
-
-def _build_fts_query(value: str) -> str:
-    terms = _terms(value)
-    return " OR ".join('"' + term.replace('"', '""') + '"' for term in terms)
-
-
-def _terms(value: str) -> list[str]:
-    compact = re.sub(r"\s+", "", value.casefold())
-    terms = re.findall(r"[a-z0-9][a-z0-9._-]*|[\u4e00-\u9fff]+", value.casefold())
-    if compact and compact not in terms:
-        terms.append(compact)
-    return [term for term in terms if len(term) > 1]
 
 
 def _matches_filters(record: CatalogRecord, filters: dict[str, Any]) -> bool:
@@ -708,6 +844,7 @@ def _record_values(record: CatalogRecord) -> tuple[Any, ...]:
         str(record.mineru_dir) if record.mineru_dir else None,
         record.abs_url,
         record.pdf_url,
+        record.doi,
     )
 
 
@@ -728,6 +865,7 @@ def _record_from_row(row: tuple[Any, ...]) -> CatalogRecord:
         mineru_dir,
         abs_url,
         pdf_url,
+        doi,
     ) = row
     return CatalogRecord(
         paper_id=str(paper_id),
@@ -745,6 +883,7 @@ def _record_from_row(row: tuple[Any, ...]) -> CatalogRecord:
         mineru_dir=Path(mineru_dir) if mineru_dir else None,
         abs_url=abs_url,
         pdf_url=pdf_url,
+        doi=doi,
         assets=_assets(Path(metadata_path).parent) if metadata_path else {},
     )
 
@@ -771,6 +910,7 @@ def _record_from_metadata(metadata_path: Path, metadata: dict[str, Any]) -> Cata
         updated_at=_optional_string(metadata.get("updated_at")),
         abs_url=_optional_string(metadata.get("abs_url")),
         pdf_url=_optional_string(metadata.get("pdf_url")),
+        doi=_optional_string(metadata.get("doi")),
         metadata_path=metadata_path,
         pdf_path=pdf_path,
         mineru_dir=mineru_dir,
@@ -799,9 +939,24 @@ def _state_counts(records: list[CatalogRecord]) -> dict[str, int]:
 
 
 def _read_indexed_at(path: Path) -> str | None:
-    with sqlite3.connect(path) as connection:
+    connection = sqlite3.connect(path)
+    try:
         row = connection.execute("SELECT value FROM catalog_meta WHERE key = 'indexed_at'").fetchone()
+    finally:
+        connection.close()
     return row[0] if row else None
+
+
+def _read_catalog_meta_json(path: Path, key: str) -> dict[str, int]:
+    with sqlite3.connect(path) as connection:
+        row = connection.execute("SELECT value FROM catalog_meta WHERE key = ?", (key,)).fetchone()
+    if not row:
+        return {}
+    try:
+        value = json.loads(row[0])
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return {}
+    return value if isinstance(value, dict) else {}
 
 
 def _contains(values: tuple[str, ...], query: str) -> bool:

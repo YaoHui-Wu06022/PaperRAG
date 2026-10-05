@@ -9,6 +9,7 @@ from typing import Any, Iterable
 from llama_index.core.schema import TextNode
 
 from paper_rag.catalog.service import CatalogIndexNotReady
+from paper_rag.catalog.chunks import CHUNK_RULE_VERSION
 from paper_rag.config import Settings
 
 
@@ -28,6 +29,8 @@ NODE_METADATA_KEYS = (
     "content_hash",
     "source_blocks",
     "asset_refs",
+    "retrieval_text_hash",
+    "chunk_rule_version",
 )
 
 
@@ -57,7 +60,7 @@ def load_nodes(
         SELECT chunk_id, paper_id, canonical_id, ordinal, region,
                chapter_number, chapter_title, section_path, section_label,
                type, text, retrieval_text, page_start, page_end,
-               source_blocks, asset_refs, content_hash
+               source_blocks, asset_refs, content_hash, retrieval_text_hash
           FROM chunks
          WHERE """ + " AND ".join(clauses) + " ORDER BY ordinal"
     try:
@@ -89,6 +92,7 @@ def chunk_row_to_node(row: tuple[Any, ...]) -> TextNode:
         source_blocks,
         asset_refs,
         content_hash,
+        retrieval_text_hash,
     ) = row
     metadata = {
         "chunk_id": str(chunk_id),
@@ -104,6 +108,8 @@ def chunk_row_to_node(row: tuple[Any, ...]) -> TextNode:
         "page_start": page_start,
         "page_end": page_end,
         "content_hash": str(content_hash),
+        "retrieval_text_hash": str(retrieval_text_hash),
+        "chunk_rule_version": CHUNK_RULE_VERSION,
         "source_blocks": _json_value(source_blocks, []),
         "asset_refs": _json_value(asset_refs, []),
         "content_text": str(text or ""),
@@ -112,6 +118,8 @@ def chunk_row_to_node(row: tuple[Any, ...]) -> TextNode:
         id_=str(chunk_id),
         text=str(retrieval_text or text or ""),
         metadata=metadata,
+        # Embedding 只使用 retrieval_text，避免把来源 metadata 拼进向量输入。
+        excluded_embed_metadata_keys=list(metadata),
     )
 
 

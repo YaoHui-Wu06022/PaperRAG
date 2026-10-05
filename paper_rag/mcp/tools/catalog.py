@@ -18,6 +18,7 @@ from paper_rag.llamaindex.service import index_status, rebuild_index
 from paper_rag.mcp._app import mcp
 from paper_rag.mcp.runtime import get_jobs, get_settings
 from paper_rag.reading.service import read_fulltext
+from paper_rag.presentation import attach_presentation, citation_presentation
 
 
 def _read_only(status: str, data: dict[str, Any], warnings: list[str] | None = None) -> dict[str, Any]:
@@ -66,15 +67,19 @@ def library_citation(paper_id: str, mode: str = "graph", direction: str = "both"
         return _read_only("invalid_input", {"paper_id": paper_id, "mode": mode, "nodes": [], "edges": []})
     try:
         settings = get_settings()
+        title = None
         if mode == "references":
             data = get_references(settings, paper_id)
+            record = get_metadata(settings, paper_id)
+            title = record.title if record else None
         elif mode == "citations":
             data = get_citations(settings, paper_id, filters)
         else:
             data = citation_graph(settings, paper_id, direction, depth, filters)
-        return _read_only("ok", data)
+        return attach_presentation(_read_only("ok", data), citation_presentation(data, mode, title_or_paper_id=title))
     except CatalogIndexNotReady:
-        return _read_only("catalog_not_ready", {"paper_id": paper_id, "mode": mode, "items": [], "nodes": [], "edges": []})
+        data = {"paper_id": paper_id, "mode": mode, "items": [], "nodes": [], "edges": []}
+        return attach_presentation(_read_only("catalog_not_ready", data), citation_presentation(data, mode))
 
 
 @mcp.tool(name="library_index_status", description="查询 LlamaIndex 和 Milvus 正文索引状态。")
@@ -82,17 +87,19 @@ def library_index_status() -> dict[str, Any]:
     return index_status(get_settings())
 
 
-@mcp.tool(name="library_index_rebuild", description="确认后异步重建 LlamaIndex Milvus 正文索引。")
-def library_index_rebuild(confirm: bool = False) -> dict[str, Any]:
+@mcp.tool(name="library_index_rebuild", description="确认后异步同步 LlamaIndex Milvus 正文索引；auto 会在兼容时复用 Embedding。")
+def library_index_rebuild(confirm: bool = False, mode: str = "auto") -> dict[str, Any]:
+    if mode not in {"auto", "incremental", "full"}:
+        return {"status": "invalid_input", "data": {"mode": mode}, "warnings": ["mode must be auto, incremental or full"], "read_only": True}
     settings = get_settings()
     current = index_status(settings)
     if not confirm:
         return {"status": "confirmation_required", "data": {"current": current.get("data", current)}, "warnings": [], "read_only": True}
 
     def worker(report):
-        report("开始重建 LlamaIndex Milvus 索引")
-        result = rebuild_index(settings)
-        report("LlamaIndex Milvus 索引重建完成")
+        report(f"开始同步 LlamaIndex Milvus 索引（{mode}）")
+        result = rebuild_index(settings, mode=mode)
+        report("LlamaIndex Milvus 索引同步完成")
         return result
 
     return {"status": "queued", "job": get_jobs().submit("llamaindex_index_rebuild", worker), "warnings": [], "read_only": False}
