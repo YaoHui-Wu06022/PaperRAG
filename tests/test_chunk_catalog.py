@@ -85,3 +85,20 @@ def test_structured_chunk_keeps_reading_order_and_neighbor_context():
     assert "The equation is used during training." in equation.retrieval_text
     assert equation.source_blocks[0]["text_format"] == "latex"
     assert not warnings
+
+
+def test_appendix_after_references_is_indexed_as_appendix():
+    chunks, _ = build_chunks([
+        {"type": "text", "text": "Abstract", "text_level": 1},
+        {"type": "text", "text": "abstract text"},
+        {"type": "text", "text": "References", "text_level": 1},
+        {"type": "ref_text", "text": "[1] Reference"},
+        {"type": "text", "text": "A ADDITIONAL DETAILS", "text_level": 2},
+        {"type": "text", "text": "Appendix evidence"},
+        {"type": "text", "text": "A.1 MORE DETAILS", "text_level": 2},
+        {"type": "text", "text": "Nested appendix evidence"},
+    ], paper_id="1706.03762", canonical_id="1706.03762v7", content_hash="test")
+    appendix = [item for item in chunks if item.region == "appendix"]
+    assert len(appendix) == 2
+    assert appendix[0].section_path == ("appendix", "A ADDITIONAL DETAILS")
+    assert appendix[1].section_path == ("appendix", "A ADDITIONAL DETAILS", "A.1 MORE DETAILS")

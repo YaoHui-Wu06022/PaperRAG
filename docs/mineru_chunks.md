@@ -1,6 +1,6 @@
 # MinerU 正文与引用图
 
-Catalog 同步读取 MinerU 结果并按阅读顺序生成 Chunk。正文区域包括 abstract、content 和 appendix；reference 区域不生成正文检索证据，只解析为引用条目和引用边。
+Catalog 同步读取 MinerU 结果并按阅读顺序生成 Chunk。正文区域包括 abstract、content 和 appendix；Reference 区域不生成正文检索证据，只解析为引用条目和引用边。对于 References 后面的 `A`、`D.1`、`H.4` 等字母编号章节，解析器会切换回 appendix 区域并保留其层级。
 
 Chunk 保留稳定的 chunk_id、章节路径、页码、来源 Block、资源引用、原文和检索文本。正文中的公式、表格、图片和图表按原阅读顺序保留为结构化 Chunk，并把相邻正文写入检索文本的上下文标记；LlamaIndex 不重新切块。
 

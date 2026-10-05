@@ -36,6 +36,7 @@ def add_query_parser(subparsers: argparse._SubParsersAction) -> None:
     retrieve.add_argument("--limit", type=int, default=8)
     retrieve.add_argument("--max-chars", type=int, default=24000)
     retrieve.add_argument("--mode", choices=("lexical", "semantic", "hybrid"), default="hybrid")
+    retrieve.add_argument("--region", action="append", choices=("abstract", "content", "appendix"), help="限制正文区域，可重复指定")
     retrieve.add_argument("--json", action="store_true")
     retrieve.set_defaults(handler=handle_retrieve)
 
@@ -53,7 +54,7 @@ def handle_retrieve(args: argparse.Namespace) -> int:
     from paper_rag.llamaindex.service import retrieve
 
     filters = {key: value for key, value in {"author": args.author, "category": args.category, "year": args.year, "year_from": args.year_from, "year_to": args.year_to, "state": args.state}.items() if value}
-    payload = retrieve(Settings.load(args.project_root), args.query, args.paper_id or None, filters=filters or None, task=args.task, limit=args.limit, max_chars=args.max_chars, mode=args.mode)
+    payload = retrieve(Settings.load(args.project_root), args.query, args.paper_id or None, filters=filters or None, task=args.task, limit=args.limit, max_chars=args.max_chars, mode=args.mode, regions=args.region or None)
     _print(payload, args.json)
     return 0 if payload.get("status") in {"ok", "embedding_unavailable"} else 1
 

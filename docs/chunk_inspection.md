@@ -33,6 +33,8 @@ content
 
 `section_path` 和 `retrieval_text` 使用同一份去重后的路径。正文切分仍按 1200 字符和 150 字符重叠执行，LlamaIndex 不会重新切块。结构化块在正文阅读顺序中保持独立类型，同时在 `retrieval_text` 中加入相邻正文的 `[context_before]` 和 `[context_after]`，避免公式、表格或图片脱离语义上下文。
 
+References 后面的 `A`、`D.1`、`H.4` 等字母编号章节会被识别为 Appendix，并继续保留附录内部层级。
+
 ## 表格、图片和公式
 
 - 表格保留 caption、HTML `table_body`、footnote 和图片资源路径；HTML 不被展平成普通段落。

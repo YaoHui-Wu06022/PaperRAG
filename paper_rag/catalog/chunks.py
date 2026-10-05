@@ -89,8 +89,23 @@ def build_chunks(content_list: list[dict[str, Any]], *, paper_id: str, canonical
             if heading_key in {"references", "reference", "bibliography"}:
                 flush(); region = "reference"; section = ["reference"]; heading_stack = []; chapter_number = chapter_title = None
                 continue
-            if heading_key == "appendix" or heading_key == "appendices" or heading_key.startswith("appendix ") or re.match(r"^[a-z](?:\.\d+)*\s+appendix", heading_key):
-                flush(); region = "appendix"; section = ["appendix"]; heading_stack = []; chapter_number, chapter_title = _chapter(text); _set_section(section, region, text)
+            appendix_label, appendix_title = _appendix_heading(text)
+            if heading_key == "appendix" or heading_key == "appendices" or heading_key.startswith("appendix ") or re.match(r"^[a-z](?:\.\d+)*\s+appendix", heading_key) or (region in {"reference", "appendix"} and appendix_label):
+                flush()
+                if region != "appendix":
+                    heading_stack = []
+                region = "appendix"
+                if appendix_label:
+                    depth = appendix_label.count(".") + 1
+                    heading_stack = heading_stack[: depth - 1]
+                    heading_stack.append(text)
+                    section = [region, *heading_stack]
+                    chapter_number, chapter_title = appendix_label, appendix_title
+                else:
+                    section = [region]
+                    heading_stack = []
+                    chapter_number, chapter_title = _chapter(text)
+                    _set_section(section, region, text)
                 continue
             if region == "reference":
                 continue
@@ -191,6 +206,14 @@ def _chapter(text: str) -> tuple[str | None, str | None]:
     value = re.sub(r"<[^>]+>", "", text or "").strip()
     match = re.match(r"^(\d+(?:\.\d+)*)\s+(.+)$", value)
     return (match.group(1), match.group(2).strip()) if match else (None, value or None)
+
+
+def _appendix_heading(text: str) -> tuple[str | None, str | None]:
+    """识别 MinerU 常见的 A、A.1 形式附录标题。"""
+
+    value = re.sub(r"<[^>]+>", "", text or "").strip()
+    match = re.match(r"^([A-Z](?:\.\d+)*)\s+(.+)$", value)
+    return (match.group(1), match.group(2).strip()) if match else (None, None)
 
 
 def _heading_key(text: str) -> str:
