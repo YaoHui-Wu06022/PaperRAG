@@ -12,6 +12,7 @@ from llama_index.core import StorageContext, VectorStoreIndex
 from llama_index.vector_stores.milvus import MilvusVectorStore
 
 from paper_rag.catalog.service import CatalogIndexNotReady, catalog_status
+from paper_rag.catalog.chunks import CHUNK_RULE_VERSION
 from paper_rag.config import Settings
 from paper_rag.llamaindex.embedding import DashScopeEmbedding
 from paper_rag.llamaindex.nodes import load_nodes
@@ -35,10 +36,14 @@ class IndexService:
             catalog = catalog_status(self.settings)
         except Exception:
             catalog = {"status": "index_not_ready", "papers": 0, "chunks": 0}
+        catalog_indexed_at = _catalog_indexed_at(self.settings)
+        manifest_ready = bool(manifest and manifest.get("status") == "ready")
+        index_stale = bool(manifest_ready and manifest.get("catalog_indexed_at") != catalog_indexed_at)
         result = {
-            "status": "ok" if manifest and manifest.get("status") == "ready" else "index_not_ready",
+            "status": "ok" if manifest_ready and not index_stale else "index_not_ready",
             "catalog_ready": bool(catalog.get("index_ready", catalog.get("status") == "ok")),
-            "index_ready": bool(manifest and manifest.get("status") == "ready"),
+            "index_ready": manifest_ready and not index_stale,
+            "index_stale": index_stale,
             "chunk_count": int((manifest or {}).get("chunk_count", catalog.get("chunks", 0) or 0)),
             "indexed_count": int((manifest or {}).get("indexed_count", 0)),
             "embedding_model": self.settings.embedding_model,
@@ -54,8 +59,8 @@ class IndexService:
         if self._index is not None:
             return self._index
         manifest = _read_manifest(self.settings)
-        if not manifest or manifest.get("status") != "ready":
-            raise LlamaIndexError("LlamaIndex index is not ready; run library_index_rebuild first")
+        if not manifest or manifest.get("status") != "ready" or manifest.get("catalog_indexed_at") != _catalog_indexed_at(self.settings):
+            raise LlamaIndexError("LlamaIndex index is not ready or stale; run library_index_rebuild first")
         collection = str(manifest.get("milvus_collection") or self.settings.llamaindex_milvus_collection)
         vector_store = self._vector_store(collection, overwrite=False)
         try:
@@ -95,7 +100,7 @@ class IndexService:
                 "catalog_indexed_at": _catalog_indexed_at(self.settings),
                 "chunk_count": len(nodes),
                 "indexed_count": len(nodes),
-                "chunk_rule_version": "content-list-regions-v2-1200",
+                "chunk_rule_version": CHUNK_RULE_VERSION,
                 "embedding_model": self.settings.embedding_model,
                 "embedding_dimensions": self.settings.embedding_dimensions,
                 "milvus_collection": staging,

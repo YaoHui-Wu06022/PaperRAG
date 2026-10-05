@@ -12,4 +12,4 @@ Hybrid 结果按 `chunk_id` 去重，同时保留 lexical rank、semantic rank�
 
 “2018 年以后有哪些文章”应由 Agent 选择 library_search；“2018 年以后哪些论文使用注意力机制”应选择 library_retrieve，由 filters 约束论文集合，再检索正文。
 
-引用关系始终通过 library_get_references、library_get_citations 或 library_get_citation_graph 查询，不经过正文检索。
+引用关系始终通过 `library_citation` 的 `references`、`citations` 或 `graph` mode 查询，不经过正文检索。

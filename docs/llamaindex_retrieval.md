@@ -11,6 +11,8 @@ library_retrieve 是唯一正文 RAG 工具。它先应用 paper_ids 和 filters
 - lexical_rank、semantic_rank、rrf_score；
 - 面向客户端的 context_text 和 truncated。
 
+表格、公式、图片和图表仍按正文顺序作为结构化 Chunk 保存；`retrieval_text` 额外包含相邻正文上下文，原始 `text`、HTML/LaTeX 和 `asset_refs` 保持独立。
+
 任务策略如下：`fact` 返回直接证据；`reason` 增加相邻 Chunk；`summary` 按论文覆盖摘要和正文；`comparison` 按论文均衡分配来源和字符预算。`paper_ids` 与 `filters` 会在 lexical 和 semantic 两条路径使用相同的候选范围。
 
 服务端不生成摘要、比较结论或问答答案。JEV 不选择 MCP 工具，也不进入 Embedding、Milvus 或 SQLite 底层检索。

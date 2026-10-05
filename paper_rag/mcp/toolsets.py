@@ -8,13 +8,13 @@ from collections.abc import Iterable
 TOOLSETS_ENV_VAR = "PAPER_RAG_TOOLSETS"
 CORE_TOOLS: frozenset[str] = frozenset({
     "library_search", "library_retrieve", "library_get_metadata",
-    "library_get_chunk", "library_get_assets", "library_get_asset_status", "library_index_status", "library_job_status",
+    "library_job_status",
 })
 TOOLSETS: dict[str, frozenset[str]] = {
     "acquisition": frozenset({"library_acquire_arxiv"}),
     "ingestion": frozenset({"library_ingest_mineru", "library_catalog_sync"}),
-    "index-admin": frozenset({"library_index_rebuild"}),
-    "citation": frozenset({"library_get_references", "library_get_citations", "library_get_citation_graph"}),
+    "index-admin": frozenset({"library_index_status", "library_index_rebuild"}),
+    "citation": frozenset({"library_citation"}),
     "fulltext": frozenset({"library_read", "library_get_chunk"}),
 }
 DEFAULT_ON: frozenset[str] = frozenset({"citation", "fulltext"})

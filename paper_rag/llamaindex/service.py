@@ -274,6 +274,8 @@ def _limit(value: Any, maximum: int) -> int:
 
 
 def _index_error_status(error: LlamaIndexError) -> str:
+    if "not ready" in str(error).casefold() or "stale" in str(error).casefold():
+        return "index_not_ready"
     return "milvus_unavailable" if "Milvus" in str(error) else "embedding_unavailable"
 
 

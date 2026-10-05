@@ -10,10 +10,9 @@ def test_mcp_server_registers_acquisition_tools():
         "library_acquire_arxiv",
         "library_ingest_mineru",
         "library_job_status",
-        "library_get_asset_status",
         "library_search",
         "library_get_metadata",
-        "library_get_assets",
+        "library_citation",
         "library_retrieve",
     } <= server._registered_tool_names()
 
@@ -39,4 +38,7 @@ def test_default_fastmcp_surface_excludes_optional_index_admin():
     assert "library_read" in visible
     assert "library_retrieve" in visible
     assert "library_get_chunk" in visible
+    assert "library_citation" in visible
+    assert "library_get_assets" not in visible
+    assert "library_get_asset_status" not in visible
 

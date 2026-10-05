@@ -14,7 +14,7 @@ from typing import Any
 from uuid import uuid4
 
 from paper_rag.config import Settings
-from paper_rag.catalog.chunks import Chunk, build_chunks, load_content_list
+from paper_rag.catalog.chunks import CHUNK_RULE_VERSION, Chunk, build_chunks, load_content_list
 from paper_rag.catalog.references import extract_references, normalize_arxiv_id
 
 
@@ -192,15 +192,24 @@ def rebuild_catalog(settings: Settings) -> dict[str, Any]:
     db_path = settings.paper_catalog_db_path
     db_path.parent.mkdir(parents=True, exist_ok=True)
     temporary_path = db_path.with_name(f".{db_path.name}.{uuid4().hex}.tmp")
+    chunk_json_temps: list[tuple[Path, Path]] = []
     issues: list[dict[str, str]] = []
     try:
         issues = _create_database(temporary_path, records, settings)
+        chunk_json_temps = _prepare_chunk_json_exports(records, settings)
         os.replace(temporary_path, db_path)
+        for staged, target in chunk_json_temps:
+            os.replace(staged, target)
     except Exception:
         try:
             temporary_path.unlink(missing_ok=True)
         except OSError:
             pass
+        for staged, _ in chunk_json_temps:
+            try:
+                staged.unlink(missing_ok=True)
+            except OSError:
+                pass
         raise
     chunk_count = _count_chunks(db_path)
     return {
@@ -211,6 +220,39 @@ def rebuild_catalog(settings: Settings) -> dict[str, Any]:
         "chunks": chunk_count,
         "issues": issues,
     }
+
+
+def _prepare_chunk_json_exports(records: list[CatalogRecord], settings: Settings) -> list[tuple[Path, Path]]:
+    """为每篇有效论文准备可浏览的 Chunk JSON 临时文件。"""
+
+    staged_files: list[tuple[Path, Path]] = []
+    try:
+        for record in records:
+            if not record.mineru_dir or not record.mineru_dir.is_dir():
+                continue
+            content_path = record.mineru_dir / "content_list.json"
+            if not content_path.is_file():
+                continue
+            chunks, _ = _mineru_chunks(record, settings)
+            target = record.mineru_dir / "chunks.json"
+            staged = record.mineru_dir / f".chunks-{uuid4().hex}.tmp"
+            payload = {
+                "schema_version": 1,
+                "paper_id": record.paper_id,
+                "canonical_id": record.canonical_id,
+                "content_hash": _sha256(content_path),
+                "chunk_rule_version": CHUNK_RULE_VERSION,
+                "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+                "chunk_count": len(chunks),
+                "chunks": [chunk.to_dict() for chunk in chunks],
+            }
+            staged.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+            staged_files.append((staged, target))
+    except Exception:
+        for staged, _ in staged_files:
+            staged.unlink(missing_ok=True)
+        raise
+    return staged_files
 
 
 def catalog_status(settings: Settings) -> dict[str, Any]:

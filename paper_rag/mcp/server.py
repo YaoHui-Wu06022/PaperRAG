@@ -10,13 +10,9 @@ from paper_rag.mcp.tools.acquisition import library_acquire_arxiv, library_job_s
 from paper_rag.mcp.tools.ingestion import library_ingest_mineru
 from paper_rag.mcp.tools.catalog import (
     library_catalog_sync,
-    library_get_asset_status,
-    library_get_assets,
+    library_citation,
     library_get_chunk,
-    library_get_citation_graph,
-    library_get_citations,
     library_get_metadata,
-    library_get_references,
     library_index_rebuild,
     library_index_status,
     library_read,
@@ -37,8 +33,7 @@ ENABLED_TOOLSETS = apply_toolsets(mcp, raw=get_settings().paper_rag_toolsets)
 
 __all__ = [
     "TOOLSETS", "ENABLED_TOOLSETS", "mcp", "library_acquire_arxiv", "library_catalog_sync",
-    "library_get_asset_status", "library_get_assets", "library_get_chunk",
-    "library_get_citation_graph", "library_get_citations", "library_get_metadata", "library_get_references",
+    "library_citation", "library_get_chunk", "library_get_metadata",
     "library_index_rebuild", "library_index_status", "library_ingest_mineru", "library_job_status",
     "library_read", "library_retrieve", "library_search",
 ]

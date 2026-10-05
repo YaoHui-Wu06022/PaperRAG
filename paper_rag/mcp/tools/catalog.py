@@ -8,8 +8,6 @@ from paper_rag.catalog.service import (
     CatalogIndexNotReady,
     catalog_status,
     citation_graph,
-    get_asset_status,
-    get_assets,
     get_chunk,
     get_citations,
     get_metadata,
@@ -31,24 +29,17 @@ def library_get_metadata(paper_id: str) -> dict[str, Any]:
     try:
         record = get_metadata(get_settings(), paper_id)
     except CatalogIndexNotReady:
-        return _read_only("catalog_not_ready", {"paper_id": paper_id, "metadata": None})
-    return _read_only("ok" if record else "not_found", {"paper_id": paper_id, "metadata": record.to_dict() if record else None})
-
-
-@mcp.tool(name="library_get_assets", description="读取指定论文的本地文件资产清单。")
-def library_get_assets(paper_id: str) -> dict[str, Any]:
-    try:
-        return _read_only("ok", get_assets(get_settings(), paper_id))
-    except CatalogIndexNotReady:
-        return _read_only("catalog_not_ready", {"paper_id": paper_id, "assets": {}})
-
-
-@mcp.tool(name="library_get_asset_status", description="查询指定论文的 PDF、metadata 和 MinerU 资产状态。")
-def library_get_asset_status(paper_id: str) -> dict[str, Any]:
-    try:
-        return _read_only("ok", get_asset_status(get_settings(), paper_id))
-    except CatalogIndexNotReady:
-        return _read_only("catalog_not_ready", {"paper_id": paper_id})
+        return _read_only("catalog_not_ready", {"paper_id": paper_id, "metadata": None, "assets": {}, "asset_status": {}})
+    if record is None:
+        return _read_only("not_found", {"paper_id": paper_id, "metadata": None, "assets": {}, "asset_status": {}})
+    assets = record.assets
+    asset_status = {
+        "state": record.state,
+        "pdf": "present" if assets.get("pdf", {}).get("present") else "missing",
+        "metadata": "present" if assets.get("metadata", {}).get("present") else "missing",
+        "mineru": "present" if assets.get("mineru", {}).get("present") else "missing",
+    }
+    return _read_only("ok", {"paper_id": paper_id, "metadata": record.to_dict(), "assets": assets, "asset_status": asset_status})
 
 
 @mcp.tool(name="library_get_chunk", description="读取指定 Chunk 的原文及来源定位。")
@@ -67,30 +58,23 @@ def library_read(paper_id: str, offset: int = 0, limit: int = 12000) -> dict[str
     return _read_only(status, result)
 
 
-@mcp.tool(name="library_get_references", description="读取论文的参考文献条目。")
-def library_get_references(paper_id: str) -> dict[str, Any]:
-    try:
-        return _read_only("ok", get_references(get_settings(), paper_id))
-    except CatalogIndexNotReady:
-        return _read_only("catalog_not_ready", {"paper_id": paper_id, "items": []})
-
-
-@mcp.tool(name="library_get_citations", description="读取本地 Catalog 中引用指定论文的论文。")
-def library_get_citations(paper_id: str, filters: dict[str, Any] | None = None) -> dict[str, Any]:
-    try:
-        return _read_only("ok", get_citations(get_settings(), paper_id, filters))
-    except CatalogIndexNotReady:
-        return _read_only("catalog_not_ready", {"paper_id": paper_id, "items": []})
-
-
-@mcp.tool(name="library_get_citation_graph", description="读取指定论文的本地引用关系图。")
-def library_get_citation_graph(paper_id: str, direction: str = "both", depth: int = 1, filters: dict[str, Any] | None = None) -> dict[str, Any]:
+@mcp.tool(name="library_citation", description="读取论文参考文献、被引论文或本地引用关系图；引用查询只访问 SQLite 图，不检索正文。")
+def library_citation(paper_id: str, mode: str = "graph", direction: str = "both", depth: int = 1, filters: dict[str, Any] | None = None) -> dict[str, Any]:
+    if mode not in {"references", "citations", "graph"}:
+        return _read_only("invalid_input", {"paper_id": paper_id, "mode": mode, "items": [], "nodes": [], "edges": []})
     if direction not in {"in", "out", "both"}:
-        return _read_only("invalid_input", {"paper_id": paper_id, "nodes": [], "edges": []})
+        return _read_only("invalid_input", {"paper_id": paper_id, "mode": mode, "nodes": [], "edges": []})
     try:
-        return _read_only("ok", citation_graph(get_settings(), paper_id, direction, depth, filters))
+        settings = get_settings()
+        if mode == "references":
+            data = get_references(settings, paper_id)
+        elif mode == "citations":
+            data = get_citations(settings, paper_id, filters)
+        else:
+            data = citation_graph(settings, paper_id, direction, depth, filters)
+        return _read_only("ok", data)
     except CatalogIndexNotReady:
-        return _read_only("catalog_not_ready", {"paper_id": paper_id, "nodes": [], "edges": []})
+        return _read_only("catalog_not_ready", {"paper_id": paper_id, "mode": mode, "items": [], "nodes": [], "edges": []})
 
 
 @mcp.tool(name="library_index_status", description="查询 LlamaIndex 和 Milvus 正文索引状态。")
@@ -124,7 +108,6 @@ def library_catalog_sync(confirm: bool = False) -> dict[str, Any]:
 
 
 __all__ = [
-    "library_catalog_sync", "library_get_asset_status", "library_get_assets", "library_get_chunk",
-    "library_get_citation_graph", "library_get_citations", "library_get_metadata", "library_get_references",
+    "library_catalog_sync", "library_citation", "library_get_chunk", "library_get_metadata",
     "library_index_rebuild", "library_index_status", "library_read",
 ]

@@ -9,7 +9,7 @@ from pathlib import Path
 import re
 from typing import Any
 
-CHUNK_RULE_VERSION = "content-list-regions-v2-1200"
+CHUNK_RULE_VERSION = "content-list-regions-v3-1200-tree"
 MAX_CHARS = 1200
 MAX_OVERLAP = 150
 _SKIP_TYPES = {"title", "author", "authors", "affiliation", "header", "footer", "page_header", "page_footer", "page_number", "page_footnote", "aside_text"}
@@ -110,24 +110,33 @@ def build_chunks(content_list: list[dict[str, Any]], *, paper_id: str, canonical
                 chapter_title = text
                 heading_stack.append(text)
                 section = [region, *heading_stack]
-            if text and not number:
-                section.append(text)
             continue
         if region in {"metadata", "reference"}:
             continue
-        source = {"index": index, "page_idx": _page(block), "bbox": block.get("bbox"), "type": kind or "unknown"}
+        source = {
+            "index": index,
+            "page_idx": _page(block),
+            "bbox": block.get("bbox"),
+            "type": kind or "unknown",
+            "text_format": block.get("text_format"),
+        }
         if kind in {"text", "paragraph"}:
             if text:
                 pending.append(source); pending_text.append(text)
             continue
         if kind in _STRUCTURED_TYPES:
             flush()
+            before, after = _neighbor_context(content_list, index)
+            source["context_before"] = before
+            source["context_after"] = after
             if not text and kind in {"image", "figure", "chart"}:
                 text = str(block.get("img_path") or block.get("image_path") or "").strip()
+                if text:
+                    warnings.append(f"media_text_missing:{index}:{kind}")
             if not text:
                 warnings.append(f"第 {index} 个 {kind} 块没有可索引文本")
                 continue
-            chunks.append(_make_chunk(text, (source,), paper_id, canonical_id, region, chapter_number, chapter_title, section, kind, content_hash, len(chunks), _asset_refs(block)))
+            chunks.append(_make_chunk(text, (source,), paper_id, canonical_id, region, chapter_number, chapter_title, section, kind, content_hash, len(chunks), _asset_refs(block), context_before=before, context_after=after))
             continue
         if text:
             flush()
@@ -157,20 +166,21 @@ def _split_text(text: str, blocks: tuple[dict[str, Any], ...], paper_id: str, ca
     return result
 
 
-def _make_chunk(text: str, blocks: tuple[dict[str, Any], ...], paper_id: str, canonical_id: str, region: str, chapter_number: str | None, chapter_title: str | None, section: list[str], kind: str, content_hash: str, ordinal: int, refs: tuple[str, ...]) -> Chunk:
-    prefix = [paper_id]
-    if chapter_number and chapter_title:
-        prefix.append(f"{chapter_number} {chapter_title}")
-    elif chapter_title:
-        prefix.append(chapter_title)
-    elif region:
-        prefix.append(region)
-    retrieval_text = "\n".join(prefix + [text])
+def _make_chunk(text: str, blocks: tuple[dict[str, Any], ...], paper_id: str, canonical_id: str, region: str, chapter_number: str | None, chapter_title: str | None, section: list[str], kind: str, content_hash: str, ordinal: int, refs: tuple[str, ...], *, context_before: str = "", context_after: str = "") -> Chunk:
+    normalized_section = _normalize_section(section, region)
+    prefix = [*normalized_section]
+    body = [text]
+    if context_before:
+        body.insert(0, f"[context_before]\n{context_before}")
+    if context_after:
+        body.append(f"[context_after]\n{context_after}")
+    retrieval_text = "\n".join(prefix + body)
     page_values = [item["page_idx"] for item in blocks if isinstance(item.get("page_idx"), int)]
     identity = json.dumps([canonical_id, content_hash, CHUNK_RULE_VERSION, ordinal, text], ensure_ascii=False, separators=(",", ":"))
     chunk_id = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:24]
     text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
-    return Chunk(chunk_id, paper_id, canonical_id, ordinal, region, chapter_number, chapter_title, tuple(section or [region]), (section[-1] if section else None), kind, text, retrieval_text, min(page_values) if page_values else None, max(page_values) if page_values else None, blocks, refs, text_hash)
+    section_path = tuple(normalized_section)
+    return Chunk(chunk_id, paper_id, canonical_id, ordinal, region, chapter_number, chapter_title, section_path, (section_path[-1] if section_path else None), kind, text, retrieval_text, min(page_values) if page_values else None, max(page_values) if page_values else None, blocks, refs, text_hash)
 
 
 def _set_section(section: list[str], region: str, text: str) -> None:
@@ -190,6 +200,13 @@ def _heading_key(text: str) -> str:
 
 
 def _block_text(block: dict[str, Any]) -> str:
+    kind = str(block.get("type") or block.get("category") or "").casefold()
+    if kind == "table":
+        return _join_block_fields(block, ("table_caption", "table_body", "table_footnote"))
+    if kind in {"image", "figure"}:
+        return _join_block_fields(block, ("image_caption", "image_footnote", "content"))
+    if kind == "chart":
+        return _join_block_fields(block, ("chart_caption", "chart_footnote", "content"))
     for key in ("text", "content", "latex", "equation", "table_body", "table", "caption", "image_caption", "ref_text"):
         value = block.get(key)
         if isinstance(value, str) and value.strip(): return value.strip()
@@ -197,6 +214,57 @@ def _block_text(block: dict[str, Any]) -> str:
             joined = "\n".join(str(x) for x in value if x)
             if joined.strip(): return joined.strip()
     return ""
+
+
+def _join_block_fields(block: dict[str, Any], keys: tuple[str, ...]) -> str:
+    """按 MinerU 字段顺序保留标题、正文和脚注。"""
+
+    parts: list[str] = []
+    for key in keys:
+        value = block.get(key)
+        values = value if isinstance(value, list) else [value]
+        for item in values:
+            if isinstance(item, str) and item.strip():
+                parts.append(item.strip())
+    return "\n".join(parts)
+
+
+def _neighbor_context(content_list: list[dict[str, Any]], index: int, window: int = 4) -> tuple[str, str]:
+    """为结构化块提取相邻正文，增强语义检索但不改写原始块。"""
+
+    def find(step: int) -> str:
+        position = index + step
+        checked = 0
+        while 0 <= position < len(content_list) and checked < window:
+            block = content_list[position]
+            kind = str(block.get("type") or block.get("category") or "").casefold()
+            text = _block_text(block)
+            if kind in {"heading", "section_header"} or (kind == "text" and (block.get("text_level") or block.get("level"))):
+                break
+            if kind in _SKIP_TYPES or kind in _STRUCTURED_TYPES:
+                position += step
+                checked += 1
+                continue
+            if kind in {"text", "paragraph"} and text:
+                return text[-320:] if step < 0 else text[:320]
+            position += step
+            checked += 1
+        return ""
+
+    return find(-1), find(1)
+
+
+def _normalize_section(section: list[str], region: str) -> list[str]:
+    """去除重复目录项，同时确保区域位于路径首部。"""
+
+    values = [str(item).strip() for item in section if str(item).strip()]
+    if not values or values[0] != region:
+        values.insert(0, region)
+    result: list[str] = []
+    for value in values:
+        if not result or result[-1] != value:
+            result.append(value)
+    return result
 
 
 def _asset_refs(block: dict[str, Any]) -> tuple[str, ...]:
