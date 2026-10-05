@@ -68,7 +68,7 @@ depth 最大为 3，图查询使用 SQLite BFS；查询引用关系不会触发 
 
 每次 Catalog 同步还会生成 UTF-8 文件 `data/index/citation_graph.json`，包含本地论文节点、唯一引用边、引用数量和匹配统计，便于直接查看或导入图分析工具。原始重复参考条目仍在 SQLite `references` 中，并通过 `duplicate_of_reference_id` 指向主条目；JSON 图不会重复建边。
 
-`library_citation(mode="graph", depth=2)` 会在结构化 `data.edges` 中保留每条边的 `depth`。确定性答案中的“直接引用/直接被引用”只统计目标论文的一跳关系，同时给出查询深度以及多跳范围内的节点数和边数，避免把直接关系与扩展关系混为一谈。
+`library_citation(mode="graph", depth=2)` 会在结构化 `data.edges` 中保留每条边的 `depth`。确定性答案中的“直接引用/直接被引用”统计目标论文的一跳关系，“间接引用/间接被引用”统计继续沿有向引用关系扩展得到的唯一论文，避免把直接关系与多跳关系混为一谈。
 
 ## 5. 索引与运行
 

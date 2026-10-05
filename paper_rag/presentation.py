@@ -101,12 +101,14 @@ def citation_presentation(
         graph_depth = int(data.get("depth") or 1)
         lines = [f"目标论文: {_title(data.get('paper_id'), title_lookup)}"]
         if graph_depth > 1:
+            indirect_out, indirect_in = _indirect_counts(edges, root_id, graph_depth)
             lines.extend(
                 [
                     f"直接引用: {len(outgoing)} 篇",
                     f"直接被引用: {len(incoming)} 篇",
                     f"查询深度: {graph_depth}",
-                    f"多跳范围: {len(data.get('nodes') or [])} 个节点，{len(edges)} 条边",
+                    f"间接引用: {len(indirect_out)} 篇",
+                    f"间接被引用: {len(indirect_in)} 篇",
                 ]
             )
         else:
@@ -185,6 +187,48 @@ def _append_graph_section(
         f"{number}. {_title(edge.get(field), title_lookup)}"
         for number, edge in enumerate(edges[:10], start=1)
     )
+
+
+def _indirect_counts(
+    edges: list[Mapping[str, Any]], root_id: str, max_depth: int
+) -> tuple[set[str], set[str]]:
+    """从目标论文的一跳邻居继续沿有向边计算间接关系论文。"""
+
+    direct_out = {
+        normalize_arxiv_id(str(edge.get("target_arxiv_id") or ""))
+        for edge in edges
+        if int(edge.get("depth") or 1) == 1
+        and normalize_arxiv_id(str(edge.get("source_paper_id") or "")) == root_id
+    }
+    direct_in = {
+        normalize_arxiv_id(str(edge.get("source_paper_id") or ""))
+        for edge in edges
+        if int(edge.get("depth") or 1) == 1
+        and normalize_arxiv_id(str(edge.get("target_arxiv_id") or "")) == root_id
+    }
+    out_frontier = set(direct_out)
+    in_frontier = set(direct_in)
+    indirect_out: set[str] = set()
+    indirect_in: set[str] = set()
+    for level in range(2, max_depth + 1):
+        next_out: set[str] = set()
+        next_in: set[str] = set()
+        for edge in edges:
+            if int(edge.get("depth") or 1) != level:
+                continue
+            source = normalize_arxiv_id(str(edge.get("source_paper_id") or ""))
+            target = normalize_arxiv_id(str(edge.get("target_arxiv_id") or ""))
+            if source in out_frontier and target and target != root_id:
+                next_out.add(target)
+                if target not in direct_out:
+                    indirect_out.add(target)
+            if target in in_frontier and source and source != root_id:
+                next_in.add(source)
+                if source not in direct_in:
+                    indirect_in.add(source)
+        out_frontier = next_out
+        in_frontier = next_in
+    return indirect_out, indirect_in
 
 
 __all__ = [

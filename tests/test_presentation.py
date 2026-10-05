@@ -108,9 +108,9 @@ def test_graph_presentation_explains_multihop_scope_without_changing_direct_coun
             "depth": 2,
             "nodes": ["1706.03762", "1512.03385", "1404.5997"],
             "edges": [
-                {"source_paper_id": "1706.03762", "target_arxiv_id": "1512.03385"},
-                {"source_paper_id": "1811.06965", "target_arxiv_id": "1706.03762"},
-                {"source_paper_id": "1512.03385", "target_arxiv_id": "1404.5997"},
+                {"source_paper_id": "1706.03762", "target_arxiv_id": "1512.03385", "depth": 1},
+                {"source_paper_id": "1811.06965", "target_arxiv_id": "1706.03762", "depth": 1},
+                {"source_paper_id": "1512.03385", "target_arxiv_id": "1404.5997", "depth": 2},
             ],
         },
         "graph",
@@ -120,7 +120,8 @@ def test_graph_presentation_explains_multihop_scope_without_changing_direct_coun
     assert "直接引用: 1 篇" in text
     assert "直接被引用: 1 篇" in text
     assert "查询深度: 2" in text
-    assert "多跳范围: 3 个节点，3 条边" in text
+    assert "间接引用: 1 篇" in text
+    assert "间接被引用: 0 篇" in text
 
 
 def test_retrieve_presentation_only_hybrid_allows_composition():
