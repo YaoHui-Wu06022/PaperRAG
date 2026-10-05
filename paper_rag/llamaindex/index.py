@@ -244,6 +244,18 @@ class IndexService:
         failed_ids: list[str] = []
         try:
             vector_store = self._vector_store(collection, overwrite=False, upsert_mode=True)
+            existing_ids = _collection_ids(vector_store, len(current))
+            missing_ids = set(current) - existing_ids
+            stale_ids = existing_ids - set(current)
+            added_ids.update(missing_ids)
+            updated_ids.difference_update(added_ids)
+            deleted_ids.update(stale_ids)
+            stats.update(
+                reused=max(0, len(current) - len(added_ids) - len(updated_ids)),
+                added=len(added_ids),
+                updated=len(updated_ids),
+                deleted=len(deleted_ids),
+            )
             changed_ids = sorted(added_ids | updated_ids)
             if changed_ids:
                 embed_model = DashScopeEmbedding(self.settings)
@@ -317,6 +329,19 @@ def _add_nodes(vector_store: MilvusVectorStore, nodes: list[TextNode]) -> None:
         vector_store.add(nodes, force_flush=True)
 
 
+def _collection_ids(vector_store: MilvusVectorStore, expected_count: int) -> set[str]:
+    """强一致读取 Collection 主键，避免仅依赖缓存判断向量是否存在。"""
+
+    rows = vector_store.client.query(
+        collection_name=vector_store.collection_name,
+        filter="id != ''",
+        output_fields=["id"],
+        limit=max(1, expected_count * 2),
+        consistency_level="Strong",
+    )
+    return {str(row.get("id")) for row in rows if row.get("id")}
+
+
 def _node_with_embedding(node: TextNode, embedding: list[float]) -> TextNode:
     return TextNode(id_=node.node_id, text=node.text, metadata=dict(node.metadata), embedding=list(embedding), excluded_embed_metadata_keys=list(node.metadata))
 
@@ -344,14 +369,7 @@ def _read_old_vectors(settings: Settings, collection: str | None, chunk_ids: set
 
 def _verify_collection(vector_store: MilvusVectorStore, current: dict[str, TextNode]) -> None:
     # Zilliz 的 get_collection_stats 可能在删除后继续返回旧 row_count，改用强一致查询核对主键集合。
-    rows = vector_store.client.query(
-        collection_name=vector_store.collection_name,
-        filter='id != ""',
-        output_fields=["id"],
-        limit=max(1, len(current) * 2),
-        consistency_level="Strong",
-    )
-    actual_ids = {str(row.get("id")) for row in rows if row.get("id")}
+    actual_ids = _collection_ids(vector_store, len(current))
     if actual_ids != set(current):
         raise LlamaIndexError("Milvus 写入数量与 Catalog Chunk 数量不一致")
     first = next(iter(current))
