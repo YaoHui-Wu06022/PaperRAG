@@ -160,7 +160,7 @@ def test_mcp_confirmation_does_not_write(tmp_path: Path, monkeypatch):
     monkeypatch.setattr(acquisition, "get_settings", lambda: settings)
     monkeypatch.setattr(acquisition, "preview_arxiv_inputs", lambda *_args: [{"input": "1706.03762", "status": "new"}])
 
-    preview = acquisition.paper_arxiv_download(["1706.03762"], confirm=False)
+    preview = acquisition.library_acquire_arxiv(["1706.03762"], confirm=False)
     assert preview["status"] == "confirmation_required"
     assert not settings.arxiv_data_dir.exists()
 
@@ -180,14 +180,14 @@ def test_mcp_confirmation_queues_download_job(tmp_path: Path, monkeypatch):
             return {"items": [], "downloaded": 1, "skipped": 0, "failed": 0}
 
     monkeypatch.setattr(acquisition, "download_arxiv_inputs", lambda *_args, **_kwargs: Result())
-    queued = acquisition.paper_arxiv_download(["1706.03762"], confirm=True)
+    queued = acquisition.library_acquire_arxiv(["1706.03762"], confirm=True)
     job_id = queued["job"]["job_id"]
     for _ in range(100):
-        status = acquisition.paper_job_status(job_id)
+        status = acquisition.library_job_status(job_id)
         if status["status"] in {"succeeded", "failed"}:
             break
         time.sleep(0.01)
-    status = acquisition.paper_job_status(job_id)
+    status = acquisition.library_job_status(job_id)
     assert status["status"] == "succeeded"
     assert status["result"]["downloaded"] == 1
 

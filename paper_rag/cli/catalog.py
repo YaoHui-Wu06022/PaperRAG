@@ -23,6 +23,15 @@ def add_catalog_parser(subparsers: argparse._SubParsersAction) -> None:
     status.add_argument("--json", action="store_true", help="输出 JSON")
     status.set_defaults(handler=handle_status)
 
+    index = subparsers.add_parser("index", help="维护 LlamaIndex 向量索引")
+    index_commands = index.add_subparsers(dest="index_command", required=True)
+    index_status = index_commands.add_parser("status", help="查看 LlamaIndex 状态")
+    index_status.add_argument("--json", action="store_true")
+    index_status.set_defaults(handler=handle_index_status)
+    index_rebuild = index_commands.add_parser("rebuild", help="重建 LlamaIndex 向量索引")
+    index_rebuild.add_argument("--json", action="store_true")
+    index_rebuild.set_defaults(handler=handle_index_rebuild)
+
 
 def handle_sync(args: argparse.Namespace) -> int:
     """预览或重建本地 Catalog。"""
@@ -49,4 +58,20 @@ def format_catalog(payload: dict) -> str:
     return f"Catalog：{payload.get('status', 'ready')}，论文数量：{payload.get('papers', payload.get('current', {}).get('papers', 0))}"
 
 
-__all__ = ["add_catalog_parser", "handle_status", "handle_sync"]
+def handle_index_status(args: argparse.Namespace) -> int:
+    from paper_rag.llamaindex.service import index_status
+
+    payload = index_status(Settings.load(args.project_root))
+    print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else format_catalog(payload.get("data", payload)))
+    return 0 if payload.get("status") == "ok" else 1
+
+
+def handle_index_rebuild(args: argparse.Namespace) -> int:
+    from paper_rag.llamaindex.service import rebuild_index
+
+    payload = rebuild_index(Settings.load(args.project_root))
+    print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else format_catalog(payload.get("data", payload)))
+    return 0 if payload.get("status") == "completed" else 1
+
+
+__all__ = ["add_catalog_parser", "handle_index_rebuild", "handle_index_status", "handle_status", "handle_sync"]

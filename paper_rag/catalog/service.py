@@ -15,7 +15,7 @@ from uuid import uuid4
 
 from paper_rag.config import Settings
 from paper_rag.catalog.chunks import Chunk, build_chunks, load_content_list
-from paper_rag.catalog.references import extract_references
+from paper_rag.catalog.references import extract_references, normalize_arxiv_id
 
 
 class CatalogIndexNotReady(RuntimeError):
@@ -392,7 +392,7 @@ def _create_database(path: Path, records: list[CatalogRecord], settings: Setting
                         connection.execute("INSERT INTO \"references\" VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (ref.reference_id, ref.source_paper_id, ref.source_canonical_id, ref.ordinal, ref.raw_text, ref.page_start, ref.page_end, ref.target_arxiv_id, ref.target_doi, ref.resolution))
                         connection.execute("INSERT INTO references_fts (reference_id, source_paper_id, raw_text) VALUES (?, ?, ?)", (ref.reference_id, ref.source_paper_id, ref.raw_text))
                         if ref.target_arxiv_id:
-                            connection.execute("INSERT OR IGNORE INTO citation_edges VALUES (?, ?, 'cites', ?)", (record.paper_id, ref.target_arxiv_id.split('v', 1)[0], ref.resolution))
+                            connection.execute("INSERT OR IGNORE INTO citation_edges VALUES (?, ?, 'cites', ?)", (record.paper_id, normalize_arxiv_id(ref.target_arxiv_id), ref.resolution))
                 except (OSError, ValueError, json.JSONDecodeError) as exc:
                     if record.mineru_dir and (record.mineru_dir / "content_list.json").is_file():
                         issues.append({"paper_id": record.paper_id, "error": f"reference parse failed: {exc}"})
@@ -441,7 +441,13 @@ def _require_index(settings: Settings) -> None:
         raise CatalogIndexNotReady("catalog index is not ready; run paper_catalog_sync first") from exc
 
 
-def search_chunks(settings: Settings, query: str, paper_ids: list[str] | None = None, limit: int = 8) -> list[dict[str, Any]]:
+def search_chunks(
+    settings: Settings,
+    query: str,
+    paper_ids: list[str] | None = None,
+    limit: int = 8,
+    regions: list[str] | tuple[str, ...] | None = None,
+) -> list[dict[str, Any]]:
     """使用 Chunk FTS5 返回正文证据。"""
     _require_index(settings)
     _require_chunk_index(settings)
@@ -454,6 +460,11 @@ def search_chunks(settings: Settings, query: str, paper_ids: list[str] | None = 
         placeholders = ",".join("?" for _ in paper_ids)
         clauses.append(f"c.paper_id IN ({placeholders})")
         params.extend(paper_ids)
+    selected_regions = [str(value) for value in (regions or ()) if str(value)]
+    if selected_regions:
+        placeholders = ",".join("?" for _ in selected_regions)
+        clauses.append(f"c.region IN ({placeholders})")
+        params.extend(selected_regions)
     params.append(max(1, min(int(limit), 50)))
     sql = f"""SELECT c.chunk_id, c.paper_id, c.canonical_id, c.ordinal, c.region,
                      c.chapter_number, c.chapter_title, c.section_path, c.section_label,
@@ -492,25 +503,81 @@ def _chunk_row(row: tuple[Any, ...]) -> dict[str, Any]:
 
 def get_references(settings: Settings, paper_id: str) -> dict[str, Any]:
     _require_index(settings)
+    source_id = _base_arxiv_id(paper_id)
     with sqlite3.connect(settings.paper_catalog_db_path) as connection:
-        rows = connection.execute('SELECT reference_id, source_paper_id, source_canonical_id, ordinal, raw_text, page_start, page_end, target_arxiv_id, target_doi, resolution FROM "references" WHERE source_paper_id = ? ORDER BY ordinal', (paper_id,)).fetchall()
+        rows = connection.execute('SELECT reference_id, source_paper_id, source_canonical_id, ordinal, raw_text, page_start, page_end, target_arxiv_id, target_doi, resolution FROM "references" WHERE source_paper_id = ? ORDER BY ordinal', (source_id,)).fetchall()
     keys = ("reference_id", "source_paper_id", "source_canonical_id", "ordinal", "raw_text", "page_start", "page_end", "target_arxiv_id", "target_doi", "resolution")
     return {"paper_id": paper_id, "items": [dict(zip(keys, row)) for row in rows], "scope": "local_catalog"}
 
 
-def get_citations(settings: Settings, paper_id: str) -> dict[str, Any]:
+def get_citations(settings: Settings, paper_id: str, filters: dict[str, Any] | None = None) -> dict[str, Any]:
     _require_index(settings)
-    base = str(paper_id).split("v", 1)[0]
+    base = _base_arxiv_id(paper_id)
     with sqlite3.connect(settings.paper_catalog_db_path) as connection:
         rows = connection.execute("SELECT source_paper_id, target_arxiv_id, relation, resolution FROM citation_edges WHERE target_arxiv_id = ? ORDER BY source_paper_id", (base,)).fetchall()
+        if filters:
+            rows = [row for row in rows if _paper_row_matches(connection, row[0], filters)]
     return {"paper_id": paper_id, "items": [{"source_paper_id": r[0], "target_arxiv_id": r[1], "relation": r[2], "resolution": r[3]} for r in rows], "scope": "local_catalog"}
 
 
-def citation_graph(settings: Settings, paper_id: str, direction: str = "both", depth: int = 1) -> dict[str, Any]:
-    references = get_references(settings, paper_id) if direction in {"both", "out"} else {"items": []}
-    citations = get_citations(settings, paper_id) if direction in {"both", "in"} else {"items": []}
-    edges = references["items"] + citations["items"]
-    return {"paper_id": paper_id, "direction": direction, "depth": max(1, int(depth)), "nodes": sorted({paper_id, *[str(item.get("target_arxiv_id") or item.get("source_paper_id")) for item in edges]}), "edges": edges, "scope": "local_catalog"}
+def citation_graph(settings: Settings, paper_id: str, direction: str = "both", depth: int = 1, filters: dict[str, Any] | None = None) -> dict[str, Any]:
+    if direction not in {"in", "out", "both"}:
+        raise ValueError("direction must be in, out or both")
+    max_depth = max(1, min(int(depth), 3))
+    root = _base_arxiv_id(paper_id)
+    nodes = {root}
+    edges: list[dict[str, Any]] = []
+    seen_edges: set[tuple[str, str, str]] = set()
+    frontier = {root}
+    with sqlite3.connect(settings.paper_catalog_db_path) as connection:
+        for level in range(max_depth):
+            if not frontier:
+                break
+            next_frontier: set[str] = set()
+            for current in frontier:
+                rows: list[tuple[Any, ...]] = []
+                if direction in {"out", "both"}:
+                    rows.extend(connection.execute("SELECT source_paper_id, target_arxiv_id, relation, resolution FROM citation_edges WHERE source_paper_id = ?", (current,)).fetchall())
+                if direction in {"in", "both"}:
+                    rows.extend(connection.execute("SELECT source_paper_id, target_arxiv_id, relation, resolution FROM citation_edges WHERE target_arxiv_id = ?", (current,)).fetchall())
+                for source, target, relation, resolution in rows:
+                    if filters and not (_paper_row_matches(connection, source, filters) or _paper_row_matches(connection, target, filters)):
+                        continue
+                    edge_key = (str(source), str(target), str(relation))
+                    if edge_key in seen_edges:
+                        continue
+                    seen_edges.add(edge_key)
+                    edges.append({"source_paper_id": str(source), "target_arxiv_id": str(target), "relation": str(relation), "resolution": str(resolution), "depth": level + 1})
+                    neighbor = str(target) if str(source) == current else str(source)
+                    if neighbor not in nodes:
+                        nodes.add(neighbor)
+                        next_frontier.add(neighbor)
+            frontier = next_frontier
+    return {"paper_id": paper_id, "direction": direction, "depth": max_depth, "nodes": sorted(nodes), "edges": edges, "scope": "local_catalog"}
+
+
+def _base_arxiv_id(value: str) -> str:
+    """兼容旧内部调用的统一 ArXiv ID 规范化入口。"""
+
+    return normalize_arxiv_id(value)
+
+
+def _paper_row_matches(connection: sqlite3.Connection, paper_id: str, filters: dict[str, Any]) -> bool:
+    row = connection.execute("SELECT authors, categories, published_at, state FROM papers WHERE paper_id = ?", (paper_id,)).fetchone()
+    if not row:
+        return False
+    authors, categories, published_at, state = row
+    if filters.get("author") and str(filters["author"]).casefold() not in str(authors).casefold():
+        return False
+    if filters.get("category") and str(filters["category"]).casefold() not in str(categories).casefold():
+        return False
+    if filters.get("year") and not str(published_at or "").startswith(str(filters["year"])):
+        return False
+    if filters.get("year_from") and str(published_at or "")[:4] < str(filters["year_from"]):
+        return False
+    if filters.get("year_to") and str(published_at or "")[:4] > str(filters["year_to"]):
+        return False
+    return not filters.get("state") or str(state) == str(filters["state"])
 
 
 def _table_exists(connection: sqlite3.Connection, name: str) -> bool:
@@ -545,6 +612,12 @@ def _append_filter_sql(clauses: list[str], parameters: list[Any], filters: dict[
     if filters.get("year"):
         clauses.append("p.published_at LIKE ?")
         parameters.append(f"{str(filters['year'])}%")
+    if filters.get("year_from"):
+        clauses.append("substr(p.published_at, 1, 4) >= ?")
+        parameters.append(str(filters["year_from"]))
+    if filters.get("year_to"):
+        clauses.append("substr(p.published_at, 1, 4) <= ?")
+        parameters.append(str(filters["year_to"]))
 
 
 def _build_fts_query(value: str) -> str:
@@ -567,7 +640,13 @@ def _matches_filters(record: CatalogRecord, filters: dict[str, Any]) -> bool:
         return False
     if filters.get("state") and record.state != str(filters["state"]):
         return False
-    return not filters.get("year") or str(record.published_at or "").startswith(str(filters["year"]))
+    if filters.get("year") and not str(record.published_at or "").startswith(str(filters["year"])):
+        return False
+    if filters.get("year_from") and str(record.published_at or "")[:4] < str(filters["year_from"]):
+        return False
+    if filters.get("year_to") and str(record.published_at or "")[:4] > str(filters["year_to"]):
+        return False
+    return True
 
 
 def _record_values(record: CatalogRecord) -> tuple[Any, ...]:

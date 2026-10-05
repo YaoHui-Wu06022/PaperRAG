@@ -39,6 +39,9 @@ def extract_references(content_list: list[dict[str, Any]], *, source_paper_id: s
             key = re.sub(r"^[\d.\s]+", "", text.casefold()).strip()
             if key in {"references", "reference", "bibliography"}:
                 in_reference = True
+            elif in_reference:
+                # Reference 之后出现新的章节时，避免把后续正文误当成引用条目。
+                break
             continue
         if not in_reference or not text:
             continue
@@ -67,7 +70,7 @@ def extract_references(content_list: list[dict[str, Any]], *, source_paper_id: s
         doi = _DOI.search(raw_text)
         doi_value = doi.group(0).rstrip(".,;") if doi else None
         if target_id:
-            resolution = "local" if target_id.casefold().split("v", 1)[0] in local_ids else "external"
+            resolution = "local" if normalize_arxiv_id(target_id).casefold() in local_ids else "external"
         else:
             resolution = "unresolved"
             unresolved_count += 1
@@ -89,4 +92,10 @@ def _page(block: dict[str, Any]) -> int | None:
     return int(value) if isinstance(value, int) or (isinstance(value, str) and value.isdigit()) else None
 
 
-__all__ = ["Reference", "extract_references"]
+def normalize_arxiv_id(value: str) -> str:
+    """只移除 ArXiv 版本后缀，保留 ID 中其他字母。"""
+
+    return re.sub(r"v\d+$", "", str(value).strip(), flags=re.IGNORECASE)
+
+
+__all__ = ["Reference", "extract_references", "normalize_arxiv_id"]

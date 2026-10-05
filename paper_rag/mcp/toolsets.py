@@ -1,40 +1,23 @@
-"""MCP 工具组解析、启用和注册漂移校验。"""
+"""论文库 MCP 工具组解析和注册校验。"""
 
 from __future__ import annotations
 
 import os
 from collections.abc import Iterable
 
-
 TOOLSETS_ENV_VAR = "PAPER_RAG_TOOLSETS"
-
-CORE_TOOLS: frozenset[str] = frozenset(
-    {
-        "paper_query",
-        "paper_list",
-        "paper_search",
-        "paper_get_metadata",
-        "paper_get_assets",
-        "paper_asset_status",
-        "paper_job_status",
-        "paper_search_chunks",
-        "paper_get_chunk",
-        "paper_get_fulltext",
-        "paper_get_references",
-        "paper_get_citations",
-        "paper_citation_graph",
-    }
-)
-
+CORE_TOOLS: frozenset[str] = frozenset({
+    "library_search", "library_retrieve", "library_get_metadata",
+    "library_get_chunk", "library_get_assets", "library_get_asset_status", "library_index_status", "library_job_status",
+})
 TOOLSETS: dict[str, frozenset[str]] = {
-    "acquisition": frozenset({"paper_arxiv_download"}),
-    "ingestion": frozenset({"paper_arxiv_ingest"}),
-    "search-admin": frozenset({"paper_catalog_sync", "paper_embedding_status", "paper_embedding_rebuild"}),
-    # 管理工具尚未注册，先保留组名以便配置文件稳定演进。
-    "management": frozenset(),
+    "acquisition": frozenset({"library_acquire_arxiv"}),
+    "ingestion": frozenset({"library_ingest_mineru", "library_catalog_sync"}),
+    "index-admin": frozenset({"library_index_rebuild"}),
+    "citation": frozenset({"library_get_references", "library_get_citations", "library_get_citation_graph"}),
+    "fulltext": frozenset({"library_read", "library_get_chunk"}),
 }
-
-DEFAULT_ON: frozenset[str] = frozenset({"acquisition", "ingestion"})
+DEFAULT_ON: frozenset[str] = frozenset({"citation", "fulltext"})
 
 
 class UnknownToolsetError(ValueError):
@@ -46,12 +29,9 @@ def _split(raw: str) -> list[str]:
 
 
 def resolve_enabled(raw: str | None = None) -> set[str]:
-    """解析 ``PAPER_RAG_TOOLSETS``，返回启用的可选工具组。"""
-
     spec = _split(os.environ.get(TOOLSETS_ENV_VAR, "") if raw is None else raw)
     if not spec:
         return set(DEFAULT_ON)
-
     enabled: set[str] = set()
     valid = ", ".join(sorted(TOOLSETS) + ["all", "none"])
     for token in spec:
@@ -64,9 +44,7 @@ def resolve_enabled(raw: str | None = None) -> set[str]:
         elif name in TOOLSETS:
             candidates = {name}
         else:
-            raise UnknownToolsetError(
-                f"Unknown toolset {name!r} in {TOOLSETS_ENV_VAR}. Valid values: {valid}"
-            )
+            raise UnknownToolsetError(f"Unknown toolset {name!r} in {TOOLSETS_ENV_VAR}. Valid values: {valid}")
         if name == "none" and not negated:
             enabled.clear()
         elif negated:
@@ -77,8 +55,6 @@ def resolve_enabled(raw: str | None = None) -> set[str]:
 
 
 def apply_toolsets(mcp: object, raw: str | None = None) -> set[str]:
-    """将工具组可见性应用到 FastMCP 实例。"""
-
     enabled = resolve_enabled(raw)
     on = set(CORE_TOOLS)
     off: set[str] = set()
@@ -95,8 +71,6 @@ def apply_toolsets(mcp: object, raw: str | None = None) -> set[str]:
 
 
 def validate_toolsets(registered_names: Iterable[str]) -> None:
-    """确保核心和可选工具组中的名称都已注册。"""
-
     registered = set(registered_names)
     groups = {"core": CORE_TOOLS, **TOOLSETS}
     missing = {
@@ -109,13 +83,4 @@ def validate_toolsets(registered_names: Iterable[str]) -> None:
         raise RuntimeError(f"MCP 工具组包含未注册工具：{details}")
 
 
-__all__ = [
-    "CORE_TOOLS",
-    "DEFAULT_ON",
-    "TOOLSETS",
-    "TOOLSETS_ENV_VAR",
-    "UnknownToolsetError",
-    "apply_toolsets",
-    "resolve_enabled",
-    "validate_toolsets",
-]
+__all__ = ["CORE_TOOLS", "DEFAULT_ON", "TOOLSETS", "TOOLSETS_ENV_VAR", "UnknownToolsetError", "apply_toolsets", "resolve_enabled", "validate_toolsets"]

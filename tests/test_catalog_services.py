@@ -15,9 +15,9 @@ from paper_rag.catalog.service import (
     scan_catalog,
     search_catalog,
 )
+from paper_rag.catalog.service import citation_graph
+from paper_rag.catalog.references import extract_references
 from paper_rag.config import Settings
-from paper_rag.query.service import query_papers
-from paper_rag.query.schemas import QueryIntent
 
 
 def _settings(tmp_path: Path) -> Settings:
@@ -86,29 +86,53 @@ def test_catalog_rebuild_is_atomic_on_failure(tmp_path: Path, monkeypatch: pytes
     assert not list(database.parent.glob(f".{database.name}.*.tmp"))
 
 
-def test_paper_query_reports_missing_content_without_asset_status(tmp_path: Path):
-    settings = _settings(tmp_path)
-    result = query_papers(settings, "1706.03762 如何实现这个方法")
-
-    assert result.decision.intent == QueryIntent.PAPER_CONTENT
-    assert result.capabilities["content_available"] is False
-    assert result.capabilities["missing_assets"] == ["1706.03762:mineru/full.md"]
-    assert result.to_dict()["read_only"] is True
-
-
-def test_paper_query_discovery_reports_unready_index_without_writing(tmp_path: Path):
-    settings = _settings(tmp_path)
-    result = query_papers(settings, "找 Transformer 论文")
-
-    assert result.capabilities["status"] == "index_not_ready"
-    assert not settings.paper_catalog_db_path.exists()
-
-
-def test_paper_query_discovery_uses_the_synced_fts_index(tmp_path: Path):
+def test_metadata_query_remains_separate_from_body_rag(tmp_path: Path):
     settings = _settings(tmp_path)
     rebuild_catalog(settings)
 
-    result = query_papers(settings, "找 Transformer 论文")
+    records = search_catalog(settings, "Transformer", {"category": "cs.CL"})
+    assert [item.base_id for item in records] == ["1706.03762"]
 
-    assert result.capabilities == {"index_ready": True}
-    assert [item["base_id"] for item in result.items] == ["1706.03762"]
+
+def test_citation_graph_walks_multiple_hops_without_chunks(tmp_path: Path):
+    settings = _settings(tmp_path)
+    rebuild_catalog(settings)
+    with sqlite3.connect(settings.paper_catalog_db_path) as connection:
+        connection.executemany(
+            "INSERT INTO citation_edges VALUES (?, ?, 'cites', 'local')",
+            [("1706.03762", "1111.11111"), ("1111.11111", "2222.22222")],
+        )
+        connection.commit()
+
+    graph = citation_graph(settings, "1706.03762", direction="out", depth=2)
+    assert graph["nodes"] == ["1111.11111", "1706.03762", "2222.22222"]
+    assert {edge["depth"] for edge in graph["edges"]} == {1, 2}
+
+
+def test_citation_graph_version_suffix_and_node_filters(tmp_path: Path):
+    settings = _settings(tmp_path)
+    rebuild_catalog(settings)
+    with sqlite3.connect(settings.paper_catalog_db_path) as connection:
+        connection.executemany(
+            "INSERT INTO citation_edges VALUES (?, ?, 'cites', 'local')",
+            [("1706.03762", "1111.11111"), ("2222.22222", "1706.03762")],
+        )
+        connection.commit()
+
+    graph = citation_graph(settings, "1706.03762v7", direction="both", depth=1)
+    assert len(graph["edges"]) == 2
+
+
+def test_reference_resolution_removes_only_version_suffix():
+    refs, _warnings = extract_references(
+        [
+            {"type": "heading", "text": "References", "text_level": 1},
+            {"type": "ref_text", "ref_text": "[1] arXiv:2101.00001v2"},
+            {"type": "heading", "text": "Appendix", "text_level": 1},
+            {"type": "text", "text": "not a reference"},
+        ],
+        source_paper_id="1706.03762",
+        source_canonical_id="1706.03762v7",
+        local_ids={"2101.00001"},
+    )
+    assert refs[0].resolution == "local"

@@ -14,7 +14,7 @@ def test_toolsets_default_and_explicit_profiles():
     assert resolve_enabled("") == set(DEFAULT_ON)
     assert resolve_enabled("none") == set()
     assert resolve_enabled("acquisition,ingestion") == {"acquisition", "ingestion"}
-    assert resolve_enabled("all,-management") == {"acquisition", "ingestion", "search-admin"}
+    assert resolve_enabled("all,-index-admin") == {"acquisition", "ingestion", "citation", "fulltext"}
 
 
 def test_unknown_toolset_fails_loudly():

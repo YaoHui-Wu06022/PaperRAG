@@ -66,6 +66,12 @@ class Settings:
     milvus_db_name: str
     milvus_collection: str
     milvus_dimension: int
+    llamaindex_milvus_collection: str
+    llamaindex_index_dir: Path
+    llamaindex_retrieval_top_k: int
+    llamaindex_lexical_top_k: int
+    llamaindex_semantic_top_k: int
+    llamaindex_rrf_k: int
 
     @classmethod
     def load(cls, project_root: Path | None = None) -> "Settings":
@@ -130,6 +136,18 @@ class Settings:
             milvus_db_name=values.get("MILVUS_DB_NAME", "default"),
             milvus_collection=values.get("MILVUS_COLLECTION", "paper_rag_chunks"),
             milvus_dimension=int(values.get("MILVUS_DIMENSION", "1024")),
+            llamaindex_milvus_collection=values.get(
+                "LLAMAINDEX_MILVUS_COLLECTION", "paper_rag_llama_chunks"
+            ),
+            llamaindex_index_dir=resolve_path(
+                root,
+                values.get("LLAMAINDEX_INDEX_DIR"),
+                data_dir / "index" / "llamaindex",
+            ),
+            llamaindex_retrieval_top_k=max(1, int(values.get("LLAMAINDEX_RETRIEVAL_TOP_K", "8"))),
+            llamaindex_lexical_top_k=max(1, int(values.get("LLAMAINDEX_LEXICAL_TOP_K", "50"))),
+            llamaindex_semantic_top_k=max(1, int(values.get("LLAMAINDEX_SEMANTIC_TOP_K", "50"))),
+            llamaindex_rrf_k=max(1, int(values.get("LLAMAINDEX_RRF_K", "60"))),
         )
 
 

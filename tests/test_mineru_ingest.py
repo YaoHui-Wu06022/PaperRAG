@@ -200,7 +200,7 @@ def test_mcp_ingest_preview_does_not_submit_job(tmp_path: Path, monkeypatch):
     )
     monkeypatch.setattr(ingestion, "get_jobs", lambda: calls.append("submit"))
 
-    result = ingestion.paper_arxiv_ingest(["1706.03762"], confirm=False)
+    result = ingestion.library_ingest_mineru(["1706.03762"], confirm=False)
 
     assert result["status"] == "confirmation_required"
     assert calls == []
@@ -224,7 +224,7 @@ def test_mcp_ingest_confirm_queues_job(tmp_path: Path, monkeypatch):
             return {"job_id": "job_test", "status": "queued"}
 
     monkeypatch.setattr(ingestion, "get_jobs", lambda: Jobs())
-    result = ingestion.paper_arxiv_ingest(["1706.03762"], confirm=True)
+    result = ingestion.library_ingest_mineru(["1706.03762"], confirm=True)
 
     assert result["status"] == "queued"
     assert result["job"]["job_id"] == "job_test"

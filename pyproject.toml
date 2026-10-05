@@ -7,7 +7,13 @@ name = "paper-rag"
 version = "0.1.0"
 description = "ArXiv source acquisition for a MinerU-backed MCP RAG knowledge base."
 requires-python = ">=3.10"
-dependencies = ["fastmcp>=4,<5"]
+dependencies = [
+    "fastmcp>=4,<5",
+    "llama-index-core>=0.14,<0.15",
+    "llama-index-vector-stores-milvus>=1.2,<2",
+    "pymilvus[milvus_lite]>=2.6.7,<3",
+    "milvus-lite>=3.2,<4",
+]
 
 [project.scripts]
 paper-rag = "paper_rag.cli.main:main"
