@@ -156,3 +156,10 @@ def test_filters_validate_year_and_unknown_keys(tmp_path: Path):
     settings = make_index_fixture(tmp_path)
     assert retrieve(settings, "attention", filters={"year_from": "20"}, mode="lexical")["status"] == "invalid_input"
     assert retrieve(settings, "attention", filters={"unknown": "x"}, mode="lexical")["status"] == "invalid_input"
+
+
+def test_reason_respects_final_limit(tmp_path: Path):
+    settings = make_index_fixture(tmp_path)
+    result = retrieve(settings, "attention", task="reason", mode="lexical", limit=1)
+    assert result["status"] == "ok"
+    assert result["data"]["count"] <= 1

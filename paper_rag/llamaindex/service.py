@@ -187,6 +187,8 @@ def _reason_items(settings: Settings, direct: list[dict[str, Any]], limit: int) 
             neighbor_id = str(neighbor.get("chunk_id"))
             if neighbor_id in seen:
                 continue
+            if len(result) >= limit:
+                return result[:limit]
             result.append({**neighbor, "score": None, "semantic_score": None, "lexical_rank": None, "semantic_rank": None, "rrf_score": None, "evidence_role": "context", "page_start_display": _display_page(neighbor.get("page_start")), "page_end_display": _display_page(neighbor.get("page_end"))})
             seen.add(neighbor_id)
             if len(result) >= limit:
