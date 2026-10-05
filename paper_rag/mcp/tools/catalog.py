@@ -13,7 +13,9 @@ from paper_rag.catalog.service import (
     get_metadata,
     get_references,
     rebuild_catalog,
+    scan_catalog,
 )
+from paper_rag.catalog.references import normalize_arxiv_id
 from paper_rag.llamaindex.service import index_status, rebuild_index
 from paper_rag.mcp._app import mcp
 from paper_rag.mcp.runtime import get_jobs, get_settings
@@ -59,24 +61,29 @@ def library_read(paper_id: str, offset: int = 0, limit: int = 12000) -> dict[str
     return _read_only(status, result)
 
 
-@mcp.tool(name="library_citation", description="读取论文参考文献、被引论文或本地引用关系图；引用查询只访问 SQLite 图，不检索正文。data.presentation.answer_text 为确定性答案，Agent 应原样输出。")
-def library_citation(paper_id: str, mode: str = "graph", direction: str = "both", depth: int = 1, filters: dict[str, Any] | None = None) -> dict[str, Any]:
+@mcp.tool(name="library_citation", description="读取论文参考文献、被引论文或本地引用关系图；可传 paper_id 或 paper_title，引用查询只访问 SQLite 图，不检索正文。")
+def library_citation(paper_id: str | None = None, paper_title: str | None = None, mode: str = "graph", direction: str = "both", depth: int = 1, filters: dict[str, Any] | None = None) -> dict[str, Any]:
     if mode not in {"references", "citations", "graph"}:
         return _read_only("invalid_input", {"paper_id": paper_id, "mode": mode, "items": [], "nodes": [], "edges": []})
     if direction not in {"in", "out", "both"}:
         return _read_only("invalid_input", {"paper_id": paper_id, "mode": mode, "nodes": [], "edges": []})
+    if bool(paper_id) == bool(paper_title):
+        return _read_only("invalid_input", {"paper_id": paper_id, "paper_title": paper_title, "mode": mode, "items": [], "nodes": [], "edges": []}, ["exactly one of paper_id or paper_title is required"])
     try:
         settings = get_settings()
+        record = _resolve_citation_paper(settings, paper_id=paper_id, paper_title=paper_title)
+        if record is None:
+            return _read_only("not_found", {"paper_id": paper_id, "paper_title": paper_title, "mode": mode, "items": [], "nodes": [], "edges": []}, ["paper was not found in the local catalog"])
+        resolved_paper_id = record.base_id
         title = None
         if mode == "references":
-            data = get_references(settings, paper_id)
-            record = get_metadata(settings, paper_id)
-            title = record.title if record else None
+            data = get_references(settings, resolved_paper_id)
+            title = record.title
         elif mode == "citations":
-            data = get_citations(settings, paper_id, filters)
+            data = get_citations(settings, resolved_paper_id, filters)
         else:
-            data = citation_graph(settings, paper_id, direction, depth, filters)
-        title_ids = [paper_id]
+            data = citation_graph(settings, resolved_paper_id, direction, depth, filters)
+        title_ids = [resolved_paper_id]
         if mode == "references":
             local_reference_items = [
                 item
@@ -87,11 +94,19 @@ def library_citation(paper_id: str, mode: str = "graph", direction: str = "both"
         elif mode == "citations":
             title_ids.extend(str(item.get("source_paper_id")) for item in data.get("items", [])[:10] if item.get("source_paper_id"))
         else:
-            for edge in data.get("edges", [])[:10]:
-                if edge.get("source_paper_id"):
-                    title_ids.append(str(edge["source_paper_id"]))
-                if edge.get("target_arxiv_id"):
-                    title_ids.append(str(edge["target_arxiv_id"]))
+            root_id = normalize_arxiv_id(resolved_paper_id)
+            outgoing_seen = incoming_seen = 0
+            for edge in data.get("edges", []):
+                source_id = str(edge.get("source_paper_id") or "")
+                target_id = str(edge.get("target_arxiv_id") or "")
+                if normalize_arxiv_id(source_id) == root_id and outgoing_seen < 10:
+                    if target_id:
+                        title_ids.append(target_id)
+                    outgoing_seen += 1
+                if normalize_arxiv_id(target_id) == root_id and incoming_seen < 10:
+                    if source_id:
+                        title_ids.append(source_id)
+                    incoming_seen += 1
         titles = _load_titles(settings, title_ids)
         return attach_presentation(
             _read_only("ok", data),
@@ -100,6 +115,33 @@ def library_citation(paper_id: str, mode: str = "graph", direction: str = "both"
     except CatalogIndexNotReady:
         data = {"paper_id": paper_id, "mode": mode, "items": [], "nodes": [], "edges": []}
         return attach_presentation(_read_only("catalog_not_ready", data), citation_presentation(data, mode))
+    except ValueError as exc:
+        data = {"paper_id": paper_id, "paper_title": paper_title, "mode": mode, "items": [], "nodes": [], "edges": []}
+        return _read_only("invalid_input", data, [str(exc)])
+
+
+def _resolve_citation_paper(settings: Any, *, paper_id: str | None, paper_title: str | None) -> Any:
+    """将引用工具的论文 ID 或题目解析为唯一的本地论文。"""
+
+    if paper_id:
+        return get_metadata(settings, paper_id)
+    wanted = _normalize_title(paper_title or "")
+    if not wanted:
+        return None
+    matches = [record for record in scan_catalog(settings) if _normalize_title(record.title) == wanted]
+    if len(matches) > 1:
+        raise ValueError("paper_title matches multiple local papers")
+    return matches[0] if matches else None
+
+
+def _normalize_title(value: str) -> str:
+    """规范化题目大小写、Unicode 和标点后用于本地精确匹配。"""
+
+    import re
+    import unicodedata
+
+    normalized = unicodedata.normalize("NFKC", str(value)).casefold()
+    return re.sub(r"[^\w]+", " ", normalized, flags=re.UNICODE).strip()
 
 
 def _load_titles(settings: Any, paper_ids: list[str]) -> dict[str, str]:

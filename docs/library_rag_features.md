@@ -55,10 +55,10 @@ Catalog 同步时从 MinerU Reference 区域解析 ArXiv ID、DOI 和原始引�
 
 Catalog 同步结果中的 `citation_match_stats` 会分别统计 `arxiv_exact`、`doi_exact`、`title_author_year`、`external`、`ambiguous` 和 `unresolved`。引用匹配不调用外部服务，也不触发 Embedding、Milvus 或正文检索。
 
-统一工具 `library_citation` 支持：
+当问题明确询问参考文献、被引论文或引用关系图时，Agent 直接选择 `library_citation`。工具既接受 `paper_id`，也接受用户通常提供的 `paper_title`；题目会在本地 Catalog 内精确解析，不需要先调用 `library_search`。统一工具支持：
 
     {
-      "paper_id": "1706.03762",
+      "paper_title": "Attention Is All You Need",
       "mode": "graph",
       "direction": "both",
       "depth": 2
@@ -67,6 +67,8 @@ Catalog 同步结果中的 `citation_match_stats` 会分别统计 `arxiv_exact`�
 depth 最大为 3，图查询使用 SQLite BFS；查询引用关系不会触发 Embedding、Milvus 或正文检索。
 
 每次 Catalog 同步还会生成 UTF-8 文件 `data/index/citation_graph.json`，包含本地论文节点、唯一引用边、引用数量和匹配统计，便于直接查看或导入图分析工具。原始重复参考条目仍在 SQLite `references` 中，并通过 `duplicate_of_reference_id` 指向主条目；JSON 图不会重复建边。
+
+`library_citation(mode="graph", depth=2)` 会在结构化 `data.edges` 中保留每条边的 `depth`。确定性答案中的“直接引用/直接被引用”只统计目标论文的一跳关系，同时给出查询深度以及多跳范围内的节点数和边数，避免把直接关系与扩展关系混为一谈。
 
 ## 5. 索引与运行
 
@@ -106,6 +108,6 @@ Chunk 检查：
 
 library_retrieve 返回 status/data/warnings/read_only 包装。data.items 中每个来源都包含 source_id、chunk_id、paper_id、canonical_id、章节、页码、正文和资源引用。客户端使用 [S1] 等标记生成最终回答；证据编号和页码组织方式参考 [PaperQA 示例输出](https://github.com/future-house/paper-qa#example-output)。
 
-元数据和引用工具会在 `data.presentation` 中返回确定性答案模板。`library_search` 与 `library_citation` 的 `render_policy` 为 `verbatim`，Agent 应原样输出 `answer_text`，不重新总结或补充。参考文献答案只显示本地匹配数量和前 10 条本地论文题目；被引论文答案只显示数量和前 10 个来源论文题目；引用图答案显示方向、深度、节点数、边数以及前 10 条“引用方 引用 被引用方”关系。题目从本地 Catalog 读取，缺失时才回退到论文 ID。
+元数据和引用工具会在 `data.presentation` 中返回确定性答案模板。`library_search` 与 `library_citation` 的 `render_policy` 为 `verbatim`，Agent 应原样输出 `answer_text`，不重新总结或补充。参考文献答案只显示本地匹配数量和前 10 条本地论文题目；被引论文答案只显示数量和前 10 个来源论文题目；引用图在双向查询时分别展示“引用（前10条）”和“被引用（前10条）”，单向查询保持单列表达。题目从本地 Catalog 读取，缺失时才回退到论文 ID。
 
 `library_retrieve(mode="hybrid")` 的 `render_policy` 为 `compose`，Agent 可以根据正文证据、`source_id` 和 `context_text` 组织最终答案。lexical 和 semantic 模式仍只提供证据上下文。MCP 服务端不调用答案生成模型。

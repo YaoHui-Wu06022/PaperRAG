@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from typing import Any
 
+from paper_rag.catalog.references import normalize_arxiv_id
+
 
 TEMPLATE_VERSION = "library-answer-v1"
 
@@ -85,15 +87,34 @@ def citation_presentation(
 
     if mode == "graph":
         edges = [edge for edge in data.get("edges", []) if isinstance(edge, Mapping)]
-        lines = [
-            f"已查询论文 {_title(data.get('paper_id'), title_lookup)} 的本地引用关系图",
-            "",
-            f"方向: {_value(data.get('direction'))}",
-            f"深度: {_value(data.get('depth'))}",
-            f"节点数: {len(data.get('nodes') or [])}",
-            f"边数: {len(edges)}",
+        root_id = normalize_arxiv_id(str(data.get("paper_id") or ""))
+        outgoing = [
+            edge
+            for edge in edges
+            if normalize_arxiv_id(str(edge.get("source_paper_id") or "")) == root_id
         ]
-        if edges:
+        incoming = [
+            edge
+            for edge in edges
+            if normalize_arxiv_id(str(edge.get("target_arxiv_id") or "")) == root_id
+        ]
+        graph_depth = int(data.get("depth") or 1)
+        lines = [f"目标论文: {_title(data.get('paper_id'), title_lookup)}"]
+        if graph_depth > 1:
+            lines.extend(
+                [
+                    f"直接引用: {len(outgoing)} 篇",
+                    f"直接被引用: {len(incoming)} 篇",
+                    f"查询深度: {graph_depth}",
+                    f"多跳范围: {len(data.get('nodes') or [])} 个节点，{len(edges)} 条边",
+                ]
+            )
+        else:
+            lines.extend([f"引用: {len(outgoing)} 篇", f"被引用: {len(incoming)} 篇"])
+        if data.get("direction") == "both":
+            _append_graph_section(lines, "引用（前10条）：", outgoing, "target_arxiv_id", title_lookup)
+            _append_graph_section(lines, "被引用（前10条）：", incoming, "source_paper_id", title_lookup)
+        elif edges:
             lines.extend(["", "引用关系（前10条）："])
             lines.extend(
                 f"{number}. {_title(edge.get('source_paper_id'), title_lookup)} 引用 {_title(edge.get('target_arxiv_id'), title_lookup)}"
@@ -148,6 +169,22 @@ def _join_values(value: Any) -> str:
 def _year(value: Any) -> str:
     text = _value(value)
     return text[:4] if text != "-" else text
+
+
+def _append_graph_section(
+    lines: list[str],
+    heading: str,
+    edges: list[Mapping[str, Any]],
+    field: str,
+    title_lookup: Mapping[str, str] | None,
+) -> None:
+    """按引用方向分别追加最多十条论文题目。"""
+
+    lines.extend(["", heading])
+    lines.extend(
+        f"{number}. {_title(edge.get(field), title_lookup)}"
+        for number, edge in enumerate(edges[:10], start=1)
+    )
 
 
 __all__ = [

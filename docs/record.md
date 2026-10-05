@@ -1485,3 +1485,33 @@
   ]
 }
 ```
+
+## Milvus 增量同步统计
+
+本次增量更新完成后，Catalog、Milvus Collection 与 embedding cache 的 Chunk ID 已校验一致。
+
+```json
+{
+  "operation": "milvus_incremental_sync",
+  "status": "completed",
+  "mode": "incremental",
+  "catalog_chunk_count": 3241,
+  "indexed_count": 3241,
+  "embedding_model": "qwen3.7-text-embedding-flash",
+  "embedding_dimensions": 1024,
+  "sync_stats": {
+    "reused": 1492,
+    "added": 1395,
+    "updated": 354,
+    "deleted": 404,
+    "failed": 0
+  },
+  "consistency_check": {
+    "catalog_ids": 3241,
+    "milvus_ids": 3241,
+    "embedding_cache_ids": 3241,
+    "missing_ids": 0,
+    "extra_ids": 0
+  }
+}
+```

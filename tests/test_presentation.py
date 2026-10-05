@@ -74,25 +74,53 @@ def test_graph_presentation_contains_only_requested_statistics():
             "paper_id": "1706.03762",
             "direction": "both",
             "depth": 1,
-            "nodes": ["1706.03762", "2205.14135"],
-            "edges": [{"source_paper_id": "2205.14135", "target_arxiv_id": "1706.03762", "relation": "cites"}],
+            "nodes": ["1706.03762", "2205.14135", "1512.03385"],
+            "edges": [
+                {"source_paper_id": "1706.03762", "target_arxiv_id": "1512.03385", "relation": "cites"},
+                {"source_paper_id": "2205.14135", "target_arxiv_id": "1706.03762", "relation": "cites"},
+            ],
             "scope": "local_catalog",
         },
         "graph",
         title_lookup={
             "1706.03762": "Attention Is All You Need",
             "2205.14135": "FlashAttention",
+            "1512.03385": "Deep Residual Learning",
         },
     )
 
     text = result["answer_text"]
-    assert "已查询论文 Attention Is All You Need 的本地引用关系图" in text
-    assert "方向: both" in text
-    assert "深度: 1" in text
-    assert "节点数: 2" in text
-    assert "边数: 1" in text
-    assert "1. FlashAttention 引用 Attention Is All You Need" in text
+    assert "目标论文: Attention Is All You Need" in text
+    assert "引用: 1 篇" in text
+    assert "被引用: 1 篇" in text
+    assert "引用（前10条）：" in text
+    assert "1. Deep Residual Learning" in text
+    assert "被引用（前10条）：" in text
+    assert "1. FlashAttention" in text
     assert "local_catalog" not in text
+
+
+def test_graph_presentation_explains_multihop_scope_without_changing_direct_counts():
+    result = citation_presentation(
+        {
+            "paper_id": "1706.03762",
+            "direction": "both",
+            "depth": 2,
+            "nodes": ["1706.03762", "1512.03385", "1404.5997"],
+            "edges": [
+                {"source_paper_id": "1706.03762", "target_arxiv_id": "1512.03385"},
+                {"source_paper_id": "1811.06965", "target_arxiv_id": "1706.03762"},
+                {"source_paper_id": "1512.03385", "target_arxiv_id": "1404.5997"},
+            ],
+        },
+        "graph",
+    )
+
+    text = result["answer_text"]
+    assert "直接引用: 1 篇" in text
+    assert "直接被引用: 1 篇" in text
+    assert "查询深度: 2" in text
+    assert "多跳范围: 3 个节点，3 条边" in text
 
 
 def test_retrieve_presentation_only_hybrid_allows_composition():
