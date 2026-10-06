@@ -801,7 +801,7 @@ def _retrieve_response(status: str, data: dict[str, Any], warnings: list[str] | 
     """标记正文证据由客户端原样使用还是组织生成。"""
 
     payload = _envelope(status, data, warnings)
-    return attach_presentation(payload, retrieve_presentation(payload["data"], mode))
+    return attach_presentation(payload, retrieve_presentation(payload["data"], mode, status=status))
 
 
 @lru_cache(maxsize=4)

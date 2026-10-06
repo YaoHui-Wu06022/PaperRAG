@@ -256,6 +256,9 @@ def test_candidate_without_evidence_returns_insufficient_evidence(tmp_path: Path
     assert result["status"] == "insufficient_evidence"
     assert result["data"]["evidence"] == []
     assert "no_evidence_chunks" in result["warnings"]
+    instruction = result["data"]["presentation"]["agent_instruction"]
+    assert instruction["task"] == "fact"
+    assert "无法可靠回答该问题" in instruction["system_prompt"]
 
 
 def test_empty_primary_retrieval_uses_narrow_entity_fallback(monkeypatch, tmp_path: Path):

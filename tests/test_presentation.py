@@ -126,7 +126,52 @@ def test_graph_presentation_explains_multihop_scope_without_changing_direct_coun
 
 
 def test_retrieve_presentation_always_requires_composition():
-    data = {"context_text": "[S1] evidence"}
-    assert retrieve_presentation(data, "hybrid")["render_policy"] == "compose"
-    assert retrieve_presentation(data, "lexical")["render_policy"] == "compose"
-    assert retrieve_presentation(data, "semantic")["answer_text"] == ""
+    data = {"task": "fact", "evidence": [{"source_id": "S1", "text": "evidence"}]}
+    for mode in ("hybrid", "lexical", "semantic"):
+        result = retrieve_presentation(data, mode)
+        assert result["render_policy"] == "compose"
+        assert result["answer_text"] == ""
+
+
+def test_retrieve_presentation_returns_structured_agent_instruction():
+    result = retrieve_presentation({"task": "reason", "evidence": []}, "hybrid")
+    instruction = result["agent_instruction"]
+
+    assert set(instruction) == {"version", "task", "system_prompt"}
+    assert instruction["version"] == "rag-agent-v1"
+    assert instruction["task"] == "reason"
+    assert "data.evidence" in instruction["system_prompt"]
+    assert "中文" in instruction["system_prompt"]
+    assert "[S#]" in instruction["system_prompt"]
+    assert "为什么、如何或机制" in instruction["system_prompt"]
+    assert "language" not in instruction
+    assert "citation_syntax" not in instruction
+    assert "evidence_field" not in instruction
+    assert "evidence_field" not in instruction["system_prompt"]
+
+
+def test_retrieve_presentation_has_task_specific_instructions():
+    prompts = {
+        task: retrieve_presentation({"task": task}, "hybrid")["agent_instruction"]["system_prompt"]
+        for task in ("fact", "reason", "summary", "comparison")
+    }
+
+    assert len(set(prompts.values())) == 4
+    assert "直接回答问题" in prompts["fact"]
+    assert "解释问题中的为什么" not in prompts["fact"]
+    assert "按共同维度比较" not in prompts["fact"]
+    assert "解释问题中的为什么" in prompts["reason"]
+    assert "按共同维度比较" not in prompts["reason"]
+    assert "组织摘要" in prompts["summary"]
+    assert "解释问题中的为什么" not in prompts["summary"]
+    assert "按共同维度比较" in prompts["comparison"]
+    assert "组织摘要" not in prompts["comparison"]
+
+
+def test_insufficient_evidence_instruction_forbids_fake_citations():
+    result = retrieve_presentation({"task": "fact", "evidence": []}, "hybrid", status="insufficient_evidence")
+    prompt = result["agent_instruction"]["system_prompt"]
+
+    assert "没有足够的正文证据" in prompt
+    assert "无法可靠回答该问题" in prompt
+    assert "不存在的 [S#] 引用" in prompt

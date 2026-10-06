@@ -52,6 +52,5 @@ def test_core_tool_descriptions_keep_only_agent_facing_distinctions():
     assert "不读取正文" in tools["library_search"].description
     assert "引用关系图" in tools["library_citation"].description
     assert "answer_text" in tools["library_citation"].description
-    assert "唯一正文 RAG 工具" in tools["library_retrieve"].description
-    assert "JEV" in tools["library_retrieve"].description
+    assert tools["library_retrieve"].description == "正文检索工具，默认 hybrid 检索，返回证据片段信息。"
 

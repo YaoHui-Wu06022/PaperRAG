@@ -334,15 +334,34 @@ Reason 窗口在内部保留 `source_chunk_ids`、页码和章节；对 Agent �
 
 ## Agent 答案组织
 
-`library_retrieve` 是 Agent 的证据工具，不在服务内调用答案生成模型，也不保存答案上下文。返回的 `evidence` 只包含检索到的 Chunk 正文、来源定位和评分；Agent 应以 `evidence[*].text` 为事实依据。
+`library_retrieve` 是 Agent 的证据工具，不在服务内调用答案生成模型，也不保存答案上下文。正文响应的 `data.presentation` 还会返回结构化 `agent_instruction`：
 
-Agent 应根据问题复杂度综合多条证据，事实句使用对应的 `[S#]` 引用；证据不足时直接说明不足，不补写检索结果没有的事实。MCP 不校验自然语言答案，也不提供答案生成模型。
+```json
+{
+  "version": "rag-agent-v1",
+  "task": "reason",
+  "system_prompt": "你是论文库客户端回答 Agent……"
+}
+```
+
+`agent_instruction` 只包含本次任务的回答规则，不复制正文。中文输出、`[S#]` 引用格式和 `data.evidence` 作为唯一事实来源的约束都写在 `system_prompt` 中。返回的 `evidence` 只包含检索到的 Chunk 正文、来源定位和评分；Agent 应以 `evidence[*].text` 为事实依据。
+
+Agent 读取 `data.presentation.render_policy`：`verbatim` 且 `answer_text` 非空时原样输出；`compose` 时读取 `agent_instruction.system_prompt`、`data.query` 和 `data.evidence`，将证据按 `source_id` 组织后生成中文答案。`retrieval_debug`、内部排序字段和工具调用过程不进入事实证据区。
+
+四类正文任务的规则如下：
+
+- `fact`：直接回答问题，合并支持同一事实的多个 Chunk；
+- `reason`：解释机制或因果关系，区分证据明确说明的内容和推断；
+- `summary`：按问题、方法、实验结果和结论综合组织；
+- `comparison`：按共同维度比较各论文或方法，并分别引用双方证据。
+
+`insufficient_evidence` 响应仍返回 `agent_instruction`，但 `data.evidence` 为空。Agent 只能输出“当前检索结果没有包含足够的正文证据，无法可靠回答该问题。”，不能生成事实性答案或不存在的 `[S#]` 引用。
 
 工具边界如下：
 
 ```text
 Agent -> library_search / library_citation -> MCP 确定性 answer_text -> Agent 原样输出
-Agent -> library_retrieve -> MCP Chunk evidence 和评分 -> Agent 组织答案
+Agent -> library_retrieve -> MCP agent_instruction + Chunk evidence -> Agent 组织答案
 ```
 
 `library_search` 和 `library_citation` 返回已经组织好的 `data.presentation.answer_text`，Agent 直接原样输出；正文问题由 Agent 根据 `library_retrieve` 的多条证据自行组织答案。

@@ -14,7 +14,7 @@ def library_search(query: str, filters: dict[str, Any] | None = None, limit: int
     return search(get_settings(), query, filters, limit)
 
 
-@mcp.tool(name="library_retrieve", description="唯一正文 RAG 工具，默认 hybrid 检索。Agent 先选择本工具，服务内部再由 JEV 将任务分为 fact/reason/summary/comparison；MCP 只返回 evidence，Agent 用 source_id 写 [S#] 引用。")
+@mcp.tool(name="library_retrieve", description="正文检索工具，默认 hybrid 检索，返回证据片段信息。")
 def library_retrieve(
     query: str,
     paper_ids: list[str] | None = None,
