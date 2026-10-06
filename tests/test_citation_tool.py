@@ -13,7 +13,7 @@ def test_library_citation_resolves_title_without_metadata_search(monkeypatch):
         title="Attention Is All You Need",
     )
     monkeypatch.setattr(catalog_tools, "get_settings", lambda: object())
-    monkeypatch.setattr(catalog_tools, "scan_catalog", lambda _settings: [record])
+    monkeypatch.setattr(catalog_tools, "search_catalog", lambda _settings, _query, _filters, _limit: [record])
     monkeypatch.setattr(
         catalog_tools,
         "get_references",

@@ -3,14 +3,12 @@
 from __future__ import annotations
 
 import json
-import time
-import urllib.error
-import urllib.request
 import uuid
 from dataclasses import dataclass
 from typing import Any, Callable
 
 from paper_rag.config import Settings
+from paper_rag.http import HttpRequestError, JsonHttpClient
 
 
 class QueryRewriterError(RuntimeError):
@@ -24,9 +22,6 @@ class QueryRewrite:
     core_terms: tuple[str, ...]
 
 
-_RETRYABLE_STATUS = {429, 500, 502, 503, 504}
-
-
 class QueryRewriterClient:
     """调用 OpenAI 兼容 Chat Completions，使用独立配置和响应契约。"""
 
@@ -35,11 +30,10 @@ class QueryRewriterClient:
         settings: Settings,
         *,
         opener: Callable[..., Any] | None = None,
-        sleeper: Callable[[float], None] = time.sleep,
+        sleeper: Callable[[float], None] | None = None,
     ) -> None:
         self.settings = settings
-        self.opener = opener or urllib.request.urlopen
-        self.sleeper = sleeper
+        self.http = JsonHttpClient(opener=opener, **({"sleeper": sleeper} if sleeper else {}))
 
     def rewrite(self, query: str) -> QueryRewrite:
         if not self.settings.query_rewriter_enabled:
@@ -65,36 +59,25 @@ class QueryRewriterClient:
         return _parse_rewrite(_response_content(response))
 
     def _request(self, payload: dict[str, Any]) -> dict[str, Any]:
-        request = urllib.request.Request(
-            _chat_completions_url(self.settings.query_rewriter_base_url),
-            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-            method="POST",
-            headers={
-                "Authorization": f"Bearer {self.settings.query_rewriter_api_key}",
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "Idempotency-Key": uuid.uuid4().hex,
-            },
-        )
-        last_error: Exception | None = None
-        for attempt in range(self.settings.query_rewriter_retry_count + 1):
-            try:
-                with self.opener(request, timeout=self.settings.query_rewriter_timeout_seconds) as response:
-                    status = int(getattr(response, "status", response.getcode()))
-                    raw = response.read().decode("utf-8", errors="replace")
-                    if status < 200 or status >= 300:
-                        if status in _RETRYABLE_STATUS:
-                            raise OSError(f"HTTP {status}")
-                        raise QueryRewriterError(f"Query Rewriter 请求失败：HTTP {status}")
-                    value = json.loads(raw)
-                    if not isinstance(value, dict):
-                        raise QueryRewriterError("Query Rewriter 返回格式不是 JSON 对象")
-                    return value
-            except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError, json.JSONDecodeError) as exc:
-                last_error = exc
-            if attempt < self.settings.query_rewriter_retry_count:
-                self.sleeper(2**attempt)
-        raise QueryRewriterError(f"Query Rewriter 请求重试失败：{last_error}") from last_error
+        try:
+            value = self.http.post_json(
+                _chat_completions_url(self.settings.query_rewriter_base_url),
+                payload,
+                headers={
+                    "Authorization": f"Bearer {self.settings.query_rewriter_api_key}",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "Idempotency-Key": uuid.uuid4().hex,
+                },
+                timeout=self.settings.query_rewriter_timeout_seconds,
+                retries=self.settings.query_rewriter_retry_count,
+                error_prefix="Query Rewriter ",
+            )
+        except HttpRequestError as exc:
+            raise QueryRewriterError(str(exc)) from exc
+        if not isinstance(value, dict):
+            raise QueryRewriterError("Query Rewriter 返回格式不是 JSON 对象")
+        return value
 
 
 def _response_content(payload: dict[str, Any]) -> dict[str, Any]:
@@ -131,15 +114,16 @@ def _chat_completions_url(base_url: str) -> str:
 
 
 def _parse_rewrite(payload: dict[str, Any]) -> QueryRewrite:
-    core_terms = _parse_terms(_find(payload, "core_terms"), "core_terms")
+    # 只接受顶层且唯一的 core_terms，避免把模型附带字段悄悄带入 BM25。
+    if set(payload) != {"core_terms"}:
+        raise QueryRewriterError("Query Rewriter 只能返回 core_terms 字段")
+    core_terms = _parse_terms(payload.get("core_terms"), "core_terms")
     if not core_terms:
         raise QueryRewriterError("Query Rewriter 没有返回核心检索短语")
     return QueryRewrite(core_terms)
 
 
 def _parse_terms(value: Any, name: str) -> tuple[str, ...]:
-    if isinstance(value, dict):
-        value = next((value[key] for key in ("value", "items", "list", "result") if key in value), None)
     if not isinstance(value, list):
         raise QueryRewriterError(f"Query Rewriter 的 {name} 不是字符串数组")
     result: list[str] = []
@@ -153,22 +137,6 @@ def _parse_terms(value: Any, name: str) -> tuple[str, ...]:
             result.append(text)
             seen.add(key)
     return tuple(result)
-
-
-def _find(payload: Any, name: str) -> Any:
-    if isinstance(payload, dict):
-        if name in payload:
-            return payload[name]
-        for value in payload.values():
-            found = _find(value, name)
-            if found is not None:
-                return found
-    elif isinstance(payload, list):
-        for value in payload:
-            found = _find(value, name)
-            if found is not None:
-                return found
-    return None
 
 
 __all__ = ["QueryRewrite", "QueryRewriterClient", "QueryRewriterError"]

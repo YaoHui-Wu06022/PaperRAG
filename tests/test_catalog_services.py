@@ -9,8 +9,7 @@ import pytest
 import paper_rag.catalog.service as catalog_service
 from paper_rag.catalog.service import (
     CatalogIndexNotReady,
-    get_asset_status,
-    get_assets,
+    get_metadata,
     rebuild_catalog,
     scan_catalog,
     search_catalog,
@@ -47,9 +46,6 @@ def test_catalog_scans_assets_and_rebuilds_sqlite(tmp_path: Path):
     records = scan_catalog(settings)
     assert len(records) == 1
     assert records[0].state == "ready_for_ingest"
-    assert get_asset_status(settings, "1706.03762")["mineru"] == "missing"
-    assert get_assets(settings, "1706.03762")["assets"]["pdf"]["present"] is True
-
     result = rebuild_catalog(settings)
     assert result["papers"] == 1
     assert settings.paper_catalog_db_path.is_file()
@@ -58,6 +54,10 @@ def test_catalog_scans_assets_and_rebuilds_sqlite(tmp_path: Path):
     graph = json.loads(graph_path.read_text(encoding="utf-8"))
     assert graph["scope"] == "local_catalog"
     assert graph["paper_count"] == 1
+    record = get_metadata(settings, "1706.03762")
+    assert record is not None
+    assert record.assets["pdf"]["present"] is True
+    assert record.assets["mineru"]["present"] is False
 
 
 def test_catalog_search_is_structured_and_does_not_use_jev(tmp_path: Path):
@@ -97,6 +97,17 @@ def test_metadata_query_remains_separate_from_body_rag(tmp_path: Path):
 
     records = search_catalog(settings, "Transformer", {"category": "cs.CL"})
     assert [item.base_id for item in records] == ["1706.03762"]
+
+
+def test_metadata_reads_sqlite_without_scanning_source_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    settings = _settings(tmp_path)
+    rebuild_catalog(settings)
+    monkeypatch.setattr(catalog_service, "scan_catalog", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("metadata lookup scanned source files")))
+
+    record = catalog_service.get_metadata(settings, "1706.03762v7")
+
+    assert record is not None
+    assert record.title == "Attention Is All You Need"
 
 
 def test_citation_graph_walks_multiple_hops_without_chunks(tmp_path: Path):

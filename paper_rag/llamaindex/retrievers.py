@@ -11,7 +11,7 @@ from llama_index.core.schema import NodeWithScore, QueryBundle
 from paper_rag.catalog.service import search_chunks
 from paper_rag.config import Settings
 from paper_rag.llamaindex.nodes import chunk_row_to_node
-from paper_rag.llamaindex.translation import prepare_lexical_query
+from paper_rag.llamaindex.translation import LexicalQuery, prepare_lexical_query
 
 
 class SQLiteLexicalRetriever(BaseRetriever):
@@ -24,17 +24,19 @@ class SQLiteLexicalRetriever(BaseRetriever):
         paper_ids: Iterable[str] | None = None,
         regions: Iterable[str] | None = None,
         top_k: int = 50,
+        prepared_query: LexicalQuery | None = None,
     ) -> None:
         super().__init__()
         self.settings = settings
         self.paper_ids = list(paper_ids or ())
         self.regions = set(str(value) for value in (regions or ()) if str(value))
         self.top_k = max(1, int(top_k))
+        self.prepared_query = prepared_query
         self.debug: dict[str, Any] = {}
         self.warnings: list[str] = []
 
     def _retrieve(self, query_bundle: QueryBundle) -> list[NodeWithScore]:
-        prepared = prepare_lexical_query(query_bundle.query_str, self.settings)
+        prepared = self.prepared_query or prepare_lexical_query(query_bundle.query_str, self.settings)
         self.debug = prepared.debug()
         self.warnings = list(prepared.warnings)
         items = search_chunks(
@@ -69,6 +71,7 @@ class HybridRetriever(BaseRetriever):
         lexical_top_k: int = 50,
         semantic_top_k: int = 50,
         rrf_k: int = 60,
+        lexical_query_override: LexicalQuery | None = None,
     ) -> None:
         super().__init__()
         self.settings = settings
@@ -80,6 +83,7 @@ class HybridRetriever(BaseRetriever):
         self.lexical_top_k = max(1, int(lexical_top_k))
         self.semantic_top_k = max(1, int(semantic_top_k))
         self.rrf_k = max(1, int(rrf_k))
+        self.lexical_query_override = lexical_query_override
         self.warnings: list[str] = []
         self.lexical_debug: dict[str, Any] = {
             "lexical_query": "",
@@ -112,6 +116,7 @@ class HybridRetriever(BaseRetriever):
                 paper_ids=self.paper_ids,
                 regions=self.regions,
                 top_k=self.lexical_top_k,
+                prepared_query=self.lexical_query_override,
             )
             lexical = lexical_retriever.retrieve(query_bundle)
             self.lexical_debug = lexical_retriever.debug
@@ -130,6 +135,7 @@ class HybridRetriever(BaseRetriever):
                     paper_ids=self.paper_ids,
                     regions=self.regions,
                     top_k=self.lexical_top_k,
+                    prepared_query=self.lexical_query_override,
                 )
                 lexical = lexical_retriever.retrieve(query_bundle)
                 self.lexical_debug = lexical_retriever.debug

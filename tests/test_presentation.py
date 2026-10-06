@@ -125,12 +125,8 @@ def test_graph_presentation_explains_multihop_scope_without_changing_direct_coun
     assert "────────" in text
 
 
-def test_retrieve_presentation_only_hybrid_allows_composition():
+def test_retrieve_presentation_always_requires_composition():
     data = {"context_text": "[S1] evidence"}
     assert retrieve_presentation(data, "hybrid")["render_policy"] == "compose"
-    assert retrieve_presentation(data, "lexical") == {
-        "template_version": "library-answer-v1",
-        "answer_type": "rag_evidence",
-        "render_policy": "verbatim",
-        "answer_text": "[S1] evidence",
-    }
+    assert retrieve_presentation(data, "lexical")["render_policy"] == "compose"
+    assert retrieve_presentation(data, "semantic")["answer_text"] == ""

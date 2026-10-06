@@ -114,11 +114,17 @@ def scan_catalog(settings: Settings) -> list[CatalogRecord]:
 
 
 def list_papers(settings: Settings, filters: dict[str, Any] | None = None) -> list[CatalogRecord]:
-    """按结构化条件列出论文。"""
+    """从已同步的 SQLite Catalog 按结构化条件列出论文。"""
 
-    filters = filters or {}
-    records = scan_catalog(settings)
-    return [record for record in records if _matches_filters(record, filters)]
+    _require_index(settings)
+    clauses = ["1=1"]
+    parameters: list[Any] = []
+    _append_filter_sql(clauses, parameters, filters or {})
+    return _query_papers(
+        settings,
+        f"WHERE {' AND '.join(clauses)} ORDER BY lower(p.title), p.paper_id",
+        parameters,
+    )
 
 
 def search_catalog(
@@ -158,42 +164,16 @@ def search_catalog(
 
 
 def get_metadata(settings: Settings, paper_id: str) -> CatalogRecord | None:
-    """按 base ID 或 canonical ID 读取论文元数据。"""
+    """从 SQLite 按 paper/base/canonical ID 读取论文元数据。"""
 
-    wanted = str(paper_id).casefold()
-    return next(
-        (
-            record
-            for record in scan_catalog(settings)
-            if record.base_id.casefold() == wanted or record.canonical_id.casefold() == wanted
-        ),
-        None,
+    _require_index(settings)
+    wanted = str(paper_id or "").casefold()
+    records = _query_papers(
+        settings,
+        "WHERE lower(p.paper_id) = ? OR lower(p.base_id) = ? OR lower(p.canonical_id) = ? LIMIT 1",
+        [wanted, wanted, wanted],
     )
-
-
-def get_assets(settings: Settings, paper_id: str) -> dict[str, Any]:
-    """返回论文文件资产清单，不包含异步任务状态。"""
-
-    record = get_metadata(settings, paper_id)
-    if record is None:
-        return {"paper_id": str(paper_id), "found": False, "assets": {}}
-    return {"paper_id": record.paper_id, "found": True, "assets": record.assets}
-
-
-def get_asset_status(settings: Settings, paper_id: str) -> dict[str, Any]:
-    """返回论文持久化资产状态，与 JobManager 状态分离。"""
-
-    record = get_metadata(settings, paper_id)
-    if record is None:
-        return {"paper_id": str(paper_id), "found": False, "state": "missing"}
-    return {
-        "paper_id": record.paper_id,
-        "found": True,
-        "state": record.state,
-        "pdf": "present" if record.assets.get("pdf", {}).get("present") else "missing",
-        "metadata": "present" if record.assets.get("metadata", {}).get("present") else "missing",
-        "mineru": "present" if record.assets.get("mineru", {}).get("present") else "missing",
-    }
+    return records[0] if records else None
 
 
 def rebuild_catalog(settings: Settings) -> dict[str, Any]:
@@ -704,7 +684,8 @@ def get_citations(settings: Settings, paper_id: str, filters: dict[str, Any] | N
     with sqlite3.connect(settings.paper_catalog_db_path) as connection:
         rows = connection.execute("SELECT source_paper_id, target_arxiv_id, relation, resolution FROM citation_edges WHERE target_arxiv_id = ? ORDER BY source_paper_id", (base,)).fetchall()
         if filters:
-            rows = [row for row in rows if _paper_row_matches(connection, row[0], filters)]
+            allowed = _filtered_paper_ids(connection, filters)
+            rows = [row for row in rows if row[0] in allowed]
     return {"paper_id": paper_id, "items": [{"source_paper_id": r[0], "target_arxiv_id": r[1], "relation": r[2], "resolution": r[3]} for r in rows], "scope": "local_catalog"}
 
 
@@ -717,11 +698,12 @@ def citation_graph(settings: Settings, paper_id: str, direction: str = "both", d
         raise ValueError("depth must be 1 or 2")
     root = _base_arxiv_id(paper_id)
     with sqlite3.connect(settings.paper_catalog_db_path) as connection:
+        allowed = _filtered_paper_ids(connection, filters) if filters else None
         walks = []
         if direction in {"out", "both"}:
-            walks.append(_walk_citation_direction(connection, root, max_depth, "out", filters))
+            walks.append(_walk_citation_direction(connection, root, max_depth, "out", allowed))
         if direction in {"in", "both"}:
-            walks.append(_walk_citation_direction(connection, root, max_depth, "in", filters))
+            walks.append(_walk_citation_direction(connection, root, max_depth, "in", allowed))
 
     nodes = {root}
     edge_by_key: dict[tuple[str, str, str], dict[str, Any]] = {}
@@ -749,7 +731,7 @@ def _walk_citation_direction(
     root: str,
     max_depth: int,
     direction: str,
-    filters: dict[str, Any] | None,
+    allowed_paper_ids: set[str] | None,
 ) -> tuple[set[str], list[dict[str, Any]]]:
     """沿单一有向方向 BFS，避免两跳过程中把引用方向切换成被引用。"""
 
@@ -777,7 +759,7 @@ def _walk_citation_direction(
                 (current,),
             ).fetchall()
         for source, target, relation, resolution in rows:
-            if filters and not (_paper_row_matches(connection, source, filters) or _paper_row_matches(connection, target, filters)):
+            if allowed_paper_ids is not None and source not in allowed_paper_ids and target not in allowed_paper_ids:
                 continue
             source_id = str(source)
             target_id = str(target)
@@ -808,22 +790,17 @@ def _base_arxiv_id(value: str) -> str:
     return normalize_arxiv_id(value)
 
 
-def _paper_row_matches(connection: sqlite3.Connection, paper_id: str, filters: dict[str, Any]) -> bool:
-    row = connection.execute("SELECT authors, categories, published_at, state FROM papers WHERE paper_id = ?", (paper_id,)).fetchone()
-    if not row:
-        return False
-    authors, categories, published_at, state = row
-    if filters.get("author") and str(filters["author"]).casefold() not in str(authors).casefold():
-        return False
-    if filters.get("category") and str(filters["category"]).casefold() not in str(categories).casefold():
-        return False
-    if filters.get("year") and not str(published_at or "").startswith(str(filters["year"])):
-        return False
-    if filters.get("year_from") and str(published_at or "")[:4] < str(filters["year_from"]):
-        return False
-    if filters.get("year_to") and str(published_at or "")[:4] > str(filters["year_to"]):
-        return False
-    return not filters.get("state") or str(state) == str(filters["state"])
+def _filtered_paper_ids(connection: sqlite3.Connection, filters: dict[str, Any]) -> set[str]:
+    """使用统一的论文 SQL 过滤编译器返回引用图允许的节点。"""
+
+    clauses = ["1=1"]
+    parameters: list[Any] = []
+    _append_filter_sql(clauses, parameters, filters)
+    rows = connection.execute(
+        f"SELECT p.paper_id FROM papers AS p WHERE {' AND '.join(clauses)}",
+        parameters,
+    ).fetchall()
+    return {str(row[0]) for row in rows}
 
 
 def _table_exists(connection: sqlite3.Connection, name: str) -> bool:
@@ -869,20 +846,19 @@ def _append_filter_sql(clauses: list[str], parameters: list[Any], filters: dict[
         parameters.append(str(filters["year_to"]))
 
 
-def _matches_filters(record: CatalogRecord, filters: dict[str, Any]) -> bool:
-    if filters.get("author") and not _contains(record.authors, str(filters["author"])):
-        return False
-    if filters.get("category") and not _contains(record.categories, str(filters["category"])):
-        return False
-    if filters.get("state") and record.state != str(filters["state"]):
-        return False
-    if filters.get("year") and not str(record.published_at or "").startswith(str(filters["year"])):
-        return False
-    if filters.get("year_from") and str(record.published_at or "")[:4] < str(filters["year_from"]):
-        return False
-    if filters.get("year_to") and str(record.published_at or "")[:4] > str(filters["year_to"]):
-        return False
-    return True
+def _query_papers(settings: Settings, suffix: str, parameters: list[Any]) -> list[CatalogRecord]:
+    """执行统一的论文元数据 SQL 查询，避免磁盘扫描和 Python 过滤分叉。"""
+
+    sql = """
+        SELECT p.paper_id, p.base_id, p.canonical_id, p.title, p.authors,
+               p.abstract, p.categories, p.published_at, p.updated_at,
+               p.state, p.metadata_path, p.pdf_path, p.mineru_dir,
+               p.abs_url, p.pdf_url, p.doi
+          FROM papers AS p
+    """ + suffix
+    with sqlite3.connect(settings.paper_catalog_db_path) as connection:
+        rows = connection.execute(sql, parameters).fetchall()
+    return [_record_from_row(row) for row in rows]
 
 
 def _record_values(record: CatalogRecord) -> tuple[Any, ...]:
@@ -1017,11 +993,6 @@ def _read_catalog_meta_json(path: Path, key: str) -> dict[str, int]:
     return value if isinstance(value, dict) else {}
 
 
-def _contains(values: tuple[str, ...], query: str) -> bool:
-    wanted = query.casefold()
-    return any(wanted in value.casefold() for value in values)
-
-
 def _optional_string(value: Any) -> str | None:
     return str(value) if value else None
 
@@ -1038,8 +1009,6 @@ __all__ = [
     "CatalogIndexNotReady",
     "CatalogRecord",
     "catalog_status",
-    "get_asset_status",
-    "get_assets",
     "get_metadata",
     "list_papers",
     "rebuild_catalog",

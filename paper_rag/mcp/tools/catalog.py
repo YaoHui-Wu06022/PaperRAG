@@ -13,7 +13,7 @@ from paper_rag.catalog.service import (
     get_metadata,
     get_references,
     rebuild_catalog,
-    scan_catalog,
+    search_catalog,
 )
 from paper_rag.llamaindex.service import index_status, rebuild_index
 from paper_rag.mcp._app import mcp
@@ -60,7 +60,7 @@ def library_read(paper_id: str, offset: int = 0, limit: int = 12000) -> dict[str
     return _read_only(status, result)
 
 
-@mcp.tool(name="library_citation", description="读取论文参考文献、被引论文或本地引用关系图；可传 paper_id 或 paper_title，引用查询只访问 SQLite 图，不检索正文。data.presentation.answer_text 已确定性组织，Agent 应原样输出；graph 双向查询默认两跳，单独查询引用或被引用默认一跳。")
+@mcp.tool(name="library_citation", description="查询论文参考文献、被引论文或引用关系图。返回的 data.presentation.answer_text 可直接输出。")
 def library_citation(paper_id: str | None = None, paper_title: str | None = None, mode: str = "graph", direction: str = "both", depth: int | None = None, filters: dict[str, Any] | None = None) -> dict[str, Any]:
     if mode not in {"references", "citations", "graph"}:
         return _read_only("invalid_input", {"paper_id": paper_id, "mode": mode, "items": [], "nodes": [], "edges": []})
@@ -124,7 +124,7 @@ def _resolve_citation_paper(settings: Any, *, paper_id: str | None, paper_title:
     wanted = _normalize_title(paper_title or "")
     if not wanted:
         return None
-    matches = [record for record in scan_catalog(settings) if _normalize_title(record.title) == wanted]
+    matches = [record for record in search_catalog(settings, "", {}, 100000) if _normalize_title(record.title) == wanted]
     if len(matches) > 1:
         raise ValueError("paper_title matches multiple local papers")
     return matches[0] if matches else None

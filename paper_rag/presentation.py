@@ -149,11 +149,9 @@ def citation_presentation(
 
 
 def retrieve_presentation(data: Mapping[str, Any], mode: str) -> dict[str, Any]:
-    """标记正文证据的客户端处理策略。"""
+    """标记正文证据需要由 Agent 组织答案。"""
 
-    policy = "compose" if str(mode).casefold() == "hybrid" else "verbatim"
-    answer_text = "" if policy == "compose" else str(data.get("context_text") or "")
-    return _presentation("rag_evidence", policy, answer_text)
+    return _presentation("rag_evidence", "compose", "")
 
 
 def _presentation(answer_type: str, render_policy: str, answer_text: str) -> dict[str, Any]:

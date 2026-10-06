@@ -89,3 +89,22 @@ def test_query_rewriter_rejects_empty_result(tmp_path: Path):
         assert "没有返回" in str(exc)
     else:
         raise AssertionError("empty rewrite result should fail")
+
+
+def test_query_rewriter_rejects_phrases_and_extra_fields(tmp_path: Path):
+    settings = Settings.load(tmp_path)
+    settings = settings.__class__(**{**settings.__dict__, "query_rewriter_enabled": True, "query_rewriter_api_key": "test-key"})
+    client = QueryRewriterClient(
+        settings,
+        opener=lambda request, timeout: FakeResponse(
+            {"choices": [{"message": {"content": '{"phrases": ["注意力机制"]}'}}]}
+        ),
+        sleeper=lambda _seconds: None,
+    )
+
+    try:
+        client.rewrite("什么是注意力机制？")
+    except QueryRewriterError as exc:
+        assert "只能返回 core_terms" in str(exc)
+    else:
+        raise AssertionError("extra fields should fail")

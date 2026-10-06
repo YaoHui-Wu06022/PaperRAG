@@ -1,5 +1,5 @@
-"""论文阅读上下文服务。"""
+"""论文全文和 Chunk 读取服务。"""
 
-from paper_rag.reading.service import ReadingContext, get_context
+from paper_rag.reading.service import read_chunk, read_fulltext
 
-__all__ = ["ReadingContext", "get_context"]
+__all__ = ["read_chunk", "read_fulltext"]

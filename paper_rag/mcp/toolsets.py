@@ -8,7 +8,7 @@ from collections.abc import Iterable
 TOOLSETS_ENV_VAR = "PAPER_RAG_TOOLSETS"
 CORE_TOOLS: frozenset[str] = frozenset({
     "library_search", "library_retrieve", "library_get_metadata",
-    "library_job_status", "library_validate_answer",
+    "library_job_status",
 })
 TOOLSETS: dict[str, frozenset[str]] = {
     "acquisition": frozenset({"library_acquire_arxiv"}),

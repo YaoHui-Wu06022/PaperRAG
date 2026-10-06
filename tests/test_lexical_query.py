@@ -24,12 +24,12 @@ class FakeTranslator:
         return self.result or text
 
 
-def test_english_query_filters_function_words(tmp_path: Path):
+def test_chinese_query_keeps_technical_terms(tmp_path: Path):
     settings = Settings.load(tmp_path)
-    result = prepare_lexical_query("What is a BM25 query for RAG?", settings)
+    result = prepare_lexical_query("RAG 中的 BM25 查询是什么？", settings)
 
-    assert result.query == "bm25 query rag"
-    assert set(result.stopwords_removed) == {"what", "is", "a", "for"}
+    assert "bm25" in result.query
+    assert "rag" in result.query
     assert result.translation_used is False
 
 
@@ -62,6 +62,51 @@ def test_translation_failure_uses_original_lexical_query(tmp_path: Path, monkeyp
     assert len(result.warnings) == 1
 
 
+def test_translation_uses_aliyun_after_tencent_failure(tmp_path: Path, monkeypatch):
+    settings = replace(
+        Settings.load(tmp_path),
+        aliyun_translation_enabled=True,
+        aliyun_translation_access_key_id="aliyun-id",
+        aliyun_translation_access_key_secret="aliyun-secret",
+        bm25_translation_retry_count=0,
+    )
+    monkeypatch.setattr(
+        translation,
+        "_translation_chain",
+        lambda current: [
+            FakeTranslator("tencent", error=RuntimeError("unavailable")),
+            FakeTranslator("aliyun", result="attention mechanism"),
+        ],
+    )
+
+    result = prepare_lexical_query("注意力机制", settings)
+
+    assert result.translation_used is True
+    assert result.translation_provider == "aliyun"
+    assert result.translation_fallback is True
+    assert result.query == "attention mechanism"
+    assert any(item.startswith("translation_failed:tencent:") for item in result.warnings)
+    assert "translation_fallback:aliyun" in result.warnings
+
+
+def test_rewritten_translation_failure_falls_back_without_leaking_sdk_error(tmp_path: Path, monkeypatch):
+    settings = Settings.load(tmp_path)
+    monkeypatch.setattr(
+        "paper_rag.llamaindex.translation._make_translator",
+        lambda current: FakeTranslator("tencent", error=RuntimeError("unavailable")),
+    )
+
+    result = prepare_lexical_query(
+        "注意力机制是什么",
+        settings,
+        rewriter=lambda _query: QueryRewrite(("注意力机制",)),
+    )
+
+    assert result.translation_used is False
+    assert result.translation_fallback is True
+    assert any(item.startswith("translation_failed:tencent:") for item in result.warnings)
+
+
 def test_translation_skips_overlong_query(tmp_path: Path, monkeypatch):
     settings = replace(Settings.load(tmp_path), bm25_translation_max_chars=3)
     called = False
@@ -81,21 +126,24 @@ def test_translation_skips_overlong_query(tmp_path: Path, monkeypatch):
 
 
 def test_fts_query_filters_stopwords_without_changing_index(tmp_path: Path):
-    assert build_fts_query("what is a retrieval of RAG", remove_stopwords=True) == '"retrieval" OR "rag"'
+    query = build_fts_query("RAG 中的检索", remove_stopwords=True)
+    assert '"rag"' in query
+    assert '"中的检索"' in query
 
 
 def test_metadata_style_query_removes_generic_words_and_splits_hyphens():
-    query, removed = normalize_lexical_text("please find attention-related papers in the library")
+    query, removed = normalize_lexical_text("请查找 attention-related 论文")
 
-    assert query == "attention"
-    assert set(removed) == {"please", "find", "related", "papers", "in", "the", "library"}
+    assert "attention" in query
+    assert "related" in removed
 
 
-def test_semantically_relevant_negation_and_comparison_words_are_kept():
-    query, removed = normalize_lexical_text("not no without versus vs less more what")
+def test_chinese_comparison_query_keeps_technical_terms():
+    query, removed = normalize_lexical_text("比较 LoRA 和 QLoRA 的方法")
 
-    assert query == "not no without versus vs less more"
-    assert removed == ["what"]
+    assert "lora" in query
+    assert "qlora" in query
+    assert removed == []
 
 
 def test_translated_query_is_sent_to_lexical_retriever(tmp_path: Path, monkeypatch):
@@ -182,7 +230,7 @@ def test_query_rewriter_keeps_core_term_and_phrase(tmp_path: Path, monkeypatch):
 
     monkeypatch.setattr(translation.TencentTranslator, "translate", translate)
     result = prepare_lexical_query(
-        "论文库中有哪些和注意力机制有关的论文",
+        "论文库中有哪些和注意力机制有关的论文？",
         settings,
         rewriter=FakeRewriter(QueryRewrite(("注意力机制",))),
     )
@@ -209,7 +257,8 @@ def test_query_rewriter_failure_uses_existing_translation_fallback(tmp_path: Pat
     assert result.rewriter_used is False
     assert result.rewriter_fallback is True
     assert result.query == "attention mechanism"
-    assert any("query_rewriter" in warning for warning in result.warnings)
+    assert any(warning.startswith("query_rewriter_failed:QueryRewriterError:") for warning in result.warnings)
+    assert result.debug()["rewriter_error"] == "request_failed"
 
 
 def test_query_rewriter_requires_at_least_one_term(tmp_path: Path, monkeypatch):

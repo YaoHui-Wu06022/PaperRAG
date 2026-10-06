@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-import json
-import time
-import urllib.error
-import urllib.request
 import uuid
 from typing import Any, Callable
 
 from paper_rag.config import Settings
+from paper_rag.http import HttpRequestError, JsonHttpClient
 from paper_rag.routing.schemas import RetrieveDecision, RetrieveRequest, RetrieveTask, RouteIntent
 
 
@@ -17,16 +14,12 @@ class JevError(RuntimeError):
     """Jev 请求或响应解析失败。"""
 
 
-_RETRYABLE_STATUS = {429, 500, 502, 503, 504}
-
-
 class JevClient:
     """只在已经进入正文检索链路后判断正文任务。"""
 
-    def __init__(self, settings: Settings, *, opener: Callable[..., Any] | None = None, sleeper: Callable[[float], None] = time.sleep):
+    def __init__(self, settings: Settings, *, opener: Callable[..., Any] | None = None, sleeper: Callable[[float], None] | None = None):
         self.settings = settings
-        self.opener = opener or urllib.request.urlopen
-        self.sleeper = sleeper
+        self.http = JsonHttpClient(opener=opener, **({"sleeper": sleeper} if sleeper else {}))
 
     def classify(self, request: RetrieveRequest) -> RetrieveDecision:
         if not self.settings.jev_enabled:
@@ -54,36 +47,25 @@ class JevClient:
         )
 
     def _request(self, payload: dict[str, Any]) -> dict[str, Any]:
-        request = urllib.request.Request(
-            self.settings.jev_base_url,
-            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-            method="POST",
-            headers={
-                "Authorization": f"Bearer {self.settings.jev_api_key}",
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "Idempotency-Key": uuid.uuid4().hex,
-            },
-        )
-        last_error: Exception | None = None
-        for attempt in range(self.settings.jev_retry_count + 1):
-            try:
-                with self.opener(request, timeout=self.settings.jev_timeout_seconds) as response:
-                    status = int(getattr(response, "status", response.getcode()))
-                    raw = response.read().decode("utf-8", errors="replace")
-                    if status < 200 or status >= 300:
-                        if status in _RETRYABLE_STATUS:
-                            raise OSError(f"HTTP {status}")
-                        raise JevError(f"Jev 请求失败：HTTP {status}")
-                    value = json.loads(raw)
-                    if not isinstance(value, dict):
-                        raise JevError("Jev 返回格式不是 JSON 对象")
-                    return value
-            except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError, json.JSONDecodeError) as exc:
-                last_error = exc
-            if attempt < self.settings.jev_retry_count:
-                self.sleeper(2**attempt)
-        raise JevError(f"Jev 请求重试失败：{last_error}") from last_error
+        try:
+            value = self.http.post_json(
+                self.settings.jev_base_url,
+                payload,
+                headers={
+                    "Authorization": f"Bearer {self.settings.jev_api_key}",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "Idempotency-Key": uuid.uuid4().hex,
+                },
+                timeout=self.settings.jev_timeout_seconds,
+                retries=self.settings.jev_retry_count,
+                error_prefix="Jev ",
+            )
+        except HttpRequestError as exc:
+            raise JevError(str(exc)) from exc
+        if not isinstance(value, dict):
+            raise JevError("Jev 返回格式不是 JSON 对象")
+        return value
 
 
 def _parse_task(payload: dict[str, Any]) -> RetrieveTask:

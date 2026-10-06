@@ -86,6 +86,12 @@ class Settings:
     tencent_translate_secret_key: str = field(repr=False)
     tencent_translate_region: str
     tencent_translate_endpoint: str
+    aliyun_translation_enabled: bool
+    aliyun_translation_access_key_id: str = field(repr=False)
+    aliyun_translation_access_key_secret: str = field(repr=False)
+    aliyun_translation_security_token: str = field(default="", repr=False)
+    aliyun_translation_region_id: str = "cn-hangzhou"
+    aliyun_translation_endpoint: str = "mt.cn-hangzhou.aliyuncs.com"
 
     @classmethod
     def load(cls, project_root: Path | None = None) -> "Settings":
@@ -180,6 +186,14 @@ class Settings:
             tencent_translate_secret_key=values.get("TENCENT_TRANSLATE_SECRET_KEY", ""),
             tencent_translate_region=values.get("TENCENT_TRANSLATE_REGION", "ap-shanghai"),
             tencent_translate_endpoint=values.get("TENCENT_TRANSLATE_ENDPOINT", "tmt.tencentcloudapi.com"),
+            aliyun_translation_enabled=_parse_bool(values.get("ALIYUN_TRANSLATION_ENABLED", "false")),
+            aliyun_translation_access_key_id=values.get("ALIYUN_TRANSLATION_ACCESS_KEY_ID", ""),
+            aliyun_translation_access_key_secret=values.get("ALIYUN_TRANSLATION_ACCESS_KEY_SECRET", ""),
+            aliyun_translation_security_token=values.get("ALIYUN_TRANSLATION_SECURITY_TOKEN", ""),
+            aliyun_translation_region_id=values.get("ALIYUN_TRANSLATION_REGION_ID", "cn-hangzhou"),
+            aliyun_translation_endpoint=values.get(
+                "ALIYUN_TRANSLATION_ENDPOINT", "mt.cn-hangzhou.aliyuncs.com"
+            ),
         )
 
 

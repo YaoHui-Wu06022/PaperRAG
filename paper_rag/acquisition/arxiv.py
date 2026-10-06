@@ -21,6 +21,7 @@ from typing import Any, Callable
 from uuid import uuid4
 
 from paper_rag.config import Settings
+from paper_rag.http import HttpRequestError, JsonHttpClient
 
 
 ATOM_NS = {"atom": "http://www.w3.org/2005/Atom"}
@@ -159,6 +160,7 @@ class ArxivClient:
         self.settings = settings
         self.opener = opener or urllib.request.urlopen
         self.sleeper = sleeper or time.sleep
+        self.http = JsonHttpClient(opener=self.opener, sleeper=self.sleeper)
         self._last_request_at = 0.0
 
     def resolve_latest(self, ref: ArxivRef) -> ArxivMetadata:
@@ -236,29 +238,11 @@ class ArxivClient:
         delay = self.settings.arxiv_request_delay_seconds - elapsed
         if delay > 0:
             self.sleeper(delay)
-        last_error: Exception | None = None
-        for attempt in range(3):
-            self._last_request_at = time.monotonic()
-            try:
-                response = self.opener(request, timeout=timeout)
-                status = int(getattr(response, "status", 200))
-                if status in {429, 500, 502, 503, 504}:
-                    response.close()
-                    raise urllib.error.HTTPError(request.full_url, status, "retryable", {}, None)
-                if status >= 400:
-                    response.close()
-                    raise ArxivError(f"ArXiv 请求失败：HTTP {status}")
-                return response
-            except urllib.error.HTTPError as exc:
-                last_error = exc
-                if exc.code not in {429, 500, 502, 503, 504}:
-                    detail = exc.read().decode("utf-8", errors="replace") if exc.fp else ""
-                    raise ArxivError(f"ArXiv 请求失败：HTTP {exc.code} {detail[:300]}") from exc
-            except (urllib.error.URLError, TimeoutError, OSError) as exc:
-                last_error = exc
-            if attempt < 2:
-                self.sleeper(2**attempt)
-        raise ArxivError(f"ArXiv 请求重试失败：{last_error}") from last_error
+        self._last_request_at = time.monotonic()
+        try:
+            return self.http.open(request, timeout=timeout, retries=2, error_prefix="ArXiv ")
+        except HttpRequestError as exc:
+            raise ArxivError(str(exc)) from exc
 
 
 class ArxivStore:

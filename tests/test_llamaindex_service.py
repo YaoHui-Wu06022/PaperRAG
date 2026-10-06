@@ -17,7 +17,6 @@ from paper_rag.llamaindex.nodes import load_nodes
 from paper_rag.llamaindex import service
 from paper_rag.llamaindex.service import index_status, rebuild_index, retrieve
 from paper_rag.llamaindex.retrievers import HybridRetriever
-from paper_rag.mcp.tools.answer import library_validate_answer
 
 
 def make_index_fixture(tmp_path: Path, *, include_second: bool = False) -> Settings:
@@ -124,38 +123,43 @@ def test_embedding_content_is_retrieval_text_without_metadata(tmp_path: Path):
 
 def test_lexical_retrieval_returns_citations_without_milvus(tmp_path: Path):
     settings = make_index_fixture(tmp_path)
-    result = retrieve(settings, "attention", mode="lexical")
+    result = retrieve(settings, "什么是 Attention？", mode="lexical")
     assert result["status"] == "ok"
-    item = result["data"]["items"][0]
+    item = result["data"]["evidence"][0]
     assert item["source_id"] == "S1"
-    assert item["page_start_display"] == 2
-    assert result["data"]["presentation"]["render_policy"] == "verbatim"
+    assert item["page_start"] == 1
+    assert result["data"]["presentation"]["render_policy"] == "compose"
 
 
 def test_hybrid_retrieval_marks_client_composition(tmp_path: Path):
     settings = make_index_fixture(tmp_path)
-    result = retrieve(settings, "attention", mode="hybrid")
+    result = retrieve(settings, "什么是 Attention？", mode="hybrid")
     assert result["data"]["presentation"]["render_policy"] == "compose"
 
 
-def test_single_rag_tool_returns_client_side_context(tmp_path: Path):
+def test_retrieve_returns_only_evidence_and_scores(tmp_path: Path):
     settings = make_index_fixture(tmp_path)
-    result = retrieve(settings, "attention", task="fact", limit=2, max_chars=100, mode="lexical")
+    result = retrieve(settings, "什么是 Attention？", task="fact", limit=2, max_chars=100, mode="lexical")
     assert result["status"] == "ok"
-    assert "[S1]" in result["data"]["context_text"]
-    assert result["data"]["answer_context_id"].startswith("ctx-")
-    assert result["data"]["citation_registry"]["S1"]["chunk_id"] == result["data"]["items"][0]["chunk_id"]
-    assert result["data"]["answer_contract"]["required_fields"] == ["answer_status", "answer", "claims", "citations"]
+    assert result["data"]["evidence"][0]["source_id"] == "S1"
+    assert result["data"]["evidence"][0]["text"] == "attention evidence"
+    assert "score" in result["data"]["evidence"][0]
+    assert "rrf_score" not in result["data"]["evidence"][0]
+    assert "semantic_rank" not in result["data"]["evidence"][0]
+    assert "papers" not in result["data"]
+    assert "context_text" not in result["data"]
+    assert "retrieval_debug" in result["data"]
+    assert result["data"]["task"] == "fact"
+    assert result["data"]["mode"] == "lexical"
+    assert result["data"]["routing"]["task"] == "fact"
+    assert "retrieval_text" not in result["data"]["evidence"][0]
+    assert "ranking_features" not in result["data"]["evidence"][0]
+    assert set(result["data"]["evidence"][0]) == {
+        "source_id", "paper_id", "chunk_id", "text", "type", "section_path",
+        "page_start", "page_end", "score",
+    }
+    assert "answer_context_id" not in result["data"]
     assert result["read_only"] is True
-    validated = library_validate_answer(
-        result["data"]["answer_context_id"],
-        "answered",
-        "Attention evidence is available.[S1]",
-        [{"claim_id": "C1", "text": "Attention evidence is available.", "citation_ids": ["S1"]}],
-        ["S1"],
-    )
-    assert validated["status"] == "ok"
-    assert validated["data"]["citations"][0]["chunk_id"] == result["data"]["items"][0]["chunk_id"]
 
 
 def test_embedding_adapter_uses_existing_client(monkeypatch, tmp_path: Path):
@@ -178,14 +182,14 @@ def test_index_status_is_not_ready_before_rebuild(tmp_path: Path):
 
 def test_retrieve_applies_metadata_filters_before_chunk_search(tmp_path: Path):
     settings = make_index_fixture(tmp_path)
-    result = retrieve(settings, "attention", filters={"category": "cs.CL"}, task="fact", mode="lexical")
+    result = retrieve(settings, "什么是 Attention？", filters={"category": "cs.CL"}, task="fact", mode="lexical")
     assert result["status"] == "ok"
-    assert result["data"]["papers"][0]["paper_id"] == "1706.03762"
+    assert result["data"]["evidence"][0]["paper_id"] == "1706.03762"
 
 
 def test_retrieve_rejects_reference_region(tmp_path: Path):
     settings = make_index_fixture(tmp_path)
-    result = retrieve(settings, "attention", task="fact", mode="lexical", regions=["reference"])
+    result = retrieve(settings, "什么是 Attention？", task="fact", mode="lexical", regions=["reference"])
     assert result["status"] == "invalid_input"
 
 
@@ -216,40 +220,117 @@ def _add_second_fixture(settings: Settings) -> None:
 def test_summary_and_comparison_use_unique_filtered_papers(tmp_path: Path):
     settings = make_index_fixture(tmp_path, include_second=True)
 
-    summary = retrieve(settings, "attention", task="summary", filters={"year_from": "2018"}, limit=4, mode="lexical")
+    summary = retrieve(settings, "概括 Attention 的方法", task="summary", filters={"year_from": "2018"}, limit=4, mode="lexical")
     assert summary["status"] == "ok"
-    assert {item["paper_id"] for item in summary["data"]["items"]} == {"1706.03762"}
+    assert {item["paper_id"] for item in summary["data"]["evidence"]} == {"1706.03762"}
 
-    comparison = retrieve(settings, "attention", task="comparison", paper_ids=["1706.03762", "1706.03762v7", "1801.00001"], limit=4, mode="lexical")
+    comparison = retrieve(settings, "比较 Attention 方法", task="comparison", paper_ids=["1706.03762", "1706.03762v7", "1801.00001"], limit=4, mode="lexical")
     assert comparison["status"] == "ok"
-    assert {item["paper_id"] for item in comparison["data"]["items"]} == {"1706.03762", "1801.00001"}
+    assert {item["paper_id"] for item in comparison["data"]["evidence"]} == {"1706.03762", "1801.00001"}
 
 
-def test_context_budget_truncates_source_instead_of_dropping_it(tmp_path: Path):
+def test_retrieve_evidence_keeps_chunk_text(tmp_path: Path):
     settings = make_index_fixture(tmp_path)
-    result = retrieve(settings, "attention", task="fact", mode="lexical", max_chars=40)
+    result = retrieve(settings, "什么是 Attention？", task="fact", mode="lexical", max_chars=40)
     assert result["status"] == "ok"
-    assert result["data"]["context_text"]
-    assert result["data"]["truncated"] is True
+    assert result["data"]["evidence"][0]["text"] == "attention evidence"
 
 
 def test_filters_validate_year_and_unknown_keys(tmp_path: Path):
     settings = make_index_fixture(tmp_path)
-    assert retrieve(settings, "attention", filters={"year_from": "20"}, mode="lexical")["status"] == "invalid_input"
-    assert retrieve(settings, "attention", filters={"unknown": "x"}, mode="lexical")["status"] == "invalid_input"
+    assert retrieve(settings, "什么是 Attention？", filters={"year_from": "20"}, mode="lexical")["status"] == "invalid_input"
+    assert retrieve(settings, "什么是 Attention？", filters={"unknown": "x"}, mode="lexical")["status"] == "invalid_input"
 
 
 def test_reason_respects_final_limit(tmp_path: Path):
     settings = make_index_fixture(tmp_path)
-    result = retrieve(settings, "attention", task="reason", mode="lexical", limit=1)
+    result = retrieve(settings, "为什么 Attention 有效？", task="reason", mode="lexical", limit=1)
     assert result["status"] == "ok"
-    assert result["data"]["count"] <= 1
+    assert len(result["data"]["evidence"]) <= 1
+
+
+def test_candidate_without_evidence_returns_insufficient_evidence(tmp_path: Path):
+    settings = make_index_fixture(tmp_path)
+    result = retrieve(settings, "未见过的 FlashAttention 细节", paper_ids=["1706.03762"], task="fact", mode="lexical")
+
+    assert result["status"] == "insufficient_evidence"
+    assert result["data"]["evidence"] == []
+    assert "no_evidence_chunks" in result["warnings"]
+
+
+def test_empty_primary_retrieval_uses_narrow_entity_fallback(monkeypatch, tmp_path: Path):
+    settings = make_index_fixture(tmp_path)
+    calls: list[object] = []
+    item = {
+        "chunk_id": "fallback-chunk",
+        "paper_id": "1706.03762",
+        "canonical_id": "1706.03762v7",
+        "ordinal": 1,
+        "region": "content",
+        "section_path": ["content"],
+        "section_label": "content",
+        "type": "text",
+        "text": "FlashAttention evidence",
+        "page_start": 1,
+        "page_end": 1,
+    }
+
+    def fake_retrieve(*args, **kwargs):
+        calls.append(kwargs.get("lexical_query_override"))
+        if len(calls) == 1:
+            return [], [], {"core_terms": ["FlashAttention"]}
+        return [item], [], {"lexical_query": '"flashattention"'}
+
+    monkeypatch.setattr(service, "_retrieve_items", fake_retrieve)
+    result = retrieve(settings, "为什么 FlashAttention 能减少 HBM 访问？", paper_ids=["1706.03762"], task="fact", mode="lexical")
+
+    assert result["status"] == "ok"
+    assert len(result["data"]["evidence"]) == 1
+    assert result["data"]["evidence"][0]["text"] == "FlashAttention evidence"
+    assert calls[1].fts_query == '"flashattention"'
+    assert len(calls) == 2
+
+
+def test_retrieve_prepares_lexical_query_once(monkeypatch, tmp_path: Path):
+    settings = make_index_fixture(tmp_path)
+    original = service.prepare_lexical_query
+    calls: list[str] = []
+
+    def wrapped(query, current_settings):
+        calls.append(query)
+        return original(query, current_settings)
+
+    monkeypatch.setattr(service, "prepare_lexical_query", wrapped)
+    result = retrieve(settings, "什么是 Attention？", paper_ids=["1706.03762"], task="fact", mode="lexical")
+
+    assert result["status"] == "ok"
+    assert calls == ["什么是 Attention？"]
+
+
+def test_candidate_discovery_merges_chunk_search_without_constraints(monkeypatch, tmp_path: Path):
+    settings = Settings.load(tmp_path)
+    record = SimpleNamespace(base_id="2106.09685", title="LoRA", abstract="LoRA trains adapters")
+    calls: list[tuple[object, ...]] = []
+
+    monkeypatch.setattr(service, "search_catalog", lambda *_args, **_kwargs: [record])
+    monkeypatch.setattr(
+        service,
+        "search_chunks",
+        lambda *_args, **_kwargs: calls.append(_args) or [],
+    )
+    prepared = service.prepare_lexical_query("概括 LoRA", settings)
+
+    candidates, debug = service._discover_candidates(settings, prepared, 5, "fact", {})
+
+    assert candidates == ["2106.09685"]
+    assert calls
+    assert debug["candidate_discovery"]["chunk_search_used"] is True
 
 
 def test_default_regions_skip_appendix_unless_query_mentions_it():
-    assert service._normalize_regions(None, "Summarize the method") == ("abstract", "content")
-    assert service._normalize_regions(None, "What is in the appendix?") == ("abstract", "content", "appendix")
-    assert service._normalize_regions(["appendix"], "Summarize the method") == ("appendix",)
+    assert service._normalize_regions(None, "概括这个方法") == ("abstract", "content")
+    assert service._normalize_regions(None, "附录中有什么？") == ("abstract", "content", "appendix")
+    assert service._normalize_regions(["appendix"], "概括这个方法") == ("appendix",)
 
 
 def test_table_reference_sorting_prefers_requested_caption(tmp_path: Path):
@@ -282,7 +363,7 @@ def test_table_reference_sorting_prefers_requested_caption(tmp_path: Path):
     first = NodeWithScore(node=table_two, score=0.01)
     second = NodeWithScore(node=table_five, score=0.99)
 
-    assert retriever._sort_key(first, "What does Table 2 compare?") > retriever._sort_key(second, "What does Table 2 compare?")
+    assert retriever._sort_key(first, "Table 2 比较了什么？") > retriever._sort_key(second, "Table 2 比较了什么？")
 
 
 def test_candidate_discovery_falls_back_to_exact_method_entity(monkeypatch, tmp_path: Path):
@@ -295,7 +376,8 @@ def test_candidate_discovery_falls_back_to_exact_method_entity(monkeypatch, tmp_
 
     monkeypatch.setattr(service, "search_catalog", fake_search)
     monkeypatch.setattr(service, "search_chunks", lambda *_args, **_kwargs: [])
-    candidates, debug = service._discover_candidates(settings, "Summarize the core contributions of LoRA.", 5, "summary", {})
+    prepared = service.prepare_lexical_query("概括 LoRA 的核心贡献。", settings)
+    candidates, debug = service._discover_candidates(settings, prepared, 5, "summary", {})
 
     assert candidates == ["2106.09685"]
     assert debug["candidate_discovery"]["entity_hits"] == {"LoRA": ["2106.09685"]}
@@ -313,7 +395,8 @@ def test_candidate_discovery_prefers_exact_title_over_abstract_background(monkey
 
     monkeypatch.setattr(service, "search_catalog", fake_search)
     monkeypatch.setattr(service, "search_chunks", lambda *_args, **_kwargs: [])
-    candidates, debug = service._discover_candidates(settings, "Which two tasks does BERT use for pretraining?", 5, "fact", {})
+    prepared = service.prepare_lexical_query("BERT 预训练使用哪两个任务？", settings)
+    candidates, debug = service._discover_candidates(settings, prepared, 5, "fact", {})
 
     assert candidates == ["1810.04805"]
     assert debug["candidate_discovery"]["candidate_match_source"] == {"1810.04805": "title_exact"}
@@ -328,10 +411,30 @@ def test_reason_window_repairs_mid_token_context(monkeypatch, tmp_path: Path):
     monkeypatch.setattr(service, "list_chunks", lambda *_args, **_kwargs: chunks)
     direct = [{**chunks[1], "type": "image", "score": 0.1, "rrf_score": 0.1}]
 
-    result = service._reason_items(Settings.load(tmp_path), direct, 3)
+    result = service._reason_items(Settings.load(tmp_path), direct, 3, {})
 
     assert result
     assert result[0]["evidence_role"] == "context"
     assert result[0]["text"].startswith("The complete preceding sentence.")
     assert result[0]["continuity_status"] == "complete"
     assert result[0]["source_chunk_ids"] == ["c1", "c2", "c3"]
+
+
+def test_reason_reuses_paper_chunk_cache(monkeypatch, tmp_path: Path):
+    chunks = [
+        {"chunk_id": "c1", "paper_id": "p", "ordinal": 1, "region": "content", "section_label": "Method", "text": "The first sentence.", "page_start": 1, "page_end": 1},
+        {"chunk_id": "c2", "paper_id": "p", "ordinal": 2, "region": "content", "section_label": "Method", "text": "The second sentence.", "page_start": 1, "page_end": 1},
+    ]
+    calls = 0
+
+    def load_chunks(*_args, **_kwargs):
+        nonlocal calls
+        calls += 1
+        return chunks
+
+    monkeypatch.setattr(service, "list_chunks", load_chunks)
+    direct = [{**chunks[0], "type": "text"}, {**chunks[1], "type": "text"}]
+
+    service._reason_items(Settings.load(tmp_path), direct, 4, {})
+
+    assert calls == 1

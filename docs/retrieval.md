@@ -15,16 +15,20 @@
 
 ```text
 用户问题
-  -> task 路由（fact / reason / summary / comparison）
+  -> task 路由（fact / reason / summary / comparison）和一次 Query 准备
   -> 候选论文发现
   -> 区域和 paper_id 过滤
   -> lexical / semantic / hybrid 召回
   -> RRF 与确定性质量排序
   -> summary/comparison 的论文级平衡，或 reason 的证据窗口拼接
-  -> source_id、页码、章节和 context_text
+  -> source_id、Chunk 正文、页码、章节和评分
 ```
 
-`task="auto"` 时由路由器选择任务；显式传入 `fact`、`reason`、`summary` 或 `comparison` 时不再重新分类。`library_retrieve` 只负责检索和证据组织，不调用答案生成模型。
+`task="auto"` 时由路由器选择任务；显式传入 `fact`、`reason`、`summary` 或 `comparison` 时不再重新分类。`library_retrieve` 只负责检索和证据组织，不调用答案生成模型，正文结果由 Agent 组织答案。
+
+正文请求只准备一次 `LexicalQuery`。候选发现、SQLite lexical 检索和窄词法 fallback 复用同一份查询，避免重复调用 Query Rewriter 和翻译服务。
+
+MCP 工具描述保持最小职责边界：`library_search` 负责论文元数据并直接输出 `data.presentation.answer_text`；`library_citation` 负责引用关系并直接输出 `data.presentation.answer_text`；`library_retrieve` 负责正文 Chunk 证据，由 Agent 组织答案。正文各模式的 `presentation.render_policy` 都是 `compose`。
 
 ## 区域和 filters 约束
 
@@ -45,7 +49,7 @@
 
 ### 1. Query Rewriter 和词法查询准备
 
-`_discover_candidates` 首先调用 `prepare_lexical_query`。当 Query Rewriter 开启且配置了 API Key 时，它要求模型只返回一个 JSON 对象：
+正文入口先调用一次 `prepare_lexical_query`。当 Query Rewriter 开启且配置了 API Key 时，它要求模型只返回一个 JSON 对象：
 
 ```json
 {"core_terms": ["完整技术短语", "方法名", "模型名"]}
@@ -53,12 +57,14 @@
 
 `core_terms` 保留完整语义，例如 `grouped-query attention` 应作为一个短语保留，而不是拆成若干普通 OR 词。随后：
 
-1. 对包含中文的核心短语逐条翻译；
+1. 对包含中文的核心短语逐条翻译，优先调用腾讯云；腾讯云失败后调用已配置的阿里云备用翻译；
 2. 英文方法名、缩写、数字和模型名原样保留；
 3. 将核心短语转换为带引号的 FTS5 phrase expression；
 4. 记录 Query Rewriter 和翻译是否成功。
 
-翻译服务只接收查询短语，不接收论文正文或 Chunk。Query Rewriter 失败、翻译失败或返回空结果时，会保留 warning 并回退到原始问题的词法规范化结果。语义检索始终接收原始问题，不使用翻译后的字符串。
+翻译服务只接收查询短语，不接收论文正文或 Chunk。Query Rewriter 失败、所有翻译服务失败或返回空结果时，会保留 warning 并回退到原始问题的词法规范化结果。调试字段中的 `translation_provider` 表示实际成功的服务；如果阿里云接管，会同时看到 `translation_provider=aliyun`、`translation_fallback=true` 和 `translation_fallback:aliyun`。语义检索始终接收原始问题，不使用翻译后的字符串。
+
+翻译配置使用项目根目录 `.env`：`TENCENT_TRANSLATE_*` 配置主服务，`ALIYUN_TRANSLATION_ENABLED=true`、`ALIYUN_TRANSLATION_ACCESS_KEY_ID`、`ALIYUN_TRANSLATION_ACCESS_KEY_SECRET`、`ALIYUN_TRANSLATION_REGION_ID` 和 `ALIYUN_TRANSLATION_ENDPOINT` 配置备用服务。密钥只从运行环境读取，不写入日志或调试响应。
 
 ### 2. 元数据 FTS 优先
 
@@ -80,11 +86,13 @@ PagedAttention  FlashAttention  ResNet-50
 
 ### 3. 正文 Chunk 回退和触发条件
 
-正文回退调用 `search_chunks`，查询 `chunks_fts` 的 `retrieval_text`、章节和区域字段。正文搜索的触发条件比“元数据无结果”更宽：
+正文回退调用 `search_chunks`，查询 `chunks_fts` 的 `retrieval_text`、章节和区域字段。只有以下情况才执行候选 Chunk 回退：
 
 - 元数据没有任何结果；
-- 任务是 `fact` 或 `reason`，因为这两类问题需要直接正文证据；
+- 元数据没有覆盖 Query Rewriter 提取的技术实体；
 - 问题包含 `Table N`、`Tab. N`、`表 N`、`Figure N`、`Fig. N` 或“图 N”。
+
+Fact 和 Reason 不再因为任务类型自动执行额外的候选 Chunk 搜索；论文候选确定后直接进入正文证据召回。
 
 正文回退不会把普通词命中的论文直接加入目标集合。每个 Chunk 必须满足以下任一条件才会进入 `chunk_exact_hit`：
 
@@ -107,9 +115,9 @@ Chunk 的匹配同时查看 `text` 和 `retrieval_text`。`text` 用于展示和
 
 `summary` 只保留首要高置信候选论文。`fact` 和 `reason` 则把正文实体命中放在候选集合前面，以便后续排序能从同一篇目标论文中获取解释证据。
 
-### 5. 候选发现调试字段
+### 5. 候选发现内部字段
 
-候选发现信息放在 `retrieval_debug.candidate_discovery` 中。字段含义如下：
+候选发现信息只在服务端内部用于诊断和回退，不放入 `library_retrieve.data`，不会发送给 Agent。字段含义如下：
 
 | 字段 | 含义 |
 |---|---|
@@ -122,7 +130,7 @@ Chunk 的匹配同时查看 `text` 和 `retrieval_text`。`text` 用于展示和
 | `chunk_exact_hit` | 正文中实体、短语或表图编号命中的论文 |
 | `table_ref` / `figure_ref` | 解析出的表号或图号，没有则为 `null` |
 | `selected_paper_ids` | 经过任务规则和去重后的最终候选论文 |
-| `fallback_used` | 元数据为空且正文回退产生结果时为 `true` |
+| `fallback_used` | 元数据为空且正文候选回退产生结果时为 `true`；元数据有结果但实体覆盖不足或查询含表/图编号时，另看 `chunk_search_used` |
 | `chunk_search_used` | 本次是否执行过正文候选搜索 |
 | `lexical_query` | 实际传给 Catalog FTS 的安全查询表达式 |
 
@@ -164,7 +172,7 @@ Chunk 的匹配同时查看 `text` 和 `retrieval_text`。`text` 用于展示和
 
 ### 词法 debug
 
-每次 lexical 或 hybrid 请求都会在 `retrieval_debug` 中返回以下查询状态：
+每次 lexical 或 hybrid 请求都会在服务端内部保留以下查询状态；这些字段不放入 Agent 的证据响应：
 
 ```json
 {
@@ -179,7 +187,7 @@ Chunk 的匹配同时查看 `text` 和 `retrieval_text`。`text` 用于展示和
 }
 ```
 
-这些字段只描述查询处理状态，不记录论文正文。`translation_fallback=true` 表示翻译重试后回到了原始查询；`rewriter_fallback=true` 表示 Query Rewriter 不可用或返回异常，但后续仍可能使用本地词法查询完成检索。
+这些字段只描述查询处理状态，不记录论文正文。`translation_fallback=true` 表示主翻译服务失败后使用了备用服务，或所有服务失败后回到了原始查询；`rewriter_fallback=true` 表示 Query Rewriter 不可用或返回异常，但后续仍可能使用本地词法查询完成检索。
 
 ## 语义检索
 
@@ -210,7 +218,7 @@ RRF(chunk) =
   + 1 / (rrf_k + semantic_rank)    （存在 semantic 命中时）
 ```
 
-默认 `rrf_k=60`，实际值来自 `LLAMAINDEX_RRF_K`。只被一条路径召回的 Chunk 仍然保留；同时被两条路径召回的 Chunk 通常拥有更高 RRF 分数。返回项保留 `lexical_rank`、`semantic_rank`、`semantic_score` 和 `rrf_score`，因此可以判断结果来自哪条路径以及两条路径是否一致。
+默认 `rrf_k=60`，实际值来自 `LLAMAINDEX_RRF_K`。只被一条路径召回的 Chunk 仍然保留；同时被两条路径召回的 Chunk 通常拥有更高融合分数。多路分数只用于服务端排序，对 Agent 只暴露最终 `score`，避免把内部检索细节混入答案上下文。
 
 RRF 是主相关性依据。确定性质量特征只在 RRF 基础上做稳定的同分或近邻决策，不引入新的 LLM 重排调用，也不改变底层 Chunk。
 
@@ -304,89 +312,40 @@ image / figure / chart 0
 - `summary`：对首要论文优先保留 abstract，再保留贡献和方法正文；
 - `comparison`：先按论文分组，再保证每个目标论文至少保留一条摘要或正文证据，最多补充一篇背景论文。
 
-Reason 窗口保留 `window_id`、`source_chunk_ids`、`continuity_status`、页码、章节和 `source_id`。窗口合并前后会检查句子或段落边界，避免以 `ion kernel`、`d approach` 等半词开头。图片命中时先返回相邻正文解释，再返回图片本身。
+Reason 窗口在内部保留 `source_chunk_ids`、页码和章节；对 Agent 只暴露必要的 `source_chunk_ids` 和证据正文。窗口合并前后会检查句子或段落边界，避免以 `ion kernel`、`d approach` 等半词开头。图片命中时先返回相邻正文解释，再返回图片本身。
 
-最终每条结果至少包含：
+`data.evidence` 中每条证据至少包含：
 
 ```json
 {
+  "text": "LoRA freezes the pretrained model and trains a low-rank update.",
   "paper_id": "2106.09685",
   "chunk_id": "...",
-  "region": "content",
+  "type": "text",
   "section_path": ["3", "3.1"],
   "page_start": 4,
   "page_end": 5,
   "source_id": "S1",
-  "evidence_role": "direct",
-  "rrf_score": 0.028,
-  "ranking_features": {},
-  "window_id": "W1",
-  "source_chunk_ids": ["..."],
-  "continuity_status": "complete"
+  "score": 0.029
 }
 ```
 
-`context_text` 使用 `[S1]`、`[S2]` 等 source ID 组织可读上下文；原始 Chunk 的 `chunk_id`、页码、章节和 source block 仍保留在结构化结果中，便于回溯和审计。
+`library_retrieve` 不在服务端拼接答案上下文。每个 `evidence` 项直接携带 Chunk 正文 `text`，并保留 `source_id`、`chunk_id`、页码、章节和评分，Agent 可以据此组织答案和引用。
 
-## Agent 可溯源答案闭环
+## Agent 答案组织
 
-`library_retrieve` 是 Agent 的证据工具，不在服务内调用答案生成模型。一次成功的正文检索会在进程内保存一个短期答案上下文，并在 `data` 中返回三个运行时字段：
+`library_retrieve` 是 Agent 的证据工具，不在服务内调用答案生成模型，也不保存答案上下文。返回的 `evidence` 只包含检索到的 Chunk 正文、来源定位和评分；Agent 应以 `evidence[*].text` 为事实依据。
 
-```json
-{
-  "answer_context_id": "ctx-...",
-  "answer_contract": {
-    "answer_status": ["answered", "insufficient_evidence"],
-    "required_fields": ["answer_status", "answer", "claims", "citations"],
-    "citation_syntax": "[S1]"
-  },
-  "citation_registry": {
-    "S1": {
-      "paper_id": "2309.06180",
-      "canonical_id": "2309.06180v1",
-      "chunk_id": "...",
-      "source_chunk_ids": ["..."],
-      "section_path": ["2", "2.1"],
-      "section_label": "PagedAttention",
-      "page_start": 3,
-      "page_end": 4
-    }
-  }
-}
-```
+Agent 应根据问题复杂度综合多条证据，事实句使用对应的 `[S#]` 引用；证据不足时直接说明不足，不补写检索结果没有的事实。MCP 不校验自然语言答案，也不提供答案生成模型。
 
-`citation_registry` 只由本次实际返回的 `items` 生成。它不会添加人工摘要、预期结论或检索结果之外的论文信息；`S1` 只在当前 `answer_context_id` 中有效。服务端同时保存原始 query、task、mode、filters、regions、最终 items、`context_text` 和 `truncated` 状态，进程重启后上下文失效，也不会写入 Catalog 或 `record.md`。
-
-宿主 Agent 根据 `answer_contract` 组织答案，格式为：
-
-```json
-{
-  "answer_status": "answered",
-  "answer": "PagedAttention 通过分页方式管理 KV Cache。[S1]",
-  "claims": [
-    {
-      "claim_id": "C1",
-      "text": "PagedAttention 通过分页方式管理 KV Cache。",
-      "citation_ids": ["S1"]
-    }
-  ],
-  "citations": ["S1"]
-}
-```
-
-Agent 不填写论文标题、页码、Chunk ID 等来源元数据。每条事实性 claim 都要有至少一个 `citation_id`，`answer` 中的 `[S#]` 必须存在于当前注册表并绑定到 claim，顶层 `citations` 必须等于所有 claim 引用的并集。证据不足时使用 `insufficient_evidence`，不能补写检索结果没有的事实。
-
-答案生成后，Agent 调用 `library_validate_answer(context_id, answer_status, answer, claims, citations)`，通过校验后才展示 `data.presentation.answer_text`。校验器不调用 LLM，确定性检查上下文是否过期、claim 是否有引用、引用 ID 是否存在、内联引用是否注册、顶层引用集合是否一致，并从服务端注册表恢复真实的 paper、chunk、章节和页码信息。成功响应的 `presentation.render_policy` 为 `verbatim`；失败响应为 `invalid_answer` 或 `context_expired`，包含稳定错误码，Agent 最多修正并重试两次。
-
-工具边界保持如下：
+工具边界如下：
 
 ```text
 Agent -> library_search / library_citation -> MCP 确定性 answer_text -> Agent 原样输出
-Agent -> library_retrieve -> MCP 证据和 answer_contract -> Agent 生成结构化答案
-Agent -> library_validate_answer -> MCP 确定性校验和来源恢复 -> 通过后展示
+Agent -> library_retrieve -> MCP Chunk evidence 和评分 -> Agent 组织答案
 ```
 
-`library_search` 和 `library_citation` 仍返回已经组织好的 `data.presentation.answer_text`，Agent 直接原样输出；只有 `library_retrieve` 的答案需要 Agent 组织并调用校验工具。
+`library_search` 和 `library_citation` 返回已经组织好的 `data.presentation.answer_text`，Agent 直接原样输出；正文问题由 Agent 根据 `library_retrieve` 的多条证据自行组织答案。
 
 ## 失败回退和可观测性
 
@@ -399,7 +358,7 @@ Agent -> library_validate_answer -> MCP 确定性校验和来源恢复 -> 通过
 | Milvus | 异常、未就绪或无语义结果 | 回退 SQLite lexical | `semantic_unavailable:*`、`lexical_fallback` |
 | Catalog/索引 | 未就绪 | 不返回部分结果 | `catalog_not_ready` 或 `index_not_ready` |
 
-当 `status="not_found"` 时，应先查看 `candidate_discovery`，再判断是元数据没有覆盖、正文没有实体命中，还是 filters/regions 把目标排除了。这样可以把“没有目标论文”和“有目标论文但没有证据”区分开。
+当 `status="not_found"` 时，Agent 只需根据 `warnings` 和空的 `evidence` 判断没有可用证据；候选发现的细分原因留在服务端诊断中。
 
 ## 检索指标
 
@@ -412,7 +371,7 @@ Candidate Recall@K =
 命中人工标注目标论文的查询数 / 查询总数
 ```
 
-目标论文必须出现在 `candidate_discovery.selected_paper_ids`，否则即使后续正文 Chunk 恰好来自目标论文，也算候选发现失败。
+目标论文必须出现在内部候选集合，否则即使后续正文 Chunk 恰好来自目标论文，也算候选发现失败。
 
 ### 关键证据 Recall@K
 
@@ -430,7 +389,7 @@ Comparison Precision@K =
 前 K 条中目标论文直接相关证据数 / K
 ```
 
-背景论文不计为目标论文证据，最多允许一篇背景论文用于补充。`candidate_match_source`、`paper_id` 和 `ranking_features` 可用于解释误召回来自哪一层。
+背景论文不计为目标论文证据，最多允许一篇背景论文用于补充。误召回分析使用服务端内部候选来源和排序特征，Agent 响应只保留最终证据和单一 `score`。
 
 ### 追溯完整性
 
@@ -438,24 +397,24 @@ Comparison Precision@K =
 
 ## 当前验证方式
 
-可以使用以下命令查看索引状态、执行指定任务并保留 JSON 调试字段：
+可以使用以下命令查看索引状态并执行正文检索；正文响应的主体只包含 `data.evidence`：
+
+回归问题统一使用中文输入，保留 LoRA、GQA、PagedAttention 等英文技术术语；论文正文语料仍以英文为主，用于验证中文查询的词法翻译、语义召回和混合排序。
 
 ```powershell
 paper-rag index status --json
-paper-rag retrieve "what is grouped-query attention" --task fact --mode hybrid --json
-paper-rag retrieve "why does PagedAttention improve serving" --task reason --mode hybrid --json
-paper-rag retrieve "summarize the core contributions of LoRA" --task summary --mode hybrid --json
-paper-rag retrieve "compare LoRA and QLoRA" --task comparison --mode hybrid --json
-paper-rag retrieve "what is in Appendix A" --task fact --regions appendix --json
+paper-rag retrieve "GQA 是什么？" --task fact --mode hybrid --json
+paper-rag retrieve "PagedAttention 为什么能改善服务？" --task reason --mode hybrid --json
+paper-rag retrieve "概括 LoRA 的核心贡献" --task summary --mode hybrid --json
+paper-rag retrieve "比较 LoRA 和 QLoRA" --task comparison --mode hybrid --json
+paper-rag retrieve "附录 A 中有什么？" --task fact --regions appendix --json
 ```
 
 应重点检查：
 
-- `retrieval_debug.candidate_discovery.selected_paper_ids` 是否包含目标论文；
-- `metadata_count=0` 时是否有正文回退及其结果；
-- 中文问题是否记录 `translation_used` 和 `translation_provider`；
-- Hybrid 结果是否同时保留 lexical、semantic 和 RRF 分数；
-- Table/Figure 查询是否有对应的 `exact_*_caption_hit`；
+- 每条 `data.evidence` 是否包含完整 `text`；
+- 每条证据是否能通过 `source_id`、`paper_id`、`chunk_id`、章节和页码回溯；
+- 每条证据是否包含最终 `score`，而不是内部多路分数；
 - 普通问题是否没有 Appendix 和弱相关媒体 Chunk；
 - Reason 结果是否保留完整窗口和原始 Chunk 回溯信息。
 

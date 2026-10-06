@@ -9,12 +9,12 @@ from paper_rag.mcp._app import mcp
 from paper_rag.mcp.runtime import get_settings
 
 
-@mcp.tool(name="library_search", description="按关键词、作者、分类或年份搜索本地论文元数据；纯元数据问题使用此工具，不读取正文。data.presentation.answer_text 为确定性答案，Agent 应原样输出。")
+@mcp.tool(name="library_search", description="只搜索论文元数据，如标题、作者、分类和年份；不读取正文、不调用 Embedding 或 Milvus。")
 def library_search(query: str, filters: dict[str, Any] | None = None, limit: int = 20) -> dict[str, Any]:
     return search(get_settings(), query, filters, limit)
 
 
-@mcp.tool(name="library_retrieve", description="Agent 选择正文检索后调用；服务内部按 fact/reason/summary/comparison 分类，只返回正文 Chunk 证据、answer_context_id、citation_registry 和 Agent 回答契约，不生成答案。Agent 必须基于真实 source_id 组织答案，并调用 library_validate_answer 校验后再展示；filters 会先约束候选论文。")
+@mcp.tool(name="library_retrieve", description="唯一正文 RAG 工具，默认 hybrid 检索。Agent 先选择本工具，服务内部再由 JEV 将任务分为 fact/reason/summary/comparison；MCP 只返回 evidence，Agent 用 source_id 写 [S#] 引用。")
 def library_retrieve(
     query: str,
     paper_ids: list[str] | None = None,

@@ -14,7 +14,6 @@ def test_mcp_server_registers_acquisition_tools():
         "library_get_metadata",
         "library_citation",
         "library_retrieve",
-        "library_validate_answer",
     } <= server._registered_tool_names()
 
 
@@ -42,4 +41,17 @@ def test_default_fastmcp_surface_excludes_optional_index_admin():
     assert "library_citation" in visible
     assert "library_get_assets" not in visible
     assert "library_get_asset_status" not in visible
+
+
+def test_core_tool_descriptions_keep_only_agent_facing_distinctions():
+    from paper_rag.mcp import server
+
+    tools = {tool.name: tool for tool in asyncio.run(server.mcp.list_tools())}
+
+    assert "元数据" in tools["library_search"].description
+    assert "不读取正文" in tools["library_search"].description
+    assert "引用关系图" in tools["library_citation"].description
+    assert "answer_text" in tools["library_citation"].description
+    assert "唯一正文 RAG 工具" in tools["library_retrieve"].description
+    assert "JEV" in tools["library_retrieve"].description
 

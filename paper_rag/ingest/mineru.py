@@ -20,10 +20,10 @@ import zipfile
 
 from paper_rag.acquisition.arxiv import normalize_arxiv_input, safe_base_id
 from paper_rag.config import Settings
+from paper_rag.http import HttpRequestError, JsonHttpClient
 
 
 Progress = Callable[[str], None]
-_RETRYABLE_STATUS = {429, 500, 502, 503, 504}
 _TERMINAL_STATES = {"done", "failed"}
 _MAX_RESULT_BYTES = 200 * 1024 * 1024
 
@@ -105,6 +105,7 @@ class MinerUClient:
         self.settings = settings
         self.opener = opener or urllib.request.urlopen
         self.sleeper = sleeper
+        self.http = JsonHttpClient(opener=self.opener, sleeper=self.sleeper)
 
     def parse_pdf(
         self,
@@ -285,54 +286,27 @@ class MinerUClient:
 
     def _request_json(self, method: str, path: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         url = f"{self.settings.mineru_api_base_url.rstrip('/')}/{path.lstrip('/')}"
-        body = json.dumps(payload).encode("utf-8") if payload is not None else None
-        request = urllib.request.Request(
-            url,
-            data=body,
-            method=method,
-            headers={
-                "Authorization": f"Bearer {self.settings.mineru_api_key}",
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-            },
-        )
-        last_error: Exception | None = None
-        for attempt in range(3):
-            try:
-                with self.opener(request, timeout=self.settings.mineru_request_timeout_seconds) as response:
-                    status = _response_status(response)
-                    raw = response.read().decode("utf-8", errors="replace")
-                    if status < 200 or status >= 300:
-                        if status in _RETRYABLE_STATUS:
-                            raise _RetryableMinerUError(f"HTTP {status}: {raw[:300]}")
-                        raise MinerUError(f"MinerU 请求失败：HTTP {status}: {raw[:300]}")
-                    try:
-                        data = json.loads(raw)
-                    except json.JSONDecodeError as exc:
-                        raise MinerUError("MinerU 返回的 JSON 无法解析") from exc
-                    if not isinstance(data, dict):
-                        raise MinerUError("MinerU 返回格式不是 JSON 对象")
-                    if data.get("code") not in (None, 0):
-                        raise MinerUError(f"MinerU API 调用失败：{data.get('msg') or data.get('code')}")
-                    return data
-            except _RetryableMinerUError as exc:
-                last_error = exc
-            except MinerUError:
-                raise
-            except urllib.error.HTTPError as exc:
-                if exc.code not in _RETRYABLE_STATUS:
-                    detail = exc.read().decode("utf-8", errors="replace") if exc.fp else ""
-                    raise MinerUError(f"MinerU 请求失败：HTTP {exc.code}: {detail[:300]}") from exc
-                last_error = exc
-            except (urllib.error.URLError, TimeoutError, OSError) as exc:
-                last_error = exc
-            if attempt < 2:
-                self.sleeper(2**attempt)
-        raise MinerUError(f"MinerU 请求重试失败：{last_error}") from last_error
-
-
-class _RetryableMinerUError(MinerUError):
-    pass
+        try:
+            data = self.http.request_json(
+                method,
+                url,
+                payload,
+                headers={
+                    "Authorization": f"Bearer {self.settings.mineru_api_key}",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                },
+                timeout=self.settings.mineru_request_timeout_seconds,
+                retries=2,
+                error_prefix="MinerU ",
+            )
+        except HttpRequestError as exc:
+            raise MinerUError(str(exc)) from exc
+        if not isinstance(data, dict):
+            raise MinerUError("MinerU 返回格式不是 JSON 对象")
+        if data.get("code") not in (None, 0):
+            raise MinerUError(f"MinerU API 调用失败：{data.get('msg') or data.get('code')}")
+        return data
 
 
 def preview_arxiv_ingest(settings: Settings, inputs: list[str]) -> list[dict[str, Any]]:

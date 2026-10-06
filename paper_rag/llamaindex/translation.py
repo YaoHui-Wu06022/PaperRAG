@@ -14,6 +14,10 @@ from paper_rag.llamaindex.query_rewriter import QueryRewrite, QueryRewriterClien
 class TranslationError(RuntimeError):
     """翻译服务不可用或返回空结果。"""
 
+    def __init__(self, message: str, *, warnings: tuple[str, ...] = ()) -> None:
+        super().__init__(message)
+        self.warnings = warnings
+
 
 class Translator(Protocol):
     provider: str
@@ -42,6 +46,7 @@ class LexicalQuery:
     rewriter_fallback: bool
     core_terms: tuple[str, ...]
     warnings: tuple[str, ...]
+    rewriter_error: str | None = None
 
     def debug(self) -> dict[str, object]:
         """转换为不会泄露原始问题的调试字段。"""
@@ -55,6 +60,7 @@ class LexicalQuery:
             "rewriter_used": self.rewriter_used,
             "rewriter_fallback": self.rewriter_fallback,
             "core_terms": list(self.core_terms),
+            "rewriter_error": self.rewriter_error,
         }
 
 
@@ -71,22 +77,27 @@ def prepare_lexical_query(
         return _plain_result(original, "", False, None, False, (), (), False, False)
     rewrite: QueryRewrite | None = None
     rewriter_fallback = False
+    rewriter_error: str | None = None
     warnings: list[str] = []
     if settings.query_rewriter_enabled and settings.query_rewriter_api_key:
         try:
             rewrite = (rewriter or QueryRewriterClient(settings)).rewrite(original)
         except QueryRewriterError as exc:
             rewriter_fallback = True
-            warnings.append(_format_failure("query_rewriter", exc))
+            rewriter_error = _rewriter_error_code(exc)
+            warnings.append(_format_rewriter_failure(exc))
     if rewrite is not None:
         try:
             return _prepare_rewritten_query(original, settings, rewrite, rewriter_fallback, warnings)
         except (TranslationError, ValueError) as exc:
-            warnings.append(_format_failure("tencent", exc))
+            if isinstance(exc, TranslationError):
+                warnings.extend(exc.warnings)
+            else:
+                warnings.append(_format_failure("query_rewriter", exc))
             rewriter_fallback = True
     if not settings.bm25_translation_enabled or not _contains_chinese(original):
         lexical, removed = normalize_lexical_text(original)
-        return _plain_result(original, lexical, False, None, False, tuple(removed), tuple(warnings), False, rewriter_fallback)
+        return _plain_result(original, lexical, False, None, False, tuple(removed), tuple(warnings), False, rewriter_fallback, rewriter_error)
     if len(original) > settings.bm25_translation_max_chars:
         lexical, removed = normalize_lexical_text(original)
         return LexicalQuery(
@@ -101,33 +112,29 @@ def prepare_lexical_query(
             rewriter_fallback=rewriter_fallback,
             core_terms=(),
             warnings=tuple([*warnings, "translation_skipped:query_too_long"]),
+            rewriter_error=rewriter_error,
         )
 
-    failures: list[str] = []
-    provider_name = "tencent"
-    provider = _make_translator(settings)
-    for _ in range(settings.bm25_translation_retry_count + 1):
-        try:
-            translated = provider.translate(original).strip()
-            if not translated:
-                raise TranslationError("empty translation")
-            technical = _technical_tokens(original)
-            lexical, removed = normalize_lexical_text(f"{translated} {' '.join(technical)}")
-            return LexicalQuery(
-                original_query=original,
-                query=lexical,
-                fts_query=build_fts_query(lexical),
-                translation_used=True,
-                translation_provider=provider_name,
-                translation_fallback=False,
-                stopwords_removed=tuple(removed),
-                rewriter_used=False,
-                rewriter_fallback=rewriter_fallback,
-                core_terms=(),
-                warnings=tuple([*warnings, *failures]),
-            )
-        except Exception as exc:
-            failures.append(_format_failure(provider_name, exc))
+    try:
+        translated, provider_name, provider_fallback, failures = _translate_with_fallback(settings, original)
+        technical = _technical_tokens(original)
+        lexical, removed = normalize_lexical_text(f"{translated} {' '.join(technical)}")
+        return LexicalQuery(
+            original_query=original,
+            query=lexical,
+            fts_query=build_fts_query(lexical),
+            translation_used=True,
+            translation_provider=provider_name,
+            translation_fallback=provider_fallback,
+            stopwords_removed=tuple(removed),
+            rewriter_used=False,
+            rewriter_fallback=rewriter_fallback,
+            core_terms=(),
+            warnings=tuple([*warnings, *failures]),
+            rewriter_error=rewriter_error,
+        )
+    except TranslationError as exc:
+        failures = list(exc.warnings)
 
     lexical, removed = normalize_lexical_text(original)
     return LexicalQuery(
@@ -142,6 +149,7 @@ def prepare_lexical_query(
         rewriter_fallback=rewriter_fallback,
         core_terms=(),
         warnings=tuple([*warnings, *failures]),
+        rewriter_error=rewriter_error,
     )
 
 
@@ -156,11 +164,17 @@ def _prepare_rewritten_query(
 
     provider_name: str | None = None
     translation_used = False
+    translation_fallback = False
     translated_terms = list(rewrite.core_terms)
     if settings.bm25_translation_enabled:
-        provider = _make_translator(settings)
-        provider_name = provider.provider
-        translated_terms, translation_used = _translate_parts(provider, translated_terms)
+        try:
+            translated_terms, provider_name, translation_fallback, failures = _translate_parts_with_fallback(
+                settings, translated_terms
+            )
+            warnings.extend(failures)
+        except TranslationError as exc:
+            raise TranslationError(str(exc), warnings=exc.warnings) from exc
+        translation_used = provider_name is not None
     core_terms, removed_terms = _normalize_parts(translated_terms)
     if not core_terms:
         raise ValueError("Query Rewriter 结果没有可用检索词")
@@ -176,7 +190,7 @@ def _prepare_rewritten_query(
         fts_query=fts_query,
         translation_used=translation_used,
         translation_provider=provider_name if translation_used else None,
-        translation_fallback=False,
+        translation_fallback=translation_fallback,
         stopwords_removed=tuple(removed_terms),
         rewriter_used=True,
         rewriter_fallback=rewriter_fallback,
@@ -190,7 +204,11 @@ def _translate_parts(provider: Translator, parts: list[str]) -> tuple[list[str],
     used = False
     for part in parts:
         if _contains_chinese(part):
-            value = provider.translate(part).strip()
+            try:
+                value = provider.translate(part).strip()
+            except Exception as exc:
+                # 将第三方翻译 SDK 的异常统一转换为可回退的领域错误。
+                raise TranslationError(str(exc)) from exc
             if not value:
                 raise TranslationError("empty translation")
             translated.append(value)
@@ -198,6 +216,61 @@ def _translate_parts(provider: Translator, parts: list[str]) -> tuple[list[str],
         else:
             translated.append(part)
     return translated, used
+
+
+def _translation_chain(settings: Settings) -> list[Translator]:
+    """按优先级构造翻译服务；腾讯失败后才尝试阿里云。"""
+
+    providers: list[Translator] = [_make_translator(settings)]
+    if (
+        settings.aliyun_translation_enabled
+        and settings.aliyun_translation_access_key_id
+        and settings.aliyun_translation_access_key_secret
+    ):
+        providers.append(AliyunTranslator(settings))
+    return providers
+
+
+def _translate_with_fallback(
+    settings: Settings,
+    text: str,
+) -> tuple[str, str, bool, list[str]]:
+    """依次调用腾讯云和阿里云，返回译文、提供商、是否发生备用切换及警告。"""
+
+    failures: list[str] = []
+    for provider_index, provider in enumerate(_translation_chain(settings)):
+        for _ in range(settings.bm25_translation_retry_count + 1):
+            try:
+                translated = provider.translate(text).strip()
+                if not translated:
+                    raise TranslationError("empty translation")
+                if provider_index:
+                    failures.append(f"translation_fallback:{provider.provider}")
+                return translated, provider.provider, provider_index > 0, failures
+            except Exception as exc:
+                failures.append(_format_failure(provider.provider, exc))
+    raise TranslationError("all translation providers failed", warnings=tuple(failures))
+
+
+def _translate_parts_with_fallback(
+    settings: Settings,
+    parts: list[str],
+) -> tuple[list[str], str | None, bool, list[str]]:
+    """使用同一个翻译服务完成全部核心短语，避免一次查询混用语言模型。"""
+
+    if not any(_contains_chinese(part) for part in parts):
+        return list(parts), None, False, []
+    failures: list[str] = []
+    for provider_index, provider in enumerate(_translation_chain(settings)):
+        for _ in range(settings.bm25_translation_retry_count + 1):
+            try:
+                translated, used = _translate_parts(provider, parts)
+                if provider_index:
+                    failures.append(f"translation_fallback:{provider.provider}")
+                return translated, provider.provider if used else None, provider_index > 0, failures
+            except Exception as exc:
+                failures.append(_format_failure(provider.provider, exc))
+    raise TranslationError("all translation providers failed", warnings=tuple(failures))
 
 
 def _normalize_parts(parts: list[str]) -> tuple[list[str], list[str]]:
@@ -221,6 +294,7 @@ def _plain_result(
     warnings: tuple[str, ...],
     rewriter_used: bool,
     rewriter_fallback: bool,
+    rewriter_error: str | None = None,
 ) -> LexicalQuery:
     return LexicalQuery(
         original_query=original,
@@ -234,6 +308,7 @@ def _plain_result(
         rewriter_fallback=rewriter_fallback,
         core_terms=(),
         warnings=warnings,
+        rewriter_error=rewriter_error,
     )
 
 
@@ -280,6 +355,52 @@ class TencentTranslator:
         return translated
 
 
+class AliyunTranslator:
+    """阿里云机器翻译适配器，作为腾讯云失败后的备用服务。"""
+
+    provider = "aliyun"
+
+    def __init__(self, settings: Settings) -> None:
+        self.settings = settings
+
+    def translate(self, text: str) -> str:
+        try:
+            from alibabacloud_alimt20181012.client import Client
+            from alibabacloud_alimt20181012 import models
+            from alibabacloud_tea_openapi import models as open_api_models
+        except ImportError as exc:
+            raise TranslationError("Aliyun translation SDK is not installed") from exc
+
+        config = open_api_models.Config(
+            access_key_id=self.settings.aliyun_translation_access_key_id,
+            access_key_secret=self.settings.aliyun_translation_access_key_secret,
+            security_token=self.settings.aliyun_translation_security_token or None,
+            region_id=self.settings.aliyun_translation_region_id,
+            endpoint=self.settings.aliyun_translation_endpoint,
+            read_timeout=self.settings.bm25_translation_timeout_seconds * 1000,
+            connect_timeout=self.settings.bm25_translation_timeout_seconds * 1000,
+        )
+        client = Client(config)
+        request = models.TranslateGeneralRequest(
+            format_type="text",
+            scene="general",
+            source_language="zh",
+            source_text=text,
+            target_language="en",
+        )
+        response = client.translate_general(request)
+        body = getattr(response, "body", None)
+        code = str(getattr(body, "code", "") or "")
+        if code and code != "200":
+            message = str(getattr(body, "message", "") or "request failed")
+            raise TranslationError(f"Aliyun translation failed: {message}")
+        data = getattr(body, "data", None)
+        translated = str(getattr(data, "translated", "") or "").strip()
+        if not translated:
+            raise TranslationError("Aliyun translation returned empty text")
+        return translated
+
+
 def _format_failure(provider: str, exc: Exception) -> str:
     """把翻译失败压缩成可诊断但不携带密钥的 warning。"""
 
@@ -288,6 +409,29 @@ def _format_failure(provider: str, exc: Exception) -> str:
     message = " ".join(message.split())[:240]
     suffix = f":{message}" if message else ""
     return f"translation_failed:{provider}:{type(exc).__name__}{suffix}"
+
+
+def _format_rewriter_failure(exc: Exception) -> str:
+    """区分 Query Rewriter 失败和腾讯云翻译失败。"""
+
+    pattern = r"(?i)\b(access[_-]?key(?:[_-]?(?:id|secret))?|secret[_-]?(?:id|key)|token|password|api[-_]?key)[=: ]+\S+"
+    message = re.sub(pattern, lambda match: f"{match.group(1)}=<redacted>", str(exc))
+    message = " ".join(message.split())[:240]
+    suffix = f":{message}" if message else ""
+    return f"query_rewriter_failed:{type(exc).__name__}{suffix}"
+
+
+def _rewriter_error_code(exc: Exception) -> str:
+    """把严格契约错误压缩为 Agent 可判断的稳定代码。"""
+
+    message = str(exc).casefold()
+    if "core_terms" in message and "字符串数组" in str(exc):
+        return "invalid_core_terms"
+    if "没有返回核心" in str(exc) or "没有可用检索词" in str(exc):
+        return "empty_core_terms"
+    if "json" in message or "choices" in message or "message.content" in message:
+        return "invalid_response"
+    return "request_failed"
 
 
 def _contains_chinese(value: str) -> bool:
@@ -309,6 +453,7 @@ def _technical_tokens(value: str) -> list[str]:
 
 
 __all__ = [
+    "AliyunTranslator",
     "LexicalQuery",
     "TencentTranslator",
     "TranslationError",
