@@ -86,6 +86,27 @@ Catalog 和 Milvus 都使用临时输出、校验和原子切换。规则版本�
 
 写入型操作需要 confirm，并通过 JobManager 记录异步状态。读取型检索返回结构化证据，不替代上层答案生成。
 
+## Agent 答案闭环
+
+MCP 作为 Agent 工具执行中间过程，最终展示由宿主 Agent 完成。三个入口保持明确边界：`library_search` 和 `library_citation` 已经确定性组织 `data.presentation.answer_text`，Agent 直接原样输出；`library_retrieve` 返回候选论文、混合检索证据、`context_text`、`answer_context_id`、`answer_contract` 和 `citation_registry`，由 Agent 根据这些真实来源组织答案。
+
+正文答案采用以下结构：
+
+```json
+{
+  "answer_status": "answered",
+  "answer": "Markdown 答案，事实句带 [S1]",
+  "claims": [
+    {"claim_id": "C1", "text": "事实陈述", "citation_ids": ["S1"]}
+  ],
+  "citations": ["S1"]
+}
+```
+
+Agent 生成后必须调用 `library_validate_answer`。工具只接收 `context_id`、答案状态、答案文本、claims 和引用 ID，不接受 Agent 自填的论文、页码或 Chunk 元数据；校验通过后才返回可展示的 `presentation.answer_text`，并从服务端上下文恢复真实来源定位。校验失败会返回 `invalid_answer`、`context_expired` 等稳定错误码，宿主 Agent 可以修正后重试，未通过校验的答案不得展示。
+
+答案上下文使用进程内缓存，默认 TTL 30 分钟、最多 128 条，服务重启即失效；它只保存当前请求的 query、task、filters、regions、items、context_text、citation_registry 和截断状态，不写入 Catalog、Milvus 或 `record.md`。`record.md` 只记录真实发生的 MCP 请求和响应。
+
 ## 验证方式
 
     paper-rag catalog sync --json
@@ -95,7 +116,7 @@ Catalog 和 Milvus 都使用临时输出、校验和原子切换。规则版本�
     paper-rag index rebuild --mode auto --json
     paper-rag retrieve "query" --task auto --mode hybrid --json
 
-当前自动测试为 106 passed；最近的真实正文回归和人工复核保存在 record.md。
+当前自动测试结果以本地测试命令为准；最近的真实正文回归和人工复核保存在 record.md。答案闭环测试覆盖来源注册表、合法答案、未知引用、缺少 claim 引用、伪造元数据和上下文过期。
 
 ## 当前边界
 

@@ -114,7 +114,7 @@ def citation_presentation(
             elif direction == "in":
                 lines.extend(
                     [
-                        f"被引用：{len({str(edge.get('source_paper_id')) for edge in direct_in})} 篇",
+                        f"直接被引用：{len({str(edge.get('source_paper_id')) for edge in direct_in})} 篇",
                         f"查询深度：{graph_depth}",
                         f"间接被引用：{len({str(edge.get('source_paper_id')) for edge in indirect_in})} 篇",
                     ]
@@ -123,7 +123,7 @@ def citation_presentation(
                 lines.extend(
                     [
                         f"直接引用：{len({str(edge.get('target_arxiv_id')) for edge in direct_out})} 篇",
-                        f"被引用：{len({str(edge.get('source_paper_id')) for edge in direct_in})} 篇",
+                        f"直接被引用：{len({str(edge.get('source_paper_id')) for edge in direct_in})} 篇",
                         f"查询深度：{graph_depth}",
                         f"间接引用：{len({str(edge.get('target_arxiv_id')) for edge in indirect_out})} 篇",
                         f"间接被引用：{len({str(edge.get('source_paper_id')) for edge in indirect_in})} 篇",
@@ -133,9 +133,9 @@ def citation_presentation(
             if direction == "out":
                 lines.append(f"引用：{len(outgoing)} 篇")
             elif direction == "in":
-                lines.append(f"被引用：{len(incoming)} 篇")
+                lines.append(f"直接被引用：{len(incoming)} 篇")
             else:
-                lines.extend([f"引用：{len(outgoing)} 篇", f"被引用：{len(incoming)} 篇"])
+                lines.extend([f"引用：{len(outgoing)} 篇", f"直接被引用：{len(incoming)} 篇"])
         if direction == "both":
             _append_graph_section(lines, "引用（前10条）：", direct_out, indirect_out, "target_arxiv_id", title_lookup)
             _append_graph_section(lines, "被引用（前10条）：", direct_in, indirect_in, "source_paper_id", title_lookup)

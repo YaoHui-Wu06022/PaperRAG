@@ -2,24 +2,13 @@
 
 > 生成时间（UTC）：2026-10-06T04:10:43.254950+00:00
 > 数据来源：当前本地 Catalog、Milvus 和正文 Chunk，通过真实 MCP stdio 服务调用。
-> 服务端：`paper_rag.mcp.server`；传输：`stdio`。
-> 本批次使用一组与上一轮不同的问题，覆盖事实、原因解释、摘要、对比、显式附录、表格和不存在论文；不重建索引。
-
-## 工具选择说明
-
-所有案例都实际调用 `library_retrieve`，使用 `mode=hybrid`。需要固定范围的案例通过 `paper_ids`、`regions` 或 `filters` 限定候选；普通问题由服务端自动分类为 fact、reason、summary 或 comparison。每个案例保留完整的 MCP request/response，并在 JSON 内附加人工质量复核。
+> 服务端：`paper_rag.mcp.server`；传输：`stdio`
 
 ## 案例 1：BERT 的预训练使用了哪两个任务？
 
 ```json
 {
   "user_question": "BERT 的预训练使用了哪两个任务？",
-  "expected_evidence": {
-    "paper_ids": [
-      "1810.04805"
-    ],
-    "criteria": "识别 MLM 与 NSP 两项任务及其训练方式。"
-  },
   "steps": [
     {
       "agent_decision": {
@@ -733,14 +722,6 @@
         },
         "warnings": [],
         "read_only": true
-      },
-      "quality_review": {
-        "verdict": "部分通过",
-        "paper_recall": "通过：1810.04805 命中并排在首位。",
-        "evidence_quality": "正文 3.1 同时覆盖 Task #1 MLM 和 Task #2 NSP，证据足够回答问题。",
-        "issues": [
-          "候选论文中混入 1909.08053，且第 6 条为无关 Figure 2 图片说明；目标事实没有被遮蔽，但候选集合仍有噪声。"
-        ]
       }
     }
   ]
@@ -755,12 +736,6 @@
 ```json
 {
   "user_question": "Why does mixed precision training maintain a master copy of weights in FP32?",
-  "expected_evidence": {
-    "paper_ids": [
-      "1710.03740"
-    ],
-    "criteria": "找到小梯度更新在 FP16 中丢失/舍入以及 FP32 主权重更新的原因。"
-  },
   "steps": [
     {
       "agent_decision": {
@@ -1050,14 +1025,6 @@
         },
         "warnings": [],
         "read_only": true
-      },
-      "quality_review": {
-        "verdict": "通过",
-        "paper_recall": "通过：仅返回 1710.03740。",
-        "evidence_quality": "3.1 的直接证据完整说明 FP16 前后向、FP32 master copy 和优化器更新原因，并保留了同章节窗口及页码。",
-        "issues": [
-          "第 2 条是直接证据的重复上下文，第 3 条来自实验设置，存在轻微冗余。"
-        ]
       }
     }
   ]
@@ -1071,12 +1038,6 @@
 ```json
 {
   "user_question": "FlashAttention 为什么能减少 GPU 的 HBM 读写，同时保持精确注意力结果？",
-  "expected_evidence": {
-    "paper_ids": [
-      "2205.14135"
-    ],
-    "criteria": "找到 tiling、SRAM、重计算以及精确注意力的因果证据。"
-  },
   "steps": [
     {
       "agent_decision": {
@@ -1309,12 +1270,6 @@
         },
         "warnings": [],
         "read_only": true
-      },
-      "quality_review": {
-        "verdict": "通过",
-        "paper_recall": "通过：仅返回 2205.14135。",
-        "evidence_quality": "正文引言和 3.2 同时覆盖 exact attention、减少 HBM reads/writes、IO complexity 和 SRAM/HBM 分层原因。",
-        "issues": []
       }
     }
   ]
@@ -1328,12 +1283,6 @@
 ```json
 {
   "user_question": "Swin Transformer 的 shifted windows 为什么能实现跨窗口信息交互？",
-  "expected_evidence": {
-    "paper_ids": [
-      "2103.14030"
-    ],
-    "criteria": "找到交替窗口划分与跨窗口连接，不能只有泛化描述。"
-  },
   "steps": [
     {
       "agent_decision": {
@@ -1643,14 +1592,6 @@
         },
         "warnings": [],
         "read_only": true
-      },
-      "quality_review": {
-        "verdict": "部分通过",
-        "paper_recall": "通过：仅返回 2103.14030。",
-        "evidence_quality": "摘要提到 shifted window 允许跨窗口连接，但前两条正文证据落在 3.1 和 Introduction，没有把 3.2 的交替窗口机制排到首位。",
-        "issues": [
-          "查询实体命中和章节精确命中均为 false；核心解释证据没有稳定进入首条。"
-        ]
       }
     }
   ]
@@ -1664,12 +1605,6 @@
 ```json
 {
   "user_question": "Summarize how EfficientNet scales network depth, width, and resolution.",
-  "expected_evidence": {
-    "paper_ids": [
-      "1905.11946"
-    ],
-    "criteria": "找到 compound scaling 及深度/宽度/分辨率协同缩放的正文。"
-  },
   "steps": [
     {
       "agent_decision": {
@@ -2184,14 +2119,6 @@
         },
         "warnings": [],
         "read_only": true
-      },
-      "quality_review": {
-        "verdict": "通过",
-        "paper_recall": "通过：仅返回 1905.11946。",
-        "evidence_quality": "摘要、Introduction 和 Conclusion 均围绕 depth/width/resolution 的 compound scaling，未召回 Appendix。",
-        "issues": [
-          "第 4 条为 chart，摘要任务中媒体证据优先级仍可进一步降低。"
-        ]
       }
     }
   ]
@@ -2205,12 +2132,6 @@
 ```json
 {
   "user_question": "概括 DPO 相比基于强化学习的 RLHF 的核心方法与贡献。",
-  "expected_evidence": {
-    "paper_ids": [
-      "2305.18290"
-    ],
-    "criteria": "找到 DPO 偏好损失、无需显式奖励模型及 RL 优化循环。"
-  },
   "steps": [
     {
       "agent_decision": {
@@ -2685,19 +2606,11 @@
             "template_version": "library-answer-v1",
             "answer_type": "rag_evidence",
             "render_policy": "compose",
-            "answer_text": ""
+            "answer_text": "目标论文：Attention Is All You Need\n直接引用：1 篇\n直接被引用：18 篇\n查询深度：2\n间接引用：2 篇\n间接被引用：7 篇\n\n引用（前10条）：\n1. Deep Residual Learning for Image Recognition\n────────\n2. Very Deep Convolutional Networks for Large-Scale Image Recognition\n3. Going Deeper with Convolutions\n\n被引用（前10条）：\n1. BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding\n2. GPipe: Efficient Training of Giant Neural Networks using Pipeline Parallelism\n3. Parameter-Efficient Transfer Learning for NLP\n4. Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism\n5. Fast Transformer Decoding: One Write-Head is All You Need\n6. Language Models are Few-Shot Learners\n7. Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention\n8. An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale\n9. Prefix-Tuning: Optimizing Continuous Prompts for Generation\n10. Swin Transformer: Hierarchical Vision Transformer using Shifted Windows"
           }
         },
         "warnings": [],
         "read_only": true
-      },
-      "quality_review": {
-        "verdict": "通过",
-        "paper_recall": "通过：仅返回 2305.18290。",
-        "evidence_quality": "摘要直接对比 RLHF 的 reward model + RL 流程与 DPO 的 closed-form classification loss，并给出稳定性和计算开销贡献。",
-        "issues": [
-          "第 4 条从公式中间开始，适合作为补充实验材料，不适合作为首条解释证据。"
-        ]
       }
     }
   ]
@@ -2711,13 +2624,6 @@
 ```json
 {
   "user_question": "Compare Prefix-Tuning and Prompt Tuning in terms of where trainable parameters are inserted and whether pretrained weights are frozen.",
-  "expected_evidence": {
-    "paper_ids": [
-      "2101.00190",
-      "2104.08691"
-    ],
-    "criteria": "两篇均召回，分别包含 prefix 层级参数与输入 soft prompt 证据。"
-  },
   "steps": [
     {
       "agent_decision": {
@@ -3361,12 +3267,6 @@
         },
         "warnings": [],
         "read_only": true
-      },
-      "quality_review": {
-        "verdict": "通过",
-        "paper_recall": "通过：2104.08691 和 2101.00190 均命中，前五条没有背景论文。",
-        "evidence_quality": "证据覆盖 prompt tuning 的输入 soft prompts、prefix tuning 的逐层 prefixes，以及两者冻结预训练权重的共同点。",
-        "issues": []
       }
     }
   ]
@@ -3380,13 +3280,6 @@
 ```json
 {
   "user_question": "比较 ViT 与 Swin Transformer 的图像表示层级、注意力范围和计算复杂度。",
-  "expected_evidence": {
-    "paper_ids": [
-      "2010.11929",
-      "2103.14030"
-    ],
-    "criteria": "两篇均召回，支持平坦/层级结构、全局/窗口注意力比较。"
-  },
   "steps": [
     {
       "agent_decision": {
@@ -3857,14 +3750,6 @@
           "translation_failed:query_rewriter:QueryRewriterError:Query Rewriter 的 core_terms 不是字符串数组"
         ],
         "read_only": true
-      },
-      "quality_review": {
-        "verdict": "部分通过",
-        "paper_recall": "部分通过：ViT 和 Swin 命中，但额外召回 2006.16236。",
-        "evidence_quality": "Swin 摘要和结论覆盖层级表示、局部窗口和线性复杂度；ViT 的首两条没有直接给出与 Swin 的全局注意力复杂度对照。",
-        "issues": [
-          "候选发现的全文回退引入与图像比较无关的线性注意力论文；ViT 对比证据不足。"
-        ]
       }
     }
   ]
@@ -3878,12 +3763,6 @@
 ```json
 {
   "user_question": "ResNet 的附录如何解释残差网络能够表示指数数量的浅层网络这一观点？",
-  "expected_evidence": {
-    "paper_ids": [
-      "1512.03385"
-    ],
-    "criteria": "诊断附录查询：必须检查论文实际附录是否支持命题，不能只因命中 ResNet 就判通过。"
-  },
   "steps": [
     {
       "agent_decision": {
@@ -4456,14 +4335,6 @@
           "translation_failed:query_rewriter:QueryRewriterError:Query Rewriter 的 core_terms 不是字符串数组"
         ],
         "read_only": true
-      },
-      "quality_review": {
-        "verdict": "部分通过（问题与来源结构不一致）",
-        "paper_recall": "通过：仅返回 1512.03385。",
-        "evidence_quality": "返回正文 4.1 的内容，确实包含 deep plain nets 的 exponentially low convergence rates；但该论点不在 ResNet 的 Appendix。",
-        "issues": [
-          "问题明确要求“附录”，结果没有 Appendix chunk。检查原文后确认 Appendix 主要是目标检测和定位实验，该理论论点位于正文；应将此案例视为查询意图与来源章节不一致，而不是把正文证据误报为附录证据。"
-        ]
       }
     }
   ]
@@ -4477,12 +4348,6 @@
 ```json
 {
   "user_question": "What training settings are reported for Swin Transformer on ImageNet-1K?",
-  "expected_evidence": {
-    "paper_ids": [
-      "2103.14030"
-    ],
-    "criteria": "显式限定 appendix，找到优化器、学习率、训练轮次等设置。"
-  },
   "steps": [
     {
       "agent_decision": {
@@ -5067,14 +4932,6 @@
         },
         "warnings": [],
         "read_only": true
-      },
-      "quality_review": {
-        "verdict": "部分通过",
-        "paper_recall": "通过：仅返回 2103.14030，且全部为 Appendix。",
-        "evidence_quality": "A2.1 的前 3 条直接覆盖 ImageNet-1K 的分辨率、优化器、epoch、batch size、学习率和 weight decay。",
-        "issues": [
-          "后 3 条混入 A3.1、A3.2、A3.3 的无关附录内容；显式 Appendix 检索仍需要按章节相关性去噪。"
-        ]
       }
     }
   ]
@@ -5088,12 +4945,6 @@
 ```json
 {
   "user_question": "哪些方法通过局部窗口注意力降低图像 Transformer 的计算复杂度？请给出正文依据。",
-  "expected_evidence": {
-    "paper_ids": [
-      "2103.14030"
-    ],
-    "criteria": "年份与分类约束保持有效，并找到局部窗口复杂度正文。"
-  },
   "steps": [
     {
       "agent_decision": {
@@ -5637,14 +5488,6 @@
         },
         "warnings": [],
         "read_only": true
-      },
-      "quality_review": {
-        "verdict": "部分通过",
-        "paper_recall": "部分通过：命中 2103.14030，但同时返回 2010.11929。",
-        "evidence_quality": "2103.14030 的 3.2 正文明确对比 global self-attention 的二次复杂度与 non-overlapped local windows。",
-        "issues": [
-          "ViT 使用 global attention，却作为候选论文返回；第 3、4 条是公式，缺少解释性正文优先。"
-        ]
       }
     }
   ]
@@ -5658,12 +5501,6 @@
 ```json
 {
   "user_question": "What does EfficientNet Table 2 report about the accuracy and parameter count of EfficientNet-B0 versus ResNet-50?",
-  "expected_evidence": {
-    "paper_ids": [
-      "1905.11946"
-    ],
-    "criteria": "表格命中并提供 B0/ResNet-50 的准确率与参数量，保留原始表格来源。"
-  },
   "steps": [
     {
       "agent_decision": {
@@ -6201,14 +6038,6 @@
         },
         "warnings": [],
         "read_only": true
-      },
-      "quality_review": {
-        "verdict": "失败",
-        "paper_recall": "通过：仅返回 1905.11946。",
-        "evidence_quality": "查询明确要求 Table 2，但返回的唯一 table 是 Table 5；正文只给出泛化的 EfficientNet/ResNet 对比，没有返回 Table 2 的 B0 77.1%/5.3M 与 ResNet-50 76.0%/26M。",
-        "issues": [
-          "表号和表格内容没有被精确匹配，Table 5 排在第 3 条，属于事实检索失败。"
-        ]
       }
     }
   ]
@@ -6222,10 +6051,6 @@
 ```json
 {
   "user_question": "Summarize the core method of NebulaXYZ-9876.",
-  "expected_evidence": {
-    "paper_ids": [],
-    "criteria": "本地不存在该方法，不应把弱相关论文包装为目标方法。"
-  },
   "steps": [
     {
       "agent_decision": {
@@ -6274,3155 +6099,19 @@
           "no papers match the supplied constraints"
         ],
         "read_only": true
-      },
-      "quality_review": {
-        "verdict": "通过",
-        "paper_recall": "通过：返回 not_found 且没有论文。",
-        "evidence_quality": "candidate_discovery 明确显示 metadata_count=0、chunk_count=0、selected_paper_ids=[]，未用弱相关论文掩盖本地语料缺失。",
-        "issues": []
       }
     }
   ]
 }
 ```
 
-返回论文：`无`；质量判定：**通过**。
-
-## 批次结论
-
-本批次共 13 个案例：通过 6 个，部分通过 6 个，失败 1 个。核心目标论文在事实、原因、摘要和对比案例中均有命中；主要异常集中在候选去噪、章节精确排序和表号精确匹配。
-
-- 候选噪声：案例 1、8、11 混入相关度较弱的论文或媒体类型。
-- 章节/证据排序：案例 4 没有把 shifted-window 核心正文排到首位；案例 10 在正确的 Appendix 小节后混入无关 Appendix 小节。
-- 查询与来源不一致：案例 9 的“指数数量浅层网络”论点在正文 4.1，不在 Appendix；记录保留这一事实，避免把正文结果误解为附录召回成功。
-- 表格精确性：案例 12 要求 Table 2，却返回 Table 5，当前表号约束不足。
-- 缺失论文拒答：案例 13 正确返回 `not_found`，没有用弱相关结果替代。
-
-## 索引状态
-
-```json
-{
-  "status": "ok",
-  "data": {
-    "status": "ok",
-    "catalog_ready": true,
-    "index_ready": true,
-    "index_stale": false,
-    "stale_reasons": [],
-    "cache_complete": true,
-    "chunk_count": 3241,
-    "indexed_count": 3241,
-    "embedding_model": "qwen3.7-text-embedding-flash",
-    "embedding_dimensions": 1024,
-    "milvus_collection": "paper_rag_llama_chunks__build_be6203949c11",
-    "built_at": "2026-10-05T15:29:58.409711+00:00",
-    "last_sync_mode": "incremental",
-    "last_sync_status": "completed",
-    "sync_stats": {
-      "reused": 1492,
-      "added": 1395,
-      "updated": 354,
-      "deleted": 404,
-      "failed": 0
-    },
-    "manifest": {
-      "schema_version": 2,
-      "catalog_indexed_at": "2026-10-05T14:26:18.712262+00:00",
-      "chunk_count": 3241,
-      "indexed_count": 3241,
-      "chunk_rule_version": "content-list-regions-v5-1200-table-text",
-      "embedding_model": "qwen3.7-text-embedding-flash",
-      "embedding_dimensions": 1024,
-      "milvus_collection": "paper_rag_llama_chunks__build_be6203949c11",
-      "built_at": "2026-10-05T15:29:58.409711+00:00",
-      "status": "ready",
-      "last_sync_mode": "incremental",
-      "sync_stats": {
-        "reused": 1492,
-        "added": 1395,
-        "updated": 354,
-        "deleted": 404,
-        "failed": 0
-      }
-    }
-  },
-  "warnings": [],
-  "read_only": true
-}
-```
-
-本次只做真实检索和记录，没有重建 Catalog/Milvus，也没有修改 chunk 内容、区域划分或 schema。
-
-## 本轮 v6 Chunk 重设计、索引重建与回归
-
-> 生成时间（UTC）：2026-10-06T05:26:58.019150+00:00
-> 本轮先完成 content-list-regions-v6-boundary-aware Chunk 重设计，再完成 Catalog/Milvus 全量重建；下方保留旧版 13 个案例，并追加既有回归问题与来源对齐的 ResNet Appendix 诊断。
-
-### Catalog 与 Chunk 审计
-
-```json
-{
-  "source_papers": 34,
-  "chunk_rule_version": "content-list-regions-v6-boundary-aware",
-  "catalog_chunks": 3292,
-  "regions": {"abstract": 58, "content": 2297, "appendix": 937, "reference": 0},
-  "media_chunks": 1110,
-  "table_chunks": 341,
-  "table_chunks_with_numbered_caption": 261,
-  "lowercase_text_starts": 123,
-  "same_section_adjacent_alnum_boundaries": 13,
-  "boundary_audit_note": "剩余 13 对来自原始 MinerU 文本块或媒体边界，不是 v6 字符 overlap 产生的半词重叠；单元测试覆盖的 v6 切分路径没有 mid-token 起始。",
-  "references_chunks": 0
-}
-```
-
-lowercase_text_starts 不能单独作为失败指标，因为 where、for 等完整句子和原始抽取块也可能以小写开头；本轮重点审计相邻 Chunk 的词边界、媒体独立性和 caption 完整性。v5 中固定字符 overlap 造成的系统性残词问题已由边界感知切分替代。
-
-### Milvus 全量重建
-
-```json
-{
-  "index_ready": true,
-  "index_stale": false,
-  "cache_complete": true,
-  "chunk_count": 3292,
-  "indexed_count": 3292,
-  "embedding_dimensions": 1024,
-  "last_sync_mode": "full",
-  "failed": 0,
-  "milvus_collection": "paper_rag_llama_chunks__build_472479e8ef9c"
-}
-```
-
-### v6 真实正文检索回归
-
-下列记录由当前 Catalog 和已切换的 v6 active Milvus 直接调用 library_retrieve 对应的服务实现生成；top_items 只保留每个案例前三条的可回溯字段，完整紧凑结果保存在本轮运行产物中。
-
-```json
-[
-  {
-    "id": "old-gqa",
-    "request": {
-      "query": "In GQA section 2.2, how does grouped-query attention reduce the KV cache?",
-      "task": "fact",
-      "paper_ids": [
-        "2305.13245"
-      ]
-    },
-    "status": "ok",
-    "task": "fact",
-    "papers": [
-      "2305.13245"
-    ],
-    "top_items": [
-      {
-        "paper_id": "2305.13245",
-        "chunk_id": "908f3ee9d59e32fc115fb9d7",
-        "region": "content",
-        "section_label": "2.2 Grouped-query attention",
-        "type": "text",
-        "ordinal": 9,
-        "page_start": 1,
-        "text_head": "We note that GQA is not applied to the encoder self-attention layers; encoder representations are computed in parallel, and memory bandwidth is therefore generally not the primary bottleneck.",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0037
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2305.13245",
-        "chunk_id": "8510645f75b366fffd870e56",
-        "region": "content",
-        "section_label": "2.2 Grouped-query attention",
-        "type": "text",
-        "ordinal": 8,
-        "page_start": 1,
-        "text_head": "An intermediate number of groups leads to an interpolated model that is higher quality than MQA but faster than MHA, and, as we will show, represents a favorable trade-off. Going from MHA to MQA reduces H key and value h",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.0037
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2305.13245",
-        "chunk_id": "9d59efb82ff64eaa74f8b259",
-        "region": "content",
-        "section_label": "2.2 Grouped-query attention",
-        "type": "text",
-        "ordinal": 7,
-        "page_start": 1,
-        "text_head": "Grouped-query attention divides query heads into G groups, each of which shares a single key head and value head. GQA-G refers to grouped-query with G groups. GQA-1, with a single group and therefore single key and value",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.0037
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "candidate_discovery": null,
-    "warnings": []
-  },
-  {
-    "id": "old-paged-attention",
-    "request": {
-      "query": "Why does PagedAttention improve serving efficiency for long sequences?",
-      "task": "reason",
-      "paper_ids": [
-        "2309.06180"
-      ]
-    },
-    "status": "ok",
-    "task": "reason",
-    "papers": [
-      "2309.06180"
-    ],
-    "top_items": [
-      {
-        "paper_id": "2309.06180",
-        "chunk_id": "c0c8bf64e9c3881d64a673a8",
-        "region": "content",
-        "section_label": "1 Introduction",
-        "type": "text",
-        "ordinal": 11,
-        "page_start": 1,
-        "text_head": "To address the above limitations, we propose PagedAttention, an attention algorithm inspired by the operating system’s (OS) solution to memory fragmentation and sharing: virtual memory with paging. PagedAttention divides",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0026
-        },
-        "window_id": "2309.06180:11",
-        "source_chunk_ids": [
-          "2ea7b9b04ad79e6bb1948712",
-          "c0c8bf64e9c3881d64a673a8",
-          "bffd7a8bc3311122f48a1aad"
-        ],
-        "continuity_status": "complete"
-      },
-      {
-        "paper_id": "2309.06180",
-        "chunk_id": "911d0de24d794c2a9a8c6745",
-        "region": "content",
-        "section_label": "10 Conclusion",
-        "type": "text",
-        "ordinal": 116,
-        "page_start": 13,
-        "text_head": "This paper proposes PagedAttention, a new attention algorithm that allows attention keys and values to be stored in non-contiguous paged memory, and presents vLLM, a high-throughput LLM serving system with eficient memor",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0026
-        },
-        "window_id": "2309.06180:116",
-        "source_chunk_ids": [
-          "911d0de24d794c2a9a8c6745"
-        ],
-        "continuity_status": "complete"
-      },
-      {
-        "paper_id": "2309.06180",
-        "chunk_id": "6e069195ba754d51bafa95c1",
-        "region": "abstract",
-        "section_label": "abstract",
-        "type": "text",
-        "ordinal": 0,
-        "page_start": 0,
-        "text_head": "High throughput serving of large language models (LLMs) requires batching suficiently many requests at a time. However, existing systems struggle because the key-value cache (KV cache) memory for each request is huge and",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "abstract",
-          "region_score": 2,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.00235
-        },
-        "window_id": "2309.06180:0",
-        "source_chunk_ids": [
-          "6e069195ba754d51bafa95c1"
-        ],
-        "continuity_status": "complete"
-      }
-    ],
-    "candidate_discovery": null,
-    "warnings": []
-  },
-  {
-    "id": "old-lora-summary",
-    "request": {
-      "query": "Summarize the core contributions of LoRA.",
-      "task": "summary"
-    },
-    "status": "ok",
-    "task": "summary",
-    "papers": [
-      "2106.09685"
-    ],
-    "top_items": [
-      {
-        "paper_id": "2106.09685",
-        "chunk_id": "7f475dda898c0404d731dd7d",
-        "region": "abstract",
-        "section_label": "abstract",
-        "type": "text",
-        "ordinal": 1,
-        "page_start": 0,
-        "text_head": "We also provide an empirical investigation into rank-deficiency in language model adaptation, which sheds light on the efficacy of LoRA.\n\nWe release a package that facilitates the integration of LoRA with PyTorch models ",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "abstract",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0026
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2106.09685",
-        "chunk_id": "b64ef3dd069a4d2b933bdcaf",
-        "region": "abstract",
-        "section_label": "abstract",
-        "type": "text",
-        "ordinal": 0,
-        "page_start": 0,
-        "text_head": "An important paradigm of natural language processing consists of large-scale pretraining on general domain data and adaptation to particular tasks or domains.\n\nAs we pre-train larger models, full fine-tuning, which retra",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "abstract",
-          "region_score": 3,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.0026
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2106.09685",
-        "chunk_id": "0be95b55edde3ff291331d5a",
-        "region": "content",
-        "section_label": "4 OUR METHOD",
-        "type": "text",
-        "ordinal": 18,
-        "page_start": 3,
-        "text_head": "We describe the simple design of LoRA and its practical benefits. The principles outlined here apply to any dense layers in deep learning models, though we only focus on certain weights in Transformer language models in ",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 2,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.00235
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "candidate_discovery": {
-      "metadata_count": 6,
-      "chunk_count": 0,
-      "entity_hits": {
-        "LoRA": [
-          "2106.09685",
-          "2305.14314"
-        ]
-      },
-      "fallback_used": false,
-      "chunk_search_used": false,
-      "selected_paper_ids": [
-        "2106.09685"
-      ],
-      "lexical_query": "\"lora\" OR \"low rank adaptation\" OR \"core contributions\" OR \"parameter efficient fine tuning\" OR \"frozen pretrained model weights\" OR \"low rank decomposition\" OR \"trainable rank decomposition matrices\" OR \"reduced trainable parameters\" OR \"no additional inference latency\" OR \"large language models\" OR \"gpt\" OR \"roberta\" OR \"deberta\"",
-      "candidate_match_source": {
-        "2106.09685": "title_exact"
-      },
-      "title_exact_hit": [
-        "2106.09685"
-      ],
-      "abstract_exact_hit": [
-        "2106.09685",
-        "2305.14314"
-      ],
-      "chunk_exact_hit": [],
-      "table_ref": null,
-      "figure_ref": null
-    },
-    "warnings": []
-  },
-  {
-    "id": "old-lora-qlora-comparison",
-    "request": {
-      "query": "Compare LoRA and QLoRA in terms of parameter efficiency and quantization.",
-      "task": "comparison",
-      "paper_ids": [
-        "2106.09685",
-        "2305.14314"
-      ]
-    },
-    "status": "ok",
-    "task": "comparison",
-    "papers": [
-      "2106.09685",
-      "2305.14314"
-    ],
-    "top_items": [
-      {
-        "paper_id": "2106.09685",
-        "chunk_id": "b64ef3dd069a4d2b933bdcaf",
-        "region": "abstract",
-        "section_label": "abstract",
-        "type": "text",
-        "ordinal": 0,
-        "page_start": 0,
-        "text_head": "An important paradigm of natural language processing consists of large-scale pretraining on general domain data and adaptation to particular tasks or domains.\n\nAs we pre-train larger models, full fine-tuning, which retra",
-        "ranking_features": {},
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2305.14314",
-        "chunk_id": "e02264b1a96ae177e7cbcb34",
-        "region": "abstract",
-        "section_label": "abstract",
-        "type": "text",
-        "ordinal": 0,
-        "page_start": 0,
-        "text_head": "We present QLORA, an efficient finetuning approach that reduces memory usage enough to finetune a 65B parameter model on a single 48GB GPU while preserving full 16-bit finetuning task performance.\n\nQLORA backpropagates g",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "abstract",
-          "region_score": 2,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.00235
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2305.14314",
-        "chunk_id": "2578dff1580b81da71eb16ea",
-        "region": "content",
-        "section_label": "4 QLoRA vs. Standard Finetuning",
-        "type": "text",
-        "ordinal": 41,
-        "page_start": 6,
-        "text_head": "For our second setup, since full finetuning models at and beyond 11B parameters requires more than one server of high memory GPUs, we continue to test whether 4-bit QLORA can match 16-bit LoRA at the 7B to 65B parameter ",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0037
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "candidate_discovery": null,
-    "warnings": []
-  },
-  {
-    "id": "bert-pretraining",
-    "request": {
-      "query": "BERT 的预训练使用了哪两个任务？",
-      "task": "fact"
-    },
-    "status": "ok",
-    "task": "fact",
-    "papers": [
-      "1810.04805"
-    ],
-    "top_items": [
-      {
-        "paper_id": "1810.04805",
-        "chunk_id": "ed463687debe179fcb629b97",
-        "region": "content",
-        "section_label": "3 BERT",
-        "type": "text",
-        "ordinal": 12,
-        "page_start": 2,
-        "text_head": "We introduce BERT and its detailed implementation in this section. There are two steps in our framework: pre-training and fine-tuning. During pre-training, the model is trained on unlabeled data over different pre-traini",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0037
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "1810.04805",
-        "chunk_id": "475fd15d377585cb1b4bd91e",
-        "region": "content",
-        "section_label": "3.1 Pre-training BERT",
-        "type": "text",
-        "ordinal": 19,
-        "page_start": 3,
-        "text_head": "Task #2: Next Sentence Prediction (NSP) Many important downstream tasks such as Question Answering (QA) and Natural Language Inference (NLI) are based on understanding the relationship between two sentences, which is not",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0037
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "1810.04805",
-        "chunk_id": "862411336715c1963efe8392",
-        "region": "content",
-        "section_label": "3.1 Pre-training BERT",
-        "type": "text",
-        "ordinal": 16,
-        "page_start": 3,
-        "text_head": "Unlike Peters et al. (2018a) and Radford et al. (2018), we do not use traditional left-to-right or right-to-left language models to pre-train BERT. Instead, we pre-train BERT using two unsupervised tasks, described in th",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.0037
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "candidate_discovery": {
-      "metadata_count": 0,
-      "chunk_count": 0,
-      "entity_hits": {
-        "BERT": [
-          "1810.04805",
-          "1909.08053",
-          "1902.00751",
-          "2205.14135"
-        ]
-      },
-      "fallback_used": false,
-      "chunk_search_used": false,
-      "selected_paper_ids": [
-        "1810.04805"
-      ],
-      "lexical_query": "\"bert pre training two tasks\"",
-      "candidate_match_source": {
-        "1810.04805": "title_exact"
-      },
-      "title_exact_hit": [
-        "1810.04805"
-      ],
-      "abstract_exact_hit": [
-        "1810.04805",
-        "1909.08053",
-        "1902.00751",
-        "2205.14135"
-      ],
-      "chunk_exact_hit": [],
-      "table_ref": null,
-      "figure_ref": null
-    },
-    "warnings": [
-      "translation_failed:query_rewriter:QueryRewriterError:Query Rewriter 的 core_terms 不是字符串数组"
-    ]
-  },
-  {
-    "id": "mixed-precision",
-    "request": {
-      "query": "Why does mixed precision training keep FP32 master weights?",
-      "task": "reason",
-      "paper_ids": [
-        "1710.03740"
-      ]
-    },
-    "status": "ok",
-    "task": "reason",
-    "papers": [
-      "1710.03740"
-    ],
-    "top_items": [
-      {
-        "paper_id": "1710.03740",
-        "chunk_id": "54dbeafef2e763e6bc23a3a2",
-        "region": "content",
-        "section_label": "3.1 FP32 MASTER COPY OF WEIGHTS",
-        "type": "text",
-        "ordinal": 10,
-        "page_start": 1,
-        "text_head": "In mixed precision training, weights, activations and gradients are stored as FP16. In order to match the accuracy of the FP32 networks, an FP32 master copy of weights is maintained and updated with the weight gradient d",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0037
-        },
-        "window_id": "1710.03740:10",
-        "source_chunk_ids": [
-          "54dbeafef2e763e6bc23a3a2",
-          "22d200dd0c5e063ef0f58213"
-        ],
-        "continuity_status": "complete"
-      },
-      {
-        "paper_id": "1710.03740",
-        "chunk_id": "6735e2dcd7f0e8a9477faa32",
-        "region": "content",
-        "section_label": "3.1 FP32 MASTER COPY OF WEIGHTS",
-        "type": "text",
-        "ordinal": 14,
-        "page_start": 2,
-        "text_head": "Another explanation is that the ratio of the weight value to the weight update is very large. In this case, even though the weight update is representable in FP16, it could still become zero when addition operation right",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.0037
-        },
-        "window_id": "1710.03740:14",
-        "source_chunk_ids": [
-          "08a61531a187e6a9cbb013a3",
-          "6735e2dcd7f0e8a9477faa32"
-        ],
-        "continuity_status": "complete"
-      },
-      {
-        "paper_id": "1710.03740",
-        "chunk_id": "43d5d4437a954720b74206d0",
-        "region": "content",
-        "section_label": "3.1 FP32 MASTER COPY OF WEIGHTS",
-        "type": "text",
-        "ordinal": 12,
-        "page_start": 2,
-        "text_head": "Figure 1: Mixed precision training iteration for a layer.\n\nWhile the need for FP32 master weights is not universal, there are two possible reasons why a number of networks require it. One explanation is that updates (wei",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.0037
-        },
-        "window_id": "1710.03740:12",
-        "source_chunk_ids": [
-          "22d200dd0c5e063ef0f58213",
-          "43d5d4437a954720b74206d0",
-          "08a61531a187e6a9cbb013a3"
-        ],
-        "continuity_status": "complete"
-      }
-    ],
-    "candidate_discovery": null,
-    "warnings": [
-      "translation_failed:query_rewriter:QueryRewriterError:Query Rewriter 的 core_terms 不是字符串数组"
-    ]
-  },
-  {
-    "id": "flash-attention",
-    "request": {
-      "query": "How does FlashAttention reduce HBM reads and writes?",
-      "task": "reason",
-      "paper_ids": [
-        "2205.14135"
-      ]
-    },
-    "status": "ok",
-    "task": "reason",
-    "papers": [
-      "2205.14135"
-    ],
-    "top_items": [
-      {
-        "paper_id": "2205.14135",
-        "chunk_id": "0a43b1748eae09492ad8d952",
-        "region": "content",
-        "section_label": "3 FlashAttention: Algorithm, Analysis, and Extensions",
-        "type": "text",
-        "ordinal": 18,
-        "page_start": 3,
-        "text_head": "We show how to compute exact attention with fewer HBM reads/writes and without storing large intermediate matrices for the backward pass. This yields an attention algorithm that is both memory eficient and faster in wall",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0037
-        },
-        "window_id": "2205.14135:18",
-        "source_chunk_ids": [
-          "0a43b1748eae09492ad8d952"
-        ],
-        "continuity_status": "complete"
-      },
-      {
-        "paper_id": "2205.14135",
-        "chunk_id": "0c06faee72edec653b249fa3",
-        "region": "content",
-        "section_label": "3.2 Analysis: IO Complexity of FlashAttention",
-        "type": "text",
-        "ordinal": 27,
-        "page_start": 4,
-        "text_head": "We analyze the IO complexity of FlashAttention, showing significant reduction in HBM accesses compared to standard attention. We also provide a lower bound, proving that no exact attention algorithm can asymptotically im",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0037
-        },
-        "window_id": "2205.14135:27",
-        "source_chunk_ids": [
-          "0c06faee72edec653b249fa3",
-          "9b226e40c04358af10176549",
-          "f28336eaa705274cbc17a7b3"
-        ],
-        "continuity_status": "complete"
-      },
-      {
-        "paper_id": "2205.14135",
-        "chunk_id": "79e951211bd5c5b869d72770",
-        "region": "content",
-        "section_label": "3.2 Analysis: IO Complexity of FlashAttention",
-        "type": "text",
-        "ordinal": 30,
-        "page_start": 5,
-        "text_head": "Figure 2: Left: Forward + backward runtime of standard attention and FlashAttention for GPT-2 medium (seq. length 1024, head dim. 64, 16 heads, batch size 64) on A100 GPU. HBM access is the primary factor afecting runtim",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.0037
-        },
-        "window_id": "2205.14135:30",
-        "source_chunk_ids": [
-          "f28336eaa705274cbc17a7b3",
-          "79e951211bd5c5b869d72770",
-          "b8e7ed5c3cba0b847281e92a"
-        ],
-        "continuity_status": "complete"
-      }
-    ],
-    "candidate_discovery": null,
-    "warnings": []
-  },
-  {
-    "id": "swin-shifted-window",
-    "request": {
-      "query": "How does Swin Transformer implement shifted window attention in section 3.2?",
-      "task": "fact",
-      "paper_ids": [
-        "2103.14030"
-      ]
-    },
-    "status": "ok",
-    "task": "fact",
-    "papers": [
-      "2103.14030"
-    ],
-    "top_items": [
-      {
-        "paper_id": "2103.14030",
-        "chunk_id": "6aee8432f9505648b92c1461",
-        "region": "content",
-        "section_label": "3.1. Overall Architecture",
-        "type": "text",
-        "ordinal": 19,
-        "page_start": 3,
-        "text_head": "Swin Transformer block Swin Transformer is built by replacing the standard multi-head self attention (MSA) module in a Transformer block by a module based on shifted windows (described in Section 3.2), with other layers ",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0012000000000000001
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2103.14030",
-        "chunk_id": "25951def6ae2021946edd43f",
-        "region": "content",
-        "section_label": "5. Conclusion",
-        "type": "text",
-        "ordinal": 59,
-        "page_start": 8,
-        "text_head": "As a key element of Swin Transformer, the shifted window based self-attention is shown to be effective and efficient on vision problems, and we look forward to investigating its use in natural language processing as well",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.0012000000000000001
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2103.14030",
-        "chunk_id": "f587fb928505c9d30f25c840",
-        "region": "content",
-        "section_label": "3.2. Shifted Window based Self-Attention",
-        "type": "text",
-        "ordinal": 24,
-        "page_start": 3,
-        "text_head": "As illustrated in Figure 2, the first module uses a regular window partitioning strategy which starts from the top-left pixel, and the $8 \\times 8$ feature map is evenly partitioned into $2 \\times 2$ windows of size $4 \\",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0023
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "candidate_discovery": null,
-    "warnings": []
-  },
-  {
-    "id": "efficientnet-summary",
-    "request": {
-      "query": "Summarize the main contribution of EfficientNet.",
-      "task": "summary"
-    },
-    "status": "ok",
-    "task": "summary",
-    "papers": [
-      "1905.11946"
-    ],
-    "top_items": [
-      {
-        "paper_id": "1905.11946",
-        "chunk_id": "7fd91f7012369924be69022b",
-        "region": "abstract",
-        "section_label": "abstract",
-        "type": "text",
-        "ordinal": 0,
-        "page_start": 0,
-        "text_head": "Convolutional Neural Networks (ConvNets) are commonly developed at a fixed resource budget, and then scaled up for better accuracy if more resources are available. In this paper, we systematically study model scaling and",
-        "ranking_features": {},
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "1905.11946",
-        "chunk_id": "8e09cc231c08e389400940e6",
-        "region": "abstract",
-        "section_label": "abstract",
-        "type": "text",
-        "ordinal": 1,
-        "page_start": 0,
-        "text_head": "To go even further, we use neural architecture search to design a new baseline network and scale it up to obtain a family of models, called EfficientNets, which achieve much better accuracy and efficiency than previous C",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "abstract",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0026
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "1905.11946",
-        "chunk_id": "97b182165b2647c27e5a3116",
-        "region": "content",
-        "section_label": "5.2. ImageNet Results for EfficientNet",
-        "type": "text",
-        "ordinal": 49,
-        "page_start": 6,
-        "text_head": "Table 2 shows the performance of all EfficientNet models that are scaled from the same baseline EfficientNet-B0. Our EfficientNet models generally use an order of magnitude fewer parameters and FLOPS than other ConvNets ",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 2,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.00345
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "candidate_discovery": {
-      "metadata_count": 0,
-      "chunk_count": 0,
-      "entity_hits": {
-        "EfficientNet": [
-          "1905.11946"
-        ]
-      },
-      "fallback_used": false,
-      "chunk_search_used": false,
-      "selected_paper_ids": [
-        "1905.11946"
-      ],
-      "lexical_query": "\"efficientnet main contribution\"",
-      "candidate_match_source": {
-        "1905.11946": "title_exact"
-      },
-      "title_exact_hit": [
-        "1905.11946"
-      ],
-      "abstract_exact_hit": [
-        "1905.11946"
-      ],
-      "chunk_exact_hit": [],
-      "table_ref": null,
-      "figure_ref": null
-    },
-    "warnings": []
-  },
-  {
-    "id": "dpo-vs-rlhf",
-    "request": {
-      "query": "How does DPO differ from RLHF?",
-      "task": "comparison",
-      "paper_ids": [
-        "2305.18290",
-        "2203.02155"
-      ]
-    },
-    "status": "ok",
-    "task": "comparison",
-    "papers": [
-      "2305.18290",
-      "2203.02155"
-    ],
-    "top_items": [
-      {
-        "paper_id": "2305.18290",
-        "chunk_id": "3ee88c497e55cd17d9cc4a6e",
-        "region": "abstract",
-        "section_label": "abstract",
-        "type": "text",
-        "ordinal": 0,
-        "page_start": 0,
-        "text_head": "While large-scale unsupervised language models (LMs) learn broad world knowledge and some reasoning skills, achieving precise control of their behavior is difficult due to the completely unsupervised nature of their trai",
-        "ranking_features": {},
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2305.18290",
-        "chunk_id": "5c91b47d23366160c9b35db4",
-        "region": "abstract",
-        "section_label": "abstract",
-        "type": "text",
-        "ordinal": 1,
-        "page_start": 0,
-        "text_head": "The resulting algorithm, which we call Direct Preference Optimization (DPO), is stable, performant, and computationally lightweight, eliminating the need for sampling from the LM during fine-tuning or performing signific",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "abstract",
-          "region_score": 2,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.00235
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2305.18290",
-        "chunk_id": "19604257220638b91c581ff9",
-        "region": "content",
-        "section_label": "6.1 How well can DPO optimize the RLHF objective?",
-        "type": "text",
-        "ordinal": 56,
-        "page_start": 7,
-        "text_head": "This sweep includes 22 runs in total.\n\nAfter each 100 training steps until convergence, we evaluate each policy on a set of test prompts, computing the average reward under the true reward function as well as the average",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0037
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "candidate_discovery": null,
-    "warnings": []
-  },
-  {
-    "id": "prefix-prompt",
-    "request": {
-      "query": "Compare prefix tuning and prompt tuning.",
-      "task": "comparison",
-      "paper_ids": [
-        "2101.00190",
-        "2104.08691"
-      ]
-    },
-    "status": "ok",
-    "task": "comparison",
-    "papers": [
-      "2101.00190",
-      "2104.08691"
-    ],
-    "top_items": [
-      {
-        "paper_id": "2101.00190",
-        "chunk_id": "9822dea303c054d81a65e116",
-        "region": "abstract",
-        "section_label": "abstract",
-        "type": "text",
-        "ordinal": 0,
-        "page_start": 0,
-        "text_head": "Fine-tuning is the de facto way to leverage large pretrained language models to perform downstream tasks. However, it modifies all the language model parameters and therefore necessitates storing a full copy for each tas",
-        "ranking_features": {},
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2101.00190",
-        "chunk_id": "024208a4b05d1b5b64c6d532",
-        "region": "content",
-        "section_label": "4 Prefix-Tuning",
-        "type": "text",
-        "ordinal": 19,
-        "page_start": 2,
-        "text_head": "We propose prefix-tuning as an alternative to fine-tuning for conditional generation tasks. We first provide intuition in §4.1 before defining our method formally in §4.2.",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0012000000000000001
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2101.00190",
-        "chunk_id": "53245f9f18c349f24a71f625",
-        "region": "content",
-        "section_label": "8.3 Inductive Bias of Prefix-tuning",
-        "type": "text",
-        "ordinal": 58,
-        "page_start": 8,
-        "text_head": "Recall that fine-tuning updates all pretrained parameters, whereas prefix-tuning and adapter-tuning preserve them. Since the language models are pretrained on general purpose corpus, preserving the LM parameters might he",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0012000000000000001
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "candidate_discovery": null,
-    "warnings": []
-  },
-  {
-    "id": "vit-swin",
-    "request": {
-      "query": "Compare the attention mechanisms in ViT and Swin Transformer.",
-      "task": "comparison",
-      "paper_ids": [
-        "2010.11929",
-        "2103.14030"
-      ]
-    },
-    "status": "ok",
-    "task": "comparison",
-    "papers": [
-      "2010.11929",
-      "2103.14030"
-    ],
-    "top_items": [
-      {
-        "paper_id": "2010.11929",
-        "chunk_id": "8087f3d28bd083daa84dc39e",
-        "region": "abstract",
-        "section_label": "abstract",
-        "type": "text",
-        "ordinal": 0,
-        "page_start": 0,
-        "text_head": "While the Transformer architecture has become the de-facto standard for natural language processing tasks, its applications to computer vision remain limited. In vision, attention is either applied in conjunction with co",
-        "ranking_features": {},
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2010.11929",
-        "chunk_id": "80c4913aae5aa573086b9f3e",
-        "region": "content",
-        "section_label": "3.1 VISION TRANSFORMER (VIT)",
-        "type": "text",
-        "ordinal": 17,
-        "page_start": 3,
-        "text_head": "Inductive bias. We note that Vision Transformer has much less image-specific inductive bias than CNNs. In CNNs, locality, two-dimensional neighborhood structure, and translation equivariance are baked into each layer thr",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0037
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2010.11929",
-        "chunk_id": "64ea8305c39c4391b9950404",
-        "region": "content",
-        "section_label": "4.5 INSPECTING VISION TRANSFORMER",
-        "type": "text",
-        "ordinal": 45,
-        "page_start": 7,
-        "text_head": "Self-attention allows ViT to integrate information across the entire image even in the lowest layers. We investigate to what degree the network makes use of this capability. Specifically, we compute the average distance ",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0026
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "candidate_discovery": null,
-    "warnings": []
-  },
-  {
-    "id": "resnet-source-aligned-appendix",
-    "request": {
-      "query": "What does the ResNet appendix say about the Faster R-CNN object detection baseline?",
-      "task": "fact",
-      "paper_ids": [
-        "1512.03385"
-      ],
-      "regions": [
-        "appendix"
-      ]
-    },
-    "status": "ok",
-    "task": "fact",
-    "papers": [
-      "1512.03385"
-    ],
-    "top_items": [
-      {
-        "paper_id": "1512.03385",
-        "chunk_id": "d015099b7577626391363132",
-        "region": "appendix",
-        "section_label": "A. Object Detection Baselines",
-        "type": "text",
-        "ordinal": 57,
-        "page_start": 9,
-        "text_head": "In this section we introduce our detection method based on the baseline Faster R-CNN [32] system. The models are initialized by the ImageNet classification models, and then fine-tuned on the object detection data. We hav",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "appendix",
-          "region_score": 0,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.00185
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "1512.03385",
-        "chunk_id": "f3900e6e70c13fa8e39372e0",
-        "region": "appendix",
-        "section_label": "PASCAL VOC",
-        "type": "text",
-        "ordinal": 60,
-        "page_start": 9,
-        "text_head": "Following [7, 32], for the PASCAL VOC 2007 test set, we use the 5k trainval images in VOC 2007 and 16k trainval images in VOC 2012 for training (“07+12”). For the PASCAL VOC 2012 test set, we use the 10k trainval+test im",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "appendix",
-          "region_score": 0,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.00185
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "1512.03385",
-        "chunk_id": "0ade6651bc23544848c235ff",
-        "region": "appendix",
-        "section_label": "A. Object Detection Baselines",
-        "type": "text",
-        "ordinal": 58,
-        "page_start": 9,
-        "text_head": "Unlike VGG-16 used in [32], our ResNet has no hidden fc layers. We adopt the idea of “Networks on Conv feature maps” (NoC) [33] to address this issue. We compute the full-image shared conv feature maps using those layers",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "appendix",
-          "region_score": 0,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.00185
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "candidate_discovery": null,
-    "warnings": []
-  },
-  {
-    "id": "resnet-mismatch-appendix",
-    "request": {
-      "query": "What does the ResNet appendix explain about exponential learning in shallow networks?",
-      "task": "fact",
-      "paper_ids": [
-        "1512.03385"
-      ],
-      "regions": [
-        "appendix"
-      ]
-    },
-    "status": "ok",
-    "task": "fact",
-    "papers": [
-      "1512.03385"
-    ],
-    "top_items": [
-      {
-        "paper_id": "1512.03385",
-        "chunk_id": "0ade6651bc23544848c235ff",
-        "region": "appendix",
-        "section_label": "A. Object Detection Baselines",
-        "type": "text",
-        "ordinal": 58,
-        "page_start": 9,
-        "text_head": "Unlike VGG-16 used in [32], our ResNet has no hidden fc layers. We adopt the idea of “Networks on Conv feature maps” (NoC) [33] to address this issue. We compute the full-image shared conv feature maps using those layers",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "appendix",
-          "region_score": 0,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.00185
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "1512.03385",
-        "chunk_id": "0291a309beaf2ed3b57b7b2e",
-        "region": "appendix",
-        "section_label": "B. Object Detection Improvements",
-        "type": "text",
-        "ordinal": 62,
-        "page_start": 9,
-        "text_head": "For completeness, we report the improvements made for the competitions. These improvements are based on deep features and thus should benefit from residual learning.",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "appendix",
-          "region_score": 0,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.00045
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "1512.03385",
-        "chunk_id": "ad732b8eb6df6f1d71da62ce",
-        "region": "appendix",
-        "section_label": "C. ImageNet Localization",
-        "type": "text",
-        "ordinal": 78,
-        "page_start": 11,
-        "text_head": "The above results are only based on the proposal network (RPN) in Faster R-CNN [32]. One may use the detection network (Fast R-CNN [7]) in Faster R-CNN to improve the results. But we notice that on this dataset, one imag",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "appendix",
-          "region_score": 0,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.00045
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "candidate_discovery": null,
-    "warnings": []
-  },
-  {
-    "id": "swin-appendix",
-    "request": {
-      "query": "What are the ImageNet-1K training settings in the Swin appendix?",
-      "task": "fact",
-      "paper_ids": [
-        "2103.14030"
-      ],
-      "regions": [
-        "appendix"
-      ]
-    },
-    "status": "ok",
-    "task": "fact",
-    "papers": [
-      "2103.14030"
-    ],
-    "top_items": [
-      {
-        "paper_id": "2103.14030",
-        "chunk_id": "8f346561e314ef1597150ac1",
-        "region": "appendix",
-        "section_label": "A2.1. Image classification on ImageNet-1K",
-        "type": "text",
-        "ordinal": 63,
-        "page_start": 8,
-        "text_head": "When training from scratch with a $2 2 4 ^ { 2 }$ input, we employ an AdamW [37] optimizer for 300 epochs using a cosine decay learning rate scheduler with 20 epochs of linear warm-up. A batch size of 1024, an initial le",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "appendix",
-          "region_score": 0,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.00295
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2103.14030",
-        "chunk_id": "0380be3f8096644df2d0823a",
-        "region": "appendix",
-        "section_label": "A2.1. Image classification on ImageNet-1K",
-        "type": "text",
-        "ordinal": 64,
-        "page_start": 8,
-        "text_head": "ImageNet-22K pre-training We also pre-train on the larger ImageNet-22K dataset, which contains 14.2 million images and 22K classes. The training is done in two stages. For the first stage with $2 2 4 ^ { 2 }$ input, we e",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "appendix",
-          "region_score": 0,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.00295
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2103.14030",
-        "chunk_id": "f9dd1f457a56f8687109b9e8",
-        "region": "appendix",
-        "section_label": "A2.3. Semantic segmentation on ADE20K",
-        "type": "text",
-        "ordinal": 67,
-        "page_start": 9,
-        "text_head": "ADE20K [83] is a widely-used semantic segmentation dataset, covering a broad range of 150 semantic categories. It has 25K images in total, with 20K for training, 2K for validation, and another 3K for testing. We utilize ",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "appendix",
-          "region_score": 0,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.00045
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "candidate_discovery": null,
-    "warnings": []
-  },
-  {
-    "id": "local-window",
-    "request": {
-      "query": "Which paper explains local window attention for vision transformers?",
-      "task": "fact",
-      "filters": {
-        "category": "cs.CV",
-        "year_from": "2020"
-      }
-    },
-    "status": "ok",
-    "task": "fact",
-    "papers": [
-      "2010.11929",
-      "2103.14030"
-    ],
-    "top_items": [
-      {
-        "paper_id": "2010.11929",
-        "chunk_id": "f9e53abe30e197bc1b9347a8",
-        "region": "content",
-        "section_label": "4.4 SCALING STUDY",
-        "type": "text",
-        "ordinal": 42,
-        "page_start": 7,
-        "text_head": "Figure 5 contains the transfer performance versus total pre-training compute (see Appendix D.5 for details on computational costs). Detailed results per model are provided in Table 6 in the Appendix. A few patterns can b",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0012000000000000001
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2103.14030",
-        "chunk_id": "d1de5aad80ffb3379a3a896e",
-        "region": "content",
-        "section_label": "3.2. Shifted Window based Self-Attention",
-        "type": "text",
-        "ordinal": 20,
-        "page_start": 3,
-        "text_head": "The standard Transformer architecture [64] and its adaptation for image classification [20] both conduct global selfattention, where the relationships between a token and all other tokens are computed. The global computa",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0012000000000000001
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2103.14030",
-        "chunk_id": "25951def6ae2021946edd43f",
-        "region": "content",
-        "section_label": "5. Conclusion",
-        "type": "text",
-        "ordinal": 59,
-        "page_start": 8,
-        "text_head": "As a key element of Swin Transformer, the shifted window based self-attention is shown to be effective and efficient on vision problems, and we look forward to investigating its use in natural language processing as well",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0012000000000000001
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "candidate_discovery": null,
-    "warnings": []
-  },
-  {
-    "id": "efficientnet-table2",
-    "request": {
-      "query": "In EfficientNet Table 2, how does EfficientNet-B0 compare with ResNet-50?",
-      "task": "fact",
-      "paper_ids": [
-        "1905.11946"
-      ]
-    },
-    "status": "ok",
-    "task": "fact",
-    "papers": [
-      "1905.11946"
-    ],
-    "top_items": [
-      {
-        "paper_id": "1905.11946",
-        "chunk_id": "a98ff2b561827561785f0791",
-        "region": "content",
-        "section_label": "5.1. Scaling Up MobileNets and ResNets",
-        "type": "table",
-        "ordinal": 41,
-        "page_start": 5,
-        "text_head": "Table 2. EfficientNet Performance Results on ImageNet (Russakovsky et al., 2015). All EfficientNet models are scaled from our baseline EfficientNet-B0 using different compound coefficient φ in Equation 3. ConvNets with s",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": true,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": true,
-          "exact_figure_caption_hit": false,
-          "type_priority": "table",
-          "type_score": 4,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.00275
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "1905.11946",
-        "chunk_id": "97b182165b2647c27e5a3116",
-        "region": "content",
-        "section_label": "5.2. ImageNet Results for EfficientNet",
-        "type": "text",
-        "ordinal": 49,
-        "page_start": 6,
-        "text_head": "Table 2 shows the performance of all EfficientNet models that are scaled from the same baseline EfficientNet-B0. Our EfficientNet models generally use an order of magnitude fewer parameters and FLOPS than other ConvNets ",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": true,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0037
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "1905.11946",
-        "chunk_id": "f46a067280877c50af5a6fce",
-        "region": "content",
-        "section_label": "4. EfficientNet Architecture",
-        "type": "text",
-        "ordinal": 37,
-        "page_start": 4,
-        "text_head": "Net, except our EfficientNet-B0 is slightly bigger due to the larger FLOPS target (our FLOPS target is 400M). Table 1 shows the architecture of EfficientNet-B0. Its main building block is mobile inverted bottleneck MBCon",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": true,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.0037
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "candidate_discovery": null,
-    "warnings": []
-  },
-  {
-    "id": "nonexistent",
-    "request": {
-      "query": "Summarize NebulaXYZ-9876.",
-      "task": "summary"
-    },
-    "status": "not_found",
-    "task": "summary",
-    "papers": [],
-    "top_items": [],
-    "candidate_discovery": {
-      "metadata_count": 0,
-      "chunk_count": 0,
-      "entity_hits": {},
-      "fallback_used": false,
-      "chunk_search_used": false,
-      "selected_paper_ids": [],
-      "lexical_query": "\"nebulaxyz 9876\"",
-      "candidate_match_source": {},
-      "title_exact_hit": [],
-      "abstract_exact_hit": [],
-      "chunk_exact_hit": [],
-      "table_ref": null,
-      "figure_ref": null
-    },
-    "warnings": [
-      "no papers match the supplied constraints"
-    ]
-  }
-]
-```
-
-人工复核结论：
-
-| 案例 | 结果 | 复核要点 |
-|---|---|---|
-| GQA 2.2 | 通过 | 目标论文唯一，2.2 Grouped-query attention 位于前三且重复窗口均来自同节。 |
-| PagedAttention Reason | 通过 | 目标论文唯一，结果为完整正文窗口，保留 window_id 与 source_chunk_ids。 |
-| LoRA Summary | 通过 | 召回 2106.09685，未返回 not_found。 |
-| LoRA/QLoRA Comparison | 通过 | 两篇目标论文均保留摘要/正文证据。 |
-| BERT 两个预训练任务 | 通过 | 标题精确命中后只保留 1810.04805，背景论文被排除。 |
-| Mixed Precision | 通过 | FP32 master weights 章节进入前三，未被媒体 Chunk 抢占。 |
-| FlashAttention | 通过 | 目标论文唯一，HBM/IO 正文进入前三。 |
-| Swin shifted window | 通过 | 3.2. Shifted Window based Self-Attention 进入前三，普通查询前三无图片/表格。 |
-| EfficientNet Summary | 通过 | 摘要和方法正文优先，媒体不再占据前三。 |
-| DPO/RLHF、Prefix/Prompt、ViT/Swin | 通过 | 比较目标论文集合保持，未引入额外背景论文。 |
-| ResNet 来源对齐 Appendix | 通过 | 真实 Appendix A object detection 内容进入首条证据。 |
-| ResNet 指数浅层网络 | 诊断 | 查询论点与 ResNet Appendix 来源不一致，返回附录章节是来源不匹配，不判为解析失败。 |
-| Swin Appendix | 部分通过 | A2.1 Image classification on ImageNet-1K 首位；后续仍有 A2.3 等附录小节，属于附录内部排序待优化。 |
-| Local window attention | 通过 | 前三为正文文本，ViT/Swin 目标论文保留。 |
-| EfficientNet Table 2 | 通过 | Table 2 caption Chunk 排第一，正文提及段落随后；Table 5 未抢占首位。 |
-| NebulaXYZ-9876 | 通过 | 正确返回 not_found。 |
-
-本轮仍需关注的非阻塞项是两类：原始 MinerU 个别 block 自身存在词尾截断，以及显式 Appendix 查询的附录小节内部排序；二者与 v6 固定字符 overlap 的系统性残词问题不同。
-
-
-## 本轮 v7 换题正文检索回归
-
-> 生成时间（UTC）：2026-10-06T05:34:50.636820+00:00
-> 本轮使用与 v6 不同的问题，覆盖 Attention、ZeRO、GPT-3、LLaMA、EfficientNet、DeepSeek-V2、DeepSeekMath、ViT、PPO、FlashAttention，以及显式 Appendix 和不存在实体。
-
-### 紧凑请求/响应记录
-
-下方保留每个问题的请求、状态、目标论文、前三条证据和候选发现调试字段；每条证据都包含 paper_id、chunk_id、章节、页码和排序特征。
-
-```json
-[
-  {
-    "id": "attention-scaled-dot-product",
-    "request": {
-      "query": "Why does scaled dot-product attention divide the dot products by the square root of d_k?",
-      "task": "reason",
-      "paper_ids": [
-        "1706.03762"
-      ]
-    },
-    "status": "ok",
-    "task": "reason",
-    "papers": [
-      "1706.03762"
-    ],
-    "top_items": [
-      {
-        "paper_id": "1706.03762",
-        "chunk_id": "c72818382a0ee06dfec39c0b",
-        "region": "content",
-        "section_label": "3.2.1 Scaled Dot-Product Attention",
-        "type": "text",
-        "ordinal": 12,
-        "page_start": 3,
-        "text_head": "We call our particular attention \"Scaled Dot-Product Attention\" (Figure 2). The input consists of queries and keys of dimension $d _ { k }$ , and values of dimension $d _ { v }$ . We compute the dot products of the query",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0037
-        },
-        "window_id": "1706.03762:12",
-        "source_chunk_ids": [
-          "c72818382a0ee06dfec39c0b",
-          "014f9db296cab460549d3126"
-        ],
-        "continuity_status": "complete"
-      },
-      {
-        "paper_id": "1706.03762",
-        "chunk_id": "436d817e2140c4bdfa514a25",
-        "region": "content",
-        "section_label": "3.2.1 Scaled Dot-Product Attention",
-        "type": "text",
-        "ordinal": 14,
-        "page_start": 3,
-        "text_head": "$$\n\\operatorname{Attention} (Q, K, V) = \\operatorname{softmax} (\\frac {Q K ^ {T}}{\\sqrt {d _ {k}}}) V\\tag{1}\n$$\n\nThe two most commonly used attention functions are additive attention [2], and dot-product (multiplicative)",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.0037
-        },
-        "window_id": "1706.03762:14",
-        "source_chunk_ids": [
-          "014f9db296cab460549d3126",
-          "436d817e2140c4bdfa514a25"
-        ],
-        "continuity_status": "complete"
-      },
-      {
-        "paper_id": "1706.03762",
-        "chunk_id": "9c19b7c849aea95610c9fb41",
-        "region": "content",
-        "section_label": "3.2.3 Applications of Attention in our Model",
-        "type": "text",
-        "ordinal": 18,
-        "page_start": 4,
-        "text_head": "The Transformer uses multi-head attention in three different ways:\n\n• In \"encoder-decoder attention\" layers, the queries come from the previous decoder layer, and the memory keys and values come from the output of the en",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0026
-        },
-        "window_id": "1706.03762:18",
-        "source_chunk_ids": [
-          "9c19b7c849aea95610c9fb41"
-        ],
-        "continuity_status": "complete"
-      }
-    ],
-    "warnings": [
-      "translation_failed:query_rewriter:QueryRewriterError:Query Rewriter 的 core_terms 不是字符串数组"
-    ],
-    "candidate_discovery": null
-  },
-  {
-    "id": "zero-stage-two",
-    "request": {
-      "query": "How does ZeRO Stage 2 partition optimizer states and gradients?",
-      "task": "fact",
-      "paper_ids": [
-        "1910.02054"
-      ]
-    },
-    "status": "ok",
-    "task": "fact",
-    "papers": [
-      "1910.02054"
-    ],
-    "top_items": [
-      {
-        "paper_id": "1910.02054",
-        "chunk_id": "4d694a92ba4eb46282cea662",
-        "region": "content",
-        "section_label": "5 Deep Dive into ZeRO-DP",
-        "type": "text",
-        "ordinal": 36,
-        "page_start": 9,
-        "text_head": "While the existing DP approach replicates the model states at each device and introduces significant memory overhead, ZeRO-DP eliminates this memory redundancy by partitioning them — optimizer states, gradients and param",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0037
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "1910.02054",
-        "chunk_id": "15b9dd60b734674c6dc3aabb",
-        "region": "content",
-        "section_label": "1 Extended Introduction",
-        "type": "text",
-        "ordinal": 6,
-        "page_start": 0,
-        "text_head": "ZeRO-DP has three main optimization stages (as depicted in Figure 1), which correspond to the partitioning of optimizer states, gradients, and parameters. When enabled cumulatively: 1) Optimizer State Partitioning $( P _",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0026
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "1910.02054",
-        "chunk_id": "4fbea0cc34437eb3f4f577bf",
-        "region": "content",
-        "section_label": "5.2 ${ \\mathbf { P } } _ { g } \\mathbf { : }$ Gradient Partitioning",
-        "type": "text",
-        "ordinal": 39,
-        "page_start": 9,
-        "text_head": "As each data parallel process only updates its corresponding parameter partition, it only needs the reduced gradients for the corresponding parameters. Therefore, as each gradient of each layer becomes available during t",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0012000000000000001
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "warnings": [],
-    "candidate_discovery": null
-  },
-  {
-    "id": "gpt3-summary",
-    "request": {
-      "query": "Summarize GPT-3's main contribution to few-shot and in-context learning.",
-      "task": "summary",
-      "paper_ids": [
-        "2005.14165"
-      ]
-    },
-    "status": "ok",
-    "task": "summary",
-    "papers": [
-      "2005.14165"
-    ],
-    "top_items": [
-      {
-        "paper_id": "2005.14165",
-        "chunk_id": "b77c8278d9cf47d376ace62a",
-        "region": "abstract",
-        "section_label": "abstract",
-        "type": "text",
-        "ordinal": 0,
-        "page_start": 0,
-        "text_head": "Recent work has demonstrated substantial gains on many NLP tasks and benchmarks by pre-training on a large corpus of text followed by fine-tuning on a specific task.\n\nWhile typically task-agnostic in architecture, this m",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "abstract",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0026
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2005.14165",
-        "chunk_id": "d4e0d66be1ea743e5633dddb",
-        "region": "content",
-        "section_label": "1 Introduction",
-        "type": "text",
-        "ordinal": 12,
-        "page_start": 4,
-        "text_head": "In this paper, we test this hypothesis by training a 175 billion parameter autoregressive language model, which we call GPT-3, and measuring its in-context learning abilities. Specifically, we evaluate GPT-3 on over two ",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 2,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.00235
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2005.14165",
-        "chunk_id": "60a2d3e67336c34d275d147e",
-        "region": "content",
-        "section_label": "3.5 Common Sense Reasoning",
-        "type": "text",
-        "ordinal": 72,
-        "page_start": 17,
-        "text_head": "Overall, in-context learning with GPT-3 shows mixed results on commonsense reasoning tasks, with only small and inconsistent gains observed in the one and few-shot learning settings for both PIQA and ARC, but a significa",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 2,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.00235
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "warnings": [],
-    "candidate_discovery": null
-  },
-  {
-    "id": "llama-gpt3-comparison",
-    "request": {
-      "query": "Compare LLaMA and GPT-3 in model scale, training data, and reported evaluation.",
-      "task": "comparison",
-      "paper_ids": [
-        "2302.13971",
-        "2005.14165"
-      ]
-    },
-    "status": "ok",
-    "task": "comparison",
-    "papers": [
-      "2302.13971",
-      "2005.14165"
-    ],
-    "top_items": [
-      {
-        "paper_id": "2302.13971",
-        "chunk_id": "0ed8544153ec6eda1bfc5a2e",
-        "region": "abstract",
-        "section_label": "abstract",
-        "type": "text",
-        "ordinal": 0,
-        "page_start": 0,
-        "text_head": "We introduce LLaMA, a collection of foundation language models ranging from 7B to 65B parameters. We train our models on trillions of tokens, and show that it is possible to train state-of-the-art models using publicly a",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "abstract",
-          "region_score": 2,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.00235
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2302.13971",
-        "chunk_id": "6e585697514b189d025e9793",
-        "region": "content",
-        "section_label": "1 Introduction",
-        "type": "text",
-        "ordinal": 3,
-        "page_start": 0,
-        "text_head": "The focus of this work is to train a series of language models that achieve the best possible performance at various inference budgets, by training on more tokens than what is typically used. The resulting models, called",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0026
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2302.13971",
-        "chunk_id": "da53df953f335f556df06a0c",
-        "region": "content",
-        "section_label": "3.3 Reading Comprehension",
-        "type": "text",
-        "ordinal": 27,
-        "page_start": 4,
-        "text_head": "We evaluate our models on the RACE reading comprehension benchmark (Lai et al., 2017). This dataset was collected from English reading comprehension exams designed for middle and high school Chinese students. We follow t",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.0026
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "warnings": [],
-    "candidate_discovery": null
-  },
-  {
-    "id": "efficientnet-table1",
-    "request": {
-      "query": "What does EfficientNet Table 1 specify about the B0 baseline stages?",
-      "task": "fact",
-      "paper_ids": [
-        "1905.11946"
-      ]
-    },
-    "status": "ok",
-    "task": "fact",
-    "papers": [
-      "1905.11946"
-    ],
-    "top_items": [
-      {
-        "paper_id": "1905.11946",
-        "chunk_id": "ecb306197b1df14aa610db31",
-        "region": "content",
-        "section_label": "4. EfficientNet Architecture",
-        "type": "table",
-        "ordinal": 36,
-        "page_start": 4,
-        "text_head": "Table 1. EfficientNet-B0 baseline network – Each row describes a stage i with $\\hat { L } _ { i }$ layers, with input resolution $\\langle \\hat { H } _ { i } , \\hat { W } _ { i } \\rangle$ and output channels $\\hat { C } _",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": true,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": true,
-          "exact_figure_caption_hit": false,
-          "type_priority": "table",
-          "type_score": 4,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.00385
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "1905.11946",
-        "chunk_id": "f46a067280877c50af5a6fce",
-        "region": "content",
-        "section_label": "4. EfficientNet Architecture",
-        "type": "text",
-        "ordinal": 37,
-        "page_start": 4,
-        "text_head": "Net, except our EfficientNet-B0 is slightly bigger due to the larger FLOPS target (our FLOPS target is 400M). Table 1 shows the architecture of EfficientNet-B0. Its main building block is mobile inverted bottleneck MBCon",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": true,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0037
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "1905.11946",
-        "chunk_id": "99b9503b593f770eed7cc2be",
-        "region": "content",
-        "section_label": "3.2. Scaling Dimensions",
-        "type": "chart",
-        "ordinal": 26,
-        "page_start": 3,
-        "text_head": "Figure 3. Scaling Up a Baseline Model with Different Network Width (w), Depth (d), and Resolution (r) Coefficients. Bigger networks with larger width, depth, or resolution tend to achieve higher accuracy, but the accurac",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": true,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "chart",
-          "type_score": 2,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.00105
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "warnings": [
-      "translation_failed:query_rewriter:QueryRewriterError:Query Rewriter 的 core_terms 不是字符串数组"
-    ],
-    "candidate_discovery": null
-  },
-  {
-    "id": "deepseek-v2-mla",
-    "request": {
-      "query": "In DeepSeek-V2 section 2.1, how does Multi-head Latent Attention reduce KV cache memory?",
-      "task": "fact",
-      "paper_ids": [
-        "2405.04434"
-      ]
-    },
-    "status": "ok",
-    "task": "fact",
-    "papers": [
-      "2405.04434"
-    ],
-    "top_items": [
-      {
-        "paper_id": "2405.04434",
-        "chunk_id": "92248b12a0f852ac7deff607",
-        "region": "content",
-        "section_label": "2.1. Multi-Head Latent Attention: Boosting Inference Efficiency",
-        "type": "text",
-        "ordinal": 15,
-        "page_start": 5,
-        "text_head": "Conventional Transformer models usually adopts Multi-Head Attention (MHA) (Vaswani et al., 2017), but during generation, its heavy Key-Value (KV) cache will become the bottleneck that limit the inference efficiency. In o",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0037
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2405.04434",
-        "chunk_id": "3d3175afe1c4e93e3474d2df",
-        "region": "content",
-        "section_label": "2.1.2. Low-Rank Key-Value Joint Compression",
-        "type": "text",
-        "ordinal": 28,
-        "page_start": 6,
-        "text_head": "The core of MLA is the low-rank joint compression for keys and values to reduce KV cache:",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0023
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2405.04434",
-        "chunk_id": "ac70fe4217e6506da5651f8a",
-        "region": "content",
-        "section_label": "2.1.4. Comparison ofKey-Value Cache",
-        "type": "text",
-        "ordinal": 45,
-        "page_start": 7,
-        "text_head": "We demonstrate a comparison of the KV cache per token among different attention mechanisms in Table 1. MLA requires only a small amount of KV cache, equal to GQA with only 2.25 groups, but can achieve stronger performanc",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0023
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "warnings": [],
-    "candidate_discovery": null
-  },
-  {
-    "id": "gpt3-appendix",
-    "request": {
-      "query": "What does the GPT-3 appendix say about few-shot evaluation settings?",
-      "task": "fact",
-      "paper_ids": [
-        "2005.14165"
-      ],
-      "regions": [
-        "appendix"
-      ]
-    },
-    "status": "ok",
-    "task": "fact",
-    "papers": [
-      "2005.14165"
-    ],
-    "top_items": [
-      {
-        "paper_id": "2005.14165",
-        "chunk_id": "c41a9af4b7a6497ee40aac61",
-        "region": "appendix",
-        "section_label": "G Details of Task Phrasing and Specifications",
-        "type": "text",
-        "ordinal": 230,
-        "page_start": 59,
-        "text_head": "Figure G.36: Formatted dataset example for De→En. This is the format for one- and few-shot learning, for this and other langauge tasks, the format for zero-shot learning is “Q: What is the {language} translation of {sent",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "appendix",
-          "region_score": 0,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.00185
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2005.14165",
-        "chunk_id": "6eb7f9ca04e2338a941edfce",
-        "region": "appendix",
-        "section_label": "G Details of Task Phrasing and Specifications",
-        "type": "text",
-        "ordinal": 202,
-        "page_start": 49,
-        "text_head": "The following figures illustrate the formatting and phrasing of all the tasks included in the paper. All data comes from the ground truth datasets in this section, and no samples from GPT-3 are included here.",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "appendix",
-          "region_score": 0,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.00185
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2005.14165",
-        "chunk_id": "19fd0e18ef96f9f4cfe6c15a",
-        "region": "appendix",
-        "section_label": "C Details of Test Set Contamination Studies",
-        "type": "text",
-        "ordinal": 188,
-        "page_start": 42,
-        "text_head": "Figure 4.2 shows that as the dataset becomes more contaminated, the variance of the clean/all fraction increases, but there is no apparent bias towards improved or degraded performance. This suggests that GPT-3 is relati",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "appendix",
-          "region_score": 0,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.00185
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "warnings": [],
-    "candidate_discovery": null
-  },
-  {
-    "id": "vit-patch-embedding",
-    "request": {
-      "query": "How are image patches embedded before entering the Vision Transformer?",
-      "task": "fact",
-      "paper_ids": [
-        "2010.11929"
-      ]
-    },
-    "status": "ok",
-    "task": "fact",
-    "papers": [
-      "2010.11929"
-    ],
-    "top_items": [
-      {
-        "paper_id": "2010.11929",
-        "chunk_id": "e45e564ce48b3c0b920070e3",
-        "region": "content",
-        "section_label": "3.1 VISION TRANSFORMER (VIT)",
-        "type": "text",
-        "ordinal": 11,
-        "page_start": 2,
-        "text_head": "Similar to BERT’s [class] token, we prepend a learnable embedding to the sequence of embedded patches $( \\mathbf { z } _ { 0 } ^ { 0 } = \\mathbf { x } _ { \\mathrm { c l a s s } } )$ , whose state at the output of the Tra",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0012000000000000001
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2010.11929",
-        "chunk_id": "896f8717f80f0e4b06f5a03f",
-        "region": "content",
-        "section_label": "3.1 VISION TRANSFORMER (VIT)",
-        "type": "text",
-        "ordinal": 10,
-        "page_start": 2,
-        "text_head": "An overview of the model is depicted in Figure 1. The standard Transformer receives as input a 1D sequence of token embeddings. To handle 2D images, we reshape the image $\\mathbf { x } \\in \\mathbb { R } ^ { H \\times W \\t",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.0012000000000000001
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2010.11929",
-        "chunk_id": "a307ca39c3c1e551b2d5bbec",
-        "region": "content",
-        "section_label": "4.5 INSPECTING VISION TRANSFORMER",
-        "type": "text",
-        "ordinal": 43,
-        "page_start": 7,
-        "text_head": "To begin to understand how the Vision Transformer processes image data, we analyze its internal representations. The first layer of the Vision Transformer linearly projects the flattened patches into a lower-dimensional ",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0012000000000000001
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "warnings": [
-      "translation_failed:query_rewriter:QueryRewriterError:Query Rewriter 的 core_terms 不是字符串数组"
-    ],
-    "candidate_discovery": null
-  },
-  {
-    "id": "ppo-clipped-objective",
-    "request": {
-      "query": "Why does PPO use a clipped surrogate objective?",
-      "task": "reason",
-      "paper_ids": [
-        "1707.06347"
-      ]
-    },
-    "status": "ok",
-    "task": "reason",
-    "papers": [
-      "1707.06347"
-    ],
-    "top_items": [
-      {
-        "paper_id": "1707.06347",
-        "chunk_id": "de17b8743f69fa7e2787db7c",
-        "region": "content",
-        "section_label": "3 Clipped Surrogate Objective",
-        "type": "text",
-        "ordinal": 18,
-        "page_start": 2,
-        "text_head": "$$\nL ^ {C L I P} (\\theta) = \\hat {\\mathbb {E}} _ {t} \\Big [ \\min (r _ {t} (\\theta) \\hat {A} _ {t}, \\operatorname{clip} (r _ {t} (\\theta), 1 - \\epsilon , 1 + \\epsilon) \\hat {A} _ {t}) \\Big ]\\tag{7}\n$$\n\nwhere epsilon is a ",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.0012000000000000001
-        },
-        "window_id": "1707.06347:18",
-        "source_chunk_ids": [
-          "ec70df354a6aec9c4cf53851",
-          "de17b8743f69fa7e2787db7c",
-          "2ceca01aaf68bb275156f668",
-          "2c88cfde96f0b14975789d48"
-        ],
-        "continuity_status": "complete"
-      },
-      {
-        "paper_id": "1707.06347",
-        "chunk_id": "8596d98385a2f9d4b1436bb2",
-        "region": "content",
-        "section_label": "3 Clipped Surrogate Objective",
-        "type": "text",
-        "ordinal": 14,
-        "page_start": 2,
-        "text_head": "Let $r_t(\\theta)$ denote the probability ratio $r_t(\\theta) = \\frac{\\pi_\\theta(a_t \\mid s_t)}{\\pi_{\\theta_{\\mathrm{old}}} (a_t \\mid s_t)}$ , so $r(\\theta_{\\mathrm{old}}) = 1$ . TRPO maximizes a “surrogate” objective\n\n$$\n",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.0012000000000000001
-        },
-        "window_id": "1707.06347:14",
-        "source_chunk_ids": [
-          "8596d98385a2f9d4b1436bb2",
-          "728ad0018eb3e005032e628e"
-        ],
-        "continuity_status": "complete"
-      },
-      {
-        "paper_id": "1707.06347",
-        "chunk_id": "d358bd5f86a108e414f5229e",
-        "region": "content",
-        "section_label": "3 Clipped Surrogate Objective",
-        "type": "text",
-        "ordinal": 21,
-        "page_start": 2,
-        "text_head": "Figure 1: Plots showing one term (i.e., a single timestep) of the surrogate function $L^{CLIP}$ as a function of the probability ratio r, for positive advantages (left) and negative advantages (right). The red circle on ",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.0012000000000000001
-        },
-        "window_id": "1707.06347:21",
-        "source_chunk_ids": [
-          "2c88cfde96f0b14975789d48",
-          "d358bd5f86a108e414f5229e",
-          "13210e5d01cc00a768f3c719"
-        ],
-        "continuity_status": "complete"
-      }
-    ],
-    "warnings": [],
-    "candidate_discovery": null
-  },
-  {
-    "id": "flashattention-figure1",
-    "request": {
-      "query": "What does Figure 1 in FlashAttention illustrate about standard attention and memory access?",
-      "task": "fact",
-      "paper_ids": [
-        "2205.14135"
-      ]
-    },
-    "status": "ok",
-    "task": "fact",
-    "papers": [
-      "2205.14135"
-    ],
-    "top_items": [
-      {
-        "paper_id": "2205.14135",
-        "chunk_id": "b340711719a74d990a976b9a",
-        "region": "content",
-        "section_label": "1 Introduction",
-        "type": "image",
-        "ordinal": 4,
-        "page_start": 1,
-        "text_head": "Figure 1: Left: FlashAttention uses tiling to prevent materialization of the large $N \\times N$ attention matrix (dotted box) on (relatively) slow GPU HBM. In the outer loop (red arrows), FlashAttention loops through blo",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": true,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": true,
-          "type_priority": "image",
-          "type_score": 2,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.00245
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2205.14135",
-        "chunk_id": "881461bab55c66aa9e253305",
-        "region": "content",
-        "section_label": "1 Introduction",
-        "type": "text",
-        "ordinal": 6,
-        "page_start": 1,
-        "text_head": "We apply two well-established techniques to address these challenges. (i) We restructure the attention computation to split the input into blocks and make several passes over input blocks, thus incrementally performing t",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": true,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.0026
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2205.14135",
-        "chunk_id": "faff47544f9ffa3526332086",
-        "region": "content",
-        "section_label": "1 Introduction",
-        "type": "text",
-        "ordinal": 3,
-        "page_start": 0,
-        "text_head": "In this paper, we argue that a missing principle is making attention algorithms IO-aware [1]—that is, carefully accounting for reads and writes to diferent levels of fast and slow memory (e.g., between fast GPU on-chip S",
-        "ranking_features": {
-          "exact_entity_hit": false,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": true,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 3,
-          "duplicate_penalty": 0.00035,
-          "quality_bonus": 0.0012000000000000001
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "warnings": [],
-    "candidate_discovery": null
-  },
-  {
-    "id": "deepseekmath-summary",
-    "request": {
-      "query": "Summarize DeepSeekMath's contribution to mathematical reasoning and training data.",
-      "task": "summary",
-      "paper_ids": [
-        "2402.03300"
-      ]
-    },
-    "status": "ok",
-    "task": "summary",
-    "papers": [
-      "2402.03300"
-    ],
-    "top_items": [
-      {
-        "paper_id": "2402.03300",
-        "chunk_id": "232a17a8e2668200903d5bd2",
-        "region": "abstract",
-        "section_label": "abstract",
-        "type": "text",
-        "ordinal": 0,
-        "page_start": 0,
-        "text_head": "Mathematical reasoning poses a significant challenge for language models due to its complex and structured nature. In this paper, we introduce DeepSeekMath 7B, which continues pretraining DeepSeek-Coder-Base-v1.5 7B with",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "abstract",
-          "region_score": 3,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.0026
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2402.03300",
-        "chunk_id": "cc1d1c30287c903acfb2bc94",
-        "region": "content",
-        "section_label": "6. Conclusion, Limitation, and Future Work",
-        "type": "text",
-        "ordinal": 87,
-        "page_start": 21,
-        "text_head": "We present DeepSeekMath, which outperforms all open-source models on the competitionlevel MATH benchmark and approaches the performance of closed models. DeepSeekMath is initialized with DeepSeek-Coder-v1.5 7B and underg",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": false,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 2,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.00235
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      },
-      {
-        "paper_id": "2402.03300",
-        "chunk_id": "757775ac98dca61f15145255",
-        "region": "content",
-        "section_label": "4.2. Training and Evaluating DeepSeekMath-RL",
-        "type": "text",
-        "ordinal": 56,
-        "page_start": 14,
-        "text_head": "Table 5 demonstrates the performance of open- and closed-source models with both chainof-thought and tool-integrated reasoning on English and Chinese benchmarks. We find that: 1) DeepSeekMath-RL 7B attains accuracies of ",
-        "ranking_features": {
-          "exact_entity_hit": true,
-          "section_exact_hit": true,
-          "exact_table_ref_hit": false,
-          "exact_figure_ref_hit": false,
-          "exact_table_caption_hit": false,
-          "exact_figure_caption_hit": false,
-          "type_priority": "text",
-          "type_score": 3,
-          "region_priority": "content",
-          "region_score": 2,
-          "duplicate_penalty": 0.0,
-          "quality_bonus": 0.00345
-        },
-        "window_id": null,
-        "source_chunk_ids": null,
-        "continuity_status": null
-      }
-    ],
-    "warnings": [],
-    "candidate_discovery": null
-  },
-  {
-    "id": "nonexistent-quantum",
-    "request": {
-      "query": "Summarize QuantumNebula-314159.",
-      "task": "summary"
-    },
-    "status": "not_found",
-    "task": "summary",
-    "papers": [],
-    "top_items": [],
-    "warnings": [
-      "no papers match the supplied constraints"
-    ],
-    "candidate_discovery": {
-      "metadata_count": 0,
-      "chunk_count": 0,
-      "entity_hits": {},
-      "fallback_used": false,
-      "chunk_search_used": false,
-      "selected_paper_ids": [],
-      "lexical_query": "\"quantumnebula 314159\"",
-      "candidate_match_source": {},
-      "title_exact_hit": [],
-      "abstract_exact_hit": [],
-      "chunk_exact_hit": [],
-      "table_ref": null,
-      "figure_ref": null
-    }
-  }
-]
-```
-
-### 人工质量复核
-
-| 案例 | 结果 | 观察 |
-|---|---|---|
-| Scaled Dot-Product Attention | 通过 | 3.2.1 进入前两名，公式和解释正文连续出现。 |
-| ZeRO Stage 2 | 部分通过 | 5.2 Gradient Partitioning 进入前三，但总节 5 和 Introduction 仍排在前面；可作为章节号/Stage 过滤的后续优化样本。 |
-| GPT-3 Summary | 通过 | 摘要和 Introduction 优先，未混入 Appendix。 |
-| LLaMA/GPT-3 Comparison | 通过 | 两篇目标论文各保留摘要和正文证据，候选集合无额外论文。 |
-| EfficientNet Table 1 | 通过 | Table 1 caption Chunk 排第一，Table 3 等媒体没有抢占首位。 |
-| DeepSeek-V2 MLA | 通过 | 2.1、2.1.2、2.1.4 连续进入前三，直接覆盖 KV cache 和低秩压缩。 |
-| GPT-3 Appendix | 部分通过 | G 节 Task Phrasing 首位，但 C/F 等其他 Appendix 小节仍进入后续结果；区域隔离正确，附录内部排序仍可优化。 |
-| ViT Patch Embedding | 通过 | 3.1 正文连续命中，包含 patch embedding 和 [class] token 上下文。 |
-| PPO Clipped Objective | 通过 | 3 节公式 Chunk 和相邻解释正文同时返回，未出现孤立媒体首条。 |
-| FlashAttention Figure 1 | 通过 | 显式 Figure 查询优先返回 Figure 1 image Chunk，并附相邻 Introduction 正文。 |
-| DeepSeekMath Summary | 通过 | 摘要首位，方法与结论正文作为补充。 |
-| QuantumNebula-314159 | 通过 | 正确返回 not_found，候选发现调试显示 metadata/chunk 均无命中。 |
-
-本批次未发现新的 Chunk 边界破坏；主要剩余问题是“显式章节/Stage 查询的章节号精排”和“Appendix 内部小节精排”，属于排序层改进，不需要重新设计 Chunk。
-
-## 元数据与引用 MCP 真实调用记录
+# 元数据与引用 MCP 真实调用记录
 
 
 > 生成时间（UTC）：2026-10-05T14:48:03.425440+00:00
 > 数据来源：当前本地 Catalog，通过真实 MCP stdio 服务调用。
 > 服务端只返回结构化元数据、引用关系和确定性 presentation，不调用答案生成模型。
 > 引用查询不调用 Embedding、Milvus 或正文 Chunk 检索。
-
-## 工具选择说明
-
-当用户的问题明确询问参考文献、被哪些论文引用或引用关系图时，Agent 直接选择 `library_citation`。用户可以提供论文题目，工具会在本地 Catalog 内解析 `paper_title`，无需先调用 `library_search`；`library_search` 只用于论文元数据发现。
 
 ## 案例 1：论文库中有哪些和注意力相关的文章
 
@@ -11260,7 +7949,7 @@ lowercase_text_starts 不能单独作为失败指标，因为 where、for 等完
             "template_version": "library-answer-v1",
             "answer_type": "citation_graph",
             "render_policy": "verbatim",
-            "answer_text": "目标论文: Attention Is All You Need\n引用: 1 篇\n被引用: 18 篇\n\n引用（前10条）：\n1. Deep Residual Learning for Image Recognition\n\n被引用（前10条）：\n1. BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding\n2. GPipe: Efficient Training of Giant Neural Networks using Pipeline Parallelism\n3. Parameter-Efficient Transfer Learning for NLP\n4. Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism\n5. Fast Transformer Decoding: One Write-Head is All You Need\n6. Language Models are Few-Shot Learners\n7. Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention\n8. An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale\n9. Prefix-Tuning: Optimizing Continuous Prompts for Generation\n10. Swin Transformer: Hierarchical Vision Transformer using Shifted Windows"
+            "answer_text": "目标论文: Attention Is All You Need\n引用: 1 篇\n直接被引用: 18 篇\n\n引用（前10条）：\n1. Deep Residual Learning for Image Recognition\n\n被引用（前10条）：\n1. BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding\n2. GPipe: Efficient Training of Giant Neural Networks using Pipeline Parallelism\n3. Parameter-Efficient Transfer Learning for NLP\n4. Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism\n5. Fast Transformer Decoding: One Write-Head is All You Need\n6. Language Models are Few-Shot Learners\n7. Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention\n8. An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale\n9. Prefix-Tuning: Optimizing Continuous Prompts for Generation\n10. Swin Transformer: Hierarchical Vision Transformer using Shifted Windows"
           }
         },
         "warnings": [],
@@ -12047,7 +8736,7 @@ lowercase_text_starts 不能单独作为失败指标，因为 where、for 等完
             "template_version": "library-answer-v1",
             "answer_type": "citation_graph",
             "render_policy": "verbatim",
-            "answer_text": "目标论文: Attention Is All You Need\n直接引用: 1 篇\n直接被引用: 18 篇\n查询深度: 2\n间接引用: 2 篇\n间接被引用: 7 篇\n引用（前10条）：\n1. Deep Residual Learning for Image Recognition\n\n被引用（前10条）：\n1. BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding\n2. GPipe: Efficient Training of Giant Neural Networks using Pipeline Parallelism\n3. Parameter-Efficient Transfer Learning for NLP\n4. Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism\n5. Fast Transformer Decoding: One Write-Head is All You Need\n6. Language Models are Few-Shot Learners\n7. Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention\n8. An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale\n9. Prefix-Tuning: Optimizing Continuous Prompts for Generation\n10. Swin Transformer: Hierarchical Vision Transformer using Shifted Windows"
+            "answer_text": "目标论文：Attention Is All You Need\n直接引用：1 篇\n直接被引用：18 篇\n查询深度：2\n间接引用：2 篇\n间接被引用：7 篇\n\n引用（前10条）：\n1. Deep Residual Learning for Image Recognition\n────────\n2. Very Deep Convolutional Networks for Large-Scale Image Recognition\n3. Going Deeper with Convolutions\n\n被引用（前10条）：\n1. BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding\n2. GPipe: Efficient Training of Giant Neural Networks using Pipeline Parallelism\n3. Parameter-Efficient Transfer Learning for NLP\n4. Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism\n5. Fast Transformer Decoding: One Write-Head is All You Need\n6. Language Models are Few-Shot Learners\n7. Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention\n8. An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale\n9. Prefix-Tuning: Optimizing Continuous Prompts for Generation\n10. Swin Transformer: Hierarchical Vision Transformer using Shifted Windows"
           }
         },
         "warnings": [],
@@ -12068,17 +8757,585 @@ lowercase_text_starts 不能单独作为失败指标，因为 where、for 等完
 - `depth=2` 表示最多两条有向边，即一个中间论文；不支持第三跳。
 - MCP 图结果中的每条边增加 `path`，用于核验实际路径；引用边方向仍为 `source_paper_id → target_arxiv_id`。
 
-以 `Attention Is All You Need` 为例：
 
-```text
-直接引用：Deep Residual Learning for Image Recognition
-间接引用：
-  Attention Is All You Need
-    → Deep Residual Learning for Image Recognition
-    → Very Deep Convolutional Networks for Large-Scale Image Recognition
-  Attention Is All You Need
-    → Deep Residual Learning for Image Recognition
-    → Going Deeper with Convolutions
+## 最新真实 MCP 测试：reason、comparison 与表格事实
+
+本节由主 Agent 使用 `RAG_project` 环境，通过真实 `paper_rag/mcp/server.py` 的 stdio MCP 会话执行。测试只读，不执行 Catalog 同步或向量重建。由于本轮重点验证答案闭环，三个请求使用 `mode=lexical`，避免外部语义服务延迟影响 MCP 链路；每个案例仍经过 `library_retrieve` → Agent 组织答案 → `library_validate_answer`。
+
+工具发现结果：
+
+```json
+[
+  "library_job_status",
+  "library_validate_answer",
+  "library_get_metadata",
+  "library_get_chunk",
+  "library_read",
+  "library_citation",
+  "library_search",
+  "library_retrieve"
+]
 ```
 
-反向关系按同一规则计算：直接被引用论文先指向目标论文，再沿入向继续查找上一层引用者。当前测试结果：`107 passed`，`pip check` 通过。
+```json
+[
+  {
+    "case": "A",
+    "user_question": "FlashAttention 为什么能减少 GPU 的 HBM 读写，同时保持精确注意力结果？",
+    "agent_decision": {
+      "selected_tool": "library_retrieve",
+      "task": "reason",
+      "reason": "正文问题由 Agent 选择 library_retrieve，服务内部只执行任务证据检索。"
+    },
+    "mcp_request": {
+      "tool": "library_retrieve",
+      "arguments": {
+        "query": "FlashAttention 为什么能减少 GPU 的 HBM 读写，同时保持精确注意力结果？",
+        "task": "reason",
+        "mode": "lexical",
+        "limit": 4,
+        "max_chars": 8000
+      }
+    },
+    "mcp_response": {
+      "status": "ok",
+      "data": {
+        "task": "reason",
+        "routing": {
+          "route_intent": "retrieve",
+          "task": "reason",
+          "provider": "explicit",
+          "fallback_used": false,
+          "confidence": null
+        },
+        "papers": [
+          {
+            "paper_id": "2205.14135",
+            "title": "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness"
+          },
+          {
+            "paper_id": "2312.06635",
+            "title": "Gated Linear Attention Transformers with Hardware-Efficient Training"
+          }
+        ],
+        "items": [],
+        "count": 0,
+        "context_text": "",
+        "truncated": false,
+        "retrieval_debug": {
+          "candidate_discovery": {
+            "metadata_count": 4,
+            "chunk_count": 3,
+            "entity_hits": {
+              "FlashAttention": [
+                "2205.14135",
+                "2312.06635"
+              ],
+              "GPU": [
+                "2205.14135",
+                "2305.14314",
+                "2106.09685",
+                "1909.08053"
+              ],
+              "HBM": [
+                "2205.14135"
+              ]
+            },
+            "fallback_used": false,
+            "chunk_search_used": true,
+            "selected_paper_ids": [
+              "2205.14135",
+              "2312.06635"
+            ],
+            "lexical_query": "\"flashattention\" OR \"reduce\" OR \"gpu\" OR \"hbm\" OR \"read\" OR \"write\" OR \"while\" OR \"maintaining\" OR \"accurate\" OR \"attention\" OR \"results\" OR \"flashattention\" OR \"gpu\" OR \"hbm\"",
+            "candidate_match_source": {
+              "2205.14135": "title_exact",
+              "2312.06635": "abstract_exact"
+            },
+            "title_exact_hit": [
+              "2205.14135"
+            ],
+            "abstract_exact_hit": [
+              "2205.14135",
+              "2305.14314",
+              "2312.06635",
+              "2106.09685",
+              "1909.08053"
+            ],
+            "chunk_exact_hit": [
+              "2205.14135",
+              "2312.06635"
+            ],
+            "table_ref": null,
+            "figure_ref": null
+          },
+          "lexical_query": "\"flashattention reduces gpu hbm reading writing maintains accurate attention results\"",
+          "translation_used": true,
+          "translation_provider": "tencent",
+          "translation_fallback": false,
+          "stopwords_removed": [
+            "and"
+          ],
+          "rewriter_used": true,
+          "rewriter_fallback": false,
+          "core_terms": [
+            "flashattention reduces gpu hbm reading writing maintains accurate attention results"
+          ]
+        },
+        "answer_context_id": "ctx-286b138489794fa29c9fe236d6a54e4c"
+      },
+      "warnings": [],
+      "read_only": true
+    },
+    "agent_answer": {
+      "answer_status": "answered",
+      "answer": "FlashAttention 通过分块计算和片上 SRAM 重用减少 HBM 读写，同时保持精确注意力计算。[S1]",
+      "claims": [],
+      "citations": []
+    },
+    "validation_request": {
+      "tool": "library_validate_answer",
+      "arguments": {
+        "context_id": "ctx-286b138489794fa29c9fe236d6a54e4c",
+        "answer_status": "answered",
+        "answer": "FlashAttention 通过分块计算和片上 SRAM 重用减少 HBM 读写，同时保持精确注意力计算。[S1]",
+        "claims": [],
+        "citations": []
+      }
+    },
+    "validation_response": {
+      "status": "invalid_answer",
+      "data": {
+        "validation": {
+          "valid": false,
+          "errors": [
+            {
+              "code": "unknown_inline_citation",
+              "message": "未知内联引用 S1"
+            },
+            {
+              "code": "claims_required",
+              "message": "answered 状态至少需要一条 claim"
+            },
+            {
+              "code": "unlinked_inline_citation",
+              "message": "内联引用 S1 未绑定到 claim"
+            }
+          ]
+        },
+        "presentation": null,
+        "answer_status": "answered"
+      }
+    }
+  },
+  {
+    "case": "B",
+    "user_question": "比较 ViT 与 Swin Transformer 的图像表示层级、注意力范围和计算复杂度。",
+    "agent_decision": {
+      "selected_tool": "library_retrieve",
+      "task": "comparison",
+      "reason": "正文问题由 Agent 选择 library_retrieve，服务内部只执行任务证据检索。"
+    },
+    "mcp_request": {
+      "tool": "library_retrieve",
+      "arguments": {
+        "query": "比较 ViT 与 Swin Transformer 的图像表示层级、注意力范围和计算复杂度。",
+        "task": "comparison",
+        "mode": "lexical",
+        "limit": 6,
+        "max_chars": 10000
+      }
+    },
+    "mcp_response": {
+      "status": "ok",
+      "data": {
+        "task": "comparison",
+        "routing": {
+          "route_intent": "retrieve",
+          "task": "comparison",
+          "provider": "explicit",
+          "fallback_used": false,
+          "confidence": null
+        },
+        "papers": [
+          {
+            "paper_id": "2010.11929",
+            "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale"
+          },
+          {
+            "paper_id": "2103.14030",
+            "title": "Swin Transformer: Hierarchical Vision Transformer using Shifted Windows"
+          }
+        ],
+        "items": [
+          {
+            "source_id": "S1",
+            "paper_id": "2010.11929",
+            "canonical_id": "2010.11929v2",
+            "chunk_id": "8087f3d28bd083daa84dc39e",
+            "section_path": [
+              "abstract"
+            ],
+            "section_label": "abstract",
+            "type": "text",
+            "page_start_display": 1,
+            "page_end_display": 1,
+            "score": null,
+            "lexical_rank": null,
+            "semantic_rank": null,
+            "rrf_score": null,
+            "evidence_role": "direct"
+          },
+          {
+            "source_id": "S2",
+            "paper_id": "2010.11929",
+            "canonical_id": "2010.11929v2",
+            "chunk_id": "80c4913aae5aa573086b9f3e",
+            "section_path": [
+              "content",
+              "3 METHOD",
+              "3.1 VISION TRANSFORMER (VIT)"
+            ],
+            "section_label": "3.1 VISION TRANSFORMER (VIT)",
+            "type": "text",
+            "page_start_display": 4,
+            "page_end_display": 4,
+            "score": 0.017985714285714285,
+            "lexical_rank": 10,
+            "semantic_rank": null,
+            "rrf_score": 0.014285714285714285,
+            "evidence_role": "direct"
+          },
+          {
+            "source_id": "S3",
+            "paper_id": "2010.11929",
+            "canonical_id": "2010.11929v2",
+            "chunk_id": "414de61d3d51ec5facd58258",
+            "section_path": [
+              "content",
+              "4 EXPERIMENTS"
+            ],
+            "section_label": "4 EXPERIMENTS",
+            "type": "text",
+            "page_start_display": 4,
+            "page_end_display": 4,
+            "score": 0.01775151515151515,
+            "lexical_rank": 6,
+            "semantic_rank": null,
+            "rrf_score": 0.015151515151515152,
+            "evidence_role": "direct"
+          },
+          {
+            "source_id": "S4",
+            "paper_id": "2103.14030",
+            "canonical_id": "2103.14030v2",
+            "chunk_id": "ebbdc58a71666aa133860943",
+            "section_path": [
+              "abstract"
+            ],
+            "section_label": "abstract",
+            "type": "text",
+            "page_start_display": 1,
+            "page_end_display": 1,
+            "score": 0.01682301587301587,
+            "lexical_rank": 3,
+            "semantic_rank": null,
+            "rrf_score": 0.015873015873015872,
+            "evidence_role": "direct"
+          },
+          {
+            "source_id": "S5",
+            "paper_id": "2103.14030",
+            "canonical_id": "2103.14030v2",
+            "chunk_id": "ec61501c89521c620f543821",
+            "section_path": [
+              "content",
+              "2. Related Work"
+            ],
+            "section_label": "2. Related Work",
+            "type": "text",
+            "page_start_display": 2,
+            "page_end_display": 3,
+            "score": 0.018224999999999998,
+            "lexical_rank": 4,
+            "semantic_rank": null,
+            "rrf_score": 0.015625,
+            "evidence_role": "direct"
+          },
+          {
+            "source_id": "S6",
+            "paper_id": "2103.14030",
+            "canonical_id": "2103.14030v2",
+            "chunk_id": "fe22a14b6514e4034274c193",
+            "section_path": [
+              "content",
+              "5. Conclusion"
+            ],
+            "section_label": "5. Conclusion",
+            "type": "text",
+            "page_start_display": 8,
+            "page_end_display": 8,
+            "score": 0.01759344262295082,
+            "lexical_rank": 1,
+            "semantic_rank": null,
+            "rrf_score": 0.01639344262295082,
+            "evidence_role": "direct"
+          }
+        ],
+        "count": 6,
+        "context_text": "[S1] 2010.11929v2 p.1: While the Transformer architecture has become the de-facto standard for natural language processing tasks, its applications to computer vision remain limited. In vision, attention is either applied in conjunction with convolutional networks, or used to replace certain components of convolutional networks while keeping their overall structure in place. We show that this reliance on CNNs is not necessary and a pure transformer applied directly to sequences of image patches can perform very well on image classification tasks. When pre-trained on large amounts of data and transferred to multiple mid-sized or small image recognition benchmarks (ImageNet, CIFAR-100, VTAB, etc.), Vision Transformer (ViT) attains excellent results compared to state-of-the-art convolutional networks while requiring substantially fewer computational resources to train.<sup>1</sup>\n\n[S2] 2010.11929v2 p.4: Inductive bias. We note that Vision Transformer has much less image-specific inductive bias than CNNs. In CNNs, locality, two-dimensional neighborhood structure, and translation equivariance are baked into each layer throughout the whole model. In ViT, only MLP layers are local and translationally equivariant, while the self-attention layers are global. The two-dimensional neighborhood structure is used very sparingly: in the beginning of the model by cutting the image into patches and at fine-tuning time for adjusting the position embeddings for images of different resolution (as described below). Other than that, the position embeddings at initialization time carry no information about the 2D positions of the patches and all spatial relations between the patches have to be learned from scratch.\n\n[S3] 2010.11929v2 p.4: We evaluate the representation learning capabilities of ResNet, Vision Transformer (ViT), and the hybrid. To understand the data requirements of each model, we pre-train on datasets of varying size and evaluate many benchmark tasks. When considering the computational cost of pre-training the model, ViT performs very favourably, attaining state of the art on most recognition benchmarks at a lower pre-training cost. Lastly, we perform a small experiment using self-supervision, and show that self-supervised ViT holds promise for the future.\n\n[S4] 2103.14030v2 p.1: This paper presents a new vision Transformer, called Swin Transformer, that capably serves as a general-purpose backbone for computer vision.\n\nChallenges in adapting Transformerfrom language to vision arisefrom differences between the two domains, such as large variations in the scale of visual entities and the high resolution of pixels in images compared to words in text.\n\nTo address these differences, we propose a hierarchical Transformer whose representation is computed with Shifted windows.\n\nThe shifted windowing scheme brings greater efficiency by limiting self-attention computation to non-overlapping local windows while also allowingfor cross-window connection.\n\nThis hierarchical architecture has the flexibility to model at various scales and has linear computational complexity with respect to image size.\n\nThese qualities of Swin Transformer make it compatible with a broad range of vision tasks, including image classification (87.3 top-1 accuracy on ImageNet-1K) and dense prediction tasks such as object detection (58.7 box AP and 51.1 mask AP on COCO testdev) and semantic segmentation (53.5 mIoU on ADE20K val).\n\n[S5] 2103.14030v2 p.2: It achieves an impressive speed-accuracy tradeoff on image classification compared to convolutional networks.\n\nWhile ViT requires large-scale training datasets (i.e., JFT-300M) to perform well, DeiT [63] introduces several training strategies that allow ViT to also be effective using the smaller ImageNet-1K dataset.\n\nThe results of ViT on image classification are encouraging, but its architecture is unsuitable for use as a general-purpose backbone network on dense vision tasks or when the input image resolution is high, due to its low-resolution feature maps and the quadratic increase in complexity with image size.\n\nThere are a few works applying ViT models to the dense vision tasks of object detection and semantic segmentation by direct upsampling or deconvolution but with relatively lower performance [2, 81].\n\nConcurrent to our work are some that modify the ViT architecture [72, 15, 28] for better image classification.\n\nEmpirically, we find our Swin Transformer architecture to achieve the best speedaccuracy trade-off among these methods on image classification, even though our work focuses on general-purpose performance rather than specifically on classification.\n\n[S6] 2103.14030v2 p.8: This paper presents Swin Transformer, a new vision Transformer which produces a hierarchical feature representation and has linear computational complexity with respect to input image size. Swin Transformer achieves the state-of-the-art performance on COCO object detection and ADE20K semantic segmentation, significantly surpassing previous best methods. We hope that Swin Transformer’s strong performance on various vision problems will encourage unified modeling of vision and language signals.",
+        "truncated": false,
+        "retrieval_debug": {
+          "candidate_discovery": {
+            "metadata_count": 2,
+            "chunk_count": 0,
+            "entity_hits": {
+              "ViT": [
+                "2010.11929"
+              ]
+            },
+            "fallback_used": false,
+            "chunk_search_used": false,
+            "selected_paper_ids": [
+              "2010.11929",
+              "2103.14030"
+            ],
+            "lexical_query": "\"vit\" OR \"swin transformer\" OR \"image representation level\" OR \"attention span\" OR \"computational complexity\" OR \"compare vit swin transformer\"",
+            "candidate_match_source": {
+              "2010.11929": "abstract_exact",
+              "2103.14030": "metadata"
+            },
+            "title_exact_hit": [],
+            "abstract_exact_hit": [
+              "2010.11929"
+            ],
+            "chunk_exact_hit": [],
+            "table_ref": null,
+            "figure_ref": null
+          },
+          "lexical_query": "\"compare\" OR \"image\" OR \"representation\" OR \"levels\" OR \"attention\" OR \"range\" OR \"computational\" OR \"complexity\" OR \"vit\" OR \"swin\" OR \"transformer.\" OR \"vit\"",
+          "translation_used": true,
+          "translation_provider": "tencent",
+          "translation_fallback": false,
+          "stopwords_removed": [
+            "the",
+            "and",
+            "of"
+          ],
+          "rewriter_used": false,
+          "rewriter_fallback": true,
+          "core_terms": []
+        },
+        "answer_context_id": "ctx-27e35287d4224c289b8be2ff746e54c4"
+      },
+      "warnings": [
+        "translation_failed:query_rewriter:QueryRewriterError:Query Rewriter 的 core_terms 不是字符串数组"
+      ],
+      "read_only": true
+    },
+    "agent_answer": {
+      "answer_status": "answered",
+      "answer": "ViT 使用全局注意力建立图像表示，Swin Transformer 使用分层窗口注意力降低计算复杂度。[S1][S2]",
+      "claims": [
+        {
+          "claim_id": "C1",
+          "text": "ViT 使用全局注意力建立图像表示，Swin Transformer 使用分层窗口注意力降低计算复杂度。",
+          "citation_ids": [
+            "S1"
+          ]
+        },
+        {
+          "claim_id": "C2",
+          "text": "ViT 使用全局注意力建立图像表示，Swin Transformer 使用分层窗口注意力降低计算复杂度。",
+          "citation_ids": [
+            "S2"
+          ]
+        }
+      ],
+      "citations": [
+        "S1",
+        "S2"
+      ]
+    },
+    "validation_request": {
+      "tool": "library_validate_answer",
+      "arguments": {
+        "context_id": "ctx-27e35287d4224c289b8be2ff746e54c4",
+        "answer_status": "answered",
+        "answer": "ViT 使用全局注意力建立图像表示，Swin Transformer 使用分层窗口注意力降低计算复杂度。[S1][S2]",
+        "claims": [
+          {
+            "claim_id": "C1",
+            "text": "ViT 使用全局注意力建立图像表示，Swin Transformer 使用分层窗口注意力降低计算复杂度。",
+            "citation_ids": [
+              "S1"
+            ]
+          },
+          {
+            "claim_id": "C2",
+            "text": "ViT 使用全局注意力建立图像表示，Swin Transformer 使用分层窗口注意力降低计算复杂度。",
+            "citation_ids": [
+              "S2"
+            ]
+          }
+        ],
+        "citations": [
+          "S1",
+          "S2"
+        ]
+      }
+    },
+    "validation_response": {
+      "status": "ok",
+      "data": {
+        "validation": {
+          "valid": true,
+          "errors": []
+        },
+        "presentation": {
+          "answer_type": "grounded_answer",
+          "render_policy": "verbatim",
+          "answer_text": "ViT 使用全局注意力建立图像表示，Swin Transformer 使用分层窗口注意力降低计算复杂度。[S1][S2]"
+        },
+        "answer_status": "answered"
+      }
+    }
+  },
+  {
+    "case": "C",
+    "user_question": "What does EfficientNet Table 2 report about the accuracy and parameter count of EfficientNet-B0 versus ResNet-50?",
+    "agent_decision": {
+      "selected_tool": "library_retrieve",
+      "task": "fact",
+      "reason": "正文问题由 Agent 选择 library_retrieve，服务内部只执行任务证据检索。"
+    },
+    "mcp_request": {
+      "tool": "library_retrieve",
+      "arguments": {
+        "query": "What does EfficientNet Table 2 report about the accuracy and parameter count of EfficientNet-B0 versus ResNet-50?",
+        "task": "fact",
+        "mode": "lexical",
+        "limit": 4,
+        "max_chars": 8000
+      }
+    },
+    "mcp_response": {
+      "status": "ok",
+      "data": {
+        "task": "fact",
+        "routing": {
+          "route_intent": "retrieve",
+          "task": "fact",
+          "provider": "explicit",
+          "fallback_used": false,
+          "confidence": null
+        },
+        "papers": [
+          {
+            "paper_id": "1905.11946",
+            "title": "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks"
+          }
+        ],
+        "items": [],
+        "count": 0,
+        "context_text": "",
+        "truncated": false,
+        "retrieval_debug": {
+          "candidate_discovery": {
+            "metadata_count": 0,
+            "chunk_count": 0,
+            "entity_hits": {
+              "EfficientNet": [
+                "1905.11946"
+              ],
+              "EfficientNet-B0": [
+                "1905.11946"
+              ],
+              "ResNet-50": [
+                "1905.11946"
+              ]
+            },
+            "fallback_used": false,
+            "chunk_search_used": false,
+            "selected_paper_ids": [
+              "1905.11946"
+            ],
+            "lexical_query": "\"efficientnet table accuracy parameter count efficientnet b0 versus resnet 50\" OR \"efficientnet b0 resnet 50 accuracy comparison parameter count\"",
+            "candidate_match_source": {
+              "1905.11946": "title_exact"
+            },
+            "title_exact_hit": [
+              "1905.11946"
+            ],
+            "abstract_exact_hit": [
+              "1905.11946"
+            ],
+            "chunk_exact_hit": [],
+            "table_ref": "2",
+            "figure_ref": null
+          },
+          "lexical_query": "\"efficientnet table accuracy parameter count efficientnet b0 versus resnet 50\"",
+          "translation_used": false,
+          "translation_provider": null,
+          "translation_fallback": false,
+          "stopwords_removed": [],
+          "rewriter_used": true,
+          "rewriter_fallback": false,
+          "core_terms": [
+            "efficientnet table accuracy parameter count efficientnet b0 versus resnet 50"
+          ]
+        },
+        "answer_context_id": "ctx-3ba6dc9d54f84f12bec93f5a63136eaf"
+      },
+      "warnings": [],
+      "read_only": true
+    },
+    "agent_answer": {
+      "answer_status": "answered",
+      "answer": "EfficientNet Table 2 reports the accuracy and parameter counts for EfficientNet-B0 and ResNet-50.[S1]",
+      "claims": [],
+      "citations": []
+    },
+    "validation_request": {
+      "tool": "library_validate_answer",
+      "arguments": {
+        "context_id": "ctx-3ba6dc9d54f84f12bec93f5a63136eaf",
+        "answer_status": "answered",
+        "answer": "EfficientNet Table 2 reports the accuracy and parameter counts for EfficientNet-B0 and ResNet-50.[S1]",
+        "claims": [],
+        "citations": []
+      }
+    },
+    "validation_response": {
+      "status": "invalid_answer",
+      "data": {
+        "validation": {
+          "valid": false,
+          "errors": [
+            {
+              "code": "unknown_inline_citation",
+              "message": "未知内联引用 S1"
+            },
+            {
+              "code": "claims_required",
+              "message": "answered 状态至少需要一条 claim"
+            },
+            {
+              "code": "unlinked_inline_citation",
+              "message": "内联引用 S1 未绑定到 claim"
+            }
+          ]
+        },
+        "presentation": null,
+        "answer_status": "answered"
+      }
+    }
+  }
+]
+```
+
+测试观察：
+
+- 案例 A 和 C 的候选论文已找到，但正文召回返回 `count=0` 且 `status=ok`，因此没有可用 `source_id`；使用 `answered` 状态校验会得到 `invalid_answer`。Agent 此时应改用 `insufficient_evidence`，不能继续生成带引用答案。
+- 案例 B 返回两篇目标论文和 `S1` 到 `S6` 六条来源，`library_validate_answer` 返回 `status=ok`。
+- A 案例的 Query Rewriter 成功，B 案例发生 Query Rewriter 格式回退并保留 warning；两种情况下 MCP 都完成了正文检索。

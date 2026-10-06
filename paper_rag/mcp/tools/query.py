@@ -14,7 +14,7 @@ def library_search(query: str, filters: dict[str, Any] | None = None, limit: int
     return search(get_settings(), query, filters, limit)
 
 
-@mcp.tool(name="library_retrieve", description="Agent 选择正文检索后调用；服务内部按 fact/reason/summary/comparison 分类，只返回正文 Chunk 证据，不生成答案。hybrid 模式允许 Agent 根据证据组织回答；filters 会先约束候选论文。")
+@mcp.tool(name="library_retrieve", description="Agent 选择正文检索后调用；服务内部按 fact/reason/summary/comparison 分类，只返回正文 Chunk 证据、answer_context_id、citation_registry 和 Agent 回答契约，不生成答案。Agent 必须基于真实 source_id 组织答案，并调用 library_validate_answer 校验后再展示；filters 会先约束候选论文。")
 def library_retrieve(
     query: str,
     paper_ids: list[str] | None = None,

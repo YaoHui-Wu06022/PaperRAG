@@ -17,6 +17,7 @@ from paper_rag.llamaindex.nodes import load_nodes
 from paper_rag.llamaindex import service
 from paper_rag.llamaindex.service import index_status, rebuild_index, retrieve
 from paper_rag.llamaindex.retrievers import HybridRetriever
+from paper_rag.mcp.tools.answer import library_validate_answer
 
 
 def make_index_fixture(tmp_path: Path, *, include_second: bool = False) -> Settings:
@@ -142,7 +143,19 @@ def test_single_rag_tool_returns_client_side_context(tmp_path: Path):
     result = retrieve(settings, "attention", task="fact", limit=2, max_chars=100, mode="lexical")
     assert result["status"] == "ok"
     assert "[S1]" in result["data"]["context_text"]
+    assert result["data"]["answer_context_id"].startswith("ctx-")
+    assert result["data"]["citation_registry"]["S1"]["chunk_id"] == result["data"]["items"][0]["chunk_id"]
+    assert result["data"]["answer_contract"]["required_fields"] == ["answer_status", "answer", "claims", "citations"]
     assert result["read_only"] is True
+    validated = library_validate_answer(
+        result["data"]["answer_context_id"],
+        "answered",
+        "Attention evidence is available.[S1]",
+        [{"claim_id": "C1", "text": "Attention evidence is available.", "citation_ids": ["S1"]}],
+        ["S1"],
+    )
+    assert validated["status"] == "ok"
+    assert validated["data"]["citations"][0]["chunk_id"] == result["data"]["items"][0]["chunk_id"]
 
 
 def test_embedding_adapter_uses_existing_client(monkeypatch, tmp_path: Path):

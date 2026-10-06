@@ -14,6 +14,7 @@ def test_mcp_server_registers_acquisition_tools():
         "library_get_metadata",
         "library_citation",
         "library_retrieve",
+        "library_validate_answer",
     } <= server._registered_tool_names()
 
 

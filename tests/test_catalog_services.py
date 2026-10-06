@@ -161,6 +161,14 @@ def test_citation_graph_defaults_to_two_hops(tmp_path: Path):
     assert graph["depth"] == 2
 
 
+def test_citation_graph_single_direction_defaults_to_one_hop(tmp_path: Path):
+    settings = _settings(tmp_path)
+    rebuild_catalog(settings)
+
+    assert citation_graph(settings, "1706.03762", direction="out")["depth"] == 1
+    assert citation_graph(settings, "1706.03762", direction="in")["depth"] == 1
+
+
 def test_reference_resolution_removes_only_version_suffix():
     refs, _warnings = extract_references(
         [

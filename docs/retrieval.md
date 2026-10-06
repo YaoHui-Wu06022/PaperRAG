@@ -328,6 +328,66 @@ Reason 窗口保留 `window_id`、`source_chunk_ids`、`continuity_status`、页
 
 `context_text` 使用 `[S1]`、`[S2]` 等 source ID 组织可读上下文；原始 Chunk 的 `chunk_id`、页码、章节和 source block 仍保留在结构化结果中，便于回溯和审计。
 
+## Agent 可溯源答案闭环
+
+`library_retrieve` 是 Agent 的证据工具，不在服务内调用答案生成模型。一次成功的正文检索会在进程内保存一个短期答案上下文，并在 `data` 中返回三个运行时字段：
+
+```json
+{
+  "answer_context_id": "ctx-...",
+  "answer_contract": {
+    "answer_status": ["answered", "insufficient_evidence"],
+    "required_fields": ["answer_status", "answer", "claims", "citations"],
+    "citation_syntax": "[S1]"
+  },
+  "citation_registry": {
+    "S1": {
+      "paper_id": "2309.06180",
+      "canonical_id": "2309.06180v1",
+      "chunk_id": "...",
+      "source_chunk_ids": ["..."],
+      "section_path": ["2", "2.1"],
+      "section_label": "PagedAttention",
+      "page_start": 3,
+      "page_end": 4
+    }
+  }
+}
+```
+
+`citation_registry` 只由本次实际返回的 `items` 生成。它不会添加人工摘要、预期结论或检索结果之外的论文信息；`S1` 只在当前 `answer_context_id` 中有效。服务端同时保存原始 query、task、mode、filters、regions、最终 items、`context_text` 和 `truncated` 状态，进程重启后上下文失效，也不会写入 Catalog 或 `record.md`。
+
+宿主 Agent 根据 `answer_contract` 组织答案，格式为：
+
+```json
+{
+  "answer_status": "answered",
+  "answer": "PagedAttention 通过分页方式管理 KV Cache。[S1]",
+  "claims": [
+    {
+      "claim_id": "C1",
+      "text": "PagedAttention 通过分页方式管理 KV Cache。",
+      "citation_ids": ["S1"]
+    }
+  ],
+  "citations": ["S1"]
+}
+```
+
+Agent 不填写论文标题、页码、Chunk ID 等来源元数据。每条事实性 claim 都要有至少一个 `citation_id`，`answer` 中的 `[S#]` 必须存在于当前注册表并绑定到 claim，顶层 `citations` 必须等于所有 claim 引用的并集。证据不足时使用 `insufficient_evidence`，不能补写检索结果没有的事实。
+
+答案生成后，Agent 调用 `library_validate_answer(context_id, answer_status, answer, claims, citations)`，通过校验后才展示 `data.presentation.answer_text`。校验器不调用 LLM，确定性检查上下文是否过期、claim 是否有引用、引用 ID 是否存在、内联引用是否注册、顶层引用集合是否一致，并从服务端注册表恢复真实的 paper、chunk、章节和页码信息。成功响应的 `presentation.render_policy` 为 `verbatim`；失败响应为 `invalid_answer` 或 `context_expired`，包含稳定错误码，Agent 最多修正并重试两次。
+
+工具边界保持如下：
+
+```text
+Agent -> library_search / library_citation -> MCP 确定性 answer_text -> Agent 原样输出
+Agent -> library_retrieve -> MCP 证据和 answer_contract -> Agent 生成结构化答案
+Agent -> library_validate_answer -> MCP 确定性校验和来源恢复 -> 通过后展示
+```
+
+`library_search` 和 `library_citation` 仍返回已经组织好的 `data.presentation.answer_text`，Agent 直接原样输出；只有 `library_retrieve` 的答案需要 Agent 组织并调用校验工具。
+
 ## 失败回退和可观测性
 
 | 阶段 | 失败或无结果 | 行为 | 可观察字段 |

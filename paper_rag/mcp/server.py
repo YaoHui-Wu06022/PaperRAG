@@ -7,6 +7,7 @@ from paper_rag.mcp import tools  # noqa: F401 - 导入副作用负责注册工�
 from paper_rag.mcp.runtime import get_settings
 from paper_rag.mcp.toolsets import TOOLSETS, apply_toolsets, validate_toolsets
 from paper_rag.mcp.tools.acquisition import library_acquire_arxiv, library_job_status
+from paper_rag.mcp.tools.answer import library_validate_answer
 from paper_rag.mcp.tools.ingestion import library_ingest_mineru
 from paper_rag.mcp.tools.catalog import (
     library_catalog_sync,
@@ -35,7 +36,7 @@ __all__ = [
     "TOOLSETS", "ENABLED_TOOLSETS", "mcp", "library_acquire_arxiv", "library_catalog_sync",
     "library_citation", "library_get_chunk", "library_get_metadata",
     "library_index_rebuild", "library_index_status", "library_ingest_mineru", "library_job_status",
-    "library_read", "library_retrieve", "library_search",
+    "library_read", "library_retrieve", "library_search", "library_validate_answer",
 ]
 
 

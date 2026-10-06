@@ -708,10 +708,11 @@ def get_citations(settings: Settings, paper_id: str, filters: dict[str, Any] | N
     return {"paper_id": paper_id, "items": [{"source_paper_id": r[0], "target_arxiv_id": r[1], "relation": r[2], "resolution": r[3]} for r in rows], "scope": "local_catalog"}
 
 
-def citation_graph(settings: Settings, paper_id: str, direction: str = "both", depth: int = 2, filters: dict[str, Any] | None = None) -> dict[str, Any]:
+def citation_graph(settings: Settings, paper_id: str, direction: str = "both", depth: int | None = None, filters: dict[str, Any] | None = None) -> dict[str, Any]:
     if direction not in {"in", "out", "both"}:
         raise ValueError("direction must be in, out or both")
-    max_depth = int(depth)
+    # 双向关系默认展开两跳；只查询引用或被引用时默认只查直接关系。
+    max_depth = 2 if depth is None and direction == "both" else 1 if depth is None else int(depth)
     if max_depth not in {1, 2}:
         raise ValueError("depth must be 1 or 2")
     root = _base_arxiv_id(paper_id)

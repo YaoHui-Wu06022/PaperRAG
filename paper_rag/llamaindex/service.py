@@ -8,6 +8,7 @@ import re
 from typing import Any, Iterable
 
 from paper_rag.catalog.service import CatalogIndexNotReady, get_metadata, list_chunks, search_catalog, search_chunks
+from paper_rag.answering import ANSWER_CONTEXTS, answer_contract
 from paper_rag.config import Settings
 from paper_rag.lexical import build_fts_query
 from paper_rag.llamaindex.index import IndexService, LlamaIndexError
@@ -132,7 +133,31 @@ def retrieve(settings: Settings, query: str, paper_ids: list[str] | None = None,
         papers = _paper_records(settings, _unique_ids(item.get("paper_id") for item in items))
     _assign_source_ids(items)
     context_text, truncated = _render_context(items, bounded_chars, decision.task is RetrieveTask.COMPARISON)
-    return _retrieve_response(status, {"query": query, "task": decision.task.value, "routing": decision.to_dict(), "papers": [record.to_dict() for record in papers], "items": items, "count": len(items), "context_text": context_text, "truncated": truncated, "retrieval_debug": retrieval_debug}, warnings, normalized_mode)
+    answer_context = ANSWER_CONTEXTS.create(
+        query=query,
+        task=decision.task.value,
+        mode=normalized_mode,
+        filters=normalized_filters,
+        regions=selected_regions,
+        items=items,
+        context_text=context_text,
+        truncated=truncated,
+    )
+    data = {
+        "query": query,
+        "task": decision.task.value,
+        "routing": decision.to_dict(),
+        "papers": [record.to_dict() for record in papers],
+        "items": items,
+        "count": len(items),
+        "context_text": context_text,
+        "truncated": truncated,
+        "retrieval_debug": retrieval_debug,
+        "answer_context_id": answer_context.context_id,
+        "answer_contract": answer_contract(),
+        "citation_registry": answer_context.citation_registry,
+    }
+    return _retrieve_response(status, data, warnings, normalized_mode)
 
 
 def _retrieve_items(settings: Settings, query: str, candidates: list[str] | None, regions: tuple[str, ...], mode: str, limit: int, *, task: str = "fact") -> tuple[list[dict[str, Any]], list[str], dict[str, Any]]:
