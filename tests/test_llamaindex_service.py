@@ -4,8 +4,9 @@ import hashlib
 import json
 from pathlib import Path
 import sqlite3
+from types import SimpleNamespace
 
-from llama_index.core.schema import MetadataMode
+from llama_index.core.schema import MetadataMode, NodeWithScore, TextNode
 
 from paper_rag.catalog.service import rebuild_catalog
 from paper_rag.catalog.chunks import CHUNK_RULE_VERSION
@@ -13,7 +14,9 @@ from paper_rag.config import Settings
 from paper_rag.llamaindex.embedding import DashScopeEmbedding
 from paper_rag.llamaindex.index import _cache_key_matches
 from paper_rag.llamaindex.nodes import load_nodes
+from paper_rag.llamaindex import service
 from paper_rag.llamaindex.service import index_status, rebuild_index, retrieve
+from paper_rag.llamaindex.retrievers import HybridRetriever
 
 
 def make_index_fixture(tmp_path: Path, *, include_second: bool = False) -> Settings:
@@ -228,3 +231,94 @@ def test_reason_respects_final_limit(tmp_path: Path):
     result = retrieve(settings, "attention", task="reason", mode="lexical", limit=1)
     assert result["status"] == "ok"
     assert result["data"]["count"] <= 1
+
+
+def test_default_regions_skip_appendix_unless_query_mentions_it():
+    assert service._normalize_regions(None, "Summarize the method") == ("abstract", "content")
+    assert service._normalize_regions(None, "What is in the appendix?") == ("abstract", "content", "appendix")
+    assert service._normalize_regions(["appendix"], "Summarize the method") == ("appendix",)
+
+
+def test_table_reference_sorting_prefers_requested_caption(tmp_path: Path):
+    settings = Settings.load(tmp_path)
+    retriever = HybridRetriever(settings, mode="lexical", task="fact")
+    table_two = TextNode(
+        text="Table 2: EfficientNet scaling results.",
+        metadata={
+            "content_text": "Table 2: EfficientNet scaling results.",
+            "section_label": "Results",
+            "type": "table",
+            "region": "content",
+            "paper_id": "1905.11946",
+            "rrf_score": 0.01,
+            "ranking_features": {"exact_table_ref_hit": True, "exact_table_caption_hit": True, "exact_entity_hit": True, "section_exact_hit": False, "duplicate_penalty": 0.0},
+        },
+    )
+    table_five = TextNode(
+        text="Table 5: EfficientNet ablation results.",
+        metadata={
+            "content_text": "Table 5: EfficientNet ablation results.",
+            "section_label": "Results",
+            "type": "table",
+            "region": "content",
+            "paper_id": "1905.11946",
+            "rrf_score": 0.99,
+            "ranking_features": {"exact_table_ref_hit": False, "exact_table_caption_hit": False, "exact_entity_hit": True, "section_exact_hit": False, "duplicate_penalty": 0.0},
+        },
+    )
+    first = NodeWithScore(node=table_two, score=0.01)
+    second = NodeWithScore(node=table_five, score=0.99)
+
+    assert retriever._sort_key(first, "What does Table 2 compare?") > retriever._sort_key(second, "What does Table 2 compare?")
+
+
+def test_candidate_discovery_falls_back_to_exact_method_entity(monkeypatch, tmp_path: Path):
+    settings = Settings.load(tmp_path)
+
+    def fake_search(_settings, _query, _filters, _limit, *, fts_query=None):
+        if fts_query == '"lora"':
+            return [SimpleNamespace(base_id="2106.09685")]
+        return []
+
+    monkeypatch.setattr(service, "search_catalog", fake_search)
+    monkeypatch.setattr(service, "search_chunks", lambda *_args, **_kwargs: [])
+    candidates, debug = service._discover_candidates(settings, "Summarize the core contributions of LoRA.", 5, "summary", {})
+
+    assert candidates == ["2106.09685"]
+    assert debug["candidate_discovery"]["entity_hits"] == {"LoRA": ["2106.09685"]}
+
+
+def test_candidate_discovery_prefers_exact_title_over_abstract_background(monkeypatch, tmp_path: Path):
+    settings = Settings.load(tmp_path)
+    bert = SimpleNamespace(base_id="1810.04805", title="BERT: Pre-training", abstract="BERT uses two tasks")
+    background = SimpleNamespace(base_id="1909.08053", title="Megatron-LM", abstract="BERT-like models")
+
+    def fake_search(_settings, _query, _filters, _limit, *, fts_query=None):
+        if fts_query == '"bert"':
+            return [bert, background]
+        return []
+
+    monkeypatch.setattr(service, "search_catalog", fake_search)
+    monkeypatch.setattr(service, "search_chunks", lambda *_args, **_kwargs: [])
+    candidates, debug = service._discover_candidates(settings, "Which two tasks does BERT use for pretraining?", 5, "fact", {})
+
+    assert candidates == ["1810.04805"]
+    assert debug["candidate_discovery"]["candidate_match_source"] == {"1810.04805": "title_exact"}
+
+
+def test_reason_window_repairs_mid_token_context(monkeypatch, tmp_path: Path):
+    chunks = [
+        {"chunk_id": "c1", "paper_id": "p", "ordinal": 1, "region": "content", "section_label": "4 Method", "text": "The complete preceding sentence.", "page_start": 1, "page_end": 1},
+        {"chunk_id": "c2", "paper_id": "p", "ordinal": 2, "region": "content", "section_label": "4 Method", "text": "ion kernel stores the cache.", "page_start": 1, "page_end": 1},
+        {"chunk_id": "c3", "paper_id": "p", "ordinal": 3, "region": "content", "section_label": "4 Method", "text": "The physical blocks can be reused.", "page_start": 1, "page_end": 1},
+    ]
+    monkeypatch.setattr(service, "list_chunks", lambda *_args, **_kwargs: chunks)
+    direct = [{**chunks[1], "type": "image", "score": 0.1, "rrf_score": 0.1}]
+
+    result = service._reason_items(Settings.load(tmp_path), direct, 3)
+
+    assert result
+    assert result[0]["evidence_role"] == "context"
+    assert result[0]["text"].startswith("The complete preceding sentence.")
+    assert result[0]["continuity_status"] == "complete"
+    assert result[0]["source_chunk_ids"] == ["c1", "c2", "c3"]

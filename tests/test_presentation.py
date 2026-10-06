@@ -90,9 +90,9 @@ def test_graph_presentation_contains_only_requested_statistics():
     )
 
     text = result["answer_text"]
-    assert "目标论文: Attention Is All You Need" in text
-    assert "引用: 1 篇" in text
-    assert "被引用: 1 篇" in text
+    assert "目标论文：Attention Is All You Need" in text
+    assert "引用：1 篇" in text
+    assert "被引用：1 篇" in text
     assert "引用（前10条）：" in text
     assert "1. Deep Residual Learning" in text
     assert "被引用（前10条）：" in text
@@ -117,11 +117,12 @@ def test_graph_presentation_explains_multihop_scope_without_changing_direct_coun
     )
 
     text = result["answer_text"]
-    assert "直接引用: 1 篇" in text
-    assert "直接被引用: 1 篇" in text
-    assert "查询深度: 2" in text
-    assert "间接引用: 1 篇" in text
-    assert "间接被引用: 0 篇" in text
+    assert "直接引用：1 篇" in text
+    assert "被引用：1 篇" in text
+    assert "查询深度：2" in text
+    assert "间接引用：1 篇" in text
+    assert "间接被引用：0 篇" in text
+    assert "────────" in text
 
 
 def test_retrieve_presentation_only_hybrid_allows_composition():

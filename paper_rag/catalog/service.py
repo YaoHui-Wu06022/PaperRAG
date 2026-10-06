@@ -708,40 +708,97 @@ def get_citations(settings: Settings, paper_id: str, filters: dict[str, Any] | N
     return {"paper_id": paper_id, "items": [{"source_paper_id": r[0], "target_arxiv_id": r[1], "relation": r[2], "resolution": r[3]} for r in rows], "scope": "local_catalog"}
 
 
-def citation_graph(settings: Settings, paper_id: str, direction: str = "both", depth: int = 1, filters: dict[str, Any] | None = None) -> dict[str, Any]:
+def citation_graph(settings: Settings, paper_id: str, direction: str = "both", depth: int = 2, filters: dict[str, Any] | None = None) -> dict[str, Any]:
     if direction not in {"in", "out", "both"}:
         raise ValueError("direction must be in, out or both")
-    max_depth = max(1, min(int(depth), 3))
+    max_depth = int(depth)
+    if max_depth not in {1, 2}:
+        raise ValueError("depth must be 1 or 2")
     root = _base_arxiv_id(paper_id)
-    nodes = {root}
-    edges: list[dict[str, Any]] = []
-    seen_edges: set[tuple[str, str, str]] = set()
-    frontier = {root}
     with sqlite3.connect(settings.paper_catalog_db_path) as connection:
-        for level in range(max_depth):
-            if not frontier:
-                break
-            next_frontier: set[str] = set()
-            for current in frontier:
-                rows: list[tuple[Any, ...]] = []
-                if direction in {"out", "both"}:
-                    rows.extend(connection.execute("SELECT source_paper_id, target_arxiv_id, relation, resolution FROM citation_edges WHERE source_paper_id = ?", (current,)).fetchall())
-                if direction in {"in", "both"}:
-                    rows.extend(connection.execute("SELECT source_paper_id, target_arxiv_id, relation, resolution FROM citation_edges WHERE target_arxiv_id = ?", (current,)).fetchall())
-                for source, target, relation, resolution in rows:
-                    if filters and not (_paper_row_matches(connection, source, filters) or _paper_row_matches(connection, target, filters)):
-                        continue
-                    edge_key = (str(source), str(target), str(relation))
-                    if edge_key in seen_edges:
-                        continue
-                    seen_edges.add(edge_key)
-                    edges.append({"source_paper_id": str(source), "target_arxiv_id": str(target), "relation": str(relation), "resolution": str(resolution), "depth": level + 1})
-                    neighbor = str(target) if str(source) == current else str(source)
-                    if neighbor not in nodes:
-                        nodes.add(neighbor)
-                        next_frontier.add(neighbor)
-            frontier = next_frontier
+        walks = []
+        if direction in {"out", "both"}:
+            walks.append(_walk_citation_direction(connection, root, max_depth, "out", filters))
+        if direction in {"in", "both"}:
+            walks.append(_walk_citation_direction(connection, root, max_depth, "in", filters))
+
+    nodes = {root}
+    edge_by_key: dict[tuple[str, str, str], dict[str, Any]] = {}
+    for walk_nodes, walk_edges in walks:
+        nodes.update(walk_nodes)
+        for edge in walk_edges:
+            key = (edge["source_paper_id"], edge["target_arxiv_id"], edge["relation"])
+            previous = edge_by_key.get(key)
+            if previous is None or edge["depth"] < previous["depth"]:
+                edge_by_key[key] = edge
+
+    edges = sorted(
+        edge_by_key.values(),
+        key=lambda edge: (
+            int(edge["depth"]),
+            edge["source_paper_id"],
+            edge["target_arxiv_id"],
+        ),
+    )
     return {"paper_id": paper_id, "direction": direction, "depth": max_depth, "nodes": sorted(nodes), "edges": edges, "scope": "local_catalog"}
+
+
+def _walk_citation_direction(
+    connection: sqlite3.Connection,
+    root: str,
+    max_depth: int,
+    direction: str,
+    filters: dict[str, Any] | None,
+) -> tuple[set[str], list[dict[str, Any]]]:
+    """沿单一有向方向 BFS，避免两跳过程中把引用方向切换成被引用。"""
+
+    nodes = {root}
+    edges: dict[tuple[str, str, str], dict[str, Any]] = {}
+    best_depth = {root: 0}
+    queue: list[tuple[str, int, list[str]]] = [(root, 0, [root])]
+    while queue:
+        current, current_depth, path = queue.pop(0)
+        if current_depth >= max_depth:
+            continue
+        next_depth = current_depth + 1
+        if direction == "out":
+            rows = connection.execute(
+                "SELECT source_paper_id, target_arxiv_id, relation, resolution "
+                "FROM citation_edges WHERE source_paper_id = ? "
+                "ORDER BY target_arxiv_id, relation",
+                (current,),
+            ).fetchall()
+        else:
+            rows = connection.execute(
+                "SELECT source_paper_id, target_arxiv_id, relation, resolution "
+                "FROM citation_edges WHERE target_arxiv_id = ? "
+                "ORDER BY source_paper_id, relation",
+                (current,),
+            ).fetchall()
+        for source, target, relation, resolution in rows:
+            if filters and not (_paper_row_matches(connection, source, filters) or _paper_row_matches(connection, target, filters)):
+                continue
+            source_id = str(source)
+            target_id = str(target)
+            neighbor = target_id if direction == "out" else source_id
+            walk_path = path + [neighbor]
+            edge_key = (source_id, target_id, str(relation))
+            edge = {
+                "source_paper_id": source_id,
+                "target_arxiv_id": target_id,
+                "relation": str(relation),
+                "resolution": str(resolution),
+                "depth": next_depth,
+                "path": walk_path if direction == "out" else list(reversed(walk_path)),
+            }
+            previous = edges.get(edge_key)
+            if previous is None or next_depth < previous["depth"]:
+                edges[edge_key] = edge
+            if next_depth < best_depth.get(neighbor, max_depth + 1):
+                best_depth[neighbor] = next_depth
+                nodes.add(neighbor)
+                queue.append((neighbor, next_depth, walk_path))
+    return nodes, list(edges.values())
 
 
 def _base_arxiv_id(value: str) -> str:

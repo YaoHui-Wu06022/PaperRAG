@@ -112,6 +112,23 @@ def test_citation_graph_walks_multiple_hops_without_chunks(tmp_path: Path):
     graph = citation_graph(settings, "1706.03762", direction="out", depth=2)
     assert graph["nodes"] == ["1111.11111", "1706.03762", "2222.22222"]
     assert {edge["depth"] for edge in graph["edges"]} == {1, 2}
+    assert graph["edges"][0]["path"] == ["1706.03762", "1111.11111"]
+    assert graph["edges"][1]["path"] == ["1706.03762", "1111.11111", "2222.22222"]
+
+
+def test_citation_graph_keeps_incoming_two_hop_direction(tmp_path: Path):
+    settings = _settings(tmp_path)
+    rebuild_catalog(settings)
+    with sqlite3.connect(settings.paper_catalog_db_path) as connection:
+        connection.executemany(
+            "INSERT INTO citation_edges VALUES (?, ?, 'cites', 'local')",
+            [("3333.33333", "1706.03762"), ("4444.44444", "3333.33333")],
+        )
+        connection.commit()
+
+    graph = citation_graph(settings, "1706.03762", direction="in", depth=2)
+    assert graph["edges"][0]["path"] == ["3333.33333", "1706.03762"]
+    assert graph["edges"][1]["path"] == ["4444.44444", "3333.33333", "1706.03762"]
 
 
 def test_citation_graph_version_suffix_and_node_filters(tmp_path: Path):
@@ -126,6 +143,22 @@ def test_citation_graph_version_suffix_and_node_filters(tmp_path: Path):
 
     graph = citation_graph(settings, "1706.03762v7", direction="both", depth=1)
     assert len(graph["edges"]) == 2
+
+
+def test_citation_graph_rejects_depth_above_two(tmp_path: Path):
+    settings = _settings(tmp_path)
+    rebuild_catalog(settings)
+
+    with pytest.raises(ValueError, match="depth must be 1 or 2"):
+        citation_graph(settings, "1706.03762", depth=3)
+
+
+def test_citation_graph_defaults_to_two_hops(tmp_path: Path):
+    settings = _settings(tmp_path)
+    rebuild_catalog(settings)
+
+    graph = citation_graph(settings, "1706.03762")
+    assert graph["depth"] == 2
 
 
 def test_reference_resolution_removes_only_version_suffix():

@@ -50,7 +50,7 @@ def add_catalog_parser(subparsers: argparse._SubParsersAction) -> None:
     graph = citation_commands.add_parser("graph", help="查询本地引用关系图")
     graph.add_argument("--paper-id", required=True)
     graph.add_argument("--direction", choices=("in", "out", "both"), default="both")
-    graph.add_argument("--depth", type=int, default=1)
+    graph.add_argument("--depth", type=int, choices=(1, 2), default=2)
     graph.add_argument("--json", action="store_true")
     graph.set_defaults(handler=handle_citation_graph)
 

@@ -15,7 +15,6 @@ from paper_rag.catalog.service import (
     rebuild_catalog,
     scan_catalog,
 )
-from paper_rag.catalog.references import normalize_arxiv_id
 from paper_rag.llamaindex.service import index_status, rebuild_index
 from paper_rag.mcp._app import mcp
 from paper_rag.mcp.runtime import get_jobs, get_settings
@@ -62,7 +61,7 @@ def library_read(paper_id: str, offset: int = 0, limit: int = 12000) -> dict[str
 
 
 @mcp.tool(name="library_citation", description="读取论文参考文献、被引论文或本地引用关系图；可传 paper_id 或 paper_title，引用查询只访问 SQLite 图，不检索正文。")
-def library_citation(paper_id: str | None = None, paper_title: str | None = None, mode: str = "graph", direction: str = "both", depth: int = 1, filters: dict[str, Any] | None = None) -> dict[str, Any]:
+def library_citation(paper_id: str | None = None, paper_title: str | None = None, mode: str = "graph", direction: str = "both", depth: int = 2, filters: dict[str, Any] | None = None) -> dict[str, Any]:
     if mode not in {"references", "citations", "graph"}:
         return _read_only("invalid_input", {"paper_id": paper_id, "mode": mode, "items": [], "nodes": [], "edges": []})
     if direction not in {"in", "out", "both"}:
@@ -94,19 +93,16 @@ def library_citation(paper_id: str | None = None, paper_title: str | None = None
         elif mode == "citations":
             title_ids.extend(str(item.get("source_paper_id")) for item in data.get("items", [])[:10] if item.get("source_paper_id"))
         else:
-            root_id = normalize_arxiv_id(resolved_paper_id)
-            outgoing_seen = incoming_seen = 0
             for edge in data.get("edges", []):
                 source_id = str(edge.get("source_paper_id") or "")
                 target_id = str(edge.get("target_arxiv_id") or "")
-                if normalize_arxiv_id(source_id) == root_id and outgoing_seen < 10:
-                    if target_id:
-                        title_ids.append(target_id)
-                    outgoing_seen += 1
-                if normalize_arxiv_id(target_id) == root_id and incoming_seen < 10:
-                    if source_id:
-                        title_ids.append(source_id)
-                    incoming_seen += 1
+                edge_depth = int(edge.get("depth") or 1)
+                if edge_depth > 2:
+                    continue
+                if source_id:
+                    title_ids.append(source_id)
+                if target_id:
+                    title_ids.append(target_id)
         titles = _load_titles(settings, title_ids)
         return attach_presentation(
             _read_only("ok", data),
@@ -163,7 +159,7 @@ def library_index_status() -> dict[str, Any]:
     return index_status(get_settings())
 
 
-@mcp.tool(name="library_index_rebuild", description="确认后异步同步 LlamaIndex Milvus 正文索引；auto 会在兼容时复用 Embedding。")
+@mcp.tool(name="library_index_rebuild", description="确认后异步同步 LlamaIndex Milvus 正文索引")
 def library_index_rebuild(confirm: bool = False, mode: str = "auto") -> dict[str, Any]:
     if mode not in {"auto", "incremental", "full"}:
         return {"status": "invalid_input", "data": {"mode": mode}, "warnings": ["mode must be auto, incremental or full"], "read_only": True}

@@ -99,29 +99,50 @@ def citation_presentation(
             if normalize_arxiv_id(str(edge.get("target_arxiv_id") or "")) == root_id
         ]
         graph_depth = int(data.get("depth") or 1)
-        lines = [f"目标论文: {_title(data.get('paper_id'), title_lookup)}"]
+        direction = str(data.get("direction") or "both")
+        direct_out, indirect_out, direct_in, indirect_in = _graph_relation_groups(edges, root_id)
+        lines = [f"目标论文：{_title(data.get('paper_id'), title_lookup)}"]
         if graph_depth > 1:
-            indirect_out, indirect_in = _indirect_counts(edges, root_id, graph_depth)
-            lines.extend(
-                [
-                    f"直接引用: {len(outgoing)} 篇",
-                    f"直接被引用: {len(incoming)} 篇",
-                    f"查询深度: {graph_depth}",
-                    f"间接引用: {len(indirect_out)} 篇",
-                    f"间接被引用: {len(indirect_in)} 篇",
-                ]
-            )
+            if direction == "out":
+                lines.extend(
+                    [
+                        f"直接引用：{len({str(edge.get('target_arxiv_id')) for edge in direct_out})} 篇",
+                        f"查询深度：{graph_depth}",
+                        f"间接引用：{len({str(edge.get('target_arxiv_id')) for edge in indirect_out})} 篇",
+                    ]
+                )
+            elif direction == "in":
+                lines.extend(
+                    [
+                        f"被引用：{len({str(edge.get('source_paper_id')) for edge in direct_in})} 篇",
+                        f"查询深度：{graph_depth}",
+                        f"间接被引用：{len({str(edge.get('source_paper_id')) for edge in indirect_in})} 篇",
+                    ]
+                )
+            else:
+                lines.extend(
+                    [
+                        f"直接引用：{len({str(edge.get('target_arxiv_id')) for edge in direct_out})} 篇",
+                        f"被引用：{len({str(edge.get('source_paper_id')) for edge in direct_in})} 篇",
+                        f"查询深度：{graph_depth}",
+                        f"间接引用：{len({str(edge.get('target_arxiv_id')) for edge in indirect_out})} 篇",
+                        f"间接被引用：{len({str(edge.get('source_paper_id')) for edge in indirect_in})} 篇",
+                    ]
+                )
         else:
-            lines.extend([f"引用: {len(outgoing)} 篇", f"被引用: {len(incoming)} 篇"])
-        if data.get("direction") == "both":
-            _append_graph_section(lines, "引用（前10条）：", outgoing, "target_arxiv_id", title_lookup)
-            _append_graph_section(lines, "被引用（前10条）：", incoming, "source_paper_id", title_lookup)
-        elif edges:
-            lines.extend(["", "引用关系（前10条）："])
-            lines.extend(
-                f"{number}. {_title(edge.get('source_paper_id'), title_lookup)} 引用 {_title(edge.get('target_arxiv_id'), title_lookup)}"
-                for number, edge in enumerate(edges[:10], start=1)
-            )
+            if direction == "out":
+                lines.append(f"引用：{len(outgoing)} 篇")
+            elif direction == "in":
+                lines.append(f"被引用：{len(incoming)} 篇")
+            else:
+                lines.extend([f"引用：{len(outgoing)} 篇", f"被引用：{len(incoming)} 篇"])
+        if direction == "both":
+            _append_graph_section(lines, "引用（前10条）：", direct_out, indirect_out, "target_arxiv_id", title_lookup)
+            _append_graph_section(lines, "被引用（前10条）：", direct_in, indirect_in, "source_paper_id", title_lookup)
+        elif direction == "out":
+            _append_graph_section(lines, "引用（前10条）：", direct_out, indirect_out, "target_arxiv_id", title_lookup)
+        elif direction == "in":
+            _append_graph_section(lines, "被引用（前10条）：", direct_in, indirect_in, "source_paper_id", title_lookup)
         return _presentation("citation_graph", "verbatim", "\n".join(lines))
 
     raise ValueError(f"unsupported citation mode: {mode}")
@@ -176,59 +197,64 @@ def _year(value: Any) -> str:
 def _append_graph_section(
     lines: list[str],
     heading: str,
-    edges: list[Mapping[str, Any]],
+    direct_edges: list[Mapping[str, Any]],
+    indirect_edges: list[Mapping[str, Any]],
     field: str,
     title_lookup: Mapping[str, str] | None,
 ) -> None:
-    """按引用方向分别追加最多十条论文题目。"""
+    """按直接、间接顺序追加最多十条论文题目。"""
 
+    edges = direct_edges[:10]
+    remaining = max(0, 10 - len(edges))
+    indirect = indirect_edges[:remaining]
     lines.extend(["", heading])
     lines.extend(
         f"{number}. {_title(edge.get(field), title_lookup)}"
-        for number, edge in enumerate(edges[:10], start=1)
+        for number, edge in enumerate(edges, start=1)
+    )
+    if edges and indirect:
+        lines.append("────────")
+    lines.extend(
+        f"{number}. {_title(edge.get(field), title_lookup)}"
+        for number, edge in enumerate(indirect, start=len(edges) + 1)
     )
 
 
-def _indirect_counts(
-    edges: list[Mapping[str, Any]], root_id: str, max_depth: int
-) -> tuple[set[str], set[str]]:
-    """从目标论文的一跳邻居继续沿有向边计算间接关系论文。"""
+def _graph_relation_groups(
+    edges: list[Mapping[str, Any]], root_id: str
+) -> tuple[list[Mapping[str, Any]], list[Mapping[str, Any]], list[Mapping[str, Any]], list[Mapping[str, Any]]]:
+    """将两跳图边按直接/间接和引用方向分组。"""
 
-    direct_out = {
-        normalize_arxiv_id(str(edge.get("target_arxiv_id") or ""))
+    direct_out = [
+        edge
         for edge in edges
         if int(edge.get("depth") or 1) == 1
         and normalize_arxiv_id(str(edge.get("source_paper_id") or "")) == root_id
-    }
-    direct_in = {
-        normalize_arxiv_id(str(edge.get("source_paper_id") or ""))
+    ]
+    direct_in = [
+        edge
         for edge in edges
         if int(edge.get("depth") or 1) == 1
         and normalize_arxiv_id(str(edge.get("target_arxiv_id") or "")) == root_id
-    }
-    out_frontier = set(direct_out)
-    in_frontier = set(direct_in)
-    indirect_out: set[str] = set()
-    indirect_in: set[str] = set()
-    for level in range(2, max_depth + 1):
-        next_out: set[str] = set()
-        next_in: set[str] = set()
-        for edge in edges:
-            if int(edge.get("depth") or 1) != level:
-                continue
-            source = normalize_arxiv_id(str(edge.get("source_paper_id") or ""))
-            target = normalize_arxiv_id(str(edge.get("target_arxiv_id") or ""))
-            if source in out_frontier and target and target != root_id:
-                next_out.add(target)
-                if target not in direct_out:
-                    indirect_out.add(target)
-            if target in in_frontier and source and source != root_id:
-                next_in.add(source)
-                if source not in direct_in:
-                    indirect_in.add(source)
-        out_frontier = next_out
-        in_frontier = next_in
-    return indirect_out, indirect_in
+    ]
+    direct_out_ids = {normalize_arxiv_id(str(edge.get("target_arxiv_id") or "")) for edge in direct_out}
+    direct_in_ids = {normalize_arxiv_id(str(edge.get("source_paper_id") or "")) for edge in direct_in}
+    indirect_out: list[Mapping[str, Any]] = []
+    indirect_in: list[Mapping[str, Any]] = []
+    seen_out: set[str] = set()
+    seen_in: set[str] = set()
+    for edge in edges:
+        if int(edge.get("depth") or 1) != 2:
+            continue
+        source = normalize_arxiv_id(str(edge.get("source_paper_id") or ""))
+        target = normalize_arxiv_id(str(edge.get("target_arxiv_id") or ""))
+        if source in direct_out_ids and target and target != root_id and target not in direct_out_ids and target not in seen_out:
+            indirect_out.append(edge)
+            seen_out.add(target)
+        if target in direct_in_ids and source and source != root_id and source not in direct_in_ids and source not in seen_in:
+            indirect_in.append(edge)
+            seen_in.add(source)
+    return direct_out, indirect_out, direct_in, indirect_in
 
 
 __all__ = [

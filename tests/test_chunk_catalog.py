@@ -67,6 +67,30 @@ def test_chunks_never_cross_section_boundaries():
     assert all("short training section" not in chunk.text or chunk.section_label == "5 Training" for chunk in chunks)
 
 
+def test_long_text_chunks_keep_sentence_and_word_boundaries():
+    text = " ".join(["Boundary sentence explains the method clearly."] * 120)
+    chunks, _ = build_chunks([
+        {"type": "text", "text": "Abstract", "text_level": 1},
+        {"type": "text", "text": text},
+    ], paper_id="1706.03762", canonical_id="1706.03762v7", content_hash="test")
+
+    assert len(chunks) > 1
+    assert all(chunk.text.startswith("Boundary sentence") for chunk in chunks)
+    assert all(not chunk.text.startswith(("dary", "ence", "methodcle")) for chunk in chunks)
+
+
+def test_long_unpunctuated_text_falls_back_to_word_boundary():
+    text = " ".join(["TokenBoundary"] * 500)
+    chunks, _ = build_chunks([
+        {"type": "text", "text": "Abstract", "text_level": 1},
+        {"type": "text", "text": text},
+    ], paper_id="1706.03762", canonical_id="1706.03762v7", content_hash="test")
+
+    assert len(chunks) > 1
+    assert all(chunk.text.split()[0] == "TokenBoundary" for chunk in chunks)
+    assert all(chunk.text.split()[-1] == "TokenBoundary" for chunk in chunks)
+
+
 def test_arabic_and_roman_sibling_headings_reset_section_path():
     chunks, _ = build_chunks([
         {"type": "text", "text": "Abstract", "text_level": 1},

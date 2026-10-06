@@ -11,13 +11,14 @@ from pathlib import Path
 import re
 from typing import Any
 
-CHUNK_RULE_VERSION = "content-list-regions-v5-1200-table-text"
+CHUNK_RULE_VERSION = "content-list-regions-v6-boundary-aware"
 MAX_CHARS = 1200
 MAX_OVERLAP = 150
 _SKIP_TYPES = {"title", "author", "authors", "affiliation", "header", "footer", "page_header", "page_footer", "page_number", "page_footnote", "aside_text"}
 _STRUCTURED_TYPES = {"formula", "equation", "table", "code", "image", "figure", "chart", "list", "list_item"}
 _ACKNOWLEDGEMENT_KEYS = {"acknowledgement", "acknowledgements", "acknowledgment", "acknowledgments"}
 _CONTENTS_KEYS = {"contents", "table of contents"}
+_SENTENCE_BOUNDARY_RE = re.compile(r"(?<=[。！？!?])\s+|(?<=[.!?])\s+(?=[A-Z\u3400-\u9fff])")
 _APPENDIX_PROMPT_STARTS = {
     "can", "could", "did", "do", "explain", "from", "here", "how", "please", "provide", "send", "the", "what", "when", "where", "which", "who", "why", "would", "write",
 }
@@ -223,22 +224,79 @@ def build_chunks(content_list: list[dict[str, Any]], *, paper_id: str, canonical
 
 
 def _split_text(text: str, blocks: tuple[dict[str, Any], ...], paper_id: str, canonical_id: str, region: str, chapter_number: str | None, chapter_title: str | None, section: list[str], content_hash: str, start: int) -> list[Chunk]:
+    """按段落、句子和词边界切分文本，避免重叠窗口从半词开始。"""
+
     if len(text) <= MAX_CHARS:
         return [_make_chunk(text, blocks, paper_id, canonical_id, region, chapter_number, chapter_title, section, "text", content_hash, start, ())]
+
+    units: list[str] = []
+    for paragraph in re.split(r"\n{2,}", text.strip()):
+        value = paragraph.strip()
+        if not value:
+            continue
+        units.extend(_split_paragraph(value))
+
     result: list[Chunk] = []
     offset = 0
-    while offset < len(text):
-        end = min(offset + MAX_CHARS, len(text))
-        if end < len(text):
-            boundary = max(text.rfind(mark, offset + 200, end) for mark in ("。", "！", "？", ". ", "! ", "? ", "\n"))
-            if boundary > offset:
-                end = boundary + 1
-        piece = text[offset:end].strip()
+    while offset < len(units):
+        end = offset
+        size = 0
+        while end < len(units):
+            addition = len(units[end]) + (2 if end > offset else 0)
+            if end > offset and size + addition > MAX_CHARS:
+                break
+            size += addition
+            end += 1
+
+        if end == offset:
+            end += 1
+        piece = "\n\n".join(units[offset:end]).strip()
         if piece:
             result.append(_make_chunk(piece, blocks, paper_id, canonical_id, region, chapter_number, chapter_title, section, "text", content_hash, start + len(result), ()))
-        if end >= len(text):
+        if end >= len(units):
             break
-        offset = max(offset + 1, end - MAX_OVERLAP)
+
+        overlap = 0
+        overlap_size = 0
+        while end - overlap - 1 >= offset:
+            candidate = len(units[end - overlap - 1]) + (2 if overlap else 0)
+            if overlap and overlap_size + candidate > MAX_OVERLAP:
+                break
+            if not overlap and candidate > MAX_OVERLAP:
+                break
+            overlap_size += candidate
+            overlap += 1
+        offset = max(offset + 1, end - overlap)
+    return result
+
+
+def _split_paragraph(paragraph: str) -> list[str]:
+    """优先按句子切分；单句过长时只在空白边界切分。"""
+
+    if len(paragraph) <= MAX_CHARS:
+        return [paragraph]
+    sentences = [part.strip() for part in re.split(_SENTENCE_BOUNDARY_RE, paragraph) if part.strip()]
+    if len(sentences) == 1 and sentences[0] == paragraph:
+        return _split_words(paragraph)
+    result: list[str] = []
+    for sentence in sentences:
+        result.extend(_split_words(sentence) if len(sentence) > MAX_CHARS else [sentence])
+    return result
+
+
+def _split_words(value: str) -> list[str]:
+    """在词边界切分超长句；无空白的长 token 保持完整。"""
+
+    result: list[str] = []
+    remaining = value.strip()
+    while len(remaining) > MAX_CHARS:
+        boundary = remaining.rfind(" ", 1, MAX_CHARS + 1)
+        if boundary <= 0:
+            break
+        result.append(remaining[:boundary].strip())
+        remaining = remaining[boundary + 1 :].lstrip()
+    if remaining:
+        result.append(remaining)
     return result
 
 
