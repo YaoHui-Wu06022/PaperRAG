@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import re
-from typing import Protocol
+from typing import Any, Iterable, Protocol
 
 from paper_rag.config import Settings
 from paper_rag.lexical import build_fts_query, normalize_lexical_text
@@ -27,7 +27,7 @@ class Translator(Protocol):
 
 
 class QueryRewriter(Protocol):
-    def rewrite(self, query: str) -> QueryRewrite:
+    def rewrite(self, query: str, *, purpose: str, task: str | None, filters: dict[str, Any]) -> QueryRewrite:
         """提取 BM25 核心词和完整短语。"""
 
 
@@ -47,11 +47,23 @@ class LexicalQuery:
     core_terms: tuple[str, ...]
     warnings: tuple[str, ...]
     rewriter_error: str | None = None
+    entities: tuple[str, ...] = ()
+    original_core_terms: tuple[str, ...] = ()
+    translated_entities: tuple[str, ...] = ()
+    purpose: str = "metadata"
+    task: str | None = None
+
+    def with_terms(self, terms: Iterable[str]) -> LexicalQuery:
+        """复用已完成的改写和翻译，仅改变当前阶段的词法查询。"""
+        values = tuple(dict.fromkeys(terms))
+        return replace(self, query=" ".join(values), fts_query=build_fts_query("", phrases=values))
 
     def debug(self) -> dict[str, object]:
         """转换为不会泄露原始问题的调试字段。"""
 
         return {
+            "purpose": self.purpose,
+            "task": self.task,
             "lexical_query": self.fts_query,
             "translation_used": self.translation_used,
             "translation_provider": self.translation_provider,
@@ -59,7 +71,10 @@ class LexicalQuery:
             "stopwords_removed": list(self.stopwords_removed),
             "rewriter_used": self.rewriter_used,
             "rewriter_fallback": self.rewriter_fallback,
-            "core_terms": list(self.core_terms),
+            "entities": list(self.entities),
+            "core_terms": list(self.original_core_terms),
+            "translated_entities": list(self.translated_entities),
+            "translated_core_terms": list(self.core_terms),
             "rewriter_error": self.rewriter_error,
         }
 
@@ -69,6 +84,18 @@ def prepare_lexical_query(
     settings: Settings,
     *,
     rewriter: QueryRewriter | None = None,
+    purpose: str = "metadata",
+    task: str | None = None,
+    filters: dict[str, Any] | None = None,
+) -> LexicalQuery:
+    """用途和任务只由服务入口传入，不让改写器再次判断。"""
+    result = _prepare_lexical_query(query, settings, rewriter=rewriter, purpose=purpose, task=task, filters=filters or {})
+    return replace(result, purpose=purpose, task=task)
+
+
+def _prepare_lexical_query(
+    query: str, settings: Settings, *, rewriter: QueryRewriter | None,
+    purpose: str, task: str | None, filters: dict[str, Any],
 ) -> LexicalQuery:
     """先提取完整核心检索短语，再翻译为 FTS5 查询；语义检索仍使用原始问题。"""
 
@@ -81,7 +108,7 @@ def prepare_lexical_query(
     warnings: list[str] = []
     if settings.query_rewriter_enabled and settings.query_rewriter_api_key:
         try:
-            rewrite = (rewriter or QueryRewriterClient(settings)).rewrite(original)
+            rewrite = (rewriter or QueryRewriterClient(settings)).rewrite(original, purpose=purpose, task=task, filters=filters)
         except QueryRewriterError as exc:
             rewriter_fallback = True
             rewriter_error = _rewriter_error_code(exc)
@@ -93,7 +120,7 @@ def prepare_lexical_query(
             if isinstance(exc, TranslationError):
                 warnings.extend(exc.warnings)
             else:
-                warnings.append(_format_failure("query_rewriter", exc))
+                warnings.append(_format_rewriter_failure(exc))
             rewriter_fallback = True
     if not settings.bm25_translation_enabled or not _contains_chinese(original):
         lexical, removed = normalize_lexical_text(original)
@@ -165,7 +192,7 @@ def _prepare_rewritten_query(
     provider_name: str | None = None
     translation_used = False
     translation_fallback = False
-    translated_terms = list(rewrite.core_terms)
+    translated_terms = list(rewrite.entities + rewrite.core_terms)
     if settings.bm25_translation_enabled:
         try:
             translated_terms, provider_name, translation_fallback, failures = _translate_parts_with_fallback(
@@ -173,16 +200,20 @@ def _prepare_rewritten_query(
             )
             warnings.extend(failures)
         except TranslationError as exc:
-            raise TranslationError(str(exc), warnings=exc.warnings) from exc
+            # 改写已成功，翻译失败不应伪装成改写失败或丢失原始对象。
+            warnings.extend(exc.warnings)
+            translation_fallback = True
         translation_used = provider_name is not None
-    core_terms, removed_terms = _normalize_parts(translated_terms)
-    if not core_terms:
+    entities, entity_removed = _normalize_parts(translated_terms[:len(rewrite.entities)])
+    core_terms, removed_terms = _normalize_parts(translated_terms[len(rewrite.entities):])
+    terms = list(dict.fromkeys(entities + core_terms))
+    if not terms:
         raise ValueError("Query Rewriter 结果没有可用检索词")
-    query_text = " ".join(core_terms)
+    query_text = " ".join(terms)
     fts_query = build_fts_query(
         "",
         remove_stopwords=False,
-        phrases=core_terms,
+        phrases=terms,
     )
     return LexicalQuery(
         original_query=original,
@@ -191,10 +222,13 @@ def _prepare_rewritten_query(
         translation_used=translation_used,
         translation_provider=provider_name if translation_used else None,
         translation_fallback=translation_fallback,
-        stopwords_removed=tuple(removed_terms),
+        stopwords_removed=tuple(dict.fromkeys(entity_removed + removed_terms)),
         rewriter_used=True,
         rewriter_fallback=rewriter_fallback,
         core_terms=tuple(core_terms),
+        entities=rewrite.entities,
+        original_core_terms=rewrite.core_terms,
+        translated_entities=tuple(translated_terms[:len(rewrite.entities)]),
         warnings=tuple(warnings),
     )
 
@@ -278,6 +312,9 @@ def _normalize_parts(parts: list[str]) -> tuple[list[str], list[str]]:
     removed: list[str] = []
     for part in parts:
         value, dropped = normalize_lexical_text(part)
+        # 普通单字词可过滤，但表/图编号不可丢，避免 Table 2 退化成 Table。
+        if re.search(r"\b(?:table|tab|figure|fig)\.?\s*\d+\b|(?:表|图)\s*\d+", part, re.IGNORECASE):
+            value = re.sub(r"\s+", " ", part.casefold()).strip()
         if value:
             normalized.append(value)
         removed.extend(dropped)
@@ -425,6 +462,10 @@ def _rewriter_error_code(exc: Exception) -> str:
     """把严格契约错误压缩为 Agent 可判断的稳定代码。"""
 
     message = str(exc).casefold()
+    if "entities" in message and "字符串数组" in str(exc):
+        return "invalid_entities"
+    if "必须仅返回" in str(exc):
+        return "invalid_fields"
     if "core_terms" in message and "字符串数组" in str(exc):
         return "invalid_core_terms"
     if "没有返回核心" in str(exc) or "没有可用检索词" in str(exc):

@@ -60,3 +60,56 @@ def test_mcp_registers_one_body_rag_tool():
     assert "library_context" not in server._registered_tool_names()
     assert "library_retrieve" in CORE_TOOLS
 
+
+
+def test_jev_timeout_waits_then_retry_success_even_when_retry_count_zero(tmp_path: Path):
+    from dataclasses import replace
+
+    settings = replace(Settings.load(tmp_path), jev_enabled=True, jev_api_key="test-secret", jev_retry_count=0)
+    events = []
+
+    def opener(_request, timeout):
+        events.append(("request", timeout))
+        if len(events) == 1:
+            raise TimeoutError("The read operation timed out")
+        return FakeResponse({"result": {"retrieve_task": "fact", "confidence": 0.81}})
+
+    client = JevClient(settings, opener=opener, sleeper=lambda seconds: events.append(("wait", seconds)))
+    decision = classify_retrieve(settings, "BERT 的预训练任务有哪些", client=client)
+
+    assert events == [("request", settings.jev_timeout_seconds), ("wait", 1), ("request", settings.jev_timeout_seconds)]
+    assert decision.provider == "jev"
+    assert not decision.fallback_used
+    assert decision.confidence == 0.81
+
+
+def test_jev_rules_fallback_only_after_waited_retries_exhausted(tmp_path: Path, monkeypatch):
+    from dataclasses import replace
+    from urllib.error import URLError
+    from paper_rag.routing import router
+
+    settings = replace(Settings.load(tmp_path), jev_enabled=True, jev_api_key="test-secret", jev_retry_count=2)
+    events = []
+
+    def opener(_request, timeout):
+        events.append(("request", timeout))
+        raise URLError(TimeoutError("The read operation timed out"))
+
+    original_rules = router.classify_by_rules
+
+    def rules(request):
+        events.append(("rules", request.query))
+        return original_rules(request)
+
+    monkeypatch.setattr(router, "classify_by_rules", rules)
+    client = JevClient(settings, opener=opener, sleeper=lambda seconds: events.append(("wait", seconds)))
+    decision = classify_retrieve(settings, "PagedAttention 如何减少显存浪费", client=client)
+
+    assert events == [
+        ("request", settings.jev_timeout_seconds), ("wait", 1),
+        ("request", settings.jev_timeout_seconds), ("wait", 2),
+        ("request", settings.jev_timeout_seconds), ("rules", "PagedAttention 如何减少显存浪费"),
+    ]
+    assert decision.provider == "rules"
+    assert decision.fallback_used
+    assert "请求重试失败" in decision.warning

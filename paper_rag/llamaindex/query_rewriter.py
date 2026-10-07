@@ -19,7 +19,22 @@ class QueryRewriterError(RuntimeError):
 class QueryRewrite:
     """Query Rewriter 允许返回的最小结构。"""
 
+    entities: tuple[str, ...]
     core_terms: tuple[str, ...]
+
+
+_BASE_PROMPT = (
+    "你是论文库查询关键词抽取器。只返回 JSON，且仅包含 entities 和 core_terms 两个字符串数组。"
+    "所有返回内容都必须直接从原句中抽取，禁止改写。"
+    "先抽取 entities，再抽取 core_terms。"
+    "entities 表示‘明确要查询的命名对象’，只包含原句中明确出现的论文名、方法名、模型名、算法名或具有专名性质的技术名称，不包含泛化领域词。"
+    "core_terms 表示‘具体要查询什么’，只包含原句中希望检索或回答的核心主题、属性、机制、指标、实验结果或比较维度。"
+    "core_terms 应遵循最小充分原则：只保留完成检索所必需的最具体词或短语。"
+    "如果删除某个 core_term 后仍然能够准确表达用户要检索的内容，则删除该 core_term。"
+    "已通过 filters 表达的年份、作者、分类、状态等条件不要再放入 entities 或 core_terms。"
+    "core_terms 不得与 entities 重复。"
+    "允许一个数组为空，但不能同时为空。"
+)
 
 
 class QueryRewriterClient:
@@ -35,7 +50,12 @@ class QueryRewriterClient:
         self.settings = settings
         self.http = JsonHttpClient(opener=opener, **({"sleeper": sleeper} if sleeper else {}))
 
-    def rewrite(self, query: str) -> QueryRewrite:
+    def rewrite(self, query: str, *, purpose: str = "metadata", task: str | None = None, filters: dict[str, Any] | None = None) -> QueryRewrite:
+        # 用途和任务仅校验调用上下文，所有查询使用同一版抽取提示词。
+        if purpose not in {"metadata", "body"} or (
+            purpose == "body" and task not in {"fact", "reason", "summary", "comparison"}
+        ):
+            raise ValueError("invalid query rewrite purpose or task")
         if not self.settings.query_rewriter_enabled:
             raise QueryRewriterError("Query Rewriter 已禁用")
         if not self.settings.query_rewriter_api_key:
@@ -45,12 +65,9 @@ class QueryRewriterClient:
             "messages": [
                 {
                     "role": "system",
-                    "content": (
-                        "你是论文库 BM25 查询改写器。只返回 JSON 对象，且只能包含一个字段 core_terms。"
-                        "core_terms 是需要保持完整语义的检索短语"
-                    ),
+                    "content": _BASE_PROMPT,
                 },
-                {"role": "user", "content": str(query or "")[:7000]},
+                {"role": "user", "content": json.dumps({"query": str(query or "")[:7000], "filters": filters or {}}, ensure_ascii=False)},
             ],
             "temperature": 0,
             "response_format": {"type": "json_object"},
@@ -114,13 +131,16 @@ def _chat_completions_url(base_url: str) -> str:
 
 
 def _parse_rewrite(payload: dict[str, Any]) -> QueryRewrite:
-    # 只接受顶层且唯一的 core_terms，避免把模型附带字段悄悄带入 BM25。
-    if set(payload) != {"core_terms"}:
-        raise QueryRewriterError("Query Rewriter 只能返回 core_terms 字段")
+    # 严格区分对象和取证目标，不兼容旧单字段响应。
+    if set(payload) != {"entities", "core_terms"}:
+        raise QueryRewriterError("Query Rewriter 必须仅返回 entities 和 core_terms 字段")
+    entities = _parse_terms(payload.get("entities"), "entities")
     core_terms = _parse_terms(payload.get("core_terms"), "core_terms")
-    if not core_terms:
+    entity_keys = {value.casefold() for value in entities}
+    core_terms = tuple(value for value in core_terms if value.casefold() not in entity_keys)
+    if not entities and not core_terms:
         raise QueryRewriterError("Query Rewriter 没有返回核心检索短语")
-    return QueryRewrite(core_terms)
+    return QueryRewrite(entities, core_terms)
 
 
 def _parse_terms(value: Any, name: str) -> tuple[str, ...]:

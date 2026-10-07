@@ -4,7 +4,6 @@ import hashlib
 import json
 from pathlib import Path
 import sqlite3
-from types import SimpleNamespace
 
 from llama_index.core.schema import MetadataMode, NodeWithScore, TextNode
 
@@ -281,7 +280,7 @@ def test_empty_primary_retrieval_uses_narrow_entity_fallback(monkeypatch, tmp_pa
     def fake_retrieve(*args, **kwargs):
         calls.append(kwargs.get("lexical_query_override"))
         if len(calls) == 1:
-            return [], [], {"core_terms": ["FlashAttention"]}
+            return [], [], {}
         return [item], [], {"lexical_query": '"flashattention"'}
 
     monkeypatch.setattr(service, "_retrieve_items", fake_retrieve)
@@ -290,7 +289,7 @@ def test_empty_primary_retrieval_uses_narrow_entity_fallback(monkeypatch, tmp_pa
     assert result["status"] == "ok"
     assert len(result["data"]["evidence"]) == 1
     assert result["data"]["evidence"][0]["text"] == "FlashAttention evidence"
-    assert calls[1].fts_query == '"flashattention"'
+    assert '"flashattention"' in calls[1].fts_query
     assert len(calls) == 2
 
 
@@ -299,35 +298,15 @@ def test_retrieve_prepares_lexical_query_once(monkeypatch, tmp_path: Path):
     original = service.prepare_lexical_query
     calls: list[str] = []
 
-    def wrapped(query, current_settings):
+    def wrapped(query, current_settings, **kwargs):
         calls.append(query)
-        return original(query, current_settings)
+        return original(query, current_settings, **kwargs)
 
     monkeypatch.setattr(service, "prepare_lexical_query", wrapped)
     result = retrieve(settings, "什么是 Attention？", paper_ids=["1706.03762"], task="fact", mode="lexical")
 
     assert result["status"] == "ok"
     assert calls == ["什么是 Attention？"]
-
-
-def test_candidate_discovery_merges_chunk_search_without_constraints(monkeypatch, tmp_path: Path):
-    settings = Settings.load(tmp_path)
-    record = SimpleNamespace(base_id="2106.09685", title="LoRA", abstract="LoRA trains adapters")
-    calls: list[tuple[object, ...]] = []
-
-    monkeypatch.setattr(service, "search_catalog", lambda *_args, **_kwargs: [record])
-    monkeypatch.setattr(
-        service,
-        "search_chunks",
-        lambda *_args, **_kwargs: calls.append(_args) or [],
-    )
-    prepared = service.prepare_lexical_query("概括 LoRA", settings)
-
-    candidates, debug = service._discover_candidates(settings, prepared, 5, "fact", {})
-
-    assert candidates == ["2106.09685"]
-    assert calls
-    assert debug["candidate_discovery"]["chunk_search_used"] is True
 
 
 def test_default_regions_skip_appendix_unless_query_mentions_it():
@@ -367,42 +346,6 @@ def test_table_reference_sorting_prefers_requested_caption(tmp_path: Path):
     second = NodeWithScore(node=table_five, score=0.99)
 
     assert retriever._sort_key(first, "Table 2 比较了什么？") > retriever._sort_key(second, "Table 2 比较了什么？")
-
-
-def test_candidate_discovery_falls_back_to_exact_method_entity(monkeypatch, tmp_path: Path):
-    settings = Settings.load(tmp_path)
-
-    def fake_search(_settings, _query, _filters, _limit, *, fts_query=None):
-        if fts_query == '"lora"':
-            return [SimpleNamespace(base_id="2106.09685")]
-        return []
-
-    monkeypatch.setattr(service, "search_catalog", fake_search)
-    monkeypatch.setattr(service, "search_chunks", lambda *_args, **_kwargs: [])
-    prepared = service.prepare_lexical_query("概括 LoRA 的核心贡献。", settings)
-    candidates, debug = service._discover_candidates(settings, prepared, 5, "summary", {})
-
-    assert candidates == ["2106.09685"]
-    assert debug["candidate_discovery"]["entity_hits"] == {"LoRA": ["2106.09685"]}
-
-
-def test_candidate_discovery_prefers_exact_title_over_abstract_background(monkeypatch, tmp_path: Path):
-    settings = Settings.load(tmp_path)
-    bert = SimpleNamespace(base_id="1810.04805", title="BERT: Pre-training", abstract="BERT uses two tasks")
-    background = SimpleNamespace(base_id="1909.08053", title="Megatron-LM", abstract="BERT-like models")
-
-    def fake_search(_settings, _query, _filters, _limit, *, fts_query=None):
-        if fts_query == '"bert"':
-            return [bert, background]
-        return []
-
-    monkeypatch.setattr(service, "search_catalog", fake_search)
-    monkeypatch.setattr(service, "search_chunks", lambda *_args, **_kwargs: [])
-    prepared = service.prepare_lexical_query("BERT 预训练使用哪两个任务？", settings)
-    candidates, debug = service._discover_candidates(settings, prepared, 5, "fact", {})
-
-    assert candidates == ["1810.04805"]
-    assert debug["candidate_discovery"]["candidate_match_source"] == {"1810.04805": "title_exact"}
 
 
 def test_reason_window_repairs_mid_token_context(monkeypatch, tmp_path: Path):

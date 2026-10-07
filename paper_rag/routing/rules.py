@@ -17,6 +17,9 @@ _RULES = (
 def classify_by_rules(request: RetrieveRequest) -> RetrieveDecision:
     """正文请求默认按事实证据处理，特征命中时切换任务。"""
 
+    # 读取单篇论文表/图中的比较数据是事实任务，不自动扩大为跨论文比较。
+    if re.search(r"(?:表|图)\s*\d+", request.query) and re.search(r"展示|报告|列出|显示|给出", request.query):
+        return RetrieveDecision(RouteIntent.RETRIEVE, RetrieveTask.FACT, provider="rules", fallback_used=True, confidence=0.8)
     for task, pattern in _RULES:
         if pattern.search(request.query):
             return RetrieveDecision(RouteIntent.RETRIEVE, task, provider="rules", fallback_used=True, confidence=0.8)

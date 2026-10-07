@@ -45,7 +45,7 @@ def test_query_rewriter_parses_only_core_terms(tmp_path: Path):
                     {
                         "message": {
                     "content": json.dumps(
-                                {"core_terms": ["注意力机制"]},
+                                {"entities": [], "core_terms": ["注意力机制"]},
                                 ensure_ascii=False,
                             )
                         }
@@ -58,7 +58,7 @@ def test_query_rewriter_parses_only_core_terms(tmp_path: Path):
 
     assert result.core_terms == ("注意力机制",)
     payload = json.loads(calls[0][0].data.decode("utf-8"))
-    assert payload["messages"][1]["content"] == "注意力机制"
+    assert json.loads(payload["messages"][1]["content"]) == {"query": "注意力机制", "filters": {}}
     assert payload["messages"][0]["role"] == "system"
     assert payload["response_format"] == {"type": "json_object"}
 
@@ -74,7 +74,7 @@ def test_query_rewriter_rejects_empty_result(tmp_path: Path):
                 "choices": [
                     {
                         "message": {
-                            "content": '{"core_terms": []}'
+                            "content": '{"entities": [], "core_terms": []}'
                         }
                     }
                 ]
@@ -105,6 +105,6 @@ def test_query_rewriter_rejects_phrases_and_extra_fields(tmp_path: Path):
     try:
         client.rewrite("什么是注意力机制？")
     except QueryRewriterError as exc:
-        assert "只能返回 core_terms" in str(exc)
+        assert "entities 和 core_terms" in str(exc)
     else:
         raise AssertionError("extra fields should fail")

@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 from functools import lru_cache
-import math
+from collections import Counter
+import json
 import re
+import unicodedata
 from typing import Any, Iterable
 
-from paper_rag.catalog.service import CatalogIndexNotReady, get_metadata, list_chunks, search_catalog, search_chunks
+from llama_index.core.schema import QueryBundle
+
+from paper_rag.catalog.service import CatalogIndexNotReady, get_metadata, list_chunks, search_catalog
 from paper_rag.config import Settings
 from paper_rag.lexical import build_fts_query, normalize_lexical_text
 from paper_rag.llamaindex.index import IndexService, LlamaIndexError
@@ -30,148 +34,172 @@ _GENERIC_ENTITIES = {"attention", "transformer", "transformers", "model", "model
 
 def search(settings: Settings, query: str, filters: dict[str, Any] | None = None, limit: int = 20) -> dict[str, Any]:
     """只搜索论文元数据，不读取正文。"""
-    prepared = prepare_lexical_query(query, settings)
+    try:
+        normalized_filters = _normalize_filters(filters)
+    except ValueError as exc:
+        return _search_response("invalid_input", {"query": query, "items": [], "count": 0}, [str(exc)])
+    prepared = prepare_lexical_query(query, settings, purpose="metadata", filters=normalized_filters)
     try:
         records = search_catalog(
             settings,
             prepared.query,
-            _normalize_filters(filters),
+            normalized_filters,
             _limit(limit, 100),
             fts_query=prepared.fts_query,
         )
     except ValueError as exc:
         return _search_response("invalid_input", {"query": query, "items": [], "count": 0, "query_debug": prepared.debug()}, [*prepared.warnings, str(exc)])
     except CatalogIndexNotReady:
-        return _search_response("index_not_ready", {"query": query, "items": [], "count": 0, "query_debug": prepared.debug()}, list(prepared.warnings))
+        return _search_response("catalog_not_ready", {"query": query, "items": [], "count": 0, "query_debug": prepared.debug()}, list(prepared.warnings))
     return _search_response("ok", {"query": query, "items": [record.to_dict() for record in records], "count": len(records), "query_debug": prepared.debug()}, list(prepared.warnings))
 
 
 def retrieve(settings: Settings, query: str, paper_ids: list[str] | None = None, *, filters: dict[str, Any] | None = None, task: str = "auto", limit: int = 8, mode: str = "hybrid", regions: list[str] | None = None, max_chars: int = 24000) -> dict[str, Any]:
-    """执行唯一正文 RAG 入口；JEV 只在 task=auto 时细分正文任务。"""
-    normalized_mode = str(mode).casefold()
-    if normalized_mode not in {"lexical", "semantic", "hybrid"}:
-        return _retrieve_response("invalid_input", _empty_payload(query, mode=normalized_mode), ["mode must be lexical, semantic or hybrid"], normalized_mode)
+    """唯一正文入口：先约束范围，再召回，最后执行任务策略。"""
+    mode = str(mode).casefold()
     try:
-        selected_regions = _normalize_regions(regions, query)
-        normalized_filters = _normalize_filters(filters)
-        bounded_limit = _limit(limit, 50)
+        if mode not in {"lexical", "semantic", "hybrid"} or not str(query).strip():
+            raise ValueError("query must be nonempty; mode must be lexical, semantic or hybrid")
+        regions = _normalize_regions(regions, query)
+        filters = _normalize_filters(filters)
+        limit = _limit(limit, 50)
+        scope = _resolve_candidates(settings, paper_ids, filters)
+        if scope == []:
+            return _retrieve_response("not_found", _empty_payload(query, mode=mode), ["no papers match the supplied constraints"], mode)
+    except CatalogIndexNotReady:
+        return _retrieve_response("catalog_not_ready", _empty_payload(query, mode=mode), [], mode)
+    except LookupError as exc:
+        return _retrieve_response("not_found", _empty_payload(query, mode=mode), [str(exc)], mode)
     except (TypeError, ValueError) as exc:
-        return _retrieve_response("invalid_input", _empty_payload(query, mode=normalized_mode), [str(exc)], normalized_mode)
+        return _retrieve_response("invalid_input", _empty_payload(query, mode=mode), [str(exc)], mode)
     try:
         decision = classify_retrieve(settings, query, paper_ids) if str(task).casefold() == "auto" else _explicit_task(task)
     except ValueError as exc:
-        return _retrieve_response("invalid_input", _empty_payload(query, mode=normalized_mode), [str(exc)], normalized_mode)
-    prepared = prepare_lexical_query(query, settings)
-    candidate_debug: dict[str, Any] = {}
-    try:
-        candidates = _resolve_candidates(settings, paper_ids, normalized_filters)
-        if candidates is None:
-            candidates, candidate_debug = _discover_candidates(settings, prepared, bounded_limit, decision.task.value, normalized_filters)
-        if candidates is not None and not candidates:
-            debug = {"query_debug": prepared.debug(), **candidate_debug}
-            return _retrieve_response("not_found", _retrieve_data(query, decision, normalized_mode, [], debug), ["no papers match the supplied constraints"], normalized_mode)
-        if decision.task is RetrieveTask.COMPARISON and len(candidates or []) < 2:
-            debug = {"query_debug": prepared.debug(), **candidate_debug}
-            return _retrieve_response("invalid_input", _retrieve_data(query, decision, normalized_mode, [], debug), ["comparison requires at least two unique papers"], normalized_mode)
-    except CatalogIndexNotReady:
-        return _retrieve_response("catalog_not_ready", _empty_payload(query, mode=normalized_mode), [], normalized_mode)
+        return _retrieve_response("invalid_input", _empty_payload(query, mode=mode), [str(exc)], mode)
+    task = decision.task.value
+    prepared = prepare_lexical_query(query, settings, purpose="body", task=task, filters=filters)
+    warnings = list(prepared.warnings) + ([decision.warning] if decision.warning else [])
+    debug: dict[str, Any] = {"query_debug": prepared.debug(), "constraint_paper_ids": scope, "evidence_fallback_used": False, "recall": {}}
+    state: dict[str, Any] = {"query_bundle": QueryBundle(query)}
+    cache: dict[str, list[dict[str, Any]]] = {}
 
-    warnings = [decision.warning] if decision.warning else []
-    status = "ok"
-    retrieval_debug: dict[str, Any] = {"query_debug": prepared.debug()}
-    retrieval_debug.update(candidate_debug)
-    retrieval_debug["evidence_fallback_used"] = False
-    chunk_cache: dict[str, list[dict[str, Any]]] = {}
-    items: list[dict[str, Any]] = []
+    def recall(ids: list[str] | None, lexical: LexicalQuery = prepared, fallback: LexicalQuery | None = None, recall_mode: str = mode):
+        """一次请求共享索引和问题向量，各阶段只改变论文约束。"""
+        items, messages, stats = _retrieve_items(settings, query, ids, regions, recall_mode, limit, task=task, lexical_query_override=lexical, lexical_fallback_query=fallback, request_state=state)
+        warnings.extend(messages)
+        return items, stats
+
     try:
-        search_limit = _search_limit(decision.task.value, bounded_limit, candidates)
-        ranked_items, retrieve_warnings, stage_debug = _retrieve_items(
-            settings,
-            query,
-            candidates,
-            selected_regions,
-            normalized_mode,
-            search_limit,
-            task=decision.task.value,
-            lexical_query_override=prepared,
-        )
-        warnings.extend(retrieve_warnings)
-        retrieval_debug.update(stage_debug)
-        items = _organize_items(
-            settings,
-            ranked_items,
-            candidates or (),
-            bounded_limit,
-            query,
-            selected_regions,
-            decision.task.value,
-            chunk_cache,
-        )
-        status = _warning_status(retrieve_warnings)
-    except CatalogIndexNotReady:
-        return _retrieve_response("catalog_not_ready", _empty_payload(query, mode=normalized_mode), [], normalized_mode)
-    except LlamaIndexError as exc:
-        warnings.extend([f"semantic_unavailable:{type(exc).__name__}", "lexical_fallback"])
-        try:
-            fallback_limit = _search_limit(decision.task.value, bounded_limit, candidates)
-            ranked_items, lexical_warnings, lexical_debug = _retrieve_items(settings, query, candidates, selected_regions, "lexical", fallback_limit, task=decision.task.value, lexical_query_override=prepared)
-            warnings.extend(lexical_warnings)
-            retrieval_debug.update(lexical_debug)
-            items = _organize_items(settings, ranked_items, candidates or (), bounded_limit, query, selected_regions, decision.task.value, chunk_cache)
-        except CatalogIndexNotReady:
-            return _retrieve_response("catalog_not_ready", _empty_payload(query, mode=normalized_mode), [], normalized_mode)
-        status = _index_error_status(exc)
-    if not items:
-        # 候选论文已经确定时，只在候选范围内用技术实体和媒体编号做一次窄回退。
-        fallback_query = _build_evidence_fallback_query(query, retrieval_debug)
-        if fallback_query is not None:
-            retrieval_debug.update(
-                {
-                    "evidence_fallback_used": True,
-                    "evidence_fallback_query": fallback_query.fts_query,
-                    "evidence_fallback_reason": "primary_retrieval_empty",
-                }
-            )
-            try:
-                fallback_limit = _search_limit(decision.task.value, bounded_limit, candidates)
-                fallback_ranked, fallback_warnings, fallback_debug = _retrieve_items(
-                    settings,
-                    query,
-                    candidates,
-                    selected_regions,
-                    "lexical",
-                    fallback_limit,
-                    task=decision.task.value,
-                    lexical_query_override=fallback_query,
-                )
-                warnings.extend(fallback_warnings)
-                retrieval_debug["evidence_fallback_debug"] = fallback_debug
-                items = _organize_items(settings, fallback_ranked, candidates or (), bounded_limit, query, selected_regions, decision.task.value, chunk_cache)
-            except CatalogIndexNotReady:
-                return _retrieve_response("catalog_not_ready", _empty_payload(query, mode=normalized_mode), [], normalized_mode)
+        targets: list[str] = []
+        ranked: list[dict[str, Any]] = []
+        if task in {"summary", "comparison"}:
+            if paper_ids:
+                targets = list(scope or ())
+            else:
+                targets, matches = _resolve_targets(settings, prepared, scope)
+                debug["entity_matches"] = matches
+            required = 2 if task == "comparison" else 1
+            if paper_ids and len(targets) < required:
+                return _retrieve_response("invalid_input", _retrieve_data(query, decision, mode, [], debug), [*warnings, "comparison requires at least two unique papers"], mode)
+            if len(targets) < required:
+                ranked, stats = recall(scope)
+                debug["recall"]["discovery"] = stats
+                discovered = _unique_ids(item.get("paper_id") for item in ranked)
+                targets = _unique_ids(targets + discovered)[:required]
+            if task == "comparison" and len(targets) < 2:
+                return _retrieve_response("invalid_input", _retrieve_data(query, decision, mode, [], debug), [*warnings, "comparison requires at least two unique papers"], mode)
+            if len(targets) > limit:
+                return _retrieve_response("invalid_input", _retrieve_data(query, decision, mode, [], debug), [*warnings, "limit must accommodate every target paper"], mode)
+            debug["target_paper_ids"] = targets
+            if task == "comparison":
+                queues = []
+                dimension_query = prepared.with_terms(prepared.core_terms) if prepared.core_terms else prepared
+                entity_query = prepared.with_terms(prepared.translated_entities)
+                for paper_id in targets:
+                    paper_ranked, stats = recall([paper_id], dimension_query, entity_query if prepared.core_terms else None)
+                    debug["recall"][paper_id] = stats
+                    chunks = [item for item in _paper_chunks(settings, paper_id, cache) if item.get("region") in regions]
+                    if not chunks:
+                        warnings.append(f"no_evidence_for_paper:{paper_id}")
+                    quota = limit // len(targets) + (targets.index(paper_id) < limit % len(targets))
+                    queues.append(_comparison_sources(paper_ranked, chunks, quota))
+                items = _balanced_sources(queues, limit)
+            else:
+                if targets and not ranked:
+                    ranked, stats = recall(targets)
+                    debug["recall"]["targets"] = stats
+                items = _ordered_sources(settings, targets, limit, query, regions, task, ranked, cache)
+                debug["chapter_supplements"] = [{"paper_id": item["paper_id"], "chunk_id": item["chunk_id"], "category": _section_category(item)} for item in items if item.get("chapter_supplement")]
+        else:
+            preferred, matches = _resolve_targets(settings, prepared, scope)
+            state["preferred_paper_ids"] = preferred
+            debug["entity_matches"] = matches
+            debug["preferred_paper_ids"] = preferred
+            ranked, stats = recall(scope)
+            debug["recall"]["primary"] = stats
+            if not ranked:
+                fallback = _build_evidence_fallback_query(query, debug)
+                if fallback:
+                    debug.update({"evidence_fallback_used": True, "evidence_fallback_query": fallback.fts_query, "evidence_fallback_reason": "primary_retrieval_empty"})
+                    ranked, stats = recall(scope, fallback, recall_mode="lexical")
+                    debug["recall"]["fallback"] = stats
+            items = _reason_items(settings, ranked, limit, cache, regions) if task == "reason" else ranked[:limit]
+            if task == "reason":
+                debug["reason_windows"] = {"core_count": len(ranked), "window_count": len(items), "source_chunk_count": len({value for item in items for value in item.get("source_chunk_ids", [])})}
+        _assign_source_ids(items)
+        debug["final_evidence_count"] = len(items)
+        debug["per_paper_evidence_count"] = dict(Counter(item["paper_id"] for item in items))
+        status = _warning_status(warnings)
         if not items:
-            warnings.append("no_evidence_chunks")
             status = "insufficient_evidence"
-        elif status == "ok":
-            status = _warning_status(warnings)
-    _assign_source_ids(items)
-    data = _retrieve_data(query, decision, normalized_mode, items, retrieval_debug)
-    return _retrieve_response(status, data, warnings, normalized_mode)
+            warnings.append("no_evidence_chunks")
+        return _retrieve_response(status, _retrieve_data(query, decision, mode, items, debug), list(dict.fromkeys(warnings)), mode)
+    except CatalogIndexNotReady:
+        return _retrieve_response("catalog_not_ready", _retrieve_data(query, decision, mode, [], debug), warnings, mode)
 
 
-def _retrieve_items(settings: Settings, query: str, candidates: list[str] | None, regions: tuple[str, ...], mode: str, limit: int, *, task: str = "fact", lexical_query_override: LexicalQuery | None = None) -> tuple[list[dict[str, Any]], list[str], dict[str, Any]]:
-    """执行统一的 lexical/semantic/hybrid 证据召回。"""
-    service = _get_index_service(settings)
-    index = None if mode == "lexical" else service.load()
-    semantic = _build_semantic_retriever(index, candidates, regions, max(settings.llamaindex_semantic_top_k, limit * 5, 50)) if index else None
-    retriever = HybridRetriever(settings, semantic, paper_ids=candidates, regions=regions, mode=mode, task=task, lexical_top_k=settings.llamaindex_lexical_top_k, semantic_top_k=settings.llamaindex_semantic_top_k, rrf_k=settings.llamaindex_rrf_k, lexical_query_override=lexical_query_override)
-    nodes = retriever.retrieve(query)[:limit]
-    items: list[dict[str, Any]] = []
+def _retrieve_items(settings: Settings, query: str, candidates: list[str] | None, regions: tuple[str, ...], mode: str, limit: int, *, task: str = "fact", lexical_query_override: LexicalQuery | None = None, lexical_fallback_query: LexicalQuery | None = None, request_state: dict[str, Any] | None = None) -> tuple[list[dict[str, Any]], list[str], dict[str, Any]]:
+    """保留完整融合池，复用 QueryBundle 的原问题向量。"""
+    state = request_state if request_state is not None else {"query_bundle": QueryBundle(query)}
+    messages = []
+    index = None
+    semantic = None
+    if mode != "lexical" and not state.get("semantic_failed"):
+        try:
+            if "index" not in state:
+                state["index"] = _get_index_service(settings).load()
+            index = state["index"]
+            semantic = _build_semantic_retriever(index, candidates, regions, settings.llamaindex_semantic_top_k)
+        except CatalogIndexNotReady:
+            raise
+        except Exception as exc:
+            state["semantic_failed"] = True
+            error_status = _index_error_status(exc) if isinstance(exc, LlamaIndexError) else "milvus_unavailable"
+            state["failure_warning"] = f"semantic_unavailable:{error_status}:{type(exc).__name__}"
+            index = None
+    if mode != "lexical" and state.get("semantic_failed"):
+        messages.extend([state.get("failure_warning", "semantic_unavailable:embedding_unavailable"), "lexical_fallback"])
+    effective_mode = "lexical" if mode != "lexical" and semantic is None else mode
+    retriever = HybridRetriever(settings, semantic, paper_ids=candidates, regions=regions, mode=effective_mode, task=task, lexical_top_k=settings.llamaindex_lexical_top_k, semantic_top_k=settings.llamaindex_semantic_top_k, rrf_k=settings.llamaindex_rrf_k, lexical_query_override=lexical_query_override, lexical_fallback_query=lexical_fallback_query, preferred_paper_ids=state.get("preferred_paper_ids"))
+    nodes = retriever.retrieve(state["query_bundle"])
+    if any(value.startswith("semantic_unavailable:") for value in retriever.warnings):
+        state["semantic_failed"] = True
+        state["failure_warning"] = next(value for value in retriever.warnings if value.startswith("semantic_unavailable:"))
+        messages.append("lexical_fallback")
+    items = []
     for result in nodes:
         item = node_metadata(result.node)
-        item.update({"score": result.score, "semantic_score": result.node.metadata.get("semantic_score"), "lexical_rank": result.node.metadata.get("lexical_rank"), "semantic_rank": result.node.metadata.get("semantic_rank"), "rrf_score": result.node.metadata.get("rrf_score", result.score), "ranking_features": result.node.metadata.get("ranking_features", {}), "page_start_display": _display_page(item.get("page_start")), "page_end_display": _display_page(item.get("page_end")), "evidence_role": "direct"})
+        item.update({"score": result.score, "semantic_score": result.node.metadata.get("semantic_score"), "lexical_rank": result.node.metadata.get("lexical_rank"), "semantic_rank": result.node.metadata.get("semantic_rank"), "rrf_score": result.node.metadata.get("rrf_score", result.score), "page_start_display": _display_page(item.get("page_start")), "page_end_display": _display_page(item.get("page_end")), "evidence_role": "direct"})
         items.append(item)
-    return items, list(retriever.warnings), dict(retriever.lexical_debug)
+    stats = dict(retriever.recall_debug)
+    # 在任务窗口合并前保留真实两路排名，评分调试不混入回答证据。
+    stats["chunk_rankings"] = [
+        {"retrieval_rank": rank, **{key: item.get(key) for key in (
+            "chunk_id", "paper_id", "lexical_rank", "semantic_rank", "semantic_score", "rrf_score",
+        )}}
+        for rank, item in enumerate(items, start=1)
+    ]
+    return items, messages + list(retriever.warnings), stats
 
 
 def _build_semantic_retriever(index: Any, paper_ids: list[str] | None, regions: tuple[str, ...], top_k: int) -> Any:
@@ -193,252 +221,198 @@ def _explicit_task(task: str) -> RetrieveDecision:
 
 
 def _resolve_candidates(settings: Settings, paper_ids: list[str] | None, filters: dict[str, Any]) -> list[str] | None:
-    requested = _unique_ids(paper_ids or ())
-    if not requested and not filters:
-        return None
+    """仅显式 ID 和 SQL 元数据条件构成硬约束，同时检查 Catalog。"""
     records = search_catalog(settings, "", filters, 100000)
+    requested = _unique_ids(paper_ids or ())
+    if not requested:
+        return [record.base_id for record in records] if filters else None
+    allowed = {record.base_id for record in records}
     by_id = {record.base_id.casefold(): record for record in records}
     by_canonical = {record.canonical_id.casefold(): record for record in records}
-    if requested:
-        result: list[str] = []
-        for value in requested:
-            record = by_id.get(value.casefold()) or by_canonical.get(value.casefold()) or get_metadata(settings, value)
-            if record and (not filters or record.base_id.casefold() in by_id) and record.base_id not in result:
-                result.append(record.base_id)
-        return result
-    return [record.base_id for record in records]
+    result, missing = [], []
+    for value in requested:
+        record = by_id.get(value.casefold()) or by_canonical.get(value.casefold()) or get_metadata(settings, value)
+        if record is None or record.base_id not in allowed:
+            missing.append(value)
+        elif record.base_id not in result:
+            result.append(record.base_id)
+    if missing:
+        raise LookupError("unmatched_paper_ids:" + ",".join(missing))
+    return result
 
 
-def _discover_candidates(settings: Settings, prepared: LexicalQuery, limit: int, task: str, filters: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:
-    """按元数据、实体和正文证据分层发现候选论文。"""
-    query = prepared.original_query
-    max_candidates = max(2, min(limit, 20))
-    records = search_catalog(
-        settings,
-        prepared.query,
-        filters,
-        max_candidates,
-        fts_query=prepared.fts_query,
-    )
-    metadata_ids = _unique_ids(record.base_id for record in records)
-    allowed_ids: list[str] | None = None
-    if filters:
-        allowed_ids = [record.base_id for record in search_catalog(settings, "", filters, 100000)]
-
-    entities = _query_entities(query, prepared.core_terms)
-    entity_hits: dict[str, list[str]] = {}
-    entity_ids: list[str] = []
-    entity_record_map: dict[str, Any] = {}
-    for entity in entities:
-        matched_records = search_catalog(
-            settings,
-            entity,
-            filters,
-            max_candidates,
-            fts_query=build_fts_query(entity),
-        )
-        ids = _unique_ids(record.base_id for record in matched_records)
-        if ids:
-            entity_hits[entity] = ids
-            entity_ids.extend(ids)
-            entity_record_map.update({record.base_id: record for record in matched_records})
-    entity_ids = _unique_ids(entity_ids)
-
-    chunk_items: list[dict[str, Any]] = []
-    table_ref = _query_reference(query, _TABLE_REF_RE)
-    figure_ref = _query_reference(query, _FIGURE_REF_RE)
-    focus_terms = _focus_terms(query, prepared.core_terms, entities)
-    missing_entity_coverage = bool(entities) and len(entity_hits) < len(entities)
-    # 没有论文约束时，元数据和正文都可能包含唯一的命中信息，因此合并两路候选。
-    chunk_search_executed = not filters or not metadata_ids or missing_entity_coverage or bool(table_ref or figure_ref)
-    if chunk_search_executed:
-        chunk_items = search_chunks(
-            settings,
-            prepared.query,
-            allowed_ids,
-            max_candidates * 5,
-            _candidate_regions(query),
-            fts_query=prepared.fts_query,
-        )
-    chunk_ids = _unique_ids(item.get("paper_id") for item in chunk_items)
-    chunk_focus_ids = _unique_ids(
-        item.get("paper_id")
-        for item in chunk_items
-        if _chunk_focus_hit(item, focus_terms, table_ref, figure_ref)
-    )
-    title_exact_ids = [
-        record.base_id
-        for record in [*records, *entity_record_map.values()]
-        if any(_term_hit(str(getattr(record, "title", "") or ""), entity) for entity in entities)
-    ]
-    abstract_exact_ids = [
-        record.base_id
-        for record in [*records, *entity_record_map.values()]
-        if any(_term_hit(str(getattr(record, "abstract", "") or ""), entity) for entity in entities)
-    ]
-    title_exact_ids = _unique_ids(title_exact_ids)
-    abstract_exact_ids = _unique_ids(abstract_exact_ids)
-
-    if title_exact_ids:
-        selected = list(title_exact_ids)
-    elif chunk_focus_ids:
-        selected = list(chunk_focus_ids)
-    elif entity_ids:
-        selected = list(entity_ids)
-    else:
-        selected = list(metadata_ids) + list(chunk_ids)
-
-    if task == RetrieveTask.COMPARISON.value:
-        selected = _unique_ids(title_exact_ids + entity_ids + metadata_ids)
-        if len(selected) < 2:
-            selected.extend(chunk_focus_ids or chunk_ids)
-    elif task == RetrieveTask.SUMMARY.value:
-        selected = selected[:1]
-    elif task in {RetrieveTask.FACT.value, RetrieveTask.REASON.value} and chunk_focus_ids:
-        selected = _unique_ids(chunk_focus_ids + selected)
-    selected = _unique_ids(selected)[:max_candidates]
-    debug = {
-        "candidate_discovery": {
-            "metadata_count": len(metadata_ids),
-            "chunk_count": len(chunk_ids),
-            "entity_hits": entity_hits,
-            "fallback_used": not metadata_ids and bool(chunk_items),
-            "chunk_search_used": chunk_search_executed,
-            "chunk_match_count": len(chunk_items),
-            "selected_paper_ids": selected,
-            "lexical_query": prepared.fts_query,
-            "candidate_match_source": {
-                paper_id: _candidate_match_source(paper_id, title_exact_ids, abstract_exact_ids, entity_ids, chunk_focus_ids, metadata_ids)
-                for paper_id in selected
-            },
-            "title_exact_hit": title_exact_ids,
-            "abstract_exact_hit": abstract_exact_ids,
-            "chunk_exact_hit": chunk_focus_ids,
-            "table_ref": table_ref,
-            "figure_ref": figure_ref,
-        }
-    }
-    return selected, debug
+def _identity_text(value: str) -> str:
+    """标题身份匹配只规范 Unicode、大小写和标点，不做模糊猜测。"""
+    return re.sub(r"[^\w]+", " ", unicodedata.normalize("NFKC", value).casefold()).strip()
 
 
-def _organize_items(
-    settings: Settings,
-    ranked: list[dict[str, Any]],
-    paper_ids: Iterable[str],
-    limit: int,
-    query: str,
-    regions: tuple[str, ...],
-    task: str,
-    chunk_cache: dict[str, list[dict[str, Any]]],
-) -> list[dict[str, Any]]:
-    """统一处理四类任务，避免主检索和 fallback 各维护一套分支。"""
-
-    if task in {RetrieveTask.SUMMARY.value, RetrieveTask.COMPARISON.value}:
-        return _ordered_sources(settings, paper_ids, limit, query, regions, task, ranked, chunk_cache)
-    if task == RetrieveTask.REASON.value:
-        return _reason_items(settings, ranked, limit, chunk_cache)
-    return ranked[:limit]
-
-
-def _search_limit(task: str, limit: int, paper_ids: Iterable[str] | None) -> int:
-    """为需要论文级平衡的任务统一计算召回上限。"""
-
-    if task not in {RetrieveTask.SUMMARY.value, RetrieveTask.COMPARISON.value}:
-        return limit
-    return max(limit, min(50, limit * max(2, len(tuple(paper_ids or ())))))
+def _resolve_targets(settings: Settings, prepared: LexicalQuery, scope: list[str] | None) -> tuple[list[str], list[dict[str, Any]]]:
+    """对象名称只有在标题完整或方法名唯一命中时才锁定论文。"""
+    records = search_catalog(settings, "", {}, 100000)
+    if scope is not None:
+        records = [record for record in records if record.base_id in scope]
+    names = list(prepared.entities)
+    if not names:
+        # 改写失败时只使用原文技术名称或明确的完整标题，不把回退普通词当实体。
+        names = _query_entities(prepared.original_query)
+        names.extend(record.title for record in records if len(record.title) > 10 and _identity_text(record.title) in _identity_text(prepared.original_query))
+    result, matches = [], []
+    for name in dict.fromkeys(names):
+        if _identity_text(name) not in _identity_text(prepared.original_query):
+            matches.append({"entity": name, "matches": [], "resolution": "not_in_question"})
+            continue
+        variants = [name]
+        if name in prepared.entities:
+            position = prepared.entities.index(name)
+            if position < len(prepared.translated_entities):
+                variants.append(prepared.translated_entities[position])
+        # 保留原始抽取结果，仅去掉名称边界上的泛指“论文”后缀用于标题匹配。
+        variants.extend(re.sub(r"\s*(?:论文|文章|\bpaper)\s*$", "", value, flags=re.IGNORECASE).strip() for value in list(variants))
+        exact = [record.base_id for record in records if any(_identity_text(record.title) == _identity_text(value) for value in variants)]
+        candidates = _unique_ids(exact or [record.base_id for record in records if any(_term_hit(record.title, value) for value in variants)])
+        resolution = "unique_title" if len(candidates) == 1 else "ambiguous" if candidates else "unresolved"
+        matches.append({"entity": name, "matches": candidates, "resolution": resolution})
+        if len(candidates) == 1:
+            result.extend(candidates)
+    return _unique_ids(result), matches
 
 
 def _paper_chunks(settings: Settings, paper_id: str, chunk_cache: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
-    """在单次请求内复用同一论文的 Chunk 列表。"""
-
+    """一次请求只读取每篇论文的 Chunk 一次。"""
     if paper_id not in chunk_cache:
         chunk_cache[paper_id] = list_chunks(settings, paper_id, 10000)
     return chunk_cache[paper_id]
 
 
-def _ordered_sources(settings: Settings, paper_ids: Iterable[str], limit: int, query: str, regions: tuple[str, ...], task: str, ranked: list[dict[str, Any]], chunk_cache: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
-    """为 summary/comparison 平衡论文来源并优先保留相关证据。"""
-    ids = _unique_ids(paper_ids)
-    desired = max(limit, len(ids))
-    per_paper = max(1, math.ceil(desired / max(1, len(ids))))
-    ranked_by_paper: dict[str, list[dict[str, Any]]] = {}
+def _balanced_sources(queues: list[list[dict[str, Any]]], limit: int) -> list[dict[str, Any]]:
+    """逐篇轮流取证，空队列不占名额，避免截断最后一篇。"""
+    selected, used = [], set()
+    offsets = [0] * len(queues)
+    while len(selected) < limit:
+        progressed = False
+        for index, queue in enumerate(queues):
+            while offsets[index] < len(queue):
+                item = queue[offsets[index]]
+                offsets[index] += 1
+                if item["chunk_id"] in used:
+                    continue
+                used.add(item["chunk_id"])
+                selected.append(item)
+                progressed = True
+                break
+            if len(selected) == limit:
+                break
+        if not progressed:
+            break
+    return selected
+
+
+def _section_category(item: dict[str, Any]) -> str:
+    """按最具体的章节标题识别摘要覆盖类别，父章节仅作补充。"""
+    if item.get("region") == "abstract":
+        return "abstract"
+    headings = [str(item.get("section_label") or ""), *reversed(item.get("section_path") or [])]
+    categories = (
+        ("acknowledgements", r"acknowledg|致谢"),
+        ("method", r"\b(method|approach|architecture|algorithm|model|framework)\b|方法|架构|算法|模型"),
+        ("results", r"\b(experiment|experiments|evaluation|results?|ablation|analysis|analyses|understanding)\b|实验|结果|评估|分析"),
+        ("conclusion", r"\b(conclusions?|discussion|limitations?)\b|结论|讨论|局限"),
+        ("introduction", r"\b(introduction|background|related works?|problem statement)\b|引言|背景|相关工作|问题定义"),
+    )
+    for heading in headings:
+        for category, pattern in categories:
+            if re.search(pattern, heading, re.IGNORECASE):
+                return category
+    return "other"
+
+
+def _summary_sources(ranked: list[dict[str, Any]], chunks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """先覆盖关键章节，再轮流覆盖未知顶层章节，最后补相关来源。"""
+    ranked = [item for item in ranked if _section_category(item) != "acknowledgements"]
+    chunks = sorted((item for item in chunks if str(item.get("text") or "").strip() and _section_category(item) != "acknowledgements"), key=lambda item: item.get("ordinal", 0))
+    selected, used = [], set()
+    for category in ("abstract", "method", "results", "conclusion", "introduction"):
+        item = next((item for item in ranked if _section_category(item) == category and item["chunk_id"] not in used), None)
+        if item is None:
+            source = next((item for item in chunks if _section_category(item) == category and item["chunk_id"] not in used), None)
+            item = {**source, "chapter_supplement": True, "score": None} if source else None
+        if item:
+            selected.append(item)
+            used.add(item["chunk_id"])
+    # 未知章节先各取一条，其余条目以轮流方式补入。
+    sections: dict[str, list[dict[str, Any]]] = {}
+    for item in chunks:
+        if _section_category(item) == "other" and item["chunk_id"] not in used:
+            path = item.get("section_path") or []
+            key = str(path[1] if len(path) > 1 else item.get("section_label") or "")
+            sections.setdefault(key, []).append(item)
+    for item in _balanced_sources([items[:1] for items in sections.values()], len(sections)):
+        if item["chunk_id"] not in used:
+            selected.append({**item, "chapter_supplement": True, "score": None})
+            used.add(item["chunk_id"])
     for item in ranked:
-        ranked_by_paper.setdefault(str(item.get("paper_id")), []).append(item)
-    selected: list[dict[str, Any]] = []
-    used: set[str] = set()
-    for paper_id in ids:
+        if item["chunk_id"] not in used:
+            selected.append(item)
+            used.add(item["chunk_id"])
+    return selected
+
+
+def _ordered_sources(settings: Settings, paper_ids: Iterable[str], limit: int, query: str, regions: tuple[str, ...], task: str, ranked: list[dict[str, Any]], chunk_cache: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
+    """逐篇章节覆盖后，轮流分配最终证据名额。"""
+    queues = []
+    for paper_id in _unique_ids(paper_ids):
         chunks = [item for item in _paper_chunks(settings, paper_id, chunk_cache) if item.get("region") in regions]
-        if not chunks:
-            continue
-        candidates = list(ranked_by_paper.get(paper_id, ()))
-        abstract = [item for item in chunks if item.get("region") == "abstract"]
-        fallback = abstract[:1] or chunks[:1]
-        ordered = _source_order(candidates, task)
-        if fallback and not any(item.get("chunk_id") == fallback[0].get("chunk_id") for item in ordered):
-            ordered = fallback + ordered
-        chosen = ordered[:per_paper] or fallback
-        for item in chosen:
-            chunk_id = str(item.get("chunk_id"))
-            if chunk_id in used:
-                continue
-            used.add(chunk_id)
-            selected.append({"score": None, "semantic_score": None, "lexical_rank": None, "semantic_rank": None, "rrf_score": None, "ranking_features": {}, "page_start_display": _display_page(item.get("page_start")), "page_end_display": _display_page(item.get("page_end")), "query": query, "evidence_role": "direct", **item})
-    return selected[:desired]
+        candidates = [item for item in ranked if item.get("paper_id") == paper_id]
+        queues.append(_summary_sources(candidates, chunks))
+    return _balanced_sources(queues, limit)
 
 
-def _reason_items(settings: Settings, direct: list[dict[str, Any]], limit: int, chunk_cache: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
-    """为原因类问题补充完整的同章节证据窗口。"""
+def _comparison_sources(ranked: list[dict[str, Any]], chunks: list[dict[str, Any]], quota: int) -> list[dict[str, Any]]:
+    """正文优先；名额足够时为该论文保留一条摘要背景。"""
+    content = [item for item in ranked if item.get("region") != "abstract"]
+    abstract = next((item for item in ranked if item.get("region") == "abstract"), None)
+    if abstract is None:
+        source = next((item for item in chunks if item.get("region") == "abstract"), None)
+        abstract = {**source, "score": None} if source else None
+    if content and abstract and quota >= 2:
+        return content[:1] + [abstract] + content[1:]
+    return content + ([abstract] if abstract else [])
+
+
+def _section_key(item: dict[str, Any]) -> tuple[Any, ...]:
+    return (item.get("paper_id"), item.get("region"), tuple(item.get("section_path") or [item.get("section_label")]))
+
+
+def _reason_items(settings: Settings, direct: list[dict[str, Any]], limit: int, chunk_cache: dict[str, list[dict[str, Any]]], regions: tuple[str, ...] = _BODY_REGIONS) -> list[dict[str, Any]]:
+    """遍历完整候选池，合并同章节重叠窗口，不再固定砍半。"""
     result: list[dict[str, Any]] = []
-    seen: set[str] = set()
-    seen_text: set[str] = set()
-    direct_limit = max(1, math.ceil(limit / 2))
-    for item in direct[:direct_limit]:
-        chunks = _paper_chunks(settings, str(item.get("paper_id")), chunk_cache)
-        ordinal = int(item.get("ordinal") or 0)
-        same_section = [
-            chunk for chunk in chunks
-            if chunk.get("region") in _BODY_REGIONS
-            and chunk.get("section_label") == item.get("section_label")
-        ]
-        nearby = [chunk for chunk in same_section if abs(int(chunk.get("ordinal") or 0) - ordinal) <= 1]
-        window = _build_evidence_window(item, same_section, nearby)
-        source_ids = window.get("source_chunk_ids", [])
-        if item.get("type") == "image" and window.get("text") and len(result) < limit:
-            window_text = _normalize_evidence_text(window.get("text"))
-            if window_text not in seen_text:
-                result.append(window)
-                seen_text.add(window_text)
-            seen.update(str(value) for value in source_ids)
-            if len(result) >= limit:
-                return result[:limit]
-            image_id = str(item.get("chunk_id"))
-            if image_id not in seen and len(result) < limit:
-                result.append(item)
-                seen.add(image_id)
-        else:
-            key = str(item.get("chunk_id"))
-            text = window.get("text") or item.get("text")
-            text_key = _normalize_evidence_text(text)
-            if key not in seen and text_key not in seen_text and len(result) < limit:
-                enriched = dict(item)
-                enriched.update({"window_id": window.get("window_id"), "source_chunk_ids": source_ids, "continuity_status": window.get("continuity_status"), "text": window.get("text") or item.get("text")})
-                result.append(enriched)
-                seen.update(str(value) for value in source_ids)
-                seen_text.add(text_key)
+    for item in direct:
         if len(result) >= limit:
-            return result[:limit]
-    return result[:limit]
+            break
+        chunks = _paper_chunks(settings, str(item["paper_id"]), chunk_cache)
+        section = sorted((chunk for chunk in chunks if chunk.get("region") in regions and _section_key(chunk) == _section_key(item)), key=lambda chunk: chunk.get("ordinal", 0))
+        ordinal = int(item.get("ordinal") or 0)
+        nearby = [chunk for chunk in section if abs(int(chunk.get("ordinal") or 0) - ordinal) <= 1]
+        window = _build_evidence_window(item, section, nearby or [item])
+        ids = set(window["source_chunk_ids"])
+        overlaps = [index for index, old in enumerate(result) if _section_key(old) == _section_key(item) and ids.intersection(old["source_chunk_ids"])]
+        if overlaps:
+            for index in overlaps:
+                ids.update(result[index]["source_chunk_ids"])
+            first = overlaps[0]
+            merged = [chunk for chunk in section if chunk["chunk_id"] in ids]
+            result[first] = _build_evidence_window(result[first], section, merged)
+            for index in reversed(overlaps[1:]):
+                result.pop(index)
+        else:
+            result.append(window)
+    return result
 
 
-def _normalize_evidence_text(value: Any) -> str:
-    return re.sub(r"\s+", " ", str(value or "").casefold()).strip()
-
-
-def _query_entities(query: str, core_terms: Iterable[str]) -> list[str]:
+def _query_entities(query: str) -> list[str]:
     """提取论文方法名、缩写和模型名，避免候选发现被问题措辞淹没。"""
 
-    values = [str(term) for term in core_terms]
-    values.append(str(query or ""))
+    values = [str(query or "")]
     entities: list[str] = []
     seen: set[str] = set()
     for value in values:
@@ -458,7 +432,7 @@ def _query_reference(query: str, pattern: re.Pattern[str]) -> str | None:
 
 
 def _focus_terms(query: str, core_terms: Iterable[str], entities: Iterable[str]) -> list[str]:
-    """提取用于正文候选过滤的非通用短语。"""
+    """提取正文零证据回退使用的非通用短语，不改变论文范围。"""
 
     values = [str(value).strip() for value in core_terms if str(value).strip()]
     values.extend(str(value).strip() for value in entities if str(value).strip())
@@ -467,7 +441,7 @@ def _focus_terms(query: str, core_terms: Iterable[str], entities: Iterable[str])
     result: list[str] = []
     for value in values:
         normalized = _normalize_match_text(value)
-        if len(normalized) < 4 or normalized in _GENERIC_ENTITIES:
+        if len(normalized) < 3 or normalized in _GENERIC_ENTITIES:
             continue
         if normalized not in result:
             result.append(normalized)
@@ -477,12 +451,12 @@ def _focus_terms(query: str, core_terms: Iterable[str], entities: Iterable[str])
 def _build_evidence_fallback_query(query: str, retrieval_debug: dict[str, Any]) -> LexicalQuery | None:
     """构造受候选范围约束的窄词法回退查询，不重新调用模型。"""
 
-    discovery = retrieval_debug.get("candidate_discovery") or {}
-    core_terms = retrieval_debug.get("core_terms") or []
-    entities = _query_entities(query, core_terms)
+    query_debug = retrieval_debug.get("query_debug") or {}
+    core_terms = query_debug.get("translated_core_terms") or []
+    entities = list(query_debug.get("translated_entities") or []) + _query_entities(query)
     terms = _focus_terms(query, core_terms, entities) if (core_terms or entities) else []
-    table_ref = discovery.get("table_ref") or _query_reference(query, _TABLE_REF_RE)
-    figure_ref = discovery.get("figure_ref") or _query_reference(query, _FIGURE_REF_RE)
+    table_ref = _query_reference(query, _TABLE_REF_RE)
+    figure_ref = _query_reference(query, _FIGURE_REF_RE)
     if table_ref:
         terms.append(f"table {table_ref}")
     if figure_ref:
@@ -513,15 +487,6 @@ def _build_evidence_fallback_query(query: str, retrieval_debug: dict[str, Any]) 
     )
 
 
-def _chunk_focus_hit(item: dict[str, Any], terms: Iterable[str], table_ref: str | None, figure_ref: str | None) -> bool:
-    text = _normalize_match_text(f"{item.get('text', '')} {item.get('retrieval_text', '')}")
-    if table_ref and re.search(rf"\btable\s*{re.escape(table_ref)}\b|\btab\.?\s*{re.escape(table_ref)}\b|表\s*{re.escape(table_ref)}", text, re.IGNORECASE):
-        return True
-    if figure_ref and re.search(rf"\bfigure\s*{re.escape(figure_ref)}\b|\bfig\.?\s*{re.escape(figure_ref)}\b|图\s*{re.escape(figure_ref)}", text, re.IGNORECASE):
-        return True
-    return any(_term_hit(text, term) for term in terms)
-
-
 def _term_hit(text: str, term: str) -> bool:
     normalized_text = _normalize_match_text(text)
     normalized_term = _normalize_match_text(term)
@@ -536,48 +501,10 @@ def _normalize_match_text(value: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[-_/]+", " ", str(value or "").casefold())).strip()
 
 
-def _candidate_match_source(
-    paper_id: str,
-    title_exact_ids: Iterable[str],
-    abstract_exact_ids: Iterable[str],
-    entity_ids: Iterable[str],
-    chunk_focus_ids: Iterable[str],
-    metadata_ids: Iterable[str],
-) -> str:
-    if paper_id in set(title_exact_ids):
-        return "title_exact"
-    if paper_id in set(abstract_exact_ids):
-        return "abstract_exact"
-    if paper_id in set(chunk_focus_ids):
-        return "chunk_exact"
-    if paper_id in set(entity_ids):
-        return "entity"
-    if paper_id in set(metadata_ids):
-        return "metadata"
-    return "fallback"
-
-
 def _candidate_regions(query: str) -> tuple[str, ...]:
     """候选发现默认忽略附录，只有问题明确提及时才加入。"""
 
     return _DEFAULT_REGIONS + (("appendix",) if _APPENDIX_QUERY_RE.search(str(query or "")) else ())
-
-
-def _source_order(items: list[dict[str, Any]], task: str) -> list[dict[str, Any]]:
-    """在每篇论文内部优先摘要或已排序的相关证据。"""
-
-    def key(item: dict[str, Any]) -> tuple[int, float]:
-        abstract_first = 0 if task in {RetrieveTask.SUMMARY.value, RetrieveTask.COMPARISON.value} and item.get("region") == "abstract" else 1
-        score = item.get("score")
-        if score is None:
-            score = item.get("rrf_score")
-        try:
-            numeric_score = float(score)
-        except (TypeError, ValueError):
-            numeric_score = -1.0
-        return abstract_first, -numeric_score
-
-    return sorted(items, key=key)
 
 
 def _build_evidence_window(core: dict[str, Any], same_section: list[dict[str, Any]], nearby: list[dict[str, Any]]) -> dict[str, Any]:
@@ -607,6 +534,8 @@ def _build_evidence_window(core: dict[str, Any], same_section: list[dict[str, An
             "evidence_role": "context",
             "window_id": f"{core.get('paper_id')}:{core.get('ordinal')}",
             "source_chunk_ids": source_chunk_ids or [str(core.get("chunk_id"))],
+            "asset_refs": _window_refs(ordered, "asset_refs"),
+            "source_blocks": _window_refs(ordered, "source_blocks"),
             "continuity_status": "complete" if text and not _starts_mid_token(text) else "trimmed_prefix",
             "page_start": min(pages) if pages else core.get("page_start"),
             "page_end": max(end_pages) if end_pages else core.get("page_end"),
@@ -621,6 +550,18 @@ def _build_evidence_window(core: dict[str, Any], same_section: list[dict[str, An
         }
     )
     return result
+
+
+def _window_refs(chunks: list[dict[str, Any]], field: str) -> list[Any]:
+    """窗口资源及来源按原文顺序去重，支持字符串和结构化引用。"""
+    values, seen = [], set()
+    for chunk in chunks:
+        for value in chunk.get(field) or []:
+            key = json.dumps(value, sort_keys=True, ensure_ascii=False)
+            if key not in seen:
+                values.append(value)
+                seen.add(key)
+    return values
 
 
 def _merge_chunk_texts(chunks: list[dict[str, Any]]) -> str:
@@ -726,7 +667,9 @@ def _warning_status(warnings: Iterable[str]) -> str:
 
     for warning in warnings:
         if str(warning).startswith("semantic_unavailable:"):
-            return "milvus_unavailable" if "Milvus" in str(warning) else "embedding_unavailable"
+            if "index_not_ready" in str(warning):
+                return "index_not_ready"
+            return "milvus_unavailable" if "milvus" in str(warning).casefold() else "embedding_unavailable"
     return "ok"
 
 

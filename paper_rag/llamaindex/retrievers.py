@@ -72,6 +72,8 @@ class HybridRetriever(BaseRetriever):
         semantic_top_k: int = 50,
         rrf_k: int = 60,
         lexical_query_override: LexicalQuery | None = None,
+        lexical_fallback_query: LexicalQuery | None = None,
+        preferred_paper_ids: Iterable[str] | None = None,
     ) -> None:
         super().__init__()
         self.settings = settings
@@ -84,6 +86,9 @@ class HybridRetriever(BaseRetriever):
         self.semantic_top_k = max(1, int(semantic_top_k))
         self.rrf_k = max(1, int(rrf_k))
         self.lexical_query_override = lexical_query_override
+        self.lexical_fallback_query = lexical_fallback_query
+        self.preferred_paper_ids = set(preferred_paper_ids or ())
+        self.recall_debug: dict[str, Any] = {}
         self.warnings: list[str] = []
         self.lexical_debug: dict[str, Any] = {
             "lexical_query": "",
@@ -140,6 +145,13 @@ class HybridRetriever(BaseRetriever):
                 lexical = lexical_retriever.retrieve(query_bundle)
                 self.lexical_debug = lexical_retriever.debug
                 self.warnings.extend(lexical_retriever.warnings)
+        if not lexical and (self.mode != "semantic" or not semantic) and self.lexical_fallback_query and self.lexical_fallback_query.fts_query:
+            # 包括语义失败后的词法分支，回退始终保持同一论文范围。
+            fallback = SQLiteLexicalRetriever(self.settings, paper_ids=self.paper_ids, regions=self.regions, top_k=self.lexical_top_k, prepared_query=self.lexical_fallback_query)
+            lexical = fallback.retrieve(query_bundle)
+            self.warnings.extend(fallback.warnings)
+            self.lexical_debug["entity_fallback_used"] = True
+            self.lexical_debug["entity_fallback_query"] = self.lexical_fallback_query.fts_query
         merged: dict[str, dict[str, Any]] = {}
         for rank, item in enumerate(lexical, start=1):
             key = item.node.node_id
@@ -161,7 +173,6 @@ class HybridRetriever(BaseRetriever):
                 score += 1 / (self.rrf_k + entry["semantic_rank"])
             metadata = entry["node"].metadata
             features = self._ranking_features(metadata, query_bundle.query_str, section_counts)
-            adjusted_score = score + features["quality_bonus"] - features["duplicate_penalty"]
             entry["node"].metadata.update(
                 {
                     "lexical_rank": entry["lexical_rank"],
@@ -171,13 +182,16 @@ class HybridRetriever(BaseRetriever):
                     "ranking_features": features,
                 }
             )
-            ranked.append(NodeWithScore(node=entry["node"], score=adjusted_score))
+            ranked.append(NodeWithScore(node=entry["node"], score=score))
         ranked.sort(key=lambda item: self._sort_key(item, query_bundle.query_str), reverse=True)
         # 普通问题优先给正文解释，只有明确要求媒体时才让媒体进入同级结果。
         if not _media_query_requested(query_bundle.query_str):
             ranked = [item for item in ranked if str(item.node.metadata.get("type") or "text").casefold() not in _MEDIA_TYPES] + [
                 item for item in ranked if str(item.node.metadata.get("type") or "text").casefold() in _MEDIA_TYPES
             ]
+        self.recall_debug = {"lexical_count": len(lexical), "semantic_count": len(semantic), "fused_count": len(merged), "lexical_query": self.lexical_debug.get("lexical_query"), "entity_fallback_used": self.lexical_debug.get("entity_fallback_used", False)}
+        if self.lexical_debug.get("entity_fallback_used"):
+            self.recall_debug["entity_fallback_query"] = self.lexical_debug["entity_fallback_query"]
         return ranked
 
     def _sort_key(self, item: NodeWithScore, query: str) -> tuple[float, ...]:
@@ -190,6 +204,8 @@ class HybridRetriever(BaseRetriever):
         figure_requested = _reference_number(query, _FIGURE_REF_RE) is not None
         if table_requested or figure_requested:
             return (
+                # 编号在各论文内重复，明确的对象标题仅作排序线索，不能过滤召回。
+                float(metadata.get("paper_id") in self.preferred_paper_ids),
                 float(bool(features.get("exact_table_caption_hit"))) if table_requested else float(bool(features.get("exact_figure_caption_hit"))),
                 float(bool(features.get("exact_table_ref_hit"))) if table_requested else float(bool(features.get("exact_figure_ref_hit"))),
                 rrf_score,
@@ -228,7 +244,7 @@ class HybridRetriever(BaseRetriever):
         section_label = _normalize_text(str(metadata.get("section_label") or ""))
         section_exact_hit = any(_phrase_hit(section_label, phrase) for phrase in phrases) or _section_reference_hit(metadata, query)
         kind = str(metadata.get("type") or "text").casefold()
-        type_priority = {"text": 3, "paragraph": 3, "table": 2, "list": 2, "list_item": 2, "formula": 1, "equation": 1, "image": 0, "figure": 0, "chart": 0}.get(kind, 1)
+        type_priority = {"text": 3, "paragraph": 3, "table": 3, "list": 2, "list_item": 2, "formula": 3, "equation": 3, "image": 0, "figure": 0, "chart": 0}.get(kind, 1)
         region = str(metadata.get("region") or "").casefold()
         region_priority = self._region_priority(region)
         table_ref = _reference_number(query, _TABLE_REF_RE)
@@ -321,7 +337,7 @@ def _query_phrases(query: str) -> list[str]:
 _TABLE_REF_RE = re.compile(r"(?:\btable\s*|\btab\.?\s*|表\s*)(\d+)", re.IGNORECASE)
 _FIGURE_REF_RE = re.compile(r"(?:\bfigure\s*|\bfig\.?\s*|图\s*)(\d+)", re.IGNORECASE)
 _SECTION_REF_RE = re.compile(r"(?:\bsection\s*|\bsec\.?\s*|第\s*)(\d+(?:\.\d+)*)", re.IGNORECASE)
-_MEDIA_TYPES = {"image", "figure", "chart", "table", "formula", "equation"}
+_MEDIA_TYPES = {"image", "figure", "chart"}
 
 
 def _reference_number(query: str, pattern: re.Pattern[str]) -> str | None:

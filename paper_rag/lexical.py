@@ -30,7 +30,7 @@ def extract_terms(value: str, *, remove_stopwords: bool = False) -> tuple[list[s
         if remove_stopwords and term in ENGLISH_STOPWORDS:
             removed.append(term)
             continue
-        if len(term) <= 1:
+        if len(term) <= 1 and not term.isdigit():
             continue
         terms.append(term)
     if re.search(r"[\u4e00-\u9fff]", text):

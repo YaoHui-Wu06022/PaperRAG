@@ -99,7 +99,7 @@ def test_rewritten_translation_failure_falls_back_without_leaking_sdk_error(tmp_
     result = prepare_lexical_query(
         "注意力机制是什么",
         settings,
-        rewriter=lambda _query: QueryRewrite(("注意力机制",)),
+        rewriter=FakeRewriter(QueryRewrite((), ("注意力机制",))),
     )
 
     assert result.translation_used is False
@@ -215,7 +215,7 @@ class FakeRewriter:
         self.result = result
         self.error = error
 
-    def rewrite(self, _query: str) -> QueryRewrite:
+    def rewrite(self, _query: str, **kwargs) -> QueryRewrite:
         if self.error:
             raise self.error
         assert self.result is not None
@@ -232,13 +232,14 @@ def test_query_rewriter_keeps_core_term_and_phrase(tmp_path: Path, monkeypatch):
     result = prepare_lexical_query(
         "论文库中有哪些和注意力机制有关的论文？",
         settings,
-        rewriter=FakeRewriter(QueryRewrite(("注意力机制",))),
+        rewriter=FakeRewriter(QueryRewrite((), ("注意力机制",))),
     )
 
     assert result.query == "attention mechanism"
     assert result.fts_query == '"attention mechanism"'
     assert result.rewriter_used is True
-    assert result.debug()["core_terms"] == ["attention mechanism"]
+    assert result.debug()["core_terms"] == ["注意力机制"]
+    assert result.debug()["translated_core_terms"] == ["attention mechanism"]
 
 
 def test_query_rewriter_failure_uses_existing_translation_fallback(tmp_path: Path, monkeypatch):
@@ -270,7 +271,7 @@ def test_query_rewriter_requires_at_least_one_term(tmp_path: Path, monkeypatch):
     result = prepare_lexical_query(
         "注意力机制",
         settings,
-        rewriter=FakeRewriter(QueryRewrite(())),
+        rewriter=FakeRewriter(QueryRewrite((), ())),
     )
 
     assert result.rewriter_used is False

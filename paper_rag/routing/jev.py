@@ -32,8 +32,13 @@ class JevClient:
             "questions": {
                 "retrieve_task": {
                     "type": "choice",
-                    "instructions": "只在已经进入正文检索后判断正文任务，不选择 MCP 工具",
-                    "criteria": {task.value: task.value for task in RetrieveTask},
+                    "instructions": "已经进入正文检索后判断正文任务",
+                    "criteria": {
+                        "fact": "查询具体事实、属性、数值、定义、表格、图、实验结果或某一局部结论",
+                        "reason": "解释为什么、如何工作、机制、原因、过程或因果关系",
+                        "summary": "概括论文、方法、章节或主题的整体方法、贡献、实验与结论",
+                        "comparison": "明确要求比较至少两个论文、方法、模型或机制，并围绕共同维度分析相同点、不同点、优缺点或结果差异",
+                    },
                 }
             },
         }
@@ -58,7 +63,8 @@ class JevClient:
                     "Idempotency-Key": uuid.uuid4().hex,
                 },
                 timeout=self.settings.jev_timeout_seconds,
-                retries=self.settings.jev_retry_count,
+                # 至少等待后重试一次，不能因配置为零而在首次超时后直接回退。
+                retries=max(1, self.settings.jev_retry_count),
                 error_prefix="Jev ",
             )
         except HttpRequestError as exc:
