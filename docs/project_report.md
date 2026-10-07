@@ -1,110 +1,128 @@
-# 本地论文库 RAG 项目整体报告
+# 本地论文库 RAG：当前实现与运行流程
 
-## 项目目标
+本文描述 `new` 分支当前代码行为。系统将 ArXiv 论文、MinerU 解析、SQLite 元数据和引用关系、LlamaIndex 检索及 Milvus 向量连接起来，以 MCP 工具供客户端 Agent 使用。Agent 决定顶层工具并生成正文答案；服务端负责结构化数据、证据和确定性展示，不调用最终答案生成模型。
 
-本项目把 ArXiv 论文原文、MinerU 结构、章节和区域、表格/公式/图片、论文元数据、引用关系以及可回溯检索证据组织成完整 RAG 数据链路。
+## 1. 文档导航
 
-核心原则是：先解析和结构化，再执行多路召回；结果必须带 paper_id、chunk_id、章节、页码和 source_id；系统负责检索与证据组织，不直接生成最终答案。
+| 文档 | 内容 |
+|---|---|
+| [mcp.md](mcp.md) | 工具清单、参数、工具组、配置、确认边界及中文 CLI 调试 |
+| [arxiv_acquisition.md](arxiv_acquisition.md) | 最新版本发现、PDF 下载、目录更新与失败处理 |
+| [mineru.md](mineru.md) | 签名上传、任务轮询、结果校验和解析复用 |
+| [chunk.md](chunk.md) | 区域、章节、正文及媒体切分、JSON、Catalog 和 FTS |
+| [retrieval.md](retrieval.md) | JEV、关键词抽取、翻译、两路召回、四类任务和 Agent 回答 |
+| [citation.md](citation.md) | 本地混合引用匹配、去重、方向、两跳和答案模板 |
+| [index.md](index.md) | Embedding 缓存、全量与增量、Manifest 和 stale 原因 |
+| [record.md](record.md) | 已执行的真实 MCP 请求、响应与 Agent 中文回答 |
 
-## 文档导航
+说明页中的请求示例用于解释接口，不代表本次实际服务回包。真实输出以 record.md 的执行记录为准；论文数量、引用数量和排名会随入库与在线服务变化，不写成永久固定指标。
 
-- [ArXiv 获取](arxiv_acquisition.md)
-- [MinerU 解析与入库](mineru.md)
-- [Chunk、Catalog 与索引](chunk.md)
-- [正文检索](retrieval.md)
-- [实际调用记录](record.md)
+## 2. 数据和查询架构
 
-## 总体架构
+```text
+ArXiv ID / URL
+  → Atom 元数据 + 最新版本 PDF
+  → MinerU content_list.json / full.md / 图片
+  → Catalog 同步
+      ├─ papers / papers_fts：论文身份、元数据与发现
+      ├─ chunks / chunks_fts：正文结构与 BM25
+      ├─ references / citation_edges：本地引用匹配与有向图
+      ├─ mineru/chunks.json：逐篇人工检查副本
+      └─ citation_graph.json：全库引用检查副本
+  → 单独执行索引同步
+      → TextNode（使用现有 Chunk）
+      → DashScope Embedding
+      → Milvus + Manifest + SQLite Embedding 缓存
 
-索引链路：
+用户中文问题 → 客户端 Agent 选择 MCP 工具
+  ├─ library_search → 元数据 BM25 / SQL → verbatim 模板
+  ├─ library_citation → SQLite 图 / 引用条目 → verbatim 模板
+  ├─ library_retrieve → JEV + 改写/翻译 + BM25/向量 + 任务证据 → compose
+  └─ library_read / library_get_chunk → 原文与完整来源
+```
 
-    ArXiv ID/URL
-      -> Atom 元数据和 PDF
-      -> MinerU content_list.json
-      -> SQLite Catalog / FTS5
-      -> retrieval_text
-      -> DashScope Embedding
-      -> Milvus active collection
+SQLite 是论文记录、Chunk 和引用关系的查询来源；原始 PDF、MinerU 文件是追溯来源，JSON 是查看副本。Milvus 保存正文向量，不作为引用图数据库。LlamaIndex 使用已有 Chunk 构造 TextNode，并通过 VectorStoreIndex/MilvusVectorStore 实现语义召回，不重新解析 PDF 或切块。
 
-查询链路：
+## 3. 模块职责
 
-    用户问题
-      -> library_search 或 library_retrieve
-      -> filters / 候选论文发现
-      -> lexical + semantic + RRF
-      -> task 相关排序和证据窗口
-      -> source_id、章节、页码和正文上下文
+| 实现位置 | 当前职责 |
+|---|---|
+| `paper_rag/config.py` | 读取根目录 .env，进程环境覆盖；路径和服务参数 |
+| `paper_rag/http.py` | JSON HTTP、重试、响应解码及错误封装 |
+| `paper_rag/acquisition/arxiv.py` | ID/URL、Atom 元数据、最新版本判断、PDF 和资产 manifest |
+| `paper_rag/ingest/mineru.py` | 本地 PDF 提交、签名上传、轮询、ZIP 校验和落盘 |
+| `paper_rag/catalog/chunks.py` | 区域和章节树、边界切分、表格检索文本、媒体上下文 |
+| `paper_rag/catalog/service.py` | SQLite schema、SQL 过滤、Catalog 重建、Chunk/图查询与 JSON 导出 |
+| `paper_rag/catalog/references.py` | 引用条目解析、身份规范化、混合匹配和重复条目标记 |
+| `paper_rag/routing/` | RETRIEVE 下的四类正文任务；JEV 失败时本地规则 |
+| `paper_rag/llamaindex/query_rewriter.py` | OpenAI 兼容接口，只抽取 entities/core_terms |
+| `paper_rag/llamaindex/translation.py` | BM25 查询准备；腾讯云主翻译、阿里云备用 |
+| `paper_rag/llamaindex/nodes.py`、`embedding.py`、`index.py` | 节点、Embedding、Milvus/缓存/Manifest 生命周期 |
+| `paper_rag/llamaindex/retrievers.py` | 词法、向量、Chunk 去重、RRF 和编号排序 |
+| `paper_rag/llamaindex/service.py` | 输入、硬约束、目标发现、四类证据组织和统一响应 |
+| `paper_rag/reading/service.py` | full.md 分页和 Chunk 读取 |
+| `paper_rag/presentation.py` | 元数据/引用答案模板；正文任务的 Agent 指令 |
+| `paper_rag/mcp/`、`paper_rag/cli/` | 服务入口、工具注册、作业和 CLI handler |
 
-## 主要模块
+## 4. 三类问题的边界
 
-- paper_rag/acquisition/arxiv.py：ArXiv 元数据和 PDF；
-- paper_rag/acquisition/mineru.py：MinerU 远程解析和任务；
-- paper_rag/catalog/chunks.py：区域、章节和 Chunk；
-- paper_rag/catalog/service.py：Catalog 和 FTS5；
-- paper_rag/llamaindex/nodes.py：SQLite Chunk 到 LlamaIndex Node；
-- paper_rag/llamaindex/embedding.py：DashScope Embedding；
-- paper_rag/llamaindex/index.py：Milvus 生命周期；
-- paper_rag/llamaindex/retrievers.py：lexical、semantic、RRF 和质量排序；
-- paper_rag/llamaindex/service.py：候选发现、任务证据组织和统一 retrieve；
-- paper_rag/mcp/：MCP 工具和异步 Job。
+元数据问题，例如“2020 年以后有哪些计算机视觉论文和注意力相关”，由 Agent 调用 library_search 并传年份/分类 filters。非空 query 经过双字段抽取、必要的翻译和 papers_fts 检索；query 为空时只做 SQL 过滤。不读取正文 Chunk，不调用 JEV 或向量。标题和作者来自 SQLite；返回记录时只对该论文资产做存在检查，不重新扫描全库。
 
-## 当前状态
+引用问题，例如“Attention Is All You Need 的引用和被引用关系”，直接调用 library_citation，可传 paper_title。它从本地 references/citation_edges 查询，both 默认两跳；out/in 默认一跳。多跳引用沿箭头同向走，多跳被引用沿箭头反向走，不能把共享参考文献当作间接引用。
 
-Catalog 包含 34 篇论文、3292 个 Chunk。区域计数为 abstract 58、content 2297、appendix 937，Reference 不生成正文 Chunk。
+正文问题只调用 library_retrieve。默认 task=auto、mode=hybrid、limit=8。Agent 选择工具后，JEV 才将问题分类为 fact/reason/summary/comparison；JEV 不选择元数据或引用工具。Query Rewriter 和翻译为 BM25 准备词，向量仍使用原始问题。各任务分别选择直接证据、邻域窗口、章节覆盖或逐篇均衡证据。
 
-当前规则版本为 content-list-regions-v6-boundary-aware。Milvus active collection 已完成全量重建：
+paper_ids 和 filters 是正文硬约束，取交集并同时限制两路；fact/reason 不会先用词法命中的论文集合砍掉向量范围。默认检索 abstract/content；提到附录或显式指定 regions 才加入 appendix。Reference 永不进入正文索引和召回。
 
-- indexed_count：3292；
-- embedding_dimensions：1024；
-- index_ready：true；
-- index_stale：false；
-- cache_complete：true。
+## 5. 展示原文、检索表示与回答证据
 
-## 数据契约
+- Chunk.text 保留展示原文，包括表格 HTML 和公式 LaTeX。
+- Chunk.retrieval_text 加入完整章节路径及媒体上下文，表格转换为结构化纯文本；paper_id 不加入文本前缀。
+- chunks_fts 除 retrieval_text 外还索引章节路径、区域、标题；TextNode.text/Embedding 使用 retrieval_text。
+- data.evidence 是最终回答证据卡片，仅保留正文、基本定位与 score；BM25/向量排名位于 retrieval_debug。完整资源、检索文本和来源 Block 可按 chunk_id 获取。
+- source_id 是单次最终响应中的 S1、S2 等编号；chunk_id 是持久来源键。reason 窗口合并时 source_chunk_ids 记录实际组成。
 
-- text：原始展示和追溯文本；
-- retrieval_text：SQLite FTS5 和 Embedding 的唯一输入；
-- metadata：论文、章节、页码、区域、来源 block、资源引用和哈希；
-- chunk_id：稳定的证据定位键；
-- source_id：一次响应中的展示编号，不替代 chunk_id。
+search/citation 返回 render_policy=verbatim 和非空 answer_text，Agent 原样输出。正文返回 compose、空 answer_text、当前任务的 agent_instruction，由 Agent 根据 evidence.text 整合中文回答并使用真实 [S#]。MCP 不自动给宿主注入系统消息，也不提供答案生成或答案校验工具。
 
-区域契约为 abstract、content、appendix、reference；reference 只进入引用图，不进入正文向量。
+## 6. 更新流程与一致性边界
 
-## 生命周期与一致性
+下载、解析、Catalog 和向量同步是独立阶段，没有自动串行全链路写入。按需执行：
 
-Catalog 和 Milvus 都使用临时输出、校验和原子切换。规则版本、retrieval_text_hash、Embedding 模型和维度变化会让索引变旧，auto 模式会转全量重建。构建失败时保留旧 Catalog、cache 和 active collection。
+```powershell
+conda run -n RAG_project python -X utf8 -m paper_rag acquire arxiv 2106.09685 --dry-run --json
+conda run -n RAG_project python -X utf8 -m paper_rag acquire arxiv 2106.09685 --json
+conda run -n RAG_project python -X utf8 -m paper_rag ingest arxiv 2106.09685 --dry-run --json
+conda run -n RAG_project python -X utf8 -m paper_rag ingest arxiv 2106.09685 --json
+conda run -n RAG_project python -X utf8 -m paper_rag catalog sync --json
+conda run -n RAG_project python -X utf8 -m paper_rag catalog chunks --paper-id 2106.09685 --json
+conda run -n RAG_project python -X utf8 -m paper_rag index status --json
+conda run -n RAG_project python -X utf8 -m paper_rag index rebuild --mode auto --json
+```
 
-## MCP 工具边界
+MCP 下载、解析、索引同步需要 confirm=true 并提交异步作业；Catalog 同步确认后直接同步执行。CLI 写命令同步执行，不要求 confirm。配置与中文查询调试见 mcp.md。
 
-- library_search：元数据搜索；
-- library_retrieve：正文证据；
-- library_get_metadata：论文元数据；
-- library_read：全文或文件读取；
-- library_citation：引用、被引用和局部图；
-- library_index_status / library_index_rebuild：索引状态和重建；
-- library_arxiv_download / library_arxiv_ingest：获取与 MinerU 任务。
+当前失败恢复能力必须分别理解：
 
-Agent 识别规则保持最小化：`library_search` 用于元数据并直接输出 `data.presentation.answer_text`；`library_citation` 用于引用关系并直接输出 `data.presentation.answer_text`；`library_retrieve` 用于正文 Chunk 证据，由 Agent 组织答案。
+| 阶段 | 行为和边界 |
+|---|---|
+| ArXiv/MinerU | 临时输出校验后目录替换，常规失败保留已有结果；新 PDF 版本需重新解析 |
+| Catalog | 临时 SQLite 和 JSON 准备完成后逐个替换；每个文件原子，不是多文件事务 |
+| full 向量同步 | 临时 Collection 验证后更新缓存和 Manifest，切换前常规失败保留旧索引 |
+| incremental 向量同步 | active Collection 原地 upsert/delete；缓存可恢复，已写向量不完整回滚 |
 
-写入型操作需要 confirm，并通过 JobManager 记录异步状态。读取型检索返回结构化证据，不替代上层答案生成。
+引用匹配或回答模板改变不要求重新 Embedding；Catalog 同步刷新时间戳可能导致 stale，可用 auto 更新状态。Chunk 规则、模型或维度改变触发全量边界。详见 index.md，不能把全部索引模式都称为临时 Collection 原子切换。
 
-## Agent 答案组织
+## 7. 当前限制与验证
 
-MCP 作为 Agent 工具执行检索，最终答案由宿主 Agent 生成。`library_search` 和 `library_citation` 返回确定性 `data.presentation.answer_text`，Agent 原样输出；`library_retrieve` 只返回 Chunk 正文 Evidence、来源定位和一个最终 `score`。证据卡片使用 `source_id`、`paper_id`、`chunk_id`、`section_path` 和页码定位，Agent 根据 `evidence[*].text` 组织正文答案并添加引用；Reason 合并窗口才额外带 `source_chunk_ids`。
+公开 max_chars 参数当前未参与证据截断；limit 是最多返回的证据条数，reason 合并后可能更少。没有自动将工具指令变成宿主 system 消息；最终事实是否被证据支持仍由 Agent 负责。引用匹配是本地启发式高置信匹配，不保证召回所有真实引用；图 filters 的端点规则也不同于正文硬约束。
 
-MCP 不调用答案生成模型，不保存答案上下文，也不提供答案校验工具。Agent 需要自行保证每个事实都能在返回的 Chunk 中找到依据；证据不足时明确说明，不补写检索结果没有的内容。
+索引首次加载涉及 Milvus 初始化，通常耗时较高。长期运行 MCP 缓存配置和 IndexService；外部修改 .env 或更新索引后应考虑重启，以实际状态和调试字段判断是否发生降级。
 
-## 验证方式
+本次代码提交前在 RAG_project 验证：159 项测试通过，pip check 无依赖冲突。运行方式：
 
-    paper-rag catalog sync --json
-    paper-rag catalog status --json
-    paper-rag catalog chunks --sample 50 --seed 20261005 --json
-    paper-rag index status --json
-    paper-rag index rebuild --mode auto --json
-    paper-rag retrieve "概括这篇论文的方法" --task auto --mode hybrid --json
+```powershell
+conda run -n RAG_project python -X utf8 -m pytest -q
+conda run -n RAG_project python -X utf8 -m pip check
+```
 
-当前自动测试结果以本地测试命令为准；最近的真实正文回归和人工复核保存在 `record.md`。回归问题统一使用中文输入，保留英文技术术语；正文测试覆盖检索状态、证据回退、来源编号和语义/词法降级。
-
-## 当前边界
-
-需要继续优化章节号和 Stage 查询的精确排序、显式 Appendix 内部小节排序、少量原始 MinerU block 的词边界异常，以及更系统的 Recall@K、Precision@K 和证据连续性评测。
+真实回归保存在 record.md，使用中文问题、真实 MCP 请求和宿主 Agent 回答；不使用模拟答案脚本，不调用 Query Rewriter 模型生成最终答案。本轮文档更新未同步 Catalog 或重建向量。
